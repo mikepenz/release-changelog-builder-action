@@ -59,11 +59,18 @@ By default the action will look for a file called `configuration.json` within th
             "pattern": "[\\-\\*] (\\[(...|TEST|CI|SKIP)\\])( )?(.+?)\n(.+?[\\-\\*] )(.+)",
             "target": "- $4\n  - $6"
         }
+    ],
+    "max_tags_to_fetch": 200,
+    "max_pull_requests": 200,
+    "max_back_track_time_days": 90,
+    "exclude_merge_branches": [
+        "Owner/qa"
     ]
 }
 ```
 
 Any section of the configruation can be ommited, to have defaults apply
+Defaults for the configuraiton can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
 
 
 ## Advanced workflow specification
