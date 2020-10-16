@@ -15,6 +15,9 @@ jobs:
           npm install
       - run: |
           npm run all
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
   test: # make sure the action works on a clean machine without building
     runs-on: ubuntu-latest
     steps:
