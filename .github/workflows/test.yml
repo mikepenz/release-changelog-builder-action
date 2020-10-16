@@ -15,10 +15,36 @@ jobs:
           npm install
       - run: |
           npm run all
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
   test: # make sure the action works on a clean machine without building
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: ./
         with:
-          milliseconds: 1000
+          fetch-depth: 0 # Checkout full depth so tags can be discovered automatically if not specified
+
+      - name: "Minimal Configuration"
+        id: minimal_release
+        uses: ./
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Echo Minimal
+        run: echo "${{steps.minimal_release.outputs.changelog}}"
+
+      - name: "Complex Configuration"
+        id: complex_release
+        uses: ./
+        with:
+          configuration: "configuration_complex.json"
+          owner: "mikepenz"
+          repo: "release-changelog-builder-action"
+          fromTag: "0.0.2"
+          toTag: "0.0.3"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Echo Complex
+        run: echo "${{steps.complex_release.outputs.changelog}}"
+

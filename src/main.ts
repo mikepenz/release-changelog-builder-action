@@ -1,11 +1,9 @@
 import * as core from '@actions/core'
-import { wait } from './wait'
-import { readConfiguration } from './utils';
-import { ReleaseNotes } from './releaseNotes';
-import { createCommandManager } from './git-helper';
+import {readConfiguration} from './utils'
+import {ReleaseNotes} from './releaseNotes'
+import {createCommandManager} from './git-helper'
 import * as github from '@actions/github'
-import * as path from 'path';
-
+import * as path from 'path'
 
 async function run(): Promise<void> {
   try {
@@ -17,10 +15,7 @@ async function run(): Promise<void> {
     core.debug(`GITHUB_WORKSPACE = '${githubWorkspacePath}'`)
 
     let repositoryPath = core.getInput('path') || '.'
-    repositoryPath = path.resolve(
-      githubWorkspacePath,
-      repositoryPath
-    )
+    repositoryPath = path.resolve(githubWorkspacePath, repositoryPath)
     core.debug(`repositoryPath = '${repositoryPath}'`)
 
     const configurationFile: string = core.getInput('configuration')
@@ -31,12 +26,12 @@ async function run(): Promise<void> {
     core.debug(`configurationPath = '${configurationPath}'`)
     const configuration = readConfiguration(configurationPath)
 
-    let token = core.getInput('token')
+    const token = core.getInput('token')
     let owner = core.getInput('owner')
     let repo = core.getInput('repo')
 
-    let fromTag = core.getInput("fromTag")
-    let toTag = core.getInput("toTag")
+    const fromTag = core.getInput('fromTag')
+    let toTag = core.getInput('toTag')
 
     if (!toTag) {
       // if not specified try to retrieve tag from git
@@ -48,10 +43,16 @@ async function run(): Promise<void> {
 
     if (!owner || !repo) {
       // Qualified repository
-      const qualifiedRepository = core.getInput('repository') || `${github.context.repo.owner}/${github.context.repo.repo}`
+      const qualifiedRepository =
+        core.getInput('repository') ||
+        `${github.context.repo.owner}/${github.context.repo.repo}`
       core.debug(`qualified repository = '${qualifiedRepository}'`)
       const splitRepository = qualifiedRepository.split('/')
-      if (splitRepository.length !== 2 || !splitRepository[0] || !splitRepository[1]) {
+      if (
+        splitRepository.length !== 2 ||
+        !splitRepository[0] ||
+        !splitRepository[1]
+      ) {
         throw new Error(
           `Invalid repository '${qualifiedRepository}'. Expected format {owner}/{repo}.`
         )
@@ -63,24 +64,30 @@ async function run(): Promise<void> {
     if (!owner) {
       core.error(`Missing or couldn't resolve 'owner'`)
       return
+    } else {
+      core.debug(`Resolved 'owner' as ${owner}`)
     }
 
     if (!repo) {
       core.error(`Missing or couldn't resolve 'owner'`)
       return
+    } else {
+      core.debug(`Resolved 'repo' as ${repo}`)
     }
 
     if (!toTag) {
       core.error(`Missing or couldn't resolve 'toTag'`)
       return
+    } else {
+      core.debug(`Resolved 'toTag' as ${toTag}`)
     }
 
     const releaseNotes = new ReleaseNotes({
-      owner: owner,
-      repo: repo,
-      fromTag: fromTag,
-      toTag: toTag,
-      configuration: configuration
+      owner,
+      repo,
+      fromTag,
+      toTag,
+      configuration
     })
 
     core.setOutput('changelog', await releaseNotes.pull(token))

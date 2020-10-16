@@ -1,27 +1,27 @@
-interface Configuration {
-    sort: string;
-    template: string;
-    pr_template: string;
-    empty_template: string;
-    categories: Array<Category>;
-    transformers: Array<Transformer>;
+export interface Configuration {
+  sort: string
+  template: string
+  pr_template: string
+  empty_template: string
+  categories: Category[]
+  transformers: Transformer[]
 }
 
-interface Category {
-    title: string;
-    labels: Array<string>;
+export interface Category {
+  title: string
+  labels: string[]
 }
 
-interface Transformer {
-    pattern: string;
-    target: string;
+export interface Transformer {
+  pattern: string
+  target: string
 }
 
-const DefaultConfiguration: Configuration = {
-    sort: "ASC",
-    template: "${{CHANGELOG}}",
-    pr_template: "- ${{TITLE}}\n   - PR: #${{NUMBER}}",
-    empty_template: "- no changes",
-    categories: [],
-    transformers: []
+export const DefaultConfiguration: Configuration = {
+  sort: 'ASC',
+  template: '${{CHANGELOG}}',
+  pr_template: '- ${{TITLE}}\n   - PR: #${{NUMBER}}',
+  empty_template: '- no changes',
+  categories: [],
+  transformers: []
 }
