@@ -1,13 +1,13 @@
-name: 'build-test'
-on: # rebuild any PRs and main branch changes
-  pull_request:
+name: 'CI'
+on:
   push:
-    branches:
-      - main
-      - 'releases/*'
+    tags:
+      - '*'
+  pull_request:
 
 jobs:
-  build: # make sure build/ci work properly
+  build:
+    if: github.event_name  == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -18,7 +18,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
-  test: # make sure the action works on a clean machine without building
+  test:
+    if: github.event_name  == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -47,4 +48,26 @@ jobs:
 
       - name: Echo Complex
         run: echo "${{steps.complex_release.outputs.changelog}}"
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # Checkout full depth so tags can be discovered automatically if not specified
+
+      - name: "Build Changelog"
+        id: github_release
+        uses: mikepenz/release-changelog-builder-action@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          body: ${{steps.github_release.outputs.changelog}}
+          prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-b') || contains(github.ref, '-a') }}
 
