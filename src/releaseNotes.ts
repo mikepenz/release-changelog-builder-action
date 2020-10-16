@@ -102,7 +102,7 @@ export class ReleaseNotes {
             }
         }
 
-        return pullRequests
+        return filteredPullRequests
     }
 
     private getFormatedChanges(pullRequests: PullRequestInfo[], formatter: (pr?: PullRequestInfo) => string): string {

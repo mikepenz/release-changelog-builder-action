@@ -11,6 +11,7 @@ export interface PullRequestInfo {
     mergedAt: moment.Moment
     author: string
     repoName: string
+    labels: Array<string>
     body: string
 }
 
@@ -28,6 +29,7 @@ export class PullRequests {
                 mergedAt: moment(pr.data.merged_at),
                 author: pr.data.user.login,
                 repoName: pr.data.base.repo.full_name,
+                labels: pr.data.labels.map(function (label) { return label.name }),
                 body: pr.data.body
             }
         } catch (e) {
@@ -54,6 +56,13 @@ export class PullRequests {
         for await (const response of this.octokit.paginate.iterator(options)) {
             type PullsListData = RestEndpointMethodTypes["pulls"]["list"]["response"]["data"]
             const prs: PullsListData = response.data as PullsListData
+
+            const firstPR = prs[0]
+            if(firstPR.merged_at && fromDate.isAfter(moment(firstPR.merged_at))) {
+                // bail out early to not keep iterating on PRs super old
+                return this.sortPullRequests(mergedPRs)
+            }
+
             prs.filter(
                 pr =>
                     !!pr.merged_at &&
@@ -67,6 +76,7 @@ export class PullRequests {
                     mergedAt: moment(pr.merged_at),
                     author: pr.user.login,
                     repoName: pr.base.repo.full_name,
+                    labels: pr.labels.map(function (label) { return label.name }),
                     body: pr.body
                 })
             })
