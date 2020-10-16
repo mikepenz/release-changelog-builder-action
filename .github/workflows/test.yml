@@ -19,6 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # Checkout full depth so tags can be discovered automatically if not specified
+
       - name: "Minimal Configuration"
         id: minimal_release
         uses: ./
@@ -33,8 +36,8 @@ jobs:
           configuration: "configuration_complex.json"
           owner: "mikepenz"
           repo: "release-changelog-builder-action"
-          fromTag: "0.0.1"
-          toTag: "0.0.2"
+          fromTag: "0.0.2"
+          toTag: "0.0.3"
 
       - name: Echo Complex
         run: echo ${{steps.complex_release.outputs.changelog}}
