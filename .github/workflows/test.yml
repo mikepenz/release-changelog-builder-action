@@ -25,6 +25,8 @@ jobs:
       - name: "Minimal Configuration"
         id: minimal_release
         uses: ./
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Echo Minimal
         run: echo ${{steps.minimal_release.outputs.changelog}}
@@ -38,6 +40,7 @@ jobs:
           repo: "release-changelog-builder-action"
           fromTag: "0.0.2"
           toTag: "0.0.3"
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Echo Complex
         run: echo ${{steps.complex_release.outputs.changelog}}
