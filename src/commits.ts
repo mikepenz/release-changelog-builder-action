@@ -1,7 +1,6 @@
 import { Octokit, RestEndpointMethodTypes } from "@octokit/rest"
 import moment from 'moment';
-
-import { Logger } from "./logger"
+import * as core from '@actions/core';
 
 export interface CommitInfo {
     sha: string
@@ -13,7 +12,7 @@ export interface CommitInfo {
 }
 
 export class Commits {
-    constructor(private octokit: Octokit) {}
+    constructor(private octokit: Octokit) { }
 
     async getDiff(owner: string, repo: string, base: string, head: string): Promise<CommitInfo[]> {
         const commits: CommitInfo[] = await this.getDiffRemote(owner, repo, base, head)
@@ -34,7 +33,7 @@ export class Commits {
             compareHead = `${commits[0].sha}^`
         }
 
-        Logger.log(`Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`)
+        core.info(`Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`)
         return commits.map(commit => ({
             sha: commit.sha,
             summary: commit.commit.message.split("\n")[0],
