@@ -30,7 +30,7 @@
     "moment": "^2.29.1"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.10",
+    "@types/jest": "^26.0.14",
     "@types/node": "^14.11.8",
     "@typescript-eslint/parser": "^4.4.1",
     "@vercel/ncc": "^0.24.1",
