@@ -22,9 +22,10 @@ export class ReleaseNotes {
       auth: `token ${token || process.env.GITHUB_TOKEN}`
     })
 
-    const {owner, repo, fromTag, toTag, configuration} = this.options
+    const {owner, repo, toTag, configuration} = this.options
 
-    if (!fromTag) {
+    if (!this.options.fromTag) {
+      core.debug(`fromTag undefined, trying to resolve via API`)
       const tagsApi = new Tags(octokit)
 
       const previousTag = await tagsApi.findPredecessorTag(owner, repo, toTag)
@@ -36,12 +37,13 @@ export class ReleaseNotes {
       }
 
       this.options.fromTag = previousTag.name
+      core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`)
     }
 
     const mergedPullRequests = await this.getMergedPullRequests(octokit)
 
     if (mergedPullRequests.length === 0) {
-      core.warning(`No pull requests found for between ${fromTag}...${toTag}`)
+      core.warning(`No pull requests found for between ${this.options.fromTag}...${toTag}`)
       return configuration.empty_template
         ? configuration.empty_template
         : DefaultConfiguration.empty_template
@@ -54,7 +56,7 @@ export class ReleaseNotes {
     octokit: Octokit
   ): Promise<PullRequestInfo[]> {
     const {owner, repo, fromTag, toTag} = this.options
-    core.info(`Comparing ${owner}/${repo} ${fromTag}...${toTag}`)
+    core.info(`Comparing ${owner}/${repo} - ${fromTag}...${toTag}`)
 
     const commitsApi = new Commits(octokit)
     const commits = await commitsApi.getDiff(owner, repo, fromTag!!, toTag)
