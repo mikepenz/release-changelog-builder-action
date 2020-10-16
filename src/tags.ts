@@ -9,7 +9,11 @@ export interface TagInfo {
 export class Tags {
   constructor(private octokit: Octokit) {}
 
-  async getTags(owner: string, repo: string): Promise<TagInfo[]> {
+  async getTags(
+    owner: string,
+    repo: string,
+    maxTagsToFetch: number
+  ): Promise<TagInfo[]> {
     const tagsInfo: TagInfo[] = []
     const options = this.octokit.repos.listTags.endpoint.merge({
       owner,
@@ -18,7 +22,6 @@ export class Tags {
       per_page: 100
     })
 
-    const max = 200
     for await (const response of this.octokit.paginate.iterator(options)) {
       type TagsListData = RestEndpointMethodTypes['repos']['listTags']['response']['data']
       const tags: TagsListData = response.data as TagsListData
@@ -30,14 +33,14 @@ export class Tags {
         })
       }
 
-      // for performance only fetch newest 200 tags!!
-      if (tagsInfo.length >= max) {
+      // for performance only fetch newest maxTagsToFetch tags!!
+      if (tagsInfo.length >= maxTagsToFetch) {
         break
       }
     }
 
     core.info(
-      `Found ${tagsInfo.length} (fetching max: ${max}) tags from the GitHub API for ${owner}/${repo}`
+      `Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`
     )
     return tagsInfo
   }
@@ -45,9 +48,10 @@ export class Tags {
   async findPredecessorTag(
     owner: string,
     repo: string,
-    tag: string
+    tag: string,
+    maxTagsToFetch: number
   ): Promise<TagInfo | null> {
-    const tags = this.sortTags(await this.getTags(owner, repo))
+    const tags = this.sortTags(await this.getTags(owner, repo, maxTagsToFetch))
 
     const length = tags.length
     for (let i = 0; i < length; i++) {

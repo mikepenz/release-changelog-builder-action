@@ -118,12 +118,16 @@ exports.Commits = Commits;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DefaultConfiguration = void 0;
 exports.DefaultConfiguration = {
+    max_tags_to_fetch: 200,
+    max_pull_requests: 200,
+    max_back_track_time_days: 90,
+    exclude_merge_branches: [],
     sort: 'ASC',
     template: '${{CHANGELOG}}',
     pr_template: '- ${{TITLE}}\n   - PR: #${{NUMBER}}',
     empty_template: '- no changes',
     categories: [],
-    transformers: []
+    transformers: [] // transformers to apply on the PR description according to the `pr_template`
 };
 
 
@@ -468,8 +472,7 @@ class PullRequests {
             }
         });
     }
-    getBetweenDates(owner, repo, fromDate, toDate // eslint-disable-line @typescript-eslint/no-unused-vars
-    ) {
+    getBetweenDates(owner, repo, fromDate, toDate, maxPullRequests) {
         var e_1, _a;
         return __awaiter(this, void 0, void 0, function* () {
             const mergedPRs = [];
@@ -499,7 +502,11 @@ class PullRequests {
                         });
                     }
                     const firstPR = prs[0];
-                    if (firstPR.merged_at && fromDate.isAfter(moment_1.default(firstPR.merged_at))) {
+                    if ((firstPR.merged_at && fromDate.isAfter(moment_1.default(firstPR.merged_at))) ||
+                        mergedPRs.length >= maxPullRequests) {
+                        if (mergedPRs.length >= maxPullRequests) {
+                            core.info(`Reached 'maxPullRequests' count ${maxPullRequests}`);
+                        }
                         // bail out early to not keep iterating on PRs super old
                         return sortPullRequests(mergedPRs, true);
                     }
@@ -515,10 +522,22 @@ class PullRequests {
             return sortPullRequests(mergedPRs, true);
         });
     }
-    filterCommits(commits) {
+    filterCommits(commits, excludeMergeBranches) {
         const prRegex = /Merge pull request #(\d+)/;
         const filteredCommits = [];
         for (const commit of commits) {
+            if (excludeMergeBranches) {
+                let matched = false;
+                for (const excludeMergeBranch of excludeMergeBranches) {
+                    if (commit.summary.includes(excludeMergeBranch)) {
+                        matched = true;
+                        break;
+                    }
+                }
+                if (matched) {
+                    continue;
+                }
+            }
             const match = commit.summary.match(prRegex);
             if (!match) {
                 continue;
@@ -615,7 +634,9 @@ class ReleaseNotes {
             if (!this.options.fromTag) {
                 core.debug(`fromTag undefined, trying to resolve via API`);
                 const tagsApi = new tags_1.Tags(octokit);
-                const previousTag = yield tagsApi.findPredecessorTag(owner, repo, toTag);
+                const previousTag = yield tagsApi.findPredecessorTag(owner, repo, toTag, configuration.max_tags_to_fetch
+                    ? configuration.max_tags_to_fetch
+                    : configuration_1.DefaultConfiguration.max_tags_to_fetch);
                 if (previousTag == null) {
                     core.error(`Unable to retrieve previous tag given ${toTag}`);
                     return configuration.empty_template
@@ -637,7 +658,7 @@ class ReleaseNotes {
     }
     getMergedPullRequests(octokit) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { owner, repo, fromTag, toTag } = this.options;
+            const { owner, repo, fromTag, toTag, configuration } = this.options;
             core.info(`Comparing ${owner}/${repo} - ${fromTag}...${toTag}`);
             const commitsApi = new commits_1.Commits(octokit);
             const commits = yield commitsApi.getDiff(owner, repo, fromTag, toTag);
@@ -646,13 +667,26 @@ class ReleaseNotes {
             }
             const firstCommit = commits[0];
             const lastCommit = commits[commits.length - 1];
-            const fromDate = firstCommit.date;
+            let fromDate = firstCommit.date;
             const toDate = lastCommit.date;
-            core.info(`Fetching PRs between dates ${fromDate.toISOString()} ${toDate.toISOString()} for ${owner}/${repo}`);
+            const maxDays = configuration.max_back_track_time_days
+                ? configuration.max_back_track_time_days
+                : configuration_1.DefaultConfiguration.max_back_track_time_days;
+            const maxFromDate = toDate.clone().subtract(maxDays, 'days');
+            if (maxFromDate.isAfter(fromDate)) {
+                core.info(`Adjusted 'fromDate' to go max ${maxDays} back`);
+                fromDate = maxFromDate;
+            }
+            core.info(`Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`);
             const pullRequestsApi = new pullRequests_1.PullRequests(octokit);
-            const pullRequests = yield pullRequestsApi.getBetweenDates(owner, repo, fromDate, toDate);
-            core.info(`Found ${pullRequests.length} merged PRs for ${owner}/${repo}`);
-            const prCommits = pullRequestsApi.filterCommits(commits);
+            const pullRequests = yield pullRequestsApi.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests
+                ? configuration.max_pull_requests
+                : configuration_1.DefaultConfiguration.max_pull_requests);
+            core.info(`Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`);
+            const prCommits = pullRequestsApi.filterCommits(commits, configuration.exclude_merge_branches
+                ? configuration.exclude_merge_branches
+                : configuration_1.DefaultConfiguration.exclude_merge_branches);
+            core.info(`Retrieved ${prCommits.length} PR merge commits for ${owner}/${repo}`);
             const filteredPullRequests = [];
             const pullRequestsByNumber = {};
             for (const pr of pullRequests) {
@@ -667,7 +701,6 @@ class ReleaseNotes {
                     filteredPullRequests.push(pullRequestsByNumber[commit.prNumber]);
                 }
                 else if (fromDate.toISOString() === toDate.toISOString()) {
-                    core.info(`${prRef} not in date range, fetching explicitly`);
                     const pullRequest = yield pullRequestsApi.getSingle(owner, repo, commit.prNumber);
                     if (pullRequest) {
                         filteredPullRequests.push(pullRequest);
@@ -677,7 +710,7 @@ class ReleaseNotes {
                     }
                 }
                 else {
-                    core.info(`${prRef} not in date range, likely a merge commit from a fork-to-fork PR`);
+                    core.info(`${prRef} not in date range, excluding from changelog`);
                 }
             }
             return filteredPullRequests;
@@ -736,7 +769,7 @@ class Tags {
     constructor(octokit) {
         this.octokit = octokit;
     }
-    getTags(owner, repo) {
+    getTags(owner, repo, maxTagsToFetch) {
         var e_1, _a;
         return __awaiter(this, void 0, void 0, function* () {
             const tagsInfo = [];
@@ -746,7 +779,6 @@ class Tags {
                 direction: 'desc',
                 per_page: 100
             });
-            const max = 200;
             try {
                 for (var _b = __asyncValues(this.octokit.paginate.iterator(options)), _c; _c = yield _b.next(), !_c.done;) {
                     const response = _c.value;
@@ -757,8 +789,8 @@ class Tags {
                             commit: tag.commit.sha
                         });
                     }
-                    // for performance only fetch newest 200 tags!!
-                    if (tagsInfo.length >= max) {
+                    // for performance only fetch newest maxTagsToFetch tags!!
+                    if (tagsInfo.length >= maxTagsToFetch) {
                         break;
                     }
                 }
@@ -770,13 +802,13 @@ class Tags {
                 }
                 finally { if (e_1) throw e_1.error; }
             }
-            core.info(`Found ${tagsInfo.length} (fetching max: ${max}) tags from the GitHub API for ${owner}/${repo}`);
+            core.info(`Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`);
             return tagsInfo;
         });
     }
-    findPredecessorTag(owner, repo, tag) {
+    findPredecessorTag(owner, repo, tag, maxTagsToFetch) {
         return __awaiter(this, void 0, void 0, function* () {
-            const tags = this.sortTags(yield this.getTags(owner, repo));
+            const tags = this.sortTags(yield this.getTags(owner, repo, maxTagsToFetch));
             const length = tags.length;
             for (let i = 0; i < length; i++) {
                 if (tags[i].name.toLowerCase() === tag.toLowerCase()) {
@@ -926,7 +958,7 @@ function fillTemplate(pr, template) {
     transformed = transformed.replace('${{NUMBER}}', pr.number.toString());
     transformed = transformed.replace('${{TITLE}}', pr.title);
     transformed = transformed.replace('${{URL}}', pr.htmlURL);
-    transformed = transformed.replace('${{MERGED_AT}}', pr.mergedAt.toString());
+    transformed = transformed.replace('${{MERGED_AT}}', pr.mergedAt.toISOString());
     transformed = transformed.replace('${{AUTHOR}}', pr.author);
     transformed = transformed.replace('${{BODY}}', pr.body);
     return transformed;

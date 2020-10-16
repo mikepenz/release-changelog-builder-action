@@ -41,8 +41,8 @@ jobs:
           configuration: "configuration_complex.json"
           owner: "mikepenz"
           repo: "release-changelog-builder-action"
-          fromTag: "0.0.2"
-          toTag: "0.0.3"
+          fromTag: "v0.0.1"
+          toTag: "v0.0.3"
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Echo Complex

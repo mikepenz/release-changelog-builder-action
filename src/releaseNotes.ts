@@ -28,7 +28,14 @@ export class ReleaseNotes {
       core.debug(`fromTag undefined, trying to resolve via API`)
       const tagsApi = new Tags(octokit)
 
-      const previousTag = await tagsApi.findPredecessorTag(owner, repo, toTag)
+      const previousTag = await tagsApi.findPredecessorTag(
+        owner,
+        repo,
+        toTag,
+        configuration.max_tags_to_fetch
+          ? configuration.max_tags_to_fetch
+          : DefaultConfiguration.max_tags_to_fetch
+      )
       if (previousTag == null) {
         core.error(`Unable to retrieve previous tag given ${toTag}`)
         return configuration.empty_template
@@ -57,7 +64,7 @@ export class ReleaseNotes {
   private async getMergedPullRequests(
     octokit: Octokit
   ): Promise<PullRequestInfo[]> {
-    const {owner, repo, fromTag, toTag} = this.options
+    const {owner, repo, fromTag, toTag, configuration} = this.options
     core.info(`Comparing ${owner}/${repo} - ${fromTag}...${toTag}`)
 
     const commitsApi = new Commits(octokit)
@@ -69,11 +76,20 @@ export class ReleaseNotes {
 
     const firstCommit = commits[0]
     const lastCommit = commits[commits.length - 1]
-    const fromDate = firstCommit.date
+    let fromDate = firstCommit.date
     const toDate = lastCommit.date
 
+    const maxDays = configuration.max_back_track_time_days
+      ? configuration.max_back_track_time_days
+      : DefaultConfiguration.max_back_track_time_days
+    const maxFromDate = toDate.clone().subtract(maxDays, 'days')
+    if (maxFromDate.isAfter(fromDate)) {
+      core.info(`Adjusted 'fromDate' to go max ${maxDays} back`)
+      fromDate = maxFromDate
+    }
+
     core.info(
-      `Fetching PRs between dates ${fromDate.toISOString()} ${toDate.toISOString()} for ${owner}/${repo}`
+      `Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`
     )
 
     const pullRequestsApi = new PullRequests(octokit)
@@ -81,12 +97,27 @@ export class ReleaseNotes {
       owner,
       repo,
       fromDate,
-      toDate
+      toDate,
+      configuration.max_pull_requests
+        ? configuration.max_pull_requests
+        : DefaultConfiguration.max_pull_requests
     )
 
-    core.info(`Found ${pullRequests.length} merged PRs for ${owner}/${repo}`)
+    core.info(
+      `Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`
+    )
 
-    const prCommits = pullRequestsApi.filterCommits(commits)
+    const prCommits = pullRequestsApi.filterCommits(
+      commits,
+      configuration.exclude_merge_branches
+        ? configuration.exclude_merge_branches
+        : DefaultConfiguration.exclude_merge_branches
+    )
+
+    core.info(
+      `Retrieved ${prCommits.length} PR merge commits for ${owner}/${repo}`
+    )
+
     const filteredPullRequests = []
     const pullRequestsByNumber: {[key: number]: PullRequestInfo} = {}
 
@@ -104,7 +135,6 @@ export class ReleaseNotes {
       if (pullRequestsByNumber[commit.prNumber]) {
         filteredPullRequests.push(pullRequestsByNumber[commit.prNumber])
       } else if (fromDate.toISOString() === toDate.toISOString()) {
-        core.info(`${prRef} not in date range, fetching explicitly`)
         const pullRequest = await pullRequestsApi.getSingle(
           owner,
           repo,
@@ -117,9 +147,7 @@ export class ReleaseNotes {
           core.warning(`${prRef} not found! Commit text: ${commit.summary}`)
         }
       } else {
-        core.info(
-          `${prRef} not in date range, likely a merge commit from a fork-to-fork PR`
-        )
+        core.info(`${prRef} not in date range, excluding from changelog`)
       }
     }
 

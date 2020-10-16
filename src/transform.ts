@@ -105,7 +105,7 @@ function fillTemplate(pr: PullRequestInfo, template: string): string {
   transformed = transformed.replace('${{NUMBER}}', pr.number.toString())
   transformed = transformed.replace('${{TITLE}}', pr.title)
   transformed = transformed.replace('${{URL}}', pr.htmlURL)
-  transformed = transformed.replace('${{MERGED_AT}}', pr.mergedAt.toString())
+  transformed = transformed.replace('${{MERGED_AT}}', pr.mergedAt.toISOString())
   transformed = transformed.replace('${{AUTHOR}}', pr.author)
   transformed = transformed.replace('${{BODY}}', pr.body)
   return transformed
