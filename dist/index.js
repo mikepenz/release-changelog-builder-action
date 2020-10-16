@@ -58,6 +58,7 @@ class Commits {
             // This is because the GitHub API limits the number of commits returned in a single response.
             let commits = [];
             let compareHead = head;
+            // eslint-disable-next-line no-constant-condition
             while (true) {
                 const compareResult = yield this.octokit.repos.compareCommits({
                     owner,
@@ -467,7 +468,8 @@ class PullRequests {
             }
         });
     }
-    getBetweenDates(owner, repo, fromDate, toDate) {
+    getBetweenDates(owner, repo, fromDate, toDate // eslint-disable-line @typescript-eslint/no-unused-vars
+    ) {
         var e_1, _a;
         return __awaiter(this, void 0, void 0, function* () {
             const mergedPRs = [];
@@ -482,16 +484,7 @@ class PullRequests {
                 for (var _b = __asyncValues(this.octokit.paginate.iterator(options)), _c; _c = yield _b.next(), !_c.done;) {
                     const response = _c.value;
                     const prs = response.data;
-                    const firstPR = prs[0];
-                    if (firstPR.merged_at && fromDate.isAfter(moment_1.default(firstPR.merged_at))) {
-                        // bail out early to not keep iterating on PRs super old
-                        return sortPullRequests(mergedPRs, true);
-                    }
-                    prs
-                        .filter(pr => !!pr.merged_at &&
-                        fromDate.isBefore(moment_1.default(pr.merged_at)) &&
-                        toDate.isSameOrAfter(moment_1.default(pr.merged_at)))
-                        .forEach(pr => {
+                    for (const pr of prs.filter(p => !!p.merged_at)) {
                         mergedPRs.push({
                             number: pr.number,
                             title: pr.title,
@@ -504,7 +497,12 @@ class PullRequests {
                             }),
                             body: pr.body
                         });
-                    });
+                    }
+                    const firstPR = prs[0];
+                    if (firstPR.merged_at && fromDate.isAfter(moment_1.default(firstPR.merged_at))) {
+                        // bail out early to not keep iterating on PRs super old
+                        return sortPullRequests(mergedPRs, true);
+                    }
                 }
             }
             catch (e_1_1) { e_1 = { error: e_1_1 }; }
@@ -753,12 +751,12 @@ class Tags {
                 for (var _b = __asyncValues(this.octokit.paginate.iterator(options)), _c; _c = yield _b.next(), !_c.done;) {
                     const response = _c.value;
                     const tags = response.data;
-                    tags.forEach(tag => {
+                    for (const tag of tags) {
                         tagsInfo.push({
                             name: tag.name,
                             commit: tag.commit.sha
                         });
-                    });
+                    }
                     // for performance only fetch newest 200 tags!!
                     if (tagsInfo.length >= max) {
                         break;
@@ -861,52 +859,60 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.buildChangelog = void 0;
 const pullRequests_1 = __webpack_require__(4217);
 const core = __importStar(__webpack_require__(2186));
+const configuration_1 = __webpack_require__(5527);
 function buildChangelog(prs, config) {
     // sort to target order
-    prs = pullRequests_1.sortPullRequests(prs, config.sort.toUpperCase() === 'ASC');
+    prs = pullRequests_1.sortPullRequests(prs, (config.sort ? config.sort : configuration_1.DefaultConfiguration.sort).toUpperCase() ===
+        'ASC');
     const validatedTransformers = validateTransfomers(config.transformers);
     const transformedMap = new Map();
     // convert PRs to their text representation
-    prs.forEach(pr => {
-        transformedMap.set(pr, transform(fillTemplate(pr, config.pr_template), validatedTransformers));
-    });
+    for (const pr of prs) {
+        transformedMap.set(pr, transform(fillTemplate(pr, config.pr_template
+            ? config.pr_template
+            : configuration_1.DefaultConfiguration.pr_template), validatedTransformers));
+    }
     // bring PRs into the order of categories
     const categorized = new Map();
-    config.categories.forEach(category => {
-        categorized.set(category, []);
-    });
+    if (config.categories) {
+        for (const category of config.categories) {
+            categorized.set(category, []);
+        }
+    }
     const uncategorized = [];
     // bring elements in order
-    transformedMap.forEach((body, pr) => {
+    for (const [pr, body] of transformedMap) {
         let matched = false;
-        categorized.forEach((pullRequests, category) => {
+        for (const [category, pullRequests] of categorized) {
             if (haveCommonElements(category.labels, pr.labels)) {
                 pullRequests.push(body);
                 matched = true;
             }
-        });
+        }
         if (!matched) {
             uncategorized.push(body);
         }
-    });
+    }
     // construct final changelog
     let changelog = '';
-    categorized.forEach((pullRequests, category) => {
+    for (const [category, pullRequests] of categorized) {
         if (pullRequests.length > 0) {
             changelog = `${changelog + category.title}\n\n`;
-            pullRequests.forEach(pr => {
+            for (const pr of pullRequests) {
                 changelog = `${changelog + pr}\n`;
-            });
+            }
             // add space between
             changelog = `${changelog}\n`;
         }
-    });
+    }
     let changelogUncategorized = '';
-    uncategorized.forEach(pr => {
+    for (const pr of uncategorized) {
         changelogUncategorized = `${changelogUncategorized + pr}\n`;
-    });
+    }
     // fill template
-    let transformedChangelog = config.template;
+    let transformedChangelog = config.template
+        ? config.template
+        : configuration_1.DefaultConfiguration.template;
     transformedChangelog = transformedChangelog.replace('${{CHANGELOG}}', changelog);
     transformedChangelog = transformedChangelog.replace('${{UNCATEGORIZED}}', changelogUncategorized);
     return transformedChangelog;
@@ -930,12 +936,15 @@ function transform(filled, transformers) {
         return filled;
     }
     let transformed = filled;
-    transformers.forEach(({ pattern, target }) => {
+    for (const { target, pattern } of transformers) {
         transformed = transformed.replace(pattern, target);
-    });
+    }
     return transformed;
 }
-function validateTransfomers(transformers) {
+function validateTransfomers(specifiedTransformers) {
+    const transformers = specifiedTransformers
+        ? specifiedTransformers
+        : configuration_1.DefaultConfiguration.transformers;
     return transformers
         .map(transformer => {
         try {

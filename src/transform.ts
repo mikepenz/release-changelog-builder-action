@@ -1,69 +1,90 @@
 import {PullRequestInfo, sortPullRequests} from './pullRequests'
 import * as core from '@actions/core'
-import {Category, Configuration, Transformer} from './configuration'
+import {
+  Category,
+  Configuration,
+  Transformer,
+  DefaultConfiguration
+} from './configuration'
 
 export function buildChangelog(
   prs: PullRequestInfo[],
   config: Configuration
 ): string {
   // sort to target order
-  prs = sortPullRequests(prs, config.sort.toUpperCase() === 'ASC')
+  prs = sortPullRequests(
+    prs,
+    (config.sort ? config.sort : DefaultConfiguration.sort).toUpperCase() ===
+      'ASC'
+  )
 
   const validatedTransformers = validateTransfomers(config.transformers)
   const transformedMap = new Map<PullRequestInfo, string>()
   // convert PRs to their text representation
-  prs.forEach(pr => {
+  for (const pr of prs) {
     transformedMap.set(
       pr,
-      transform(fillTemplate(pr, config.pr_template), validatedTransformers)
+      transform(
+        fillTemplate(
+          pr,
+          config.pr_template
+            ? config.pr_template
+            : DefaultConfiguration.pr_template
+        ),
+        validatedTransformers
+      )
     )
-  })
+  }
 
   // bring PRs into the order of categories
   const categorized = new Map<Category, string[]>()
-  config.categories.forEach(category => {
-    categorized.set(category, [])
-  })
+  if (config.categories) {
+    for (const category of config.categories) {
+      categorized.set(category, [])
+    }
+  }
   const uncategorized: string[] = []
 
   // bring elements in order
-  transformedMap.forEach((body, pr) => {
+  for (const [pr, body] of transformedMap) {
     let matched = false
 
-    categorized.forEach((pullRequests, category) => {
+    for (const [category, pullRequests] of categorized) {
       if (haveCommonElements(category.labels, pr.labels)) {
         pullRequests.push(body)
         matched = true
       }
-    })
+    }
 
     if (!matched) {
       uncategorized.push(body)
     }
-  })
+  }
 
   // construct final changelog
   let changelog = ''
-  categorized.forEach((pullRequests, category) => {
+  for (const [category, pullRequests] of categorized) {
     if (pullRequests.length > 0) {
       changelog = `${changelog + category.title}\n\n`
 
-      pullRequests.forEach(pr => {
+      for (const pr of pullRequests) {
         changelog = `${changelog + pr}\n`
-      })
+      }
 
       // add space between
       changelog = `${changelog}\n`
     }
-  })
+  }
 
   let changelogUncategorized = ''
-  uncategorized.forEach(pr => {
+  for (const pr of uncategorized) {
     changelogUncategorized = `${changelogUncategorized + pr}\n`
-  })
+  }
 
   // fill template
   let transformedChangelog = config.template
+    ? config.template
+    : DefaultConfiguration.template
   transformedChangelog = transformedChangelog.replace(
     '${{CHANGELOG}}',
     changelog
@@ -95,13 +116,19 @@ function transform(filled: string, transformers: RegexTransformer[]): string {
     return filled
   }
   let transformed = filled
-  transformers.forEach(({pattern, target}) => {
+  for (const {target, pattern} of transformers) {
     transformed = transformed.replace(pattern!!, target)
-  })
+  }
   return transformed
 }
 
-function validateTransfomers(transformers: Transformer[]): RegexTransformer[] {
+function validateTransfomers(
+  specifiedTransformers: Transformer[]
+): RegexTransformer[] {
+  const transformers = specifiedTransformers
+    ? specifiedTransformers
+    : DefaultConfiguration.transformers
+
   return transformers
     .map(transformer => {
       try {

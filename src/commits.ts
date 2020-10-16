@@ -39,6 +39,7 @@ export class Commits {
     // This is because the GitHub API limits the number of commits returned in a single response.
     let commits: RestEndpointMethodTypes['repos']['compareCommits']['response']['data']['commits'] = []
     let compareHead = head
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       const compareResult = await this.octokit.repos.compareCommits({
         owner,

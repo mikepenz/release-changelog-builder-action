@@ -52,7 +52,7 @@ export class PullRequests {
     owner: string,
     repo: string,
     fromDate: moment.Moment,
-    toDate: moment.Moment
+    toDate: moment.Moment // eslint-disable-line @typescript-eslint/no-unused-vars
   ): Promise<PullRequestInfo[]> {
     const mergedPRs: PullRequestInfo[] = []
     const options = this.octokit.pulls.list.endpoint.merge({
@@ -67,33 +67,26 @@ export class PullRequests {
       type PullsListData = RestEndpointMethodTypes['pulls']['list']['response']['data']
       const prs: PullsListData = response.data as PullsListData
 
+      for (const pr of prs.filter(p => !!p.merged_at)) {
+        mergedPRs.push({
+          number: pr.number,
+          title: pr.title,
+          htmlURL: pr.html_url,
+          mergedAt: moment(pr.merged_at),
+          author: pr.user.login,
+          repoName: pr.base.repo.full_name,
+          labels: pr.labels.map(function (label) {
+            return label.name
+          }),
+          body: pr.body
+        })
+      }
+
       const firstPR = prs[0]
       if (firstPR.merged_at && fromDate.isAfter(moment(firstPR.merged_at))) {
         // bail out early to not keep iterating on PRs super old
         return sortPullRequests(mergedPRs, true)
       }
-
-      prs
-        .filter(
-          pr =>
-            !!pr.merged_at &&
-            fromDate.isBefore(moment(pr.merged_at)) &&
-            toDate.isSameOrAfter(moment(pr.merged_at))
-        )
-        .forEach(pr => {
-          mergedPRs.push({
-            number: pr.number,
-            title: pr.title,
-            htmlURL: pr.html_url,
-            mergedAt: moment(pr.merged_at),
-            author: pr.user.login,
-            repoName: pr.base.repo.full_name,
-            labels: pr.labels.map(function (label) {
-              return label.name
-            }),
-            body: pr.body
-          })
-        })
     }
 
     return sortPullRequests(mergedPRs, true)

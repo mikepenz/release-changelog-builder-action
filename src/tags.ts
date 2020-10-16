@@ -23,12 +23,12 @@ export class Tags {
       type TagsListData = RestEndpointMethodTypes['repos']['listTags']['response']['data']
       const tags: TagsListData = response.data as TagsListData
 
-      tags.forEach(tag => {
+      for (const tag of tags) {
         tagsInfo.push({
           name: tag.name,
           commit: tag.commit.sha
         })
-      })
+      }
 
       // for performance only fetch newest 200 tags!!
       if (tagsInfo.length >= max) {

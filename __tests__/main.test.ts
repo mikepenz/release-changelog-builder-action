@@ -28,25 +28,18 @@ it('Should be true', async () => {
   const configuration = readConfiguration('configuration.json')
   const releaseNotes = new ReleaseNotes({
     owner: 'mikepenz',
-    repo: 'MaterialDrawer',
+    repo: 'release-changelog-builder-action',
     fromTag: null,
-    toTag: 'v8.1.6',
+    toTag: '0.0.3',
     configuration: configuration
   })
 
   const changeLog = await releaseNotes.pull()
   console.log(changeLog)
-  expect(changeLog).toStrictEqual(`
+  expect(changeLog).toStrictEqual(`## 🧪 Tests
 
-<details>
-<summary>Uncategorized</summary>
+- [CI] Specify Test Case
+   - PR: #10
 
-- Improve GitHub Actions
-   - PR: #2655
-- Update dependencies
-   - PR: #2656
-- [RELEASE] v8.1.6
-   - PR: #2657
-
-</details>`)
+`)
 })

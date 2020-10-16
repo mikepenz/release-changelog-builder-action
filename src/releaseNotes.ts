@@ -43,7 +43,9 @@ export class ReleaseNotes {
     const mergedPullRequests = await this.getMergedPullRequests(octokit)
 
     if (mergedPullRequests.length === 0) {
-      core.warning(`No pull requests found for between ${this.options.fromTag}...${toTag}`)
+      core.warning(
+        `No pull requests found for between ${this.options.fromTag}...${toTag}`
+      )
       return configuration.empty_template
         ? configuration.empty_template
         : DefaultConfiguration.empty_template
