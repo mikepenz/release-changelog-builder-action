@@ -2,7 +2,7 @@ import { Octokit, RestEndpointMethodTypes } from "@octokit/rest"
 import moment from 'moment';
 
 import { CommitInfo } from "./commits"
-import { Logger } from "./logger"
+import * as core from '@actions/core';
 
 export interface PullRequestInfo {
     number: number
@@ -33,7 +33,7 @@ export class PullRequests {
                 body: pr.data.body
             }
         } catch (e) {
-            Logger.warn("Cannot find PR", `${owner}/${repo}#${prNumber}`, e.code, e.message)
+            core.warning(`Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`)
             return null
         }
     }
@@ -60,7 +60,7 @@ export class PullRequests {
             const firstPR = prs[0]
             if(firstPR.merged_at && fromDate.isAfter(moment(firstPR.merged_at))) {
                 // bail out early to not keep iterating on PRs super old
-                return this.sortPullRequests(mergedPRs)
+                return sortPullRequests(mergedPRs, true)
             }
 
             prs.filter(
@@ -82,7 +82,7 @@ export class PullRequests {
             })
         }
 
-        return this.sortPullRequests(mergedPRs)
+        return sortPullRequests(mergedPRs, true)
     }
 
     filterCommits(commits: CommitInfo[]): CommitInfo[] {
@@ -100,8 +100,10 @@ export class PullRequests {
 
         return filteredCommits
     }
+}
 
-    private sortPullRequests(pullRequests: PullRequestInfo[]): PullRequestInfo[] {
+export function sortPullRequests(pullRequests: PullRequestInfo[], ascending: Boolean): PullRequestInfo[] {
+    if(ascending) {
         pullRequests.sort((a, b) => {
             if (a.mergedAt.isBefore(b.mergedAt)) {
                 return -1
@@ -110,7 +112,15 @@ export class PullRequests {
             }
             return 0
         })
-
-        return pullRequests
+    } else {
+        pullRequests.sort((b, a) => {
+            if (a.mergedAt.isBefore(b.mergedAt)) {
+                return -1
+            } else if (b.mergedAt.isBefore(a.mergedAt)) {
+                return 1
+            }
+            return 0
+        })
     }
+    return pullRequests
 }
