@@ -1,11 +1,14 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Release Changelog Builder'
+description: 'Pulls all merged pull requests, and constructs the changelog for a release'
+author: 'Mike Penz'
 inputs:
   milliseconds: # change this
     required: true
     description: 'input description here'
     default: 'default value if applicable'
+outputs:
+  changelog:
+    description: The generated changelog as markdown.
 runs:
   using: 'node12'
   main: 'dist/index.js'

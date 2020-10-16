@@ -1,8 +1,8 @@
 {
-  "name": "typescript-action",
-  "version": "0.0.0",
+  "name": "release-changelog-builder-action",
+  "version": "1.0.0",
   "private": true,
-  "description": "TypeScript template action",
+  "description": "Action to retrieve merged pull requests for a release, and construct the changelog",
   "main": "lib/main.js",
   "scripts": {
     "build": "tsc",
@@ -15,17 +15,19 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/actions/typescript-action.git"
+    "url": "git+https://github.com/mikepenz/release-changelog-builder.git"
   },
   "keywords": [
     "actions",
     "node",
     "setup"
   ],
-  "author": "",
-  "license": "MIT",
+  "author": "Mike Penz",
+  "license": "Apache 2.0",
   "dependencies": {
-    "@actions/core": "^1.2.6"
+    "@actions/core": "^1.2.6",
+    "@octokit/rest": "^18.0.6",
+    "moment": "^2.29.1"
   },
   "devDependencies": {
     "@types/jest": "^26.0.10",
