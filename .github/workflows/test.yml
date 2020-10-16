@@ -19,6 +19,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: ./
+      - name: "Minimal Configuration"
+        id: minimal_release
+        uses: ./
+      
+      - name: Echo Minimal
+        run: echo ${{steps.minimal_release.outputs.changelog}}
+
+      - name: "Complex Configuration"
+        id: complex_release
+        uses: ./
         with:
-          milliseconds: 1000
+          configuration: "configuration_complex.json"
+          owner: "mikepenz"
+          repo: "release-changelog-builder-action"
+          fromTag: "0.0.1"
+          toTag: "0.0.2"
+
+      - name: Echo Complex
+        run: echo ${{steps.complex_release.outputs.changelog}}
+
