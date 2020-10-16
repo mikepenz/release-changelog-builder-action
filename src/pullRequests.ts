@@ -1,5 +1,5 @@
 import { Octokit, RestEndpointMethodTypes } from "@octokit/rest"
-import * as moment from "moment"
+import moment from 'moment';
 
 import { CommitInfo } from "./commits"
 import { Logger } from "./logger"
