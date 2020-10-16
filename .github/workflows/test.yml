@@ -41,7 +41,7 @@ jobs:
           configuration: "configuration_complex.json"
           owner: "mikepenz"
           repo: "release-changelog-builder-action"
-          fromTag: "v0.0.2"
+          fromTag: "v0.0.1"
           toTag: "v0.0.3"
           token: ${{ secrets.GITHUB_TOKEN }}
 
