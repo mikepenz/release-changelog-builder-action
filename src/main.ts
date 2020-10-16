@@ -33,6 +33,8 @@ async function run(): Promise<void> {
     const fromTag = core.getInput('fromTag')
     let toTag = core.getInput('toTag')
 
+    const ignorePreReleases = core.getInput('ignorePreReleases')
+
     if (!toTag) {
       // if not specified try to retrieve tag from git
       const gitHelper = await createCommandManager(repositoryPath)
@@ -87,6 +89,7 @@ async function run(): Promise<void> {
       repo,
       fromTag,
       toTag,
+      ignorePreReleases: ignorePreReleases === 'true',
       configuration
     })
 

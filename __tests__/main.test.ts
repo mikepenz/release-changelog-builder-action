@@ -31,6 +31,7 @@ it('Should be true', async () => {
     repo: 'release-changelog-builder-action',
     fromTag: null,
     toTag: 'v0.0.3',
+    ignorePreReleases: false,
     configuration: configuration
   })
 

@@ -7,11 +7,12 @@ import {Tags} from './tags'
 import {Configuration, DefaultConfiguration} from './configuration'
 
 export interface ReleaseNotesOptions {
-  owner: string
-  repo: string
-  fromTag: string | null
-  toTag: string
-  configuration: Configuration
+  owner: string // the owner of the repository
+  repo: string // the repository
+  fromTag: string | null // the tag/ref to start from
+  toTag: string // the tag/ref up to
+  ignorePreReleases: boolean // defines if we should ignore any pre-releases for matching, only relevant if fromTag is null
+  configuration: Configuration // the configuration as defined in `configuration.ts`
 }
 
 export class ReleaseNotes {
@@ -22,7 +23,7 @@ export class ReleaseNotes {
       auth: `token ${token || process.env.GITHUB_TOKEN}`
     })
 
-    const {owner, repo, toTag, configuration} = this.options
+    const {owner, repo, toTag, ignorePreReleases, configuration} = this.options
 
     if (!this.options.fromTag) {
       core.debug(`fromTag undefined, trying to resolve via API`)
@@ -32,6 +33,7 @@ export class ReleaseNotes {
         owner,
         repo,
         toTag,
+        ignorePreReleases,
         configuration.max_tags_to_fetch
           ? configuration.max_tags_to_fetch
           : DefaultConfiguration.max_tags_to_fetch

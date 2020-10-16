@@ -49,19 +49,32 @@ export class Tags {
     owner: string,
     repo: string,
     tag: string,
+    ignorePreReleases: boolean,
     maxTagsToFetch: number
   ): Promise<TagInfo | null> {
     const tags = this.sortTags(await this.getTags(owner, repo, maxTagsToFetch))
 
-    const length = tags.length
-    for (let i = 0; i < length; i++) {
-      if (tags[i].name.toLowerCase() === tag.toLowerCase()) {
-        return tags[i + 1]
+    try {
+      const length = tags.length
+      for (let i = 0; i < length; i++) {
+        if (tags[i].name.toLowerCase() === tag.toLowerCase()) {
+          if (ignorePreReleases) {
+            core.info(
+              `Enabled 'ignorePreReleases', searching for the closest release`
+            )
+            for (let ii = i + 1; ii < length; ii++) {
+              if (!tags[ii].name.includes('-')) {
+                return tags[ii]
+              }
+            }
+          }
+          return tags[i + 1]
+        }
       }
+      return tags[0]
+    } catch (error) {
+      return null
     }
-
-    // not found, throw exception?
-    return tags[0]
   }
 
   private sortTags(commits: TagInfo[]): TagInfo[] {
