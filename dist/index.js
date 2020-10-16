@@ -59,7 +59,12 @@ class Commits {
             let commits = [];
             let compareHead = head;
             while (true) {
-                const compareResult = yield this.octokit.repos.compareCommits({ owner, repo, base, head: compareHead });
+                const compareResult = yield this.octokit.repos.compareCommits({
+                    owner,
+                    repo,
+                    base,
+                    head: compareHead
+                });
                 if (compareResult.data.total_commits === 0) {
                     break;
                 }
@@ -69,7 +74,7 @@ class Commits {
             core.info(`Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`);
             return commits.map(commit => ({
                 sha: commit.sha,
-                summary: commit.commit.message.split("\n")[0],
+                summary: commit.commit.message.split('\n')[0],
                 message: commit.commit.message,
                 date: moment_1.default(commit.commit.committer.date),
                 author: commit.commit.author.name,
@@ -100,6 +105,25 @@ class Commits {
     }
 }
 exports.Commits = Commits;
+
+
+/***/ }),
+
+/***/ 5527:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.DefaultConfiguration = void 0;
+exports.DefaultConfiguration = {
+    sort: 'ASC',
+    template: '${{CHANGELOG}}',
+    pr_template: '- ${{TITLE}}\n   - PR: #${{NUMBER}}',
+    empty_template: '- no changes',
+    categories: [],
+    transformers: []
+};
 
 
 /***/ }),
@@ -184,8 +208,18 @@ class GitCommandManager {
     }
     latestTag() {
         return __awaiter(this, void 0, void 0, function* () {
-            const revListOutput = yield this.execGit(['rev-list', '--tags', '--skip=0', '--max-count=1']);
-            const output = yield this.execGit(['describe', '--abbrev=0', '--tags', revListOutput.stdout.trim()]);
+            const revListOutput = yield this.execGit([
+                'rev-list',
+                '--tags',
+                '--skip=0',
+                '--max-count=1'
+            ]);
+            const output = yield this.execGit([
+                'describe',
+                '--abbrev=0',
+                '--tags',
+                revListOutput.stdout.trim()
+            ]);
             return output.stdout.trim();
         });
     }
@@ -289,11 +323,11 @@ function run() {
             const configurationPath = path.resolve(githubWorkspacePath, configurationFile);
             core.debug(`configurationPath = '${configurationPath}'`);
             const configuration = utils_1.readConfiguration(configurationPath);
-            let token = core.getInput('token');
+            const token = core.getInput('token');
             let owner = core.getInput('owner');
             let repo = core.getInput('repo');
-            let fromTag = core.getInput("fromTag");
-            let toTag = core.getInput("toTag");
+            const fromTag = core.getInput('fromTag');
+            let toTag = core.getInput('toTag');
             if (!toTag) {
                 // if not specified try to retrieve tag from git
                 const gitHelper = yield git_helper_1.createCommandManager(repositoryPath);
@@ -303,10 +337,13 @@ function run() {
             }
             if (!owner || !repo) {
                 // Qualified repository
-                const qualifiedRepository = core.getInput('repository') || `${github.context.repo.owner}/${github.context.repo.repo}`;
+                const qualifiedRepository = core.getInput('repository') ||
+                    `${github.context.repo.owner}/${github.context.repo.repo}`;
                 core.debug(`qualified repository = '${qualifiedRepository}'`);
                 const splitRepository = qualifiedRepository.split('/');
-                if (splitRepository.length !== 2 || !splitRepository[0] || !splitRepository[1]) {
+                if (splitRepository.length !== 2 ||
+                    !splitRepository[0] ||
+                    !splitRepository[1]) {
                     throw new Error(`Invalid repository '${qualifiedRepository}'. Expected format {owner}/{repo}.`);
                 }
                 owner = splitRepository[0];
@@ -316,20 +353,29 @@ function run() {
                 core.error(`Missing or couldn't resolve 'owner'`);
                 return;
             }
+            else {
+                core.debug(`Resolved 'owner' as ${owner}`);
+            }
             if (!repo) {
                 core.error(`Missing or couldn't resolve 'owner'`);
                 return;
+            }
+            else {
+                core.debug(`Resolved 'repo' as ${repo}`);
             }
             if (!toTag) {
                 core.error(`Missing or couldn't resolve 'toTag'`);
                 return;
             }
+            else {
+                core.debug(`Resolved 'toTag' as ${toTag}`);
+            }
             const releaseNotes = new releaseNotes_1.ReleaseNotes({
-                owner: owner,
-                repo: repo,
-                fromTag: fromTag,
-                toTag: toTag,
-                configuration: configuration
+                owner,
+                repo,
+                fromTag,
+                toTag,
+                configuration
             });
             core.setOutput('changelog', yield releaseNotes.pull(token));
         }
@@ -397,7 +443,11 @@ class PullRequests {
     getSingle(owner, repo, prNumber) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const pr = yield this.octokit.pulls.get({ owner, repo, pull_number: prNumber });
+                const pr = yield this.octokit.pulls.get({
+                    owner,
+                    repo,
+                    pull_number: prNumber
+                });
                 return {
                     number: pr.data.number,
                     title: pr.data.title,
@@ -405,7 +455,9 @@ class PullRequests {
                     mergedAt: moment_1.default(pr.data.merged_at),
                     author: pr.data.user.login,
                     repoName: pr.data.base.repo.full_name,
-                    labels: pr.data.labels.map(function (label) { return label.name; }),
+                    labels: pr.data.labels.map(function (label) {
+                        return label.name;
+                    }),
                     body: pr.data.body
                 };
             }
@@ -422,9 +474,9 @@ class PullRequests {
             const options = this.octokit.pulls.list.endpoint.merge({
                 owner,
                 repo,
-                state: "closed",
-                sort: "updated",
-                direction: "desc"
+                state: 'closed',
+                sort: 'updated',
+                direction: 'desc'
             });
             try {
                 for (var _b = __asyncValues(this.octokit.paginate.iterator(options)), _c; _c = yield _b.next(), !_c.done;) {
@@ -435,9 +487,11 @@ class PullRequests {
                         // bail out early to not keep iterating on PRs super old
                         return sortPullRequests(mergedPRs, true);
                     }
-                    prs.filter(pr => !!pr.merged_at &&
+                    prs
+                        .filter(pr => !!pr.merged_at &&
                         fromDate.isBefore(moment_1.default(pr.merged_at)) &&
-                        toDate.isSameOrAfter(moment_1.default(pr.merged_at))).forEach(pr => {
+                        toDate.isSameOrAfter(moment_1.default(pr.merged_at)))
+                        .forEach(pr => {
                         mergedPRs.push({
                             number: pr.number,
                             title: pr.title,
@@ -445,7 +499,9 @@ class PullRequests {
                             mergedAt: moment_1.default(pr.merged_at),
                             author: pr.user.login,
                             repoName: pr.base.repo.full_name,
-                            labels: pr.labels.map(function (label) { return label.name; }),
+                            labels: pr.labels.map(function (label) {
+                                return label.name;
+                            }),
                             body: pr.body
                         });
                     });
@@ -547,6 +603,7 @@ const pullRequests_1 = __webpack_require__(4217);
 const transform_1 = __webpack_require__(1644);
 const core = __importStar(__webpack_require__(2186));
 const tags_1 = __webpack_require__(7532);
+const configuration_1 = __webpack_require__(5527);
 class ReleaseNotes {
     constructor(options) {
         this.options = options;
@@ -556,20 +613,26 @@ class ReleaseNotes {
             const octokit = new rest_1.Octokit({
                 auth: `token ${token || process.env.GITHUB_TOKEN}`
             });
-            const { owner, repo, fromTag, toTag, configuration } = this.options;
-            if (fromTag == null) {
+            const { owner, repo, toTag, configuration } = this.options;
+            if (!this.options.fromTag) {
+                core.debug(`fromTag undefined, trying to resolve via API`);
                 const tagsApi = new tags_1.Tags(octokit);
                 const previousTag = yield tagsApi.findPredecessorTag(owner, repo, toTag);
                 if (previousTag == null) {
                     core.error(`Unable to retrieve previous tag given ${toTag}`);
-                    return configuration.empty_template ? configuration.empty_template : DefaultConfiguration.empty_template;
+                    return configuration.empty_template
+                        ? configuration.empty_template
+                        : configuration_1.DefaultConfiguration.empty_template;
                 }
                 this.options.fromTag = previousTag.name;
+                core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`);
             }
             const mergedPullRequests = yield this.getMergedPullRequests(octokit);
-            if (mergedPullRequests.length == 0) {
-                core.warning(`No pull requests found for between ${fromTag}...${toTag}`);
-                return configuration.empty_template ? configuration.empty_template : DefaultConfiguration.empty_template;
+            if (mergedPullRequests.length === 0) {
+                core.warning(`No pull requests found for between ${this.options.fromTag}...${toTag}`);
+                return configuration.empty_template
+                    ? configuration.empty_template
+                    : configuration_1.DefaultConfiguration.empty_template;
             }
             return transform_1.buildChangelog(mergedPullRequests, configuration);
         });
@@ -577,7 +640,7 @@ class ReleaseNotes {
     getMergedPullRequests(octokit) {
         return __awaiter(this, void 0, void 0, function* () {
             const { owner, repo, fromTag, toTag } = this.options;
-            core.info(`Comparing ${owner}/${repo} ${fromTag}...${toTag}`);
+            core.info(`Comparing ${owner}/${repo} - ${fromTag}...${toTag}`);
             const commitsApi = new commits_1.Commits(octokit);
             const commits = yield commitsApi.getDiff(owner, repo, fromTag, toTag);
             if (commits.length === 0) {
@@ -682,7 +745,7 @@ class Tags {
             const options = this.octokit.repos.listTags.endpoint.merge({
                 owner,
                 repo,
-                direction: "desc",
+                direction: 'desc',
                 per_page: 100
             });
             const max = 200;
@@ -716,8 +779,8 @@ class Tags {
     findPredecessorTag(owner, repo, tag) {
         return __awaiter(this, void 0, void 0, function* () {
             const tags = this.sortTags(yield this.getTags(owner, repo));
-            var length = tags.length;
-            for (var i = 0; i < length; i++) {
+            const length = tags.length;
+            for (let i = 0; i < length; i++) {
                 if (tags[i].name.toLowerCase() === tag.toLowerCase()) {
                     return tags[i + 1];
                 }
@@ -731,14 +794,14 @@ class Tags {
             const partsA = a.name.replace(/^v/, '').split('-');
             const partsB = b.name.replace(/^v/, '').split('-');
             const versionCompare = partsA[0].localeCompare(partsB[0]);
-            if (versionCompare != 0) {
+            if (versionCompare !== 0) {
                 return versionCompare;
             }
             else {
-                if (partsA.length == 1) {
+                if (partsA.length === 1) {
                     return 0;
                 }
-                else if (partsB.length == 1) {
+                else if (partsB.length === 1) {
                     return 1;
                 }
                 else {
@@ -765,7 +828,7 @@ exports.Tags = Tags;
 2020.3.1-a01
 
 2020.3.0
-*/ 
+*/
 
 
 /***/ }),
@@ -800,25 +863,25 @@ const pullRequests_1 = __webpack_require__(4217);
 const core = __importStar(__webpack_require__(2186));
 function buildChangelog(prs, config) {
     // sort to target order
-    prs = pullRequests_1.sortPullRequests(prs, config.sort.toUpperCase() === "ASC");
+    prs = pullRequests_1.sortPullRequests(prs, config.sort.toUpperCase() === 'ASC');
     const validatedTransformers = validateTransfomers(config.transformers);
-    let transformedMap = new Map();
+    const transformedMap = new Map();
     // convert PRs to their text representation
     prs.forEach(pr => {
         transformedMap.set(pr, transform(fillTemplate(pr, config.pr_template), validatedTransformers));
     });
     // bring PRs into the order of categories
-    let categorized = new Map();
+    const categorized = new Map();
     config.categories.forEach(category => {
         categorized.set(category, []);
     });
-    let uncategorized = [];
+    const uncategorized = [];
     // bring elements in order
     transformedMap.forEach((body, pr) => {
         let matched = false;
-        categorized.forEach((prs, category) => {
-            if (findCommonElements3(category.labels, pr.labels)) {
-                prs.push(body);
+        categorized.forEach((pullRequests, category) => {
+            if (haveCommonElements(category.labels, pr.labels)) {
+                pullRequests.push(body);
                 matched = true;
             }
         });
@@ -827,43 +890,43 @@ function buildChangelog(prs, config) {
         }
     });
     // construct final changelog
-    let changelog = "";
-    categorized.forEach((prs, category) => {
-        if (prs.length > 0) {
-            changelog = changelog + category.title + "\n\n";
-            prs.forEach(pr => {
-                changelog = changelog + pr + "\n";
+    let changelog = '';
+    categorized.forEach((pullRequests, category) => {
+        if (pullRequests.length > 0) {
+            changelog = `${changelog + category.title}\n\n`;
+            pullRequests.forEach(pr => {
+                changelog = `${changelog + pr}\n`;
             });
             // add space between
-            changelog = changelog + "\n";
+            changelog = `${changelog}\n`;
         }
     });
-    let changelogUncategorized = "";
+    let changelogUncategorized = '';
     uncategorized.forEach(pr => {
-        changelogUncategorized = changelogUncategorized + pr + "\n";
+        changelogUncategorized = `${changelogUncategorized + pr}\n`;
     });
     // fill template
     let transformedChangelog = config.template;
-    transformedChangelog = transformedChangelog.replace("${{CHANGELOG}}", changelog);
-    transformedChangelog = transformedChangelog.replace("${{UNCATEGORIZED}}", changelogUncategorized);
+    transformedChangelog = transformedChangelog.replace('${{CHANGELOG}}', changelog);
+    transformedChangelog = transformedChangelog.replace('${{UNCATEGORIZED}}', changelogUncategorized);
     return transformedChangelog;
 }
 exports.buildChangelog = buildChangelog;
-function findCommonElements3(arr1, arr2) {
+function haveCommonElements(arr1, arr2) {
     return arr1.some(item => arr2.includes(item));
 }
 function fillTemplate(pr, template) {
     let transformed = template;
-    transformed = transformed.replace("${{NUMBER}}", pr.number.toString());
-    transformed = transformed.replace("${{TITLE}}", pr.title);
-    transformed = transformed.replace("${{URL}}", pr.htmlURL);
-    transformed = transformed.replace("${{MERGED_AT}}", pr.mergedAt.toString);
-    transformed = transformed.replace("${{AUTHOR}}", pr.author);
-    transformed = transformed.replace("${{BODY}}", pr.body);
+    transformed = transformed.replace('${{NUMBER}}', pr.number.toString());
+    transformed = transformed.replace('${{TITLE}}', pr.title);
+    transformed = transformed.replace('${{URL}}', pr.htmlURL);
+    transformed = transformed.replace('${{MERGED_AT}}', pr.mergedAt.toString());
+    transformed = transformed.replace('${{AUTHOR}}', pr.author);
+    transformed = transformed.replace('${{BODY}}', pr.body);
     return transformed;
 }
 function transform(filled, transformers) {
-    if (transformers.length == 0) {
+    if (transformers.length === 0) {
         return filled;
     }
     let transformed = filled;
@@ -874,10 +937,10 @@ function transform(filled, transformers) {
 }
 function validateTransfomers(transformers) {
     return transformers
-        .map((transformer) => {
+        .map(transformer => {
         try {
             return {
-                pattern: new RegExp(transformer.pattern.replace("\\\\", '\\'), "g"),
+                pattern: new RegExp(transformer.pattern.replace('\\\\', '\\'), 'g'),
                 target: transformer.target
             };
         }
@@ -885,7 +948,7 @@ function validateTransfomers(transformers) {
             core.warning(`Bad replacer regex: ${transformer.pattern}`);
             return {
                 pattern: null,
-                target: ""
+                target: ''
             };
         }
     })
@@ -896,15 +959,34 @@ function validateTransfomers(transformers) {
 /***/ }),
 
 /***/ 918:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.readConfiguration = void 0;
-const fs = __webpack_require__(5747);
+const fs = __importStar(__webpack_require__(5747));
 function readConfiguration(filename) {
-    const rawdata = fs.readFileSync(filename);
+    const rawdata = fs.readFileSync(filename, 'utf8');
     const configurationJSON = JSON.parse(rawdata);
     return configurationJSON;
 }

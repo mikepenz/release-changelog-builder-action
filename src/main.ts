@@ -64,16 +64,22 @@ async function run(): Promise<void> {
     if (!owner) {
       core.error(`Missing or couldn't resolve 'owner'`)
       return
+    } else {
+      core.debug(`Resolved 'owner' as ${owner}`)
     }
 
     if (!repo) {
       core.error(`Missing or couldn't resolve 'owner'`)
       return
+    } else {
+      core.debug(`Resolved 'repo' as ${repo}`)
     }
 
     if (!toTag) {
       core.error(`Missing or couldn't resolve 'toTag'`)
       return
+    } else {
+      core.debug(`Resolved 'toTag' as ${toTag}`)
     }
 
     const releaseNotes = new ReleaseNotes({
