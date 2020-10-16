@@ -19,6 +19,9 @@ inputs:
     description: 'the previous tag to compare against'
   toTag:
     description: 'the new tag created'
+  ignorePreReleases:
+    description: 'defines if only full releases should be considered to compare against (Only used if fromTag is not defined). E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick'
+    default: "false"
   token:
     description: 'the token to use to execute the git API requests'
 outputs:
