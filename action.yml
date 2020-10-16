@@ -1,6 +1,9 @@
 name: 'Release Changelog Builder'
 description: 'Pulls all merged pull requests, and constructs the changelog for a release'
 author: 'Mike Penz'
+branding:
+  icon: 'award'  
+  color: 'green'
 inputs:
   configuration:
     required: true
