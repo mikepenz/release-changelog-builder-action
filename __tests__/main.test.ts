@@ -30,7 +30,7 @@ it('Should be true', async () => {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
     fromTag: null,
-    toTag: '0.0.3',
+    toTag: 'v0.0.3',
     configuration: configuration
   })
 
