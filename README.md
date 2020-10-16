@@ -1,103 +1,167 @@
-<p align="center">
-  <a href="https://github.com/actions/typescript-action/actions"><img alt="typescript-action status" src="https://github.com/actions/typescript-action/workflows/build-test/badge.svg"></a>
-</p>
 
-# Create a JavaScript Action using TypeScript
+# release-changelog-builder-action
 
-Use this template to bootstrap the creation of a TypeScript action.:rocket:
+Builds the release notes between two tags (or refs) from pull requests merged.
 
-This template includes compilation support, tests, a validation workflow, publishing, and versioning guidance.  
+## Action usage
 
-If you are new, there's also a simpler introduction.  See the [Hello World JavaScript Action](https://github.com/actions/hello-world-javascript-action)
+Include this action in your build by defining the action in your workflow:
 
-## Create an action from this template
+```yml
+- name: "Build Changelog"
+  id: build_changelog
+  if: startsWith(github.ref, 'refs/tags/')
+  uses: mikepenz/release-changelog-builder-action@{latest-release}
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
 
-Click the `Use this Template` and provide the new repo details for your action
+This will automatically pull the tag from the current commit (the latest tag), and try to resolve the tag before this.
 
-## Code in Main
+## Action outputs
 
-Install the dependencies  
+The result of this action is returned via the outputs, and can be retrieved via the `changelog` value in the step afterwards. See the `test.yml` for a sample.
+
+```yml
+${{steps.build_changelog.outputs.changelog}}
+```
+
+## Configuration
+
+By default the action will look for a file called `configuration.json` within the root of the repository to load the config from. If this file does not exist, defaults are used.
+
+```
+{
+    "categories": [
+        {
+            "title": "## 🚀 Features",
+            "labels": ["feature"]
+        },
+        {
+            "title": "## 🦄 Internal Features",
+            "labels": ["internal"]
+        },
+        {
+            "title": "## 🐛 Fixes",
+            "labels": ["fix"]
+        },
+        {
+            "title": "## 🧪 Tests",
+            "labels": ["test"]
+        }
+    ],
+    "sort": "ASC",
+    "template": "${{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n${{UNCATEGORIZED}}\n</details>",
+    "pr_template": "- ${{TITLE}}\n   - PR: #${{NUMBER}}",
+    "empty_template": "- no changes",
+    "transformers": [
+        {
+            "pattern": "[\\-\\*] (\\[(...|TEST|CI|SKIP)\\])( )?(.+?)\n(.+?[\\-\\*] )(.+)",
+            "target": "- $4\n  - $6"
+        }
+    ],
+    "max_tags_to_fetch": 200,
+    "max_pull_requests": 200,
+    "max_back_track_time_days": 90,
+    "exclude_merge_branches": [
+        "Owner/qa"
+    ]
+}
+```
+
+Any section of the configruation can be ommited, to have defaults apply
+Defaults for the configuraiton can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
+
+
+## Advanced workflow specification
+
+For advanced usecases additional settings can be provided to the action
+
+```yml
+- name: "Complex Configuration"
+  id: build_changelog
+  if: startsWith(github.ref, 'refs/tags/')
+  uses: mikepenz/release-changelog-builder-action@{latest-release}
+  with:
+    configuration: "configuration_complex.json"
+    owner: "mikepenz"
+    repo: "release-changelog-builder-action"
+    fromTag: "0.0.2"
+    toTag: "0.0.3"
+    token: ${{ secrets.GITHUB_TOKEN }} # the token to use, for a different repository a PAT is required (Personal access token)
+```
+
+## PR Template placeholders
+
+| Variable  | Description      |
+| --------- | -------------------------- |
+| `${{NUMBER}}` | Pull request number  |
+| `${{TITLE}}`  | The title of the pull request |
+| `${{URL}}` | The URL linking to the pull request   |
+| `${{MERGED_AT}}`   | The time this PR was merged   |
+| `${{AUTHOR}}`    | The author of the pull request |
+| `${{BODY}}`    | The body / description of the pull request |
+
+## Template placeholdrs
+
+| Variable  | Description      |
+| --------- | -------------------------- |
+| `${{CHANGELOG}}` | The contents of the main changelog, matching the labels as specified in the categories configuration  |
+| `${{UNCATEGORIZED}}`  | All pull requests not matching a label |
+
+
+# Contribute
+
 ```bash
+# Install the dependencies  
 $ npm install
-```
 
-Build the typescript and package it for distribution
-```bash
+# Build the typescript and package it for distribution
 $ npm run build && npm run package
-```
 
-Run the tests :heavy_check_mark:  
-```bash
+# Run the tests, use to debug, and test it out
 $ npm test
 
- PASS  ./index.test.js
-  ✓ throws invalid number (3ms)
-  ✓ wait 500 ms (504ms)
-  ✓ test runs (95ms)
-
-...
+# Verify lint is happy
+$ npm run lint -- --fix
 ```
 
-## Change action.yml
+It's suggested to export the token to your path, before running the tests, so API calls can be done to github.
 
-The action.yml contains defines the inputs and output for your action.
-
-Update the action.yml with your name, description, inputs and outputs for your action.
-
-See the [documentation](https://help.github.com/en/articles/metadata-syntax-for-github-actions)
-
-## Change the Code
-
-Most toolkit and CI/CD operations involve async operations so the action is run in an async function.
-
-```javascript
-import * as core from '@actions/core';
-...
-
-async function run() {
-  try { 
-      ...
-  } 
-  catch (error) {
-    core.setFailed(error.message);
-  }
-}
-
-run()
-```
-
-See the [toolkit documentation](https://github.com/actions/toolkit/blob/master/README.md#packages) for the various packages.
-
-## Publish to a distribution branch
-
-Actions are run from GitHub repos so we will checkin the packed dist folder. 
-
-Then run [ncc](https://github.com/zeit/ncc) and push the results:
 ```bash
-$ npm run package
-$ git add dist
-$ git commit -a -m "prod dependencies"
-$ git push origin releases/v1
+export GITHUB_TOKEN=your_personal_github_pat
 ```
 
-Note: We recommend using the `--license` option for ncc, which will create a license file for all of the production node modules used in your project.
 
-Your action is now published! :rocket: 
+# Developed By
 
-See the [versioning documentation](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md)
+* Mike Penz
+ * [mikepenz.com](http://mikepenz.com) - <mikepenz@gmail.com>
+ * [paypal.me/mikepenz](http://paypal.me/mikepenz)
 
-## Validate
+# Credits
 
-You can now validate the action by referencing `./` in a workflow in your repo (see [test.yml](.github/workflows/test.yml))
+Core parts of the PR fetching logic, are based on [pull-release-notes](https://github.com/nblagoev/pull-release-notes)
+- Nikolay Blagoev - [GitHub](https://github.com/nblagoev/)
 
-```yaml
-uses: ./
-with:
-  milliseconds: 1000
-```
+# License
 
-See the [actions tab](https://github.com/actions/typescript-action/actions) for runs of this action! :rocket:
+   Copyright for portions of pr-release-notes are held by Nikolay Blagoev, 2019-2020 as part of project pull-release-notes. All other copyright for project pr-release-notes are held by Mike Penz, 2020.
 
-## Usage:
+# Fork License
 
-After testing you can [create a v1 tag](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md) to reference the stable and latest V1 action
+All patches and changes applied to the original source are licensed under the Apache 2.0 license.
+
+    Copyright 2020 Mike Penz
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.

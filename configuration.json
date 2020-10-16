@@ -1,0 +1,24 @@
+{
+    "categories": [
+        {
+            "title": "## 🚀 Features",
+            "labels": ["feature"]
+        },
+        {
+            "title": "## 🦄 Internal Features",
+            "labels": ["internal"]
+        },
+        {
+            "title": "## 🐛 Fixes",
+            "labels": ["fix"]
+        },
+        {
+            "title": "## 🧪 Tests",
+            "labels": ["test"]
+        }
+    ],
+    "sort": "ASC",
+    "template": "${{CHANGELOG}}",
+    "pr_template": "- ${{TITLE}}\n   - PR: #${{NUMBER}}",
+    "empty_template": "- no changes"
+}
