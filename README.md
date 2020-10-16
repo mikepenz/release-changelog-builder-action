@@ -109,6 +109,30 @@ For advanced usecases additional settings can be provided to the action
 | `${{CHANGELOG}}` | The contents of the main changelog, matching the labels as specified in the categories configuration  |
 | `${{UNCATEGORIZED}}`  | All pull requests not matching a label |
 
+
+# Contribute
+
+```bash
+# Install the dependencies  
+$ npm install
+
+# Build the typescript and package it for distribution
+$ npm run build && npm run package
+
+# Run the tests, use to debug, and test it out
+$ npm test
+
+# Verify lint is happy
+$ npm run lint -- --fix
+```
+
+It's suggested to export the token to your path, before running the tests, so API calls can be done to github.
+
+```bash
+export GITHUB_TOKEN=your_personal_github_pat
+```
+
+
 # Developed By
 
 * Mike Penz
