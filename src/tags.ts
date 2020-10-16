@@ -9,7 +9,11 @@ export interface TagInfo {
 export class Tags {
   constructor(private octokit: Octokit) {}
 
-  async getTags(owner: string, repo: string, maxTagsToFetch: number): Promise<TagInfo[]> {
+  async getTags(
+    owner: string,
+    repo: string,
+    maxTagsToFetch: number
+  ): Promise<TagInfo[]> {
     const tagsInfo: TagInfo[] = []
     const options = this.octokit.repos.listTags.endpoint.merge({
       owner,
@@ -44,7 +48,7 @@ export class Tags {
   async findPredecessorTag(
     owner: string,
     repo: string,
-    tag: string, 
+    tag: string,
     maxTagsToFetch: number
   ): Promise<TagInfo | null> {
     const tags = this.sortTags(await this.getTags(owner, repo, maxTagsToFetch))

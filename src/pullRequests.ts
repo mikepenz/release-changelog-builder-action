@@ -52,7 +52,7 @@ export class PullRequests {
     owner: string,
     repo: string,
     fromDate: moment.Moment,
-    toDate: moment.Moment, // eslint-disable-line @typescript-eslint/no-unused-vars
+    toDate: moment.Moment,
     maxPullRequests: number
   ): Promise<PullRequestInfo[]> {
     const mergedPRs: PullRequestInfo[] = []
@@ -84,11 +84,14 @@ export class PullRequests {
       }
 
       const firstPR = prs[0]
-      if (firstPR.merged_at && fromDate.isAfter(moment(firstPR.merged_at)) || mergedPRs.length >= maxPullRequests) {
-        if( mergedPRs.length >= maxPullRequests ) {
+      if (
+        (firstPR.merged_at && fromDate.isAfter(moment(firstPR.merged_at))) ||
+        mergedPRs.length >= maxPullRequests
+      ) {
+        if (mergedPRs.length >= maxPullRequests) {
           core.info(`Reached 'maxPullRequests' count ${maxPullRequests}`)
         }
-      
+
         // bail out early to not keep iterating on PRs super old
         return sortPullRequests(mergedPRs, true)
       }
@@ -97,20 +100,23 @@ export class PullRequests {
     return sortPullRequests(mergedPRs, true)
   }
 
-  filterCommits(commits: CommitInfo[], excludeMergeBranches: string[]): CommitInfo[] {
+  filterCommits(
+    commits: CommitInfo[],
+    excludeMergeBranches: string[]
+  ): CommitInfo[] {
     const prRegex = /Merge pull request #(\d+)/
     const filteredCommits = []
 
     for (const commit of commits) {
-      if(excludeMergeBranches) {
+      if (excludeMergeBranches) {
         let matched = false
         for (const excludeMergeBranch of excludeMergeBranches) {
-          if(commit.summary.includes(excludeMergeBranch)) {
+          if (commit.summary.includes(excludeMergeBranch)) {
             matched = true
             break
           }
         }
-        if(matched) {
+        if (matched) {
           continue
         }
       }

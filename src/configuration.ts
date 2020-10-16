@@ -1,8 +1,8 @@
 export interface Configuration {
-  max_tags_to_fetch: number,
-  max_pull_requests: number,
-  max_back_track_time_days: number,
-  exclude_merge_branches: string[],
+  max_tags_to_fetch: number
+  max_pull_requests: number
+  max_back_track_time_days: number
+  exclude_merge_branches: string[]
   sort: string
   template: string
   pr_template: string
@@ -31,5 +31,5 @@ export const DefaultConfiguration: Configuration = {
   pr_template: '- ${{TITLE}}\n   - PR: #${{NUMBER}}', // the per PR template to pick
   empty_template: '- no changes', // the template to use if no pull requests are found
   categories: [], // the categories to support for the ordering
-  transformers: []  // transformers to apply on the PR description according to the `pr_template`
+  transformers: [] // transformers to apply on the PR description according to the `pr_template`
 }
