@@ -86,6 +86,7 @@ For advanced usecases additional settings can be provided to the action
     configuration: "configuration_complex.json"
     owner: "mikepenz"
     repo: "release-changelog-builder-action"
+    ignorePreReleases: "false" # allows to skip any pre releases, if `fromTag` needs to be automatically resolved (ignores 0.0.2-rc02 for example) - only relevant if `fromTag` is not provided
     fromTag: "0.0.2"
     toTag: "0.0.3"
     token: ${{ secrets.GITHUB_TOKEN }} # the token to use, for a different repository a PAT is required (Personal access token)
