@@ -1,0 +1,3 @@
+{
+    "pr_template": "${{TITLE}}\n${{NUMBER}}\n${{URL}}\n${{MERGED_AT}}\n${{AUTHOR}}\n${{LABELS}}\n${{MILESTONE}}\n${{BODY}}\n${{ASIGNEES}}\n${{REVIEWERS}}"
+}
