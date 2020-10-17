@@ -1,12 +1,5 @@
-import {wait} from '../src/wait'
-import * as process from 'process'
-import * as cp from 'child_process'
-import * as path from 'path'
 import {ReleaseNotes} from '../src/releaseNotes'
 import {readConfiguration} from '../src/utils'
-import {createCommandManager} from '../src/git-helper'
-import * as core from '@actions/core'
-import {Tags} from '../src/tags'
 
 // shows how the runner will run a javascript action with env / stdout protocol
 /*

@@ -26,7 +26,7 @@ export class ReleaseNotes {
     const {owner, repo, toTag, ignorePreReleases, configuration} = this.options
 
     if (!this.options.fromTag) {
-      core.startGroup(`🔖 Resolve 'fromTag'`)
+      core.startGroup(`🔖 Resolve previous tag`)
       core.debug(`fromTag undefined, trying to resolve via API`)
       const tagsApi = new Tags(octokit)
 

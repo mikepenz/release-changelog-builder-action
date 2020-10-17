@@ -1,30 +1,30 @@
 name: 'Release Changelog Builder'
-description: 'Pulls all merged pull requests, and constructs the changelog for a release'
+description: 'A GitHub action that builds your release notes fast, easy and exactly the way you want.'
 author: 'Mike Penz'
 branding:
   icon: 'award'  
   color: 'green'
 inputs:
   configuration:
-    description: 'path to the configuration file'
+    description: 'Defines the relative path to the configuration file.'
   path:
-    description: 'the path to runt his action in'
+    description: 'Defines the directory the repo is located in (checkout directory)'
   owner:
-    description: 'the owner of the repository to create the changelog for'
+    description: 'Defines the owner of the repository to create the changelog for'
   repo:
-    description: 'the repository to create the changelog for'
+    description: 'Defines the repository to create the changelog for'
   fromTag:
-    description: 'the previous tag to compare against'
+    description: 'Defines the previous tag to compare against'
   toTag:
-    description: 'the new tag created'
+    description: 'Defines the newly tag created'
   ignorePreReleases:
-    description: 'defines if only full releases should be considered to compare against (Only used if fromTag is not defined). E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick'
+    description: 'Defines if the action will only use full releases to compare against (Only used if fromTag is not defined). E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick'
     default: "false"
   token:
-    description: 'the token to use to execute the git API requests'
+    description: 'Defines the token to use to execute the git API requests with, uses `env.GITHUB_TOKEN` by default'
 outputs:
   changelog:
-    description: The generated changelog as markdown.
+    description: Returns the generated changelog as markdown.
 runs:
   using: 'node12'
   main: 'dist/index.js'
