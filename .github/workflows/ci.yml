@@ -22,6 +22,13 @@ jobs:
     if: github.event_name  == 'pull_request'
     runs-on: ubuntu-latest
     steps:
+      - name: "Configuration without Checkout"
+        uses: mikepenz/release-changelog-builder-action@main
+        with:
+          toTag: "v0.0.3"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0 # Checkout full depth so tags can be discovered automatically if not specified
@@ -53,10 +60,6 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0 # Checkout full depth so tags can be discovered automatically if not specified
-
       - name: Prepare Tag
         if: startsWith(github.ref, 'refs/tags/')
         id: tag_version
