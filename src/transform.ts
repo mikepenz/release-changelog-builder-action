@@ -12,11 +12,10 @@ export function buildChangelog(
   config: Configuration
 ): string {
   // sort to target order
-  prs = sortPullRequests(
-    prs,
-    (config.sort ? config.sort : DefaultConfiguration.sort).toUpperCase() ===
-      'ASC'
-  )
+  const sort = config.sort ?? DefaultConfiguration.sort
+  const sortAsc = sort.toUpperCase() === 'ASC'
+  prs = sortPullRequests(prs, sortAsc)
+  core.info(`ℹ️ Sorted all pull requests ascending: ${sort}`)
 
   const validatedTransformers = validateTransfomers(config.transformers)
   const transformedMap = new Map<PullRequestInfo, string>()
@@ -35,6 +34,10 @@ export function buildChangelog(
       )
     )
   }
+  core.info(
+    `ℹ️ Used ${validateTransfomers.length} transformers to adjust message`
+  )
+  core.info(`✒️ Wrote messages for ${prs.length} pull requests`)
 
   // bring PRs into the order of categories
   const categorized = new Map<Category, string[]>()
@@ -59,6 +62,7 @@ export function buildChangelog(
       uncategorized.push(body)
     }
   }
+  core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`)
 
   // construct final changelog
   let changelog = ''
@@ -74,16 +78,18 @@ export function buildChangelog(
       changelog = `${changelog}\n`
     }
   }
+  core.info(`✒️ Wrote ${categorized.size} categorized pull requests down`)
 
   let changelogUncategorized = ''
   for (const pr of uncategorized) {
     changelogUncategorized = `${changelogUncategorized + pr}\n`
   }
+  core.info(
+    `✒️ Wrote ${changelogUncategorized.length} non categorized pull requests down`
+  )
 
   // fill template
-  let transformedChangelog = config.template
-    ? config.template
-    : DefaultConfiguration.template
+  let transformedChangelog = config.template ?? DefaultConfiguration.template
   transformedChangelog = transformedChangelog.replace(
     '${{CHANGELOG}}',
     changelog
@@ -92,6 +98,7 @@ export function buildChangelog(
     '${{UNCATEGORIZED}}',
     changelogUncategorized
   )
+  core.info(`ℹ️ Filled template`)
   return transformedChangelog
 }
 
@@ -134,10 +141,8 @@ function transform(filled: string, transformers: RegexTransformer[]): string {
 function validateTransfomers(
   specifiedTransformers: Transformer[]
 ): RegexTransformer[] {
-  const transformers = specifiedTransformers
-    ? specifiedTransformers
-    : DefaultConfiguration.transformers
-
+  const transformers =
+    specifiedTransformers ?? DefaultConfiguration.transformers
   return transformers
     .map(transformer => {
       try {
@@ -146,7 +151,7 @@ function validateTransfomers(
           target: transformer.target
         }
       } catch (e) {
-        core.warning(`Bad replacer regex: ${transformer.pattern}`)
+        core.warning(`⚠️ Bad replacer regex: ${transformer.pattern}`)
         return {
           pattern: null,
           target: ''

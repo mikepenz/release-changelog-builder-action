@@ -40,7 +40,7 @@ export class Tags {
     }
 
     core.info(
-      `Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`
+      `ℹ️ Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`
     )
     return tagsInfo
   }
@@ -60,7 +60,7 @@ export class Tags {
         if (tags[i].name.toLowerCase() === tag.toLowerCase()) {
           if (ignorePreReleases) {
             core.info(
-              `Enabled 'ignorePreReleases', searching for the closest release`
+              `ℹ️ Enabled 'ignorePreReleases', searching for the closest release`
             )
             for (let ii = i + 1; ii < length; ii++) {
               if (!tags[ii].name.includes('-')) {
@@ -77,6 +77,20 @@ export class Tags {
     }
   }
 
+  /*
+  Sorts an array of tags as shown below:
+  
+  2020.4.0
+  2020.4.0-rc02
+  2020.3.2
+  2020.3.1
+  2020.3.1-rc03
+  2020.3.1-rc02
+  2020.3.1-rc01
+  2020.3.1-b01
+  2020.3.1-a01
+  2020.3.0
+  */
   private sortTags(commits: TagInfo[]): TagInfo[] {
     commits.sort((b, a) => {
       const partsA = a.name.replace(/^v/, '').split('-')
@@ -97,20 +111,3 @@ export class Tags {
     return commits
   }
 }
-
-/*
-
-2020.3.2 ( should resolve 2020.3.1 )
-
-2020.4.0
-2020.4.0-rc02
-
-2020.3.1
-2020.3.1-rc03
-2020.3.1-rc02
-2020.3.1-rc01
-2020.3.1-b01
-2020.3.1-a01
-
-2020.3.0
-*/

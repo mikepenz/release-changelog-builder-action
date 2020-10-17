@@ -55,7 +55,9 @@ export class PullRequests {
         })
       }
     } catch (e) {
-      core.warning(`Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`)
+      core.warning(
+        `⚠️ Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`
+      )
       return null
     }
   }
@@ -108,7 +110,7 @@ export class PullRequests {
         mergedPRs.length >= maxPullRequests
       ) {
         if (mergedPRs.length >= maxPullRequests) {
-          core.info(`Reached 'maxPullRequests' count ${maxPullRequests}`)
+          core.info(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`)
         }
 
         // bail out early to not keep iterating on PRs super old
