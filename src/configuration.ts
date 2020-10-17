@@ -30,6 +30,19 @@ export const DefaultConfiguration: Configuration = {
   template: '${{CHANGELOG}}', // the global template to host the changelog
   pr_template: '- ${{TITLE}}\n   - PR: #${{NUMBER}}', // the per PR template to pick
   empty_template: '- no changes', // the template to use if no pull requests are found
-  categories: [], // the categories to support for the ordering
+  categories: [
+    {
+      title: '## 🚀 Features',
+      labels: ['feature']
+    },
+    {
+      title: '## 🐛 Fixes',
+      labels: ['fix']
+    },
+    {
+      title: '## 🧪 Tests',
+      labels: ['test']
+    }
+  ], // the categories to support for the ordering
   transformers: [] // transformers to apply on the PR description according to the `pr_template`
 }
