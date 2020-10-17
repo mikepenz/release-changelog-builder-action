@@ -651,7 +651,7 @@ class ReleaseNotes {
             });
             const { owner, repo, toTag, ignorePreReleases, configuration } = this.options;
             if (!this.options.fromTag) {
-                core.startGroup(`🔖 Resolve 'fromTag'`);
+                core.startGroup(`🔖 Resolve previous tag`);
                 core.debug(`fromTag undefined, trying to resolve via API`);
                 const tagsApi = new tags_1.Tags(octokit);
                 const previousTag = yield tagsApi.findPredecessorTag(owner, repo, toTag, ignorePreReleases, (_a = configuration.max_tags_to_fetch) !== null && _a !== void 0 ? _a : configuration_1.DefaultConfiguration.max_tags_to_fetch);
@@ -670,7 +670,7 @@ class ReleaseNotes {
                 core.warning(`⚠️ No pull requests found`);
                 return (_c = configuration.empty_template) !== null && _c !== void 0 ? _c : configuration_1.DefaultConfiguration.empty_template;
             }
-            core.startGroup("📦 Build changelog");
+            core.startGroup('📦 Build changelog');
             const resultChangelog = transform_1.buildChangelog(mergedPullRequests, configuration);
             core.endGroup();
             return resultChangelog;
@@ -929,7 +929,7 @@ function buildChangelog(prs, config) {
     var _a, _b, _c;
     // sort to target order
     const sort = (_a = config.sort) !== null && _a !== void 0 ? _a : configuration_1.DefaultConfiguration.sort;
-    const sortAsc = (sort).toUpperCase() === 'ASC';
+    const sortAsc = sort.toUpperCase() === 'ASC';
     prs = pullRequests_1.sortPullRequests(prs, sortAsc);
     core.info(`ℹ️ Sorted all pull requests ascending: ${sort}`);
     const validatedTransformers = validateTransfomers(config.transformers);
