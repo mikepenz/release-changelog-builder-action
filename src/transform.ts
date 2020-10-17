@@ -35,7 +35,7 @@ export function buildChangelog(
     )
   }
   core.info(`ℹ️ Used ${validateTransfomers.length} transformers to adjust message`)
-  core.info(`✏️ Wrote messages for ${prs.length} pull requests`)
+  core.info(`✒️ Wrote messages for ${prs.length} pull requests`)
 
   // bring PRs into the order of categories
   const categorized = new Map<Category, string[]>()
@@ -76,13 +76,13 @@ export function buildChangelog(
       changelog = `${changelog}\n`
     }
   }
-  core.info(`✏️ Wrote ${categorized.size} categorized pull requests down`)
+  core.info(`✒️ Wrote ${categorized.size} categorized pull requests down`)
 
   let changelogUncategorized = ''
   for (const pr of uncategorized) {
     changelogUncategorized = `${changelogUncategorized + pr}\n`
   }
-  core.info(`✏️ Wrote ${changelogUncategorized.length} non categorized pull requests down`)
+  core.info(`✒️ Wrote ${changelogUncategorized.length} non categorized pull requests down`)
 
   // fill template
   let transformedChangelog = config.template ?? DefaultConfiguration.template

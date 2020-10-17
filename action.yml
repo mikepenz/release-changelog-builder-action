@@ -6,9 +6,7 @@ branding:
   color: 'green'
 inputs:
   configuration:
-    required: true
     description: 'path to the configuration file'
-    default: "configuration.json"
   path:
     description: 'the path to runt his action in'
   owner:

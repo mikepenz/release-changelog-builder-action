@@ -146,7 +146,7 @@ exports.DefaultConfiguration = {
 
 /***/ }),
 
-/***/ 9621:
+/***/ 353:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -182,39 +182,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createCommandManager = void 0;
 const exec = __importStar(__webpack_require__(1514));
-const fs = __importStar(__webpack_require__(5747));
 const io = __importStar(__webpack_require__(7436));
+const utils_1 = __webpack_require__(918);
 function createCommandManager(workingDirectory) {
     return __awaiter(this, void 0, void 0, function* () {
         return yield GitCommandManager.createCommandManager(workingDirectory);
     });
 }
 exports.createCommandManager = createCommandManager;
-function directoryExistsSync(path, required) {
-    if (!path) {
-        throw new Error("Arg 'path' must not be empty");
-    }
-    let stats;
-    try {
-        stats = fs.statSync(path);
-    }
-    catch (error) {
-        if (error.code === 'ENOENT') {
-            if (!required) {
-                return false;
-            }
-            throw new Error(`Directory '${path}' does not exist`);
-        }
-        throw new Error(`Encountered an error when checking whether path '${path}' exists: ${error.message}`);
-    }
-    if (stats.isDirectory()) {
-        return true;
-    }
-    else if (!required) {
-        return false;
-    }
-    throw new Error(`Directory '${path}' does not exist`);
-}
 class GitCommandManager {
     // Private constructor; use createCommandManager()
     constructor() {
@@ -250,7 +225,7 @@ class GitCommandManager {
     }
     execGit(args, allowAllExitCodes = false, silent = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            directoryExistsSync(this.workingDirectory, true);
+            utils_1.directoryExistsSync(this.workingDirectory, true);
             const result = new GitOutput();
             const stdout = [];
             const options = {
@@ -322,12 +297,13 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__webpack_require__(2186));
 const utils_1 = __webpack_require__(918);
 const releaseNotes_1 = __webpack_require__(5882);
-const git_helper_1 = __webpack_require__(9621);
+const gitHelper_1 = __webpack_require__(353);
 const github = __importStar(__webpack_require__(5438));
 const path = __importStar(__webpack_require__(5622));
 const configuration_1 = __webpack_require__(5527);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
+        core.startGroup(`📘 Reading input values`);
         try {
             let githubWorkspacePath = process.env['GITHUB_WORKSPACE'];
             if (!githubWorkspacePath) {
@@ -345,7 +321,7 @@ function run() {
                 core.debug(`configurationPath = '${configurationPath}'`);
                 const providedConfiguration = utils_1.readConfiguration(configurationPath);
                 if (!providedConfiguration) {
-                    core.error(`Configuration provided, but it couldn't be found, or failed to parse`);
+                    core.info(`⚠️ Configuration provided, but it couldn't be found, or failed to parse. Fallback to Defaults`);
                 }
                 else {
                     configuration = providedConfiguration;
@@ -359,7 +335,7 @@ function run() {
             const ignorePreReleases = core.getInput('ignorePreReleases');
             if (!toTag) {
                 // if not specified try to retrieve tag from git
-                const gitHelper = yield git_helper_1.createCommandManager(repositoryPath);
+                const gitHelper = yield gitHelper_1.createCommandManager(repositoryPath);
                 const latestTag = yield gitHelper.latestTag();
                 toTag = latestTag;
                 core.debug(`toTag = '${latestTag}'`);
@@ -399,6 +375,7 @@ function run() {
             else {
                 core.debug(`Resolved 'toTag' as ${toTag}`);
             }
+            core.endGroup();
             const releaseNotes = new releaseNotes_1.ReleaseNotes({
                 owner,
                 repo,
@@ -964,7 +941,7 @@ function buildChangelog(prs, config) {
             : configuration_1.DefaultConfiguration.pr_template), validatedTransformers));
     }
     core.info(`ℹ️ Used ${validateTransfomers.length} transformers to adjust message`);
-    core.info(`✏️ Wrote messages for ${prs.length} pull requests`);
+    core.info(`✒️ Wrote messages for ${prs.length} pull requests`);
     // bring PRs into the order of categories
     const categorized = new Map();
     const categories = (_b = config.categories) !== null && _b !== void 0 ? _b : configuration_1.DefaultConfiguration.categories;
@@ -998,12 +975,12 @@ function buildChangelog(prs, config) {
             changelog = `${changelog}\n`;
         }
     }
-    core.info(`✏️ Wrote ${categorized.size} categorized pull requests down`);
+    core.info(`✒️ Wrote ${categorized.size} categorized pull requests down`);
     let changelogUncategorized = '';
     for (const pr of uncategorized) {
         changelogUncategorized = `${changelogUncategorized + pr}\n`;
     }
-    core.info(`✏️ Wrote ${changelogUncategorized.length} non categorized pull requests down`);
+    core.info(`✒️ Wrote ${changelogUncategorized.length} non categorized pull requests down`);
     // fill template
     let transformedChangelog = (_c = config.template) !== null && _c !== void 0 ? _c : configuration_1.DefaultConfiguration.template;
     transformedChangelog = transformedChangelog.replace('${{CHANGELOG}}', changelog);
@@ -1089,7 +1066,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.readConfiguration = void 0;
+exports.directoryExistsSync = exports.readConfiguration = void 0;
 const fs = __importStar(__webpack_require__(5747));
 function readConfiguration(filename) {
     try {
@@ -1102,6 +1079,32 @@ function readConfiguration(filename) {
     }
 }
 exports.readConfiguration = readConfiguration;
+function directoryExistsSync(path, required) {
+    if (!path) {
+        throw new Error("Arg 'path' must not be empty");
+    }
+    let stats;
+    try {
+        stats = fs.statSync(path);
+    }
+    catch (error) {
+        if (error.code === 'ENOENT') {
+            if (!required) {
+                return false;
+            }
+            throw new Error(`Directory '${path}' does not exist`);
+        }
+        throw new Error(`Encountered an error when checking whether path '${path}' exists: ${error.message}`);
+    }
+    if (stats.isDirectory()) {
+        return true;
+    }
+    else if (!required) {
+        return false;
+    }
+    throw new Error(`Directory '${path}' does not exist`);
+}
+exports.directoryExistsSync = directoryExistsSync;
 
 
 /***/ }),
