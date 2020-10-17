@@ -72,7 +72,7 @@ class Commits {
                 commits = compareResult.data.commits.concat(commits);
                 compareHead = `${commits[0].sha}^`;
             }
-            core.info(`Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`);
+            core.info(`ℹ️ Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`);
             return commits.map(commit => ({
                 sha: commit.sha,
                 summary: commit.commit.message.split('\n')[0],
@@ -379,21 +379,21 @@ function run() {
                 repo = splitRepository[1];
             }
             if (!owner) {
-                core.error(`Missing or couldn't resolve 'owner'`);
+                core.error(`💥 Missing or couldn't resolve 'owner'`);
                 return;
             }
             else {
                 core.debug(`Resolved 'owner' as ${owner}`);
             }
             if (!repo) {
-                core.error(`Missing or couldn't resolve 'owner'`);
+                core.error(`💥 Missing or couldn't resolve 'owner'`);
                 return;
             }
             else {
                 core.debug(`Resolved 'repo' as ${repo}`);
             }
             if (!toTag) {
-                core.error(`Missing or couldn't resolve 'toTag'`);
+                core.error(`💥 Missing or couldn't resolve 'toTag'`);
                 return;
             }
             else {
@@ -500,7 +500,7 @@ class PullRequests {
                 };
             }
             catch (e) {
-                core.warning(`Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`);
+                core.warning(`⚠️ Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`);
                 return null;
             }
         });
@@ -546,7 +546,7 @@ class PullRequests {
                     if ((firstPR.merged_at && fromDate.isAfter(moment_1.default(firstPR.merged_at))) ||
                         mergedPRs.length >= maxPullRequests) {
                         if (mergedPRs.length >= maxPullRequests) {
-                            core.info(`Reached 'maxPullRequests' count ${maxPullRequests}`);
+                            core.info(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
                         }
                         // bail out early to not keep iterating on PRs super old
                         return sortPullRequests(mergedPRs, true);
@@ -674,40 +674,47 @@ class ReleaseNotes {
             });
             const { owner, repo, toTag, ignorePreReleases, configuration } = this.options;
             if (!this.options.fromTag) {
+                core.startGroup(`:bookmark: Resolve 'fromTag'`);
                 core.debug(`fromTag undefined, trying to resolve via API`);
                 const tagsApi = new tags_1.Tags(octokit);
                 const previousTag = yield tagsApi.findPredecessorTag(owner, repo, toTag, ignorePreReleases, (_a = configuration.max_tags_to_fetch) !== null && _a !== void 0 ? _a : configuration_1.DefaultConfiguration.max_tags_to_fetch);
                 if (previousTag == null) {
-                    core.error(`Unable to retrieve previous tag given ${toTag}`);
+                    core.error(`💥 Unable to retrieve previous tag given ${toTag}`);
                     return ((_b = configuration.empty_template) !== null && _b !== void 0 ? _b : configuration_1.DefaultConfiguration.empty_template);
                 }
                 this.options.fromTag = previousTag.name;
                 core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`);
+                core.endGroup();
             }
+            core.startGroup(`🚀 Load pull requests`);
             const mergedPullRequests = yield this.getMergedPullRequests(octokit);
+            core.endGroup();
             if (mergedPullRequests.length === 0) {
-                core.warning(`No pull requests found`);
+                core.warning(`⚠️ No pull requests found`);
                 return (_c = configuration.empty_template) !== null && _c !== void 0 ? _c : configuration_1.DefaultConfiguration.empty_template;
             }
-            return transform_1.buildChangelog(mergedPullRequests, configuration);
+            core.startGroup("📦 Build changelog");
+            const resultChangelog = transform_1.buildChangelog(mergedPullRequests, configuration);
+            core.endGroup();
+            return resultChangelog;
         });
     }
     getMergedPullRequests(octokit) {
-        var _a;
+        var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const { owner, repo, fromTag, toTag, configuration } = this.options;
-            core.info(`Comparing ${owner}/${repo} - ${fromTag}...${toTag}`);
+            core.info(`ℹ️ Comparing ${owner}/${repo} - ${fromTag}...${toTag}`);
             const commitsApi = new commits_1.Commits(octokit);
             let commits;
             try {
                 commits = yield commitsApi.getDiff(owner, repo, fromTag, toTag);
             }
             catch (error) {
-                core.error(`Failed to retrieve - Invalid tag? - Because of: ${error}`);
+                core.error(`💥 Failed to retrieve - Invalid tag? - Because of: ${error}`);
                 return [];
             }
             if (commits.length === 0) {
-                core.warning(`No commits found between - ${fromTag}...${toTag}`);
+                core.warning(`💥 No commits found between - ${fromTag}...${toTag}`);
                 return [];
             }
             const firstCommit = commits[0];
@@ -717,19 +724,15 @@ class ReleaseNotes {
             const maxDays = (_a = configuration.max_back_track_time_days) !== null && _a !== void 0 ? _a : configuration_1.DefaultConfiguration.max_back_track_time_days;
             const maxFromDate = toDate.clone().subtract(maxDays, 'days');
             if (maxFromDate.isAfter(fromDate)) {
-                core.info(`Adjusted 'fromDate' to go max ${maxDays} back`);
+                core.info(`⚠️ Adjusted 'fromDate' to go max ${maxDays} back`);
                 fromDate = maxFromDate;
             }
-            core.info(`Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`);
+            core.info(`ℹ️ Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`);
             const pullRequestsApi = new pullRequests_1.PullRequests(octokit);
-            const pullRequests = yield pullRequestsApi.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests
-                ? configuration.max_pull_requests
-                : configuration_1.DefaultConfiguration.max_pull_requests);
-            core.info(`Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`);
-            const prCommits = pullRequestsApi.filterCommits(commits, configuration.exclude_merge_branches
-                ? configuration.exclude_merge_branches
-                : configuration_1.DefaultConfiguration.exclude_merge_branches);
-            core.info(`Retrieved ${prCommits.length} PR merge commits for ${owner}/${repo}`);
+            const pullRequests = yield pullRequestsApi.getBetweenDates(owner, repo, fromDate, toDate, (_b = configuration.max_pull_requests) !== null && _b !== void 0 ? _b : configuration_1.DefaultConfiguration.max_pull_requests);
+            core.info(`ℹ️ Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`);
+            const prCommits = pullRequestsApi.filterCommits(commits, (_c = configuration.exclude_merge_branches) !== null && _c !== void 0 ? _c : configuration_1.DefaultConfiguration.exclude_merge_branches);
+            core.info(`ℹ️ Retrieved ${prCommits.length} PR merge commits for ${owner}/${repo}`);
             const filteredPullRequests = [];
             const pullRequestsByNumber = {};
             for (const pr of pullRequests) {
@@ -749,11 +752,11 @@ class ReleaseNotes {
                         filteredPullRequests.push(pullRequest);
                     }
                     else {
-                        core.warning(`${prRef} not found! Commit text: ${commit.summary}`);
+                        core.warning(`⚠️ ${prRef} not found! Commit text: ${commit.summary}`);
                     }
                 }
                 else {
-                    core.info(`${prRef} not in date range, excluding from changelog`);
+                    core.info(`ℹ️ ${prRef} not in date range, excluding from changelog`);
                 }
             }
             return filteredPullRequests;
@@ -845,7 +848,7 @@ class Tags {
                 }
                 finally { if (e_1) throw e_1.error; }
             }
-            core.info(`Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`);
+            core.info(`ℹ️ Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`);
             return tagsInfo;
         });
     }
@@ -857,7 +860,7 @@ class Tags {
                 for (let i = 0; i < length; i++) {
                     if (tags[i].name.toLowerCase() === tag.toLowerCase()) {
                         if (ignorePreReleases) {
-                            core.info(`Enabled 'ignorePreReleases', searching for the closest release`);
+                            core.info(`ℹ️ Enabled 'ignorePreReleases', searching for the closest release`);
                             for (let ii = i + 1; ii < length; ii++) {
                                 if (!tags[ii].name.includes('-')) {
                                     return tags[ii];
@@ -874,6 +877,20 @@ class Tags {
             }
         });
     }
+    /*
+    Sorts an array of tags as shown below:
+    
+    2020.4.0
+    2020.4.0-rc02
+    2020.3.2
+    2020.3.1
+    2020.3.1-rc03
+    2020.3.1-rc02
+    2020.3.1-rc01
+    2020.3.1-b01
+    2020.3.1-a01
+    2020.3.0
+    */
     sortTags(commits) {
         commits.sort((b, a) => {
             const partsA = a.name.replace(/^v/, '').split('-');
@@ -898,22 +915,6 @@ class Tags {
     }
 }
 exports.Tags = Tags;
-/*
-
-2020.3.2 ( should resolve 2020.3.1 )
-
-2020.4.0
-2020.4.0-rc02
-
-2020.3.1
-2020.3.1-rc03
-2020.3.1-rc02
-2020.3.1-rc01
-2020.3.1-b01
-2020.3.1-a01
-
-2020.3.0
-*/
 
 
 /***/ }),
@@ -1046,7 +1047,7 @@ function validateTransfomers(specifiedTransformers) {
             };
         }
         catch (e) {
-            core.warning(`Bad replacer regex: ${transformer.pattern}`);
+            core.warning(`⚠️ Bad replacer regex: ${transformer.pattern}`);
             return {
                 pattern: null,
                 target: ''

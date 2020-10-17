@@ -146,7 +146,7 @@ function validateTransfomers(
           target: transformer.target
         }
       } catch (e) {
-        core.warning(`Bad replacer regex: ${transformer.pattern}`)
+        core.warning(`⚠️ Bad replacer regex: ${transformer.pattern}`)
         return {
           pattern: null,
           target: ''
