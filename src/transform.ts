@@ -38,10 +38,9 @@ export function buildChangelog(
 
   // bring PRs into the order of categories
   const categorized = new Map<Category, string[]>()
-  if (config.categories) {
-    for (const category of config.categories) {
-      categorized.set(category, [])
-    }
+  const categories = config.categories ?? DefaultConfiguration.categories
+  for (const category of categories) {
+    categorized.set(category, [])
   }
   const uncategorized: string[] = []
 
@@ -107,7 +106,17 @@ function fillTemplate(pr: PullRequestInfo, template: string): string {
   transformed = transformed.replace('${{URL}}', pr.htmlURL)
   transformed = transformed.replace('${{MERGED_AT}}', pr.mergedAt.toISOString())
   transformed = transformed.replace('${{AUTHOR}}', pr.author)
+  transformed = transformed.replace('${{LABELS}}', pr.labels?.join(', ') ?? '')
+  transformed = transformed.replace('${{MILESTONE}}', pr.milestone ?? '')
   transformed = transformed.replace('${{BODY}}', pr.body)
+  transformed = transformed.replace(
+    '${{ASSIGNEES}}',
+    pr.assignees?.join(', ') ?? ''
+  )
+  transformed = transformed.replace(
+    '${{REVIEWERS}}',
+    pr.requestedReviewers?.join(', ') ?? ''
+  )
   return transformed
 }
 

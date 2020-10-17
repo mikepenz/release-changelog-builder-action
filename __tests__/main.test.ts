@@ -88,7 +88,7 @@ it('Should match generated changelog (unspecified fromTag)', async () => {
 it('Should match generated changelog (refs)', async () => {
   jest.setTimeout(180000)
 
-  const configuration = readConfiguration('configuration.json')!!
+  const configuration = readConfiguration('configs/configuration_all_placeholders.json')!!
   const releaseNotes = new ReleaseNotes({
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -102,8 +102,16 @@ it('Should match generated changelog (refs)', async () => {
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 🧪 Tests
 
-- [CI] Specify Test Case
-   - PR: #10
+[CI] Specify Test Case
+10
+https://github.com/mikepenz/release-changelog-builder-action/pull/10
+2020-10-16T13:59:36.000Z
+mikepenz
+test
+1.0.0
+- specify test case
+mikepenz, nhoelzl
+nhoelzl
 
 `)
 })
