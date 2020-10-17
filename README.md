@@ -137,14 +137,18 @@ For advanced usecases additional settings can be provided to the action
 
 Table of supported placeholders allowed to be used in the `template` configuration.
 
-| **Placeholder**  | **Description**                                             |
-|------------------|-------------------------------------------------------------|
-| `${{NUMBER}}`    | The number referencing this pull request. E.g. 13           |
-| `${{TITLE}}`     | Specified title of the merged pull request                  |
-| `${{URL}}`       | Url linking to the pull request on GitHub                   |
-| `${{MERGED_AT}}` | The ISO time, the pull request was merged at                |
-| `${{AUTHOR}}`    | Author creating and opening the pull request                |
-| `${{BODY}}`      | Description/Body of the pull request as specified on GitHub |
+| ****Placeholder**** | ****Description****                                         |
+|---------------------|-------------------------------------------------------------|
+| `${{NUMBER}}`       | The number referencing this pull request. E.g. 13           |
+| `${{TITLE}}`        | Specified title of the merged pull request                  |
+| `${{URL}}`          | Url linking to the pull request on GitHub                   |
+| `${{MERGED_AT}}`    | The ISO time, the pull request was merged at                |
+| `${{AUTHOR}}`       | Author creating and opening the pull request                |
+| `${{LABELS}}`       | The labels associated with this pull request, joined by `,` |
+| `${{MILESTONE}}`    | Milestone this PR was part of, as assigned on GitHub        |
+| `${{BODY}}`         | Description/Body of the pull request as specified on GitHub |
+| `${{ASIGNEES}}`     | Login names of assigned GitHub users, joined by `,`         |
+| `${{REVIEWERS}}`    | GitHub Login names of specified reviewers, joined by `,`    |
 
 ### Template placeholders
 
