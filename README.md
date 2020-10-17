@@ -21,7 +21,7 @@
 <p align="center">
     <a href="#whats-included-">What's included 🚀</a> &bull;
     <a href="#setup">Setup 🛠️</a> &bull;
-    <a href="#customization-">Customization 🖍️</a> &bull;
+    <a href="#customization-%EF%B8%8F">Customization 🖍️</a> &bull;
     <a href="#contribute-">Contribute 🧬</a> &bull;
     <a href="#license">License 📓</a> &bull;
 </p>
@@ -39,9 +39,11 @@
 - Lightweight
 - Supports any branch
 
-# Setup
+-------
 
-## Configure the workflow
+## Setup
+
+### Configure the workflow
 
 Specify the action as part of your GitHub actions workflow:
 
@@ -56,7 +58,7 @@ Specify the action as part of your GitHub actions workflow:
 
 By default the action will try to automatically retrieve the `tag` from the current commit, and automtacally resolve the `tag` before. Read more about this here.
 
-## Action outputs
+### Action outputs
 
 The action will succeed and return the `changelog` as a step output. Use it in any follow up step, by referencing via its id. For example `build_changelog`.
 
@@ -65,9 +67,9 @@ The action will succeed and return the `changelog` as a step output. Use it in a
 ${{steps.build_changelog.outputs.changelog}}
 ```
 
-# Customization 🖍️
+## Customization 🖍️
 
-## Changelog Configuration
+### Changelog Configuration
 
 By default the action will look for a file called `configuration.json` within the root of the repository to load the config from. If this file does not exist, defaults are used.
 
@@ -110,7 +112,7 @@ Any section of the configruation can be ommited, to have defaults apply
 Defaults for the configuraiton can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
 
 
-## Advanced workflow specification
+### Advanced workflow specification
 
 For advanced usecases additional settings can be provided to the action
 
@@ -131,7 +133,7 @@ For advanced usecases additional settings can be provided to the action
 
 💡 `ignorePreReleases` will be ignored, if `fromTag` is specified. `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repos please use a PAT.
 
-## PR Template placeholders
+### PR Template placeholders
 
 Table of supported placeholders allowed to be used in the `template` configuration.
 
@@ -144,7 +146,7 @@ Table of supported placeholders allowed to be used in the `template` configurati
 | `${{AUTHOR}}`    | Author creating and opening the pull request                |
 | `${{BODY}}`      | Description/Body of the pull request as specified on GitHub |
 
-## Template placeholders
+### Template placeholders
 
 Table of supported placeholders allowed to be used in the `pr_template` configuration.
 
@@ -154,7 +156,7 @@ Table of supported placeholders allowed to be used in the `pr_template` configur
 | `${{UNCATEGORIZED}}` | All pull requests not matching a specified label in categories                                  |
 
 
-# Contribute 🧬
+## Contribute 🧬
 
 ```bash
 # Install the dependencies  
@@ -176,22 +178,22 @@ It's suggested to export the token to your path, before running the tests, so AP
 export GITHUB_TOKEN=your_personal_github_pat
 ```
 
-# Developed By
+## Developed By
 
 * Mike Penz
  * [mikepenz.com](http://mikepenz.com) - <mikepenz@gmail.com>
  * [paypal.me/mikepenz](http://paypal.me/mikepenz)
 
-# Credits
+## Credits
 
 Core parts of the PR fetching logic, are based on [pull-release-notes](https://github.com/nblagoev/pull-release-notes)
 - Nikolay Blagoev - [GitHub](https://github.com/nblagoev/)
 
-# License
+## License
 
    Copyright for portions of pr-release-notes are held by Nikolay Blagoev, 2019-2020 as part of project pull-release-notes. All other copyright for project pr-release-notes are held by Mike Penz, 2020.
 
-# Fork License
+## Fork License
 
 All patches and changes applied to the original source are licensed under the Apache 2.0 license.
 
