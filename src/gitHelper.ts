@@ -1,7 +1,6 @@
 import * as exec from '@actions/exec'
-import * as fs from 'fs'
 import * as io from '@actions/io'
-import { directoryExistsSync } from './utils';
+import {directoryExistsSync} from './utils'
 
 export async function createCommandManager(
   workingDirectory: string

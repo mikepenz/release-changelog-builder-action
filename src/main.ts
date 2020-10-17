@@ -30,7 +30,9 @@ async function run(): Promise<void> {
       core.debug(`configurationPath = '${configurationPath}'`)
       const providedConfiguration = readConfiguration(configurationPath)
       if (!providedConfiguration) {
-        core.info(`⚠️ Configuration provided, but it couldn't be found, or failed to parse. Fallback to Defaults`)
+        core.info(
+          `⚠️ Configuration provided, but it couldn't be found, or failed to parse. Fallback to Defaults`
+        )
       } else {
         configuration = providedConfiguration
       }

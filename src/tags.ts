@@ -39,7 +39,9 @@ export class Tags {
       }
     }
 
-    core.info(`ℹ️ Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`)
+    core.info(
+      `ℹ️ Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`
+    )
     return tagsInfo
   }
 
@@ -57,7 +59,9 @@ export class Tags {
       for (let i = 0; i < length; i++) {
         if (tags[i].name.toLowerCase() === tag.toLowerCase()) {
           if (ignorePreReleases) {
-            core.info(`ℹ️ Enabled 'ignorePreReleases', searching for the closest release`)
+            core.info(
+              `ℹ️ Enabled 'ignorePreReleases', searching for the closest release`
+            )
             for (let ii = i + 1; ii < length; ii++) {
               if (!tags[ii].name.includes('-')) {
                 return tags[ii]

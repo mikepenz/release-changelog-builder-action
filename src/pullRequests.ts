@@ -55,7 +55,9 @@ export class PullRequests {
         })
       }
     } catch (e) {
-      core.warning(`⚠️ Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`)
+      core.warning(
+        `⚠️ Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`
+      )
       return null
     }
   }

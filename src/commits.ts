@@ -54,7 +54,9 @@ export class Commits {
       compareHead = `${commits[0].sha}^`
     }
 
-    core.info(`ℹ️ Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`)
+    core.info(
+      `ℹ️ Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`
+    )
     return commits.map(commit => ({
       sha: commit.sha,
       summary: commit.commit.message.split('\n')[0],

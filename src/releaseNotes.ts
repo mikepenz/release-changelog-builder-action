@@ -58,7 +58,7 @@ export class ReleaseNotes {
       return configuration.empty_template ?? DefaultConfiguration.empty_template
     }
 
-    core.startGroup("📦 Build changelog")
+    core.startGroup('📦 Build changelog')
     const resultChangelog = buildChangelog(mergedPullRequests, configuration)
     core.endGroup()
     return resultChangelog
@@ -97,7 +97,9 @@ export class ReleaseNotes {
       fromDate = maxFromDate
     }
 
-    core.info(`ℹ️ Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`)
+    core.info(
+      `ℹ️ Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`
+    )
 
     const pullRequestsApi = new PullRequests(octokit)
     const pullRequests = await pullRequestsApi.getBetweenDates(
@@ -108,14 +110,19 @@ export class ReleaseNotes {
       configuration.max_pull_requests ?? DefaultConfiguration.max_pull_requests
     )
 
-    core.info(`ℹ️ Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`)
+    core.info(
+      `ℹ️ Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`
+    )
 
     const prCommits = pullRequestsApi.filterCommits(
       commits,
-      configuration.exclude_merge_branches ?? DefaultConfiguration.exclude_merge_branches
+      configuration.exclude_merge_branches ??
+        DefaultConfiguration.exclude_merge_branches
     )
 
-    core.info(`ℹ️ Retrieved ${prCommits.length} PR merge commits for ${owner}/${repo}`)
+    core.info(
+      `ℹ️ Retrieved ${prCommits.length} PR merge commits for ${owner}/${repo}`
+    )
 
     const filteredPullRequests = []
     const pullRequestsByNumber: {[key: number]: PullRequestInfo} = {}

@@ -13,8 +13,8 @@ export function buildChangelog(
 ): string {
   // sort to target order
   const sort = config.sort ?? DefaultConfiguration.sort
-  const sortAsc = (sort).toUpperCase() ==='ASC'
-  prs = sortPullRequests( prs, sortAsc)
+  const sortAsc = sort.toUpperCase() === 'ASC'
+  prs = sortPullRequests(prs, sortAsc)
   core.info(`ℹ️ Sorted all pull requests ascending: ${sort}`)
 
   const validatedTransformers = validateTransfomers(config.transformers)
@@ -34,7 +34,9 @@ export function buildChangelog(
       )
     )
   }
-  core.info(`ℹ️ Used ${validateTransfomers.length} transformers to adjust message`)
+  core.info(
+    `ℹ️ Used ${validateTransfomers.length} transformers to adjust message`
+  )
   core.info(`✒️ Wrote messages for ${prs.length} pull requests`)
 
   // bring PRs into the order of categories
@@ -82,7 +84,9 @@ export function buildChangelog(
   for (const pr of uncategorized) {
     changelogUncategorized = `${changelogUncategorized + pr}\n`
   }
-  core.info(`✒️ Wrote ${changelogUncategorized.length} non categorized pull requests down`)
+  core.info(
+    `✒️ Wrote ${changelogUncategorized.length} non categorized pull requests down`
+  )
 
   // fill template
   let transformedChangelog = config.template ?? DefaultConfiguration.template
@@ -137,7 +141,8 @@ function transform(filled: string, transformers: RegexTransformer[]): string {
 function validateTransfomers(
   specifiedTransformers: Transformer[]
 ): RegexTransformer[] {
-  const transformers = specifiedTransformers ?? DefaultConfiguration.transformers
+  const transformers =
+    specifiedTransformers ?? DefaultConfiguration.transformers
   return transformers
     .map(transformer => {
       try {
