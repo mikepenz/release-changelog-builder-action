@@ -1,5 +1,5 @@
 import {Octokit} from '@octokit/rest'
-import { Commits, CommitInfo } from './commits';
+import {Commits, CommitInfo} from './commits'
 import {PullRequestInfo, PullRequests} from './pullRequests'
 import {buildChangelog} from './transform'
 import * as core from '@actions/core'
@@ -34,17 +34,15 @@ export class ReleaseNotes {
         repo,
         toTag,
         ignorePreReleases,
-        configuration.max_tags_to_fetch
-          ? configuration.max_tags_to_fetch
-          : DefaultConfiguration.max_tags_to_fetch
+        configuration.max_tags_to_fetch ??
+          DefaultConfiguration.max_tags_to_fetch
       )
       if (previousTag == null) {
         core.error(`Unable to retrieve previous tag given ${toTag}`)
-        return configuration.empty_template
-          ? configuration.empty_template
-          : DefaultConfiguration.empty_template
+        return (
+          configuration.empty_template ?? DefaultConfiguration.empty_template
+        )
       }
-
       this.options.fromTag = previousTag.name
       core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`)
     }
@@ -53,9 +51,7 @@ export class ReleaseNotes {
 
     if (mergedPullRequests.length === 0) {
       core.warning(`No pull requests found`)
-      return configuration.empty_template
-        ? configuration.empty_template
-        : DefaultConfiguration.empty_template
+      return configuration.empty_template ?? DefaultConfiguration.empty_template
     }
 
     return buildChangelog(mergedPullRequests, configuration)
@@ -85,9 +81,9 @@ export class ReleaseNotes {
     let fromDate = firstCommit.date
     const toDate = lastCommit.date
 
-    const maxDays = configuration.max_back_track_time_days
-      ? configuration.max_back_track_time_days
-      : DefaultConfiguration.max_back_track_time_days
+    const maxDays =
+      configuration.max_back_track_time_days ??
+      DefaultConfiguration.max_back_track_time_days
     const maxFromDate = toDate.clone().subtract(maxDays, 'days')
     if (maxFromDate.isAfter(fromDate)) {
       core.info(`Adjusted 'fromDate' to go max ${maxDays} back`)

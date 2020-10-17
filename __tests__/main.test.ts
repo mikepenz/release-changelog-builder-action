@@ -24,7 +24,7 @@ test('test runs', () => {
 it('Should have empty changelog (tags)', async () => {
   jest.setTimeout(180000)
 
-  const configuration = readConfiguration('configs/configuration.json')
+  const configuration = readConfiguration('configs/configuration.json')!!
   const releaseNotes = new ReleaseNotes({
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -42,7 +42,7 @@ it('Should have empty changelog (tags)', async () => {
 it('Should match generated changelog (tags)', async () => {
   jest.setTimeout(180000)
 
-  const configuration = readConfiguration('configuration.json')
+  const configuration = readConfiguration('configs/configuration.json')!!
   const releaseNotes = new ReleaseNotes({
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -65,7 +65,7 @@ it('Should match generated changelog (tags)', async () => {
 it('Should match generated changelog (unspecified fromTag)', async () => {
   jest.setTimeout(180000)
 
-  const configuration = readConfiguration('configuration.json')
+  const configuration = readConfiguration('configs/configuration.json')!!
   const releaseNotes = new ReleaseNotes({
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -88,7 +88,7 @@ it('Should match generated changelog (unspecified fromTag)', async () => {
 it('Should match generated changelog (refs)', async () => {
   jest.setTimeout(180000)
 
-  const configuration = readConfiguration('configuration.json')
+  const configuration = readConfiguration('configuration.json')!!
   const releaseNotes = new ReleaseNotes({
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',

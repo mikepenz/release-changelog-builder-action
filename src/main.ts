@@ -4,6 +4,7 @@ import {ReleaseNotes} from './releaseNotes'
 import {createCommandManager} from './git-helper'
 import * as github from '@actions/github'
 import * as path from 'path'
+import {DefaultConfiguration} from './configuration'
 
 async function run(): Promise<void> {
   try {
@@ -19,12 +20,22 @@ async function run(): Promise<void> {
     core.debug(`repositoryPath = '${repositoryPath}'`)
 
     const configurationFile: string = core.getInput('configuration')
-    const configurationPath = path.resolve(
-      githubWorkspacePath,
-      configurationFile
-    )
-    core.debug(`configurationPath = '${configurationPath}'`)
-    const configuration = readConfiguration(configurationPath)
+    let configuration = DefaultConfiguration
+    if (configurationFile) {
+      const configurationPath = path.resolve(
+        githubWorkspacePath,
+        configurationFile
+      )
+      core.debug(`configurationPath = '${configurationPath}'`)
+      const providedConfiguration = readConfiguration(configurationPath)
+      if (!providedConfiguration) {
+        core.error(
+          `Configuration provided, but it couldn't be found, or failed to parse`
+        )
+      } else {
+        configuration = providedConfiguration
+      }
+    }
 
     const token = core.getInput('token')
     let owner = core.getInput('owner')
