@@ -23,7 +23,7 @@
     <a href="#setup">Setup 🛠️</a> &bull;
     <a href="#customization-%EF%B8%8F">Customization 🖍️</a> &bull;
     <a href="#contribute-">Contribute 🧬</a> &bull;
-    <a href="#complete-sample-">Complete Sample 🖥️</a> &bull;
+    <a href="#complete-sample-%EF%B8%8F">Complete Sample 🖥️</a> &bull;
     <a href="#license">License 📓</a>
 </p>
 
