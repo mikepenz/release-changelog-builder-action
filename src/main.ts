@@ -1,11 +1,13 @@
 import * as core from '@actions/core'
 import {readConfiguration} from './utils'
 import {ReleaseNotes} from './releaseNotes'
-import {createCommandManager} from './git-helper'
+import {createCommandManager} from './gitHelper'
 import * as github from '@actions/github'
 import * as path from 'path'
+import {DefaultConfiguration} from './configuration'
 
 async function run(): Promise<void> {
+  core.startGroup(`📘 Reading input values`)
   try {
     let githubWorkspacePath = process.env['GITHUB_WORKSPACE']
     if (!githubWorkspacePath) {
@@ -19,12 +21,22 @@ async function run(): Promise<void> {
     core.debug(`repositoryPath = '${repositoryPath}'`)
 
     const configurationFile: string = core.getInput('configuration')
-    const configurationPath = path.resolve(
-      githubWorkspacePath,
-      configurationFile
-    )
-    core.debug(`configurationPath = '${configurationPath}'`)
-    const configuration = readConfiguration(configurationPath)
+    let configuration = DefaultConfiguration
+    if (configurationFile) {
+      const configurationPath = path.resolve(
+        githubWorkspacePath,
+        configurationFile
+      )
+      core.debug(`configurationPath = '${configurationPath}'`)
+      const providedConfiguration = readConfiguration(configurationPath)
+      if (!providedConfiguration) {
+        core.info(
+          `⚠️ Configuration provided, but it couldn't be found, or failed to parse. Fallback to Defaults`
+        )
+      } else {
+        configuration = providedConfiguration
+      }
+    }
 
     const token = core.getInput('token')
     let owner = core.getInput('owner')
@@ -64,25 +76,26 @@ async function run(): Promise<void> {
     }
 
     if (!owner) {
-      core.error(`Missing or couldn't resolve 'owner'`)
+      core.error(`💥 Missing or couldn't resolve 'owner'`)
       return
     } else {
       core.debug(`Resolved 'owner' as ${owner}`)
     }
 
     if (!repo) {
-      core.error(`Missing or couldn't resolve 'owner'`)
+      core.error(`💥 Missing or couldn't resolve 'owner'`)
       return
     } else {
       core.debug(`Resolved 'repo' as ${repo}`)
     }
 
     if (!toTag) {
-      core.error(`Missing or couldn't resolve 'toTag'`)
+      core.error(`💥 Missing or couldn't resolve 'toTag'`)
       return
     } else {
       core.debug(`Resolved 'toTag' as ${toTag}`)
     }
+    core.endGroup()
 
     const releaseNotes = new ReleaseNotes({
       owner,

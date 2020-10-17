@@ -12,7 +12,10 @@ export interface PullRequestInfo {
   author: string
   repoName: string
   labels: string[]
+  milestone: string
   body: string
+  assignees: string[]
+  requestedReviewers: string[]
 }
 
 export class PullRequests {
@@ -40,10 +43,21 @@ export class PullRequests {
         labels: pr.data.labels.map(function (label) {
           return label.name
         }),
-        body: pr.data.body
+        milestone: pr.data.milestone?.title,
+        body: pr.data.body,
+        assignees: pr.data.assignees?.map(function (asignee) {
+          return asignee.login
+        }),
+        requestedReviewers: pr.data.requested_reviewers?.map(function (
+          reviewer
+        ) {
+          return reviewer.login
+        })
       }
     } catch (e) {
-      core.warning(`Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`)
+      core.warning(
+        `⚠️ Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`
+      )
       return null
     }
   }
@@ -76,10 +90,17 @@ export class PullRequests {
           mergedAt: moment(pr.merged_at),
           author: pr.user.login,
           repoName: pr.base.repo.full_name,
-          labels: pr.labels.map(function (label) {
+          labels: pr.labels?.map(function (label) {
             return label.name
           }),
-          body: pr.body
+          milestone: pr.milestone?.title,
+          body: pr.body,
+          assignees: pr.assignees?.map(function (asignee) {
+            return asignee.login
+          }),
+          requestedReviewers: pr.requested_reviewers?.map(function (reviewer) {
+            return reviewer.login
+          })
         })
       }
 
@@ -89,7 +110,7 @@ export class PullRequests {
         mergedPRs.length >= maxPullRequests
       ) {
         if (mergedPRs.length >= maxPullRequests) {
-          core.info(`Reached 'maxPullRequests' count ${maxPullRequests}`)
+          core.info(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`)
         }
 
         // bail out early to not keep iterating on PRs super old

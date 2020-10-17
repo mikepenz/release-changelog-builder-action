@@ -55,7 +55,7 @@ export class Commits {
     }
 
     core.info(
-      `Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`
+      `ℹ️ Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`
     )
     return commits.map(commit => ({
       sha: commit.sha,

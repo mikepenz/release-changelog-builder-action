@@ -5,10 +5,6 @@
             "labels": ["feature"]
         },
         {
-            "title": "## 🦄 Internal Features",
-            "labels": ["internal"]
-        },
-        {
             "title": "## 🐛 Fixes",
             "labels": ["fix"]
         },

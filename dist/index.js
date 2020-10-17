@@ -72,7 +72,7 @@ class Commits {
                 commits = compareResult.data.commits.concat(commits);
                 compareHead = `${commits[0].sha}^`;
             }
-            core.info(`Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`);
+            core.info(`ℹ️ Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`);
             return commits.map(commit => ({
                 sha: commit.sha,
                 summary: commit.commit.message.split('\n')[0],
@@ -126,14 +126,27 @@ exports.DefaultConfiguration = {
     template: '${{CHANGELOG}}',
     pr_template: '- ${{TITLE}}\n   - PR: #${{NUMBER}}',
     empty_template: '- no changes',
-    categories: [],
+    categories: [
+        {
+            title: '## 🚀 Features',
+            labels: ['feature']
+        },
+        {
+            title: '## 🐛 Fixes',
+            labels: ['fix']
+        },
+        {
+            title: '## 🧪 Tests',
+            labels: ['test']
+        }
+    ],
     transformers: [] // transformers to apply on the PR description according to the `pr_template`
 };
 
 
 /***/ }),
 
-/***/ 9621:
+/***/ 353:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -169,39 +182,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createCommandManager = void 0;
 const exec = __importStar(__webpack_require__(1514));
-const fs = __importStar(__webpack_require__(5747));
 const io = __importStar(__webpack_require__(7436));
+const utils_1 = __webpack_require__(918);
 function createCommandManager(workingDirectory) {
     return __awaiter(this, void 0, void 0, function* () {
         return yield GitCommandManager.createCommandManager(workingDirectory);
     });
 }
 exports.createCommandManager = createCommandManager;
-function directoryExistsSync(path, required) {
-    if (!path) {
-        throw new Error("Arg 'path' must not be empty");
-    }
-    let stats;
-    try {
-        stats = fs.statSync(path);
-    }
-    catch (error) {
-        if (error.code === 'ENOENT') {
-            if (!required) {
-                return false;
-            }
-            throw new Error(`Directory '${path}' does not exist`);
-        }
-        throw new Error(`Encountered an error when checking whether path '${path}' exists: ${error.message}`);
-    }
-    if (stats.isDirectory()) {
-        return true;
-    }
-    else if (!required) {
-        return false;
-    }
-    throw new Error(`Directory '${path}' does not exist`);
-}
 class GitCommandManager {
     // Private constructor; use createCommandManager()
     constructor() {
@@ -237,7 +225,7 @@ class GitCommandManager {
     }
     execGit(args, allowAllExitCodes = false, silent = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            directoryExistsSync(this.workingDirectory, true);
+            utils_1.directoryExistsSync(this.workingDirectory, true);
             const result = new GitOutput();
             const stdout = [];
             const options = {
@@ -309,11 +297,13 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__webpack_require__(2186));
 const utils_1 = __webpack_require__(918);
 const releaseNotes_1 = __webpack_require__(5882);
-const git_helper_1 = __webpack_require__(9621);
+const gitHelper_1 = __webpack_require__(353);
 const github = __importStar(__webpack_require__(5438));
 const path = __importStar(__webpack_require__(5622));
+const configuration_1 = __webpack_require__(5527);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
+        core.startGroup(`📘 Reading input values`);
         try {
             let githubWorkspacePath = process.env['GITHUB_WORKSPACE'];
             if (!githubWorkspacePath) {
@@ -325,17 +315,27 @@ function run() {
             repositoryPath = path.resolve(githubWorkspacePath, repositoryPath);
             core.debug(`repositoryPath = '${repositoryPath}'`);
             const configurationFile = core.getInput('configuration');
-            const configurationPath = path.resolve(githubWorkspacePath, configurationFile);
-            core.debug(`configurationPath = '${configurationPath}'`);
-            const configuration = utils_1.readConfiguration(configurationPath);
+            let configuration = configuration_1.DefaultConfiguration;
+            if (configurationFile) {
+                const configurationPath = path.resolve(githubWorkspacePath, configurationFile);
+                core.debug(`configurationPath = '${configurationPath}'`);
+                const providedConfiguration = utils_1.readConfiguration(configurationPath);
+                if (!providedConfiguration) {
+                    core.info(`⚠️ Configuration provided, but it couldn't be found, or failed to parse. Fallback to Defaults`);
+                }
+                else {
+                    configuration = providedConfiguration;
+                }
+            }
             const token = core.getInput('token');
             let owner = core.getInput('owner');
             let repo = core.getInput('repo');
             const fromTag = core.getInput('fromTag');
             let toTag = core.getInput('toTag');
+            const ignorePreReleases = core.getInput('ignorePreReleases');
             if (!toTag) {
                 // if not specified try to retrieve tag from git
-                const gitHelper = yield git_helper_1.createCommandManager(repositoryPath);
+                const gitHelper = yield gitHelper_1.createCommandManager(repositoryPath);
                 const latestTag = yield gitHelper.latestTag();
                 toTag = latestTag;
                 core.debug(`toTag = '${latestTag}'`);
@@ -355,31 +355,33 @@ function run() {
                 repo = splitRepository[1];
             }
             if (!owner) {
-                core.error(`Missing or couldn't resolve 'owner'`);
+                core.error(`💥 Missing or couldn't resolve 'owner'`);
                 return;
             }
             else {
                 core.debug(`Resolved 'owner' as ${owner}`);
             }
             if (!repo) {
-                core.error(`Missing or couldn't resolve 'owner'`);
+                core.error(`💥 Missing or couldn't resolve 'owner'`);
                 return;
             }
             else {
                 core.debug(`Resolved 'repo' as ${repo}`);
             }
             if (!toTag) {
-                core.error(`Missing or couldn't resolve 'toTag'`);
+                core.error(`💥 Missing or couldn't resolve 'toTag'`);
                 return;
             }
             else {
                 core.debug(`Resolved 'toTag' as ${toTag}`);
             }
+            core.endGroup();
             const releaseNotes = new releaseNotes_1.ReleaseNotes({
                 owner,
                 repo,
                 fromTag,
                 toTag,
+                ignorePreReleases: ignorePreReleases === 'true',
                 configuration
             });
             core.setOutput('changelog', yield releaseNotes.pull(token));
@@ -446,6 +448,7 @@ class PullRequests {
         this.octokit = octokit;
     }
     getSingle(owner, repo, prNumber) {
+        var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const pr = yield this.octokit.pulls.get({
@@ -463,17 +466,25 @@ class PullRequests {
                     labels: pr.data.labels.map(function (label) {
                         return label.name;
                     }),
-                    body: pr.data.body
+                    milestone: (_a = pr.data.milestone) === null || _a === void 0 ? void 0 : _a.title,
+                    body: pr.data.body,
+                    assignees: (_b = pr.data.assignees) === null || _b === void 0 ? void 0 : _b.map(function (asignee) {
+                        return asignee.login;
+                    }),
+                    requestedReviewers: (_c = pr.data.requested_reviewers) === null || _c === void 0 ? void 0 : _c.map(function (reviewer) {
+                        return reviewer.login;
+                    })
                 };
             }
             catch (e) {
-                core.warning(`Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`);
+                core.warning(`⚠️ Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`);
                 return null;
             }
         });
     }
     getBetweenDates(owner, repo, fromDate, toDate, maxPullRequests) {
         var e_1, _a;
+        var _b, _c, _d, _e;
         return __awaiter(this, void 0, void 0, function* () {
             const mergedPRs = [];
             const options = this.octokit.pulls.list.endpoint.merge({
@@ -484,8 +495,8 @@ class PullRequests {
                 direction: 'desc'
             });
             try {
-                for (var _b = __asyncValues(this.octokit.paginate.iterator(options)), _c; _c = yield _b.next(), !_c.done;) {
-                    const response = _c.value;
+                for (var _f = __asyncValues(this.octokit.paginate.iterator(options)), _g; _g = yield _f.next(), !_g.done;) {
+                    const response = _g.value;
                     const prs = response.data;
                     for (const pr of prs.filter(p => !!p.merged_at)) {
                         mergedPRs.push({
@@ -495,17 +506,24 @@ class PullRequests {
                             mergedAt: moment_1.default(pr.merged_at),
                             author: pr.user.login,
                             repoName: pr.base.repo.full_name,
-                            labels: pr.labels.map(function (label) {
+                            labels: (_b = pr.labels) === null || _b === void 0 ? void 0 : _b.map(function (label) {
                                 return label.name;
                             }),
-                            body: pr.body
+                            milestone: (_c = pr.milestone) === null || _c === void 0 ? void 0 : _c.title,
+                            body: pr.body,
+                            assignees: (_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.map(function (asignee) {
+                                return asignee.login;
+                            }),
+                            requestedReviewers: (_e = pr.requested_reviewers) === null || _e === void 0 ? void 0 : _e.map(function (reviewer) {
+                                return reviewer.login;
+                            })
                         });
                     }
                     const firstPR = prs[0];
                     if ((firstPR.merged_at && fromDate.isAfter(moment_1.default(firstPR.merged_at))) ||
                         mergedPRs.length >= maxPullRequests) {
                         if (mergedPRs.length >= maxPullRequests) {
-                            core.info(`Reached 'maxPullRequests' count ${maxPullRequests}`);
+                            core.info(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
                         }
                         // bail out early to not keep iterating on PRs super old
                         return sortPullRequests(mergedPRs, true);
@@ -515,7 +533,7 @@ class PullRequests {
             catch (e_1_1) { e_1 = { error: e_1_1 }; }
             finally {
                 try {
-                    if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                    if (_g && !_g.done && (_a = _f.return)) yield _a.call(_f);
                 }
                 finally { if (e_1) throw e_1.error; }
             }
@@ -626,67 +644,72 @@ class ReleaseNotes {
         this.options = options;
     }
     pull(token) {
+        var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const octokit = new rest_1.Octokit({
                 auth: `token ${token || process.env.GITHUB_TOKEN}`
             });
-            const { owner, repo, toTag, configuration } = this.options;
+            const { owner, repo, toTag, ignorePreReleases, configuration } = this.options;
             if (!this.options.fromTag) {
+                core.startGroup(`🔖 Resolve previous tag`);
                 core.debug(`fromTag undefined, trying to resolve via API`);
                 const tagsApi = new tags_1.Tags(octokit);
-                const previousTag = yield tagsApi.findPredecessorTag(owner, repo, toTag, configuration.max_tags_to_fetch
-                    ? configuration.max_tags_to_fetch
-                    : configuration_1.DefaultConfiguration.max_tags_to_fetch);
+                const previousTag = yield tagsApi.findPredecessorTag(owner, repo, toTag, ignorePreReleases, (_a = configuration.max_tags_to_fetch) !== null && _a !== void 0 ? _a : configuration_1.DefaultConfiguration.max_tags_to_fetch);
                 if (previousTag == null) {
-                    core.error(`Unable to retrieve previous tag given ${toTag}`);
-                    return configuration.empty_template
-                        ? configuration.empty_template
-                        : configuration_1.DefaultConfiguration.empty_template;
+                    core.error(`💥 Unable to retrieve previous tag given ${toTag}`);
+                    return ((_b = configuration.empty_template) !== null && _b !== void 0 ? _b : configuration_1.DefaultConfiguration.empty_template);
                 }
                 this.options.fromTag = previousTag.name;
                 core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`);
+                core.endGroup();
             }
+            core.startGroup(`🚀 Load pull requests`);
             const mergedPullRequests = yield this.getMergedPullRequests(octokit);
+            core.endGroup();
             if (mergedPullRequests.length === 0) {
-                core.warning(`No pull requests found for between ${this.options.fromTag}...${toTag}`);
-                return configuration.empty_template
-                    ? configuration.empty_template
-                    : configuration_1.DefaultConfiguration.empty_template;
+                core.warning(`⚠️ No pull requests found`);
+                return (_c = configuration.empty_template) !== null && _c !== void 0 ? _c : configuration_1.DefaultConfiguration.empty_template;
             }
-            return transform_1.buildChangelog(mergedPullRequests, configuration);
+            core.startGroup('📦 Build changelog');
+            const resultChangelog = transform_1.buildChangelog(mergedPullRequests, configuration);
+            core.endGroup();
+            return resultChangelog;
         });
     }
     getMergedPullRequests(octokit) {
+        var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const { owner, repo, fromTag, toTag, configuration } = this.options;
-            core.info(`Comparing ${owner}/${repo} - ${fromTag}...${toTag}`);
+            core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag}...${toTag}'`);
             const commitsApi = new commits_1.Commits(octokit);
-            const commits = yield commitsApi.getDiff(owner, repo, fromTag, toTag);
+            let commits;
+            try {
+                commits = yield commitsApi.getDiff(owner, repo, fromTag, toTag);
+            }
+            catch (error) {
+                core.error(`💥 Failed to retrieve - Invalid tag? - Because of: ${error}`);
+                return [];
+            }
             if (commits.length === 0) {
+                core.warning(`💥 No commits found between - ${fromTag}...${toTag}`);
                 return [];
             }
             const firstCommit = commits[0];
             const lastCommit = commits[commits.length - 1];
             let fromDate = firstCommit.date;
             const toDate = lastCommit.date;
-            const maxDays = configuration.max_back_track_time_days
-                ? configuration.max_back_track_time_days
-                : configuration_1.DefaultConfiguration.max_back_track_time_days;
+            const maxDays = (_a = configuration.max_back_track_time_days) !== null && _a !== void 0 ? _a : configuration_1.DefaultConfiguration.max_back_track_time_days;
             const maxFromDate = toDate.clone().subtract(maxDays, 'days');
             if (maxFromDate.isAfter(fromDate)) {
-                core.info(`Adjusted 'fromDate' to go max ${maxDays} back`);
+                core.info(`⚠️ Adjusted 'fromDate' to go max ${maxDays} back`);
                 fromDate = maxFromDate;
             }
-            core.info(`Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`);
+            core.info(`ℹ️ Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`);
             const pullRequestsApi = new pullRequests_1.PullRequests(octokit);
-            const pullRequests = yield pullRequestsApi.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests
-                ? configuration.max_pull_requests
-                : configuration_1.DefaultConfiguration.max_pull_requests);
-            core.info(`Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`);
-            const prCommits = pullRequestsApi.filterCommits(commits, configuration.exclude_merge_branches
-                ? configuration.exclude_merge_branches
-                : configuration_1.DefaultConfiguration.exclude_merge_branches);
-            core.info(`Retrieved ${prCommits.length} PR merge commits for ${owner}/${repo}`);
+            const pullRequests = yield pullRequestsApi.getBetweenDates(owner, repo, fromDate, toDate, (_b = configuration.max_pull_requests) !== null && _b !== void 0 ? _b : configuration_1.DefaultConfiguration.max_pull_requests);
+            core.info(`ℹ️ Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`);
+            const prCommits = pullRequestsApi.filterCommits(commits, (_c = configuration.exclude_merge_branches) !== null && _c !== void 0 ? _c : configuration_1.DefaultConfiguration.exclude_merge_branches);
+            core.info(`ℹ️ Retrieved ${prCommits.length} PR merge commits for ${owner}/${repo}`);
             const filteredPullRequests = [];
             const pullRequestsByNumber = {};
             for (const pr of pullRequests) {
@@ -706,11 +729,11 @@ class ReleaseNotes {
                         filteredPullRequests.push(pullRequest);
                     }
                     else {
-                        core.warning(`${prRef} not found! Commit text: ${commit.summary}`);
+                        core.warning(`⚠️ ${prRef} not found! Commit text: ${commit.summary}`);
                     }
                 }
                 else {
-                    core.info(`${prRef} not in date range, excluding from changelog`);
+                    core.info(`ℹ️ ${prRef} not in date range, excluding from changelog`);
                 }
             }
             return filteredPullRequests;
@@ -802,23 +825,49 @@ class Tags {
                 }
                 finally { if (e_1) throw e_1.error; }
             }
-            core.info(`Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`);
+            core.info(`ℹ️ Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`);
             return tagsInfo;
         });
     }
-    findPredecessorTag(owner, repo, tag, maxTagsToFetch) {
+    findPredecessorTag(owner, repo, tag, ignorePreReleases, maxTagsToFetch) {
         return __awaiter(this, void 0, void 0, function* () {
             const tags = this.sortTags(yield this.getTags(owner, repo, maxTagsToFetch));
-            const length = tags.length;
-            for (let i = 0; i < length; i++) {
-                if (tags[i].name.toLowerCase() === tag.toLowerCase()) {
-                    return tags[i + 1];
+            try {
+                const length = tags.length;
+                for (let i = 0; i < length; i++) {
+                    if (tags[i].name.toLowerCase() === tag.toLowerCase()) {
+                        if (ignorePreReleases) {
+                            core.info(`ℹ️ Enabled 'ignorePreReleases', searching for the closest release`);
+                            for (let ii = i + 1; ii < length; ii++) {
+                                if (!tags[ii].name.includes('-')) {
+                                    return tags[ii];
+                                }
+                            }
+                        }
+                        return tags[i + 1];
+                    }
                 }
+                return tags[0];
             }
-            // not found, throw exception?
-            return tags[0];
+            catch (error) {
+                return null;
+            }
         });
     }
+    /*
+    Sorts an array of tags as shown below:
+    
+    2020.4.0
+    2020.4.0-rc02
+    2020.3.2
+    2020.3.1
+    2020.3.1-rc03
+    2020.3.1-rc02
+    2020.3.1-rc01
+    2020.3.1-b01
+    2020.3.1-a01
+    2020.3.0
+    */
     sortTags(commits) {
         commits.sort((b, a) => {
             const partsA = a.name.replace(/^v/, '').split('-');
@@ -843,22 +892,6 @@ class Tags {
     }
 }
 exports.Tags = Tags;
-/*
-
-2020.3.2 ( should resolve 2020.3.1 )
-
-2020.4.0
-2020.4.0-rc02
-
-2020.3.1
-2020.3.1-rc03
-2020.3.1-rc02
-2020.3.1-rc01
-2020.3.1-b01
-2020.3.1-a01
-
-2020.3.0
-*/
 
 
 /***/ }),
@@ -893,9 +926,12 @@ const pullRequests_1 = __webpack_require__(4217);
 const core = __importStar(__webpack_require__(2186));
 const configuration_1 = __webpack_require__(5527);
 function buildChangelog(prs, config) {
+    var _a, _b, _c;
     // sort to target order
-    prs = pullRequests_1.sortPullRequests(prs, (config.sort ? config.sort : configuration_1.DefaultConfiguration.sort).toUpperCase() ===
-        'ASC');
+    const sort = (_a = config.sort) !== null && _a !== void 0 ? _a : configuration_1.DefaultConfiguration.sort;
+    const sortAsc = sort.toUpperCase() === 'ASC';
+    prs = pullRequests_1.sortPullRequests(prs, sortAsc);
+    core.info(`ℹ️ Sorted all pull requests ascending: ${sort}`);
     const validatedTransformers = validateTransfomers(config.transformers);
     const transformedMap = new Map();
     // convert PRs to their text representation
@@ -904,12 +940,13 @@ function buildChangelog(prs, config) {
             ? config.pr_template
             : configuration_1.DefaultConfiguration.pr_template), validatedTransformers));
     }
+    core.info(`ℹ️ Used ${validateTransfomers.length} transformers to adjust message`);
+    core.info(`✒️ Wrote messages for ${prs.length} pull requests`);
     // bring PRs into the order of categories
     const categorized = new Map();
-    if (config.categories) {
-        for (const category of config.categories) {
-            categorized.set(category, []);
-        }
+    const categories = (_b = config.categories) !== null && _b !== void 0 ? _b : configuration_1.DefaultConfiguration.categories;
+    for (const category of categories) {
+        categorized.set(category, []);
     }
     const uncategorized = [];
     // bring elements in order
@@ -925,6 +962,7 @@ function buildChangelog(prs, config) {
             uncategorized.push(body);
         }
     }
+    core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`);
     // construct final changelog
     let changelog = '';
     for (const [category, pullRequests] of categorized) {
@@ -937,16 +975,17 @@ function buildChangelog(prs, config) {
             changelog = `${changelog}\n`;
         }
     }
+    core.info(`✒️ Wrote ${categorized.size} categorized pull requests down`);
     let changelogUncategorized = '';
     for (const pr of uncategorized) {
         changelogUncategorized = `${changelogUncategorized + pr}\n`;
     }
+    core.info(`✒️ Wrote ${changelogUncategorized.length} non categorized pull requests down`);
     // fill template
-    let transformedChangelog = config.template
-        ? config.template
-        : configuration_1.DefaultConfiguration.template;
+    let transformedChangelog = (_c = config.template) !== null && _c !== void 0 ? _c : configuration_1.DefaultConfiguration.template;
     transformedChangelog = transformedChangelog.replace('${{CHANGELOG}}', changelog);
     transformedChangelog = transformedChangelog.replace('${{UNCATEGORIZED}}', changelogUncategorized);
+    core.info(`ℹ️ Filled template`);
     return transformedChangelog;
 }
 exports.buildChangelog = buildChangelog;
@@ -954,13 +993,18 @@ function haveCommonElements(arr1, arr2) {
     return arr1.some(item => arr2.includes(item));
 }
 function fillTemplate(pr, template) {
+    var _a, _b, _c, _d, _e, _f, _g;
     let transformed = template;
     transformed = transformed.replace('${{NUMBER}}', pr.number.toString());
     transformed = transformed.replace('${{TITLE}}', pr.title);
     transformed = transformed.replace('${{URL}}', pr.htmlURL);
     transformed = transformed.replace('${{MERGED_AT}}', pr.mergedAt.toISOString());
     transformed = transformed.replace('${{AUTHOR}}', pr.author);
+    transformed = transformed.replace('${{LABELS}}', (_b = (_a = pr.labels) === null || _a === void 0 ? void 0 : _a.join(', ')) !== null && _b !== void 0 ? _b : '');
+    transformed = transformed.replace('${{MILESTONE}}', (_c = pr.milestone) !== null && _c !== void 0 ? _c : '');
     transformed = transformed.replace('${{BODY}}', pr.body);
+    transformed = transformed.replace('${{ASSIGNEES}}', (_e = (_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.join(', ')) !== null && _e !== void 0 ? _e : '');
+    transformed = transformed.replace('${{REVIEWERS}}', (_g = (_f = pr.requestedReviewers) === null || _f === void 0 ? void 0 : _f.join(', ')) !== null && _g !== void 0 ? _g : '');
     return transformed;
 }
 function transform(filled, transformers) {
@@ -974,9 +1018,7 @@ function transform(filled, transformers) {
     return transformed;
 }
 function validateTransfomers(specifiedTransformers) {
-    const transformers = specifiedTransformers
-        ? specifiedTransformers
-        : configuration_1.DefaultConfiguration.transformers;
+    const transformers = specifiedTransformers !== null && specifiedTransformers !== void 0 ? specifiedTransformers : configuration_1.DefaultConfiguration.transformers;
     return transformers
         .map(transformer => {
         try {
@@ -986,7 +1028,7 @@ function validateTransfomers(specifiedTransformers) {
             };
         }
         catch (e) {
-            core.warning(`Bad replacer regex: ${transformer.pattern}`);
+            core.warning(`⚠️ Bad replacer regex: ${transformer.pattern}`);
             return {
                 pattern: null,
                 target: ''
@@ -1024,14 +1066,45 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.readConfiguration = void 0;
+exports.directoryExistsSync = exports.readConfiguration = void 0;
 const fs = __importStar(__webpack_require__(5747));
 function readConfiguration(filename) {
-    const rawdata = fs.readFileSync(filename, 'utf8');
-    const configurationJSON = JSON.parse(rawdata);
-    return configurationJSON;
+    try {
+        const rawdata = fs.readFileSync(filename, 'utf8');
+        const configurationJSON = JSON.parse(rawdata);
+        return configurationJSON;
+    }
+    catch (error) {
+        return null;
+    }
 }
 exports.readConfiguration = readConfiguration;
+function directoryExistsSync(path, required) {
+    if (!path) {
+        throw new Error("Arg 'path' must not be empty");
+    }
+    let stats;
+    try {
+        stats = fs.statSync(path);
+    }
+    catch (error) {
+        if (error.code === 'ENOENT') {
+            if (!required) {
+                return false;
+            }
+            throw new Error(`Directory '${path}' does not exist`);
+        }
+        throw new Error(`Encountered an error when checking whether path '${path}' exists: ${error.message}`);
+    }
+    if (stats.isDirectory()) {
+        return true;
+    }
+    else if (!required) {
+        return false;
+    }
+    throw new Error(`Directory '${path}' does not exist`);
+}
+exports.directoryExistsSync = directoryExistsSync;
 
 
 /***/ }),
