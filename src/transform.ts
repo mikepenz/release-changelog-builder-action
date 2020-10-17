@@ -110,7 +110,7 @@ function fillTemplate(pr: PullRequestInfo, template: string): string {
   transformed = transformed.replace('${{MILESTONE}}', pr.milestone ?? '')
   transformed = transformed.replace('${{BODY}}', pr.body)
   transformed = transformed.replace(
-    '${{ASIGNEES}}',
+    '${{ASSIGNEES}}',
     pr.assignees?.join(', ') ?? ''
   )
   transformed = transformed.replace(

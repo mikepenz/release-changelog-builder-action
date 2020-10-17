@@ -948,6 +948,7 @@ const pullRequests_1 = __webpack_require__(4217);
 const core = __importStar(__webpack_require__(2186));
 const configuration_1 = __webpack_require__(5527);
 function buildChangelog(prs, config) {
+    var _a;
     // sort to target order
     prs = pullRequests_1.sortPullRequests(prs, (config.sort ? config.sort : configuration_1.DefaultConfiguration.sort).toUpperCase() ===
         'ASC');
@@ -961,10 +962,9 @@ function buildChangelog(prs, config) {
     }
     // bring PRs into the order of categories
     const categorized = new Map();
-    if (config.categories) {
-        for (const category of config.categories) {
-            categorized.set(category, []);
-        }
+    const categories = (_a = config.categories) !== null && _a !== void 0 ? _a : configuration_1.DefaultConfiguration.categories;
+    for (const category of categories) {
+        categorized.set(category, []);
     }
     const uncategorized = [];
     // bring elements in order
@@ -1019,7 +1019,7 @@ function fillTemplate(pr, template) {
     transformed = transformed.replace('${{LABELS}}', (_b = (_a = pr.labels) === null || _a === void 0 ? void 0 : _a.join(', ')) !== null && _b !== void 0 ? _b : '');
     transformed = transformed.replace('${{MILESTONE}}', (_c = pr.milestone) !== null && _c !== void 0 ? _c : '');
     transformed = transformed.replace('${{BODY}}', pr.body);
-    transformed = transformed.replace('${{ASIGNEES}}', (_e = (_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.join(', ')) !== null && _e !== void 0 ? _e : '');
+    transformed = transformed.replace('${{ASSIGNEES}}', (_e = (_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.join(', ')) !== null && _e !== void 0 ? _e : '');
     transformed = transformed.replace('${{REVIEWERS}}', (_g = (_f = pr.requestedReviewers) === null || _f === void 0 ? void 0 : _f.join(', ')) !== null && _g !== void 0 ? _g : '');
     return transformed;
 }
