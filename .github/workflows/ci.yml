@@ -22,6 +22,18 @@ jobs:
     if: github.event_name  == 'pull_request'
     runs-on: ubuntu-latest
     steps:
+      # Won't support providing a configuration file, as no checkout was done
+      - name: "Configuration without Checkout"
+        id: without_checkout
+        uses: mikepenz/release-changelog-builder-action@develop
+        with:
+          toTag: "v0.0.3"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Echo Configuration without Checkout Changelog
+        run: echo "${{steps.without_checkout.outputs.changelog}}"
+
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0 # Checkout full depth so tags can be discovered automatically if not specified
@@ -32,7 +44,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Echo Minimal
+      - name: Echo Minimal Configuration Changelog
         run: echo "${{steps.minimal_release.outputs.changelog}}"
 
       - name: "Complex Configuration"
@@ -46,17 +58,13 @@ jobs:
           toTag: "v0.0.3"
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Echo Complex
+      - name: Echo Complex Configuration Changelog
         run: echo "${{steps.complex_release.outputs.changelog}}"
 
   release:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0 # Checkout full depth so tags can be discovered automatically if not specified
-
       - name: Prepare Tag
         if: startsWith(github.ref, 'refs/tags/')
         id: tag_version
@@ -66,6 +74,7 @@ jobs:
         id: github_release
         uses: mikepenz/release-changelog-builder-action@main
         with:
+          configuration: "configs/configuration_repo.json"
           toTag: ${{ steps.tag_version.outputs.VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
