@@ -71,9 +71,20 @@ ${{steps.build_changelog.outputs.changelog}}
 
 ### Changelog Configuration
 
-By default the action will look for a file called `configuration.json` within the root of the repository to load the config from. If this file does not exist, defaults are used.
+The action supports flexible configuration options to modify vast areas of its behavior. To do so, provide the configuration file to the workflow using the `configuration` setting.
 
+```yml
+- name: "Build Changelog"
+  uses: mikepenz/release-changelog-builder-action@{latest-release}
+  with:
+    configuration: "configuration.json"
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+This configuration is a `.json` file in the following format.
+
+```json
 {
     "categories": [
         {
