@@ -6,7 +6,7 @@
 </h1>
 
 <p align="center">
-    ... a github action that builds your release notes, fast, easy and exactly the way you want.
+    ... a github action that builds your release notes fast, easy and exactly the way you want.
 </p>
 
 <div align="center">
@@ -23,7 +23,7 @@
     <a href="#setup">Setup 🛠️</a> &bull;
     <a href="#customization-%EF%B8%8F">Customization 🖍️</a> &bull;
     <a href="#contribute-">Contribute 🧬</a> &bull;
-    <a href="#license">License 📓</a> &bull;
+    <a href="#license">License 📓</a>
 </p>
 
 -------
@@ -33,8 +33,8 @@
 - Super simple integration
   - even on huge repositories with hundreds of tags
 - Parallel releases support
-- Blazing fast execution
-- Suports any git project
+- Blazingly fast execution
+- Supports any git project
 - Highly flexible configuration
 - Lightweight
 - Supports any branch
@@ -56,11 +56,11 @@ Specify the action as part of your GitHub actions workflow:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-By default the action will try to automatically retrieve the `tag` from the current commit, and automtacally resolve the `tag` before. Read more about this here.
+By default the action will try to automatically retrieve the `tag` from the current commit and automtacally resolve the `tag` before. Read more about this here.
 
 ### Action outputs
 
-The action will succeed and return the `changelog` as a step output. Use it in any follow up step, by referencing via its id. For example `build_changelog`.
+The action will succeed and return the `changelog` as a step output. Use it in any follow up step by referencing via its id. For example `build_changelog`.
 
 ```yml
 # ${{steps.{CHANGELOG_STEP_ID}.outputs.changelog}}
@@ -108,7 +108,7 @@ By default the action will look for a file called `configuration.json` within th
 }
 ```
 
-Any section of the configruation can be ommited, to have defaults apply
+Any section of the configruation can be ommited to have defaults apply.
 Defaults for the configuraiton can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
 
 
@@ -131,7 +131,7 @@ For advanced usecases additional settings can be provided to the action
     token: ${{ secrets.PAT }}
 ```
 
-💡 `ignorePreReleases` will be ignored, if `fromTag` is specified. `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repos please use a PAT.
+💡 `ignorePreReleases` will be ignored, if `fromTag` is specified. `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repos please use a PAT (Personal Access Token).
 
 ### PR Template placeholders
 
@@ -176,7 +176,7 @@ $ npm test
 $ npm run lint -- --fix
 ```
 
-It's suggested to export the token to your path, before running the tests, so API calls can be done to github.
+It's suggested to export the token to your path before running the tests, so that API calls can be done to github.
 
 ```bash
 export GITHUB_TOKEN=your_personal_github_pat
@@ -190,7 +190,7 @@ export GITHUB_TOKEN=your_personal_github_pat
 
 ## Credits
 
-Core parts of the PR fetching logic, are based on [pull-release-notes](https://github.com/nblagoev/pull-release-notes)
+Core parts of the PR fetching logic are based on [pull-release-notes](https://github.com/nblagoev/pull-release-notes)
 - Nikolay Blagoev - [GitHub](https://github.com/nblagoev/)
 
 ## License
