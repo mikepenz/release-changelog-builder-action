@@ -1,5 +1,5 @@
 import {Octokit} from '@octokit/rest'
-import {Commits} from './commits'
+import { Commits, CommitInfo } from './commits';
 import {PullRequestInfo, PullRequests} from './pullRequests'
 import {buildChangelog} from './transform'
 import * as core from '@actions/core'
@@ -52,9 +52,7 @@ export class ReleaseNotes {
     const mergedPullRequests = await this.getMergedPullRequests(octokit)
 
     if (mergedPullRequests.length === 0) {
-      core.warning(
-        `No pull requests found for between ${this.options.fromTag}...${toTag}`
-      )
+      core.warning(`No pull requests found`)
       return configuration.empty_template
         ? configuration.empty_template
         : DefaultConfiguration.empty_template
@@ -70,9 +68,15 @@ export class ReleaseNotes {
     core.info(`Comparing ${owner}/${repo} - ${fromTag}...${toTag}`)
 
     const commitsApi = new Commits(octokit)
-    const commits = await commitsApi.getDiff(owner, repo, fromTag!!, toTag)
-
+    let commits: CommitInfo[]
+    try {
+      commits = await commitsApi.getDiff(owner, repo, fromTag!!, toTag)
+    } catch (error) {
+      core.error(`Failed to retrieve - Invalid tag? - Because of: ${error}`)
+      return []
+    }
     if (commits.length === 0) {
+      core.warning(`No commits found between - ${fromTag}...${toTag}`)
       return []
     }
 
