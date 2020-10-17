@@ -674,7 +674,7 @@ class ReleaseNotes {
             });
             const { owner, repo, toTag, ignorePreReleases, configuration } = this.options;
             if (!this.options.fromTag) {
-                core.startGroup(`:bookmark: Resolve 'fromTag'`);
+                core.startGroup(`🔖 Resolve 'fromTag'`);
                 core.debug(`fromTag undefined, trying to resolve via API`);
                 const tagsApi = new tags_1.Tags(octokit);
                 const previousTag = yield tagsApi.findPredecessorTag(owner, repo, toTag, ignorePreReleases, (_a = configuration.max_tags_to_fetch) !== null && _a !== void 0 ? _a : configuration_1.DefaultConfiguration.max_tags_to_fetch);
@@ -703,7 +703,7 @@ class ReleaseNotes {
         var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const { owner, repo, fromTag, toTag, configuration } = this.options;
-            core.info(`ℹ️ Comparing ${owner}/${repo} - ${fromTag}...${toTag}`);
+            core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag}...${toTag}'`);
             const commitsApi = new commits_1.Commits(octokit);
             let commits;
             try {
@@ -949,10 +949,12 @@ const pullRequests_1 = __webpack_require__(4217);
 const core = __importStar(__webpack_require__(2186));
 const configuration_1 = __webpack_require__(5527);
 function buildChangelog(prs, config) {
-    var _a;
+    var _a, _b, _c;
     // sort to target order
-    prs = pullRequests_1.sortPullRequests(prs, (config.sort ? config.sort : configuration_1.DefaultConfiguration.sort).toUpperCase() ===
-        'ASC');
+    const sort = (_a = config.sort) !== null && _a !== void 0 ? _a : configuration_1.DefaultConfiguration.sort;
+    const sortAsc = (sort).toUpperCase() === 'ASC';
+    prs = pullRequests_1.sortPullRequests(prs, sortAsc);
+    core.info(`ℹ️ Sorted all pull requests ascending: ${sort}`);
     const validatedTransformers = validateTransfomers(config.transformers);
     const transformedMap = new Map();
     // convert PRs to their text representation
@@ -961,9 +963,11 @@ function buildChangelog(prs, config) {
             ? config.pr_template
             : configuration_1.DefaultConfiguration.pr_template), validatedTransformers));
     }
+    core.info(`ℹ️ Used ${validateTransfomers.length} transformers to adjust message`);
+    core.info(`✏️ Wrote messages for ${prs.length} pull requests`);
     // bring PRs into the order of categories
     const categorized = new Map();
-    const categories = (_a = config.categories) !== null && _a !== void 0 ? _a : configuration_1.DefaultConfiguration.categories;
+    const categories = (_b = config.categories) !== null && _b !== void 0 ? _b : configuration_1.DefaultConfiguration.categories;
     for (const category of categories) {
         categorized.set(category, []);
     }
@@ -981,6 +985,7 @@ function buildChangelog(prs, config) {
             uncategorized.push(body);
         }
     }
+    core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`);
     // construct final changelog
     let changelog = '';
     for (const [category, pullRequests] of categorized) {
@@ -993,16 +998,17 @@ function buildChangelog(prs, config) {
             changelog = `${changelog}\n`;
         }
     }
+    core.info(`✏️ Wrote ${categorized.size} categorized pull requests down`);
     let changelogUncategorized = '';
     for (const pr of uncategorized) {
         changelogUncategorized = `${changelogUncategorized + pr}\n`;
     }
+    core.info(`✏️ Wrote ${changelogUncategorized.length} non categorized pull requests down`);
     // fill template
-    let transformedChangelog = config.template
-        ? config.template
-        : configuration_1.DefaultConfiguration.template;
+    let transformedChangelog = (_c = config.template) !== null && _c !== void 0 ? _c : configuration_1.DefaultConfiguration.template;
     transformedChangelog = transformedChangelog.replace('${{CHANGELOG}}', changelog);
     transformedChangelog = transformedChangelog.replace('${{UNCATEGORIZED}}', changelogUncategorized);
+    core.info(`ℹ️ Filled template`);
     return transformedChangelog;
 }
 exports.buildChangelog = buildChangelog;
@@ -1035,9 +1041,7 @@ function transform(filled, transformers) {
     return transformed;
 }
 function validateTransfomers(specifiedTransformers) {
-    const transformers = specifiedTransformers
-        ? specifiedTransformers
-        : configuration_1.DefaultConfiguration.transformers;
+    const transformers = specifiedTransformers !== null && specifiedTransformers !== void 0 ? specifiedTransformers : configuration_1.DefaultConfiguration.transformers;
     return transformers
         .map(transformer => {
         try {

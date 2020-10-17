@@ -1,5 +1,5 @@
 <div align="center">
-  :octocat:
+  :octocat:📄🔖📦
 </div>
 <h1 align="center">
   release-changelog-builder-action

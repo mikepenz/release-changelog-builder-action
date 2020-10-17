@@ -26,7 +26,7 @@ export class ReleaseNotes {
     const {owner, repo, toTag, ignorePreReleases, configuration} = this.options
 
     if (!this.options.fromTag) {
-      core.startGroup(`:bookmark: Resolve 'fromTag'`)
+      core.startGroup(`🔖 Resolve 'fromTag'`)
       core.debug(`fromTag undefined, trying to resolve via API`)
       const tagsApi = new Tags(octokit)
 
@@ -68,7 +68,7 @@ export class ReleaseNotes {
     octokit: Octokit
   ): Promise<PullRequestInfo[]> {
     const {owner, repo, fromTag, toTag, configuration} = this.options
-    core.info(`ℹ️ Comparing ${owner}/${repo} - ${fromTag}...${toTag}`)
+    core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag}...${toTag}'`)
 
     const commitsApi = new Commits(octokit)
     let commits: CommitInfo[]
