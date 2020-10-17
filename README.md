@@ -23,6 +23,7 @@
     <a href="#setup">Setup 🛠️</a> &bull;
     <a href="#customization-%EF%B8%8F">Customization 🖍️</a> &bull;
     <a href="#contribute-">Contribute 🧬</a> &bull;
+    <a href="#complete-sample-">Complete Sample 🖥️</a> &bull;
     <a href="#license">License 📓</a>
 </p>
 
@@ -170,6 +171,47 @@ Table of supported placeholders allowed to be used in the `pr_template` configur
 | `${{CHANGELOG}}`     | The contents of the changelog, matching the labels as specified in the categories configuration |
 | `${{UNCATEGORIZED}}` | All pull requests not matching a specified label in categories                                  |
 
+
+## Complete Sample 🖥️
+
+Below is a complete example showcasing how to define a build, which is executed when tagging the project. It consists of:
+- Prepare tag, via the GITHUB_REF environment variable
+- Build changelog, given the tag
+- Create release on GitHub - specifying body with constructed changelog
+ 
+```yml
+name: 'CI'
+on:
+  push:
+    tags:
+      - '*'
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Retrieve tag
+        if: startsWith(github.ref, 'refs/tags/')
+        id: tag_version
+        run: echo ::set-output name=VERSION::$(echo ${GITHUB_REF:10})
+
+      - name: Build Changelog
+        id: github_release
+        uses: mikepenz/release-changelog-builder-action@main
+        with:
+          toTag: ${{ steps.tag_version.outputs.VERSION }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          body: ${{steps.github_release.outputs.changelog}}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
 
 ## Contribute 🧬
 
