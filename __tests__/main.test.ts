@@ -21,6 +21,23 @@ test('test runs', () => {
   console.log(cp.execSync(`node ${ip}`, options).toString())
 })
 */
+it('Should have empty changelog (tags)', async () => {
+  jest.setTimeout(180000)
+
+  const configuration = readConfiguration('configs/configuration.json')
+  const releaseNotes = new ReleaseNotes({
+    owner: 'mikepenz',
+    repo: 'release-changelog-builder-action',
+    fromTag: 'v0.0.1',
+    toTag: 'v0.0.2',
+    ignorePreReleases: false,
+    configuration: configuration
+  })
+
+  const changeLog = await releaseNotes.pull()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(`- no changes`)
+})
 
 it('Should match generated changelog (tags)', async () => {
   jest.setTimeout(180000)
