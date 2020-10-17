@@ -39,7 +39,7 @@ jobs:
         id: complex_release
         uses: ./
         with:
-          configuration: "configuration_complex.json"
+          configuration: "configs/configuration_complex.json"
           owner: "mikepenz"
           repo: "release-changelog-builder-action"
           fromTag: "v0.0.1"
