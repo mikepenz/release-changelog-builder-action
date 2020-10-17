@@ -1,11 +1,49 @@
+<div align="center">
+  :octocat:
+</div>
+<h1 align="center">
+  release-changelog-builder-action
+</h1>
 
-# release-changelog-builder-action
+<p align="center">
+    ... a github action that builds your release notes, fast, easy and exactly the way you want.
+</p>
 
-Builds the release notes between two tags (or refs) from pull requests merged.
+<div align="center">
+  <a href="https://github.com/mikepenz/release-changelog-builder-action/actions">
+		<img src="https://github.com/mikepenz/release-changelog-builder-action/workflows/CI/badge.svg"/>
+	</a>
+</div>
+<br />
 
-## Action usage
+-------
 
-Include this action in your build by defining the action in your workflow:
+<p align="center">
+    <a href="#whats-included-">What's included 🚀</a> &bull;
+    <a href="#setup">Setup 🛠️</a> &bull;
+    <a href="#customization-">Customization 🖍️</a> &bull;
+    <a href="#contribute-">Contribute 🧬</a> &bull;
+    <a href="#license">License 📓</a> &bull;
+</p>
+
+-------
+
+### What's included 🚀
+
+- Super simple integration
+  - even on huge repositories with hundreds of tags
+- Parallel releases support
+- Blazing fast execution
+- Suports any git project
+- Highly flexible configuration
+- Lightweight
+- Supports any branch
+
+# Setup
+
+## Configure the workflow
+
+Specify the action as part of your GitHub actions workflow:
 
 ```yml
 - name: "Build Changelog"
@@ -16,17 +54,20 @@ Include this action in your build by defining the action in your workflow:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-This will automatically pull the tag from the current commit (the latest tag), and try to resolve the tag before this.
+By default the action will try to automatically retrieve the `tag` from the current commit, and automtacally resolve the `tag` before. Read more about this here.
 
 ## Action outputs
 
-The result of this action is returned via the outputs, and can be retrieved via the `changelog` value in the step afterwards. See the `test.yml` for a sample.
+The action will succeed and return the `changelog` as a step output. Use it in any follow up step, by referencing via its id. For example `build_changelog`.
 
 ```yml
+# ${{steps.{CHANGELOG_STEP_ID}.outputs.changelog}}
 ${{steps.build_changelog.outputs.changelog}}
 ```
 
-## Configuration
+# Customization 🖍️
+
+## Changelog Configuration
 
 By default the action will look for a file called `configuration.json` within the root of the repository to load the config from. If this file does not exist, defaults are used.
 
@@ -36,10 +77,6 @@ By default the action will look for a file called `configuration.json` within th
         {
             "title": "## 🚀 Features",
             "labels": ["feature"]
-        },
-        {
-            "title": "## 🦄 Internal Features",
-            "labels": ["internal"]
         },
         {
             "title": "## 🐛 Fixes",
@@ -86,32 +123,38 @@ For advanced usecases additional settings can be provided to the action
     configuration: "configuration_complex.json"
     owner: "mikepenz"
     repo: "release-changelog-builder-action"
-    ignorePreReleases: "false" # allows to skip any pre releases, if `fromTag` needs to be automatically resolved (ignores 0.0.2-rc02 for example) - only relevant if `fromTag` is not provided
+    ignorePreReleases: "false"
     fromTag: "0.0.2"
     toTag: "0.0.3"
-    token: ${{ secrets.GITHUB_TOKEN }} # the token to use, for a different repository a PAT is required (Personal access token)
+    token: ${{ secrets.PAT }}
 ```
+
+💡 `ignorePreReleases` will be ignored, if `fromTag` is specified. `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repos please use a PAT.
 
 ## PR Template placeholders
 
-| Variable  | Description      |
-| --------- | -------------------------- |
-| `${{NUMBER}}` | Pull request number  |
-| `${{TITLE}}`  | The title of the pull request |
-| `${{URL}}` | The URL linking to the pull request   |
-| `${{MERGED_AT}}`   | The time this PR was merged   |
-| `${{AUTHOR}}`    | The author of the pull request |
-| `${{BODY}}`    | The body / description of the pull request |
+Table of supported placeholders allowed to be used in the `template` configuration.
 
-## Template placeholdrs
+| **Placeholder**  | **Description**                                             |
+|------------------|-------------------------------------------------------------|
+| `${{NUMBER}}`    | The number referencing this pull request. E.g. 13           |
+| `${{TITLE}}`     | Specified title of the merged pull request                  |
+| `${{URL}}`       | Url linking to the pull request on GitHub                   |
+| `${{MERGED_AT}}` | The ISO time, the pull request was merged at                |
+| `${{AUTHOR}}`    | Author creating and opening the pull request                |
+| `${{BODY}}`      | Description/Body of the pull request as specified on GitHub |
 
-| Variable  | Description      |
-| --------- | -------------------------- |
-| `${{CHANGELOG}}` | The contents of the main changelog, matching the labels as specified in the categories configuration  |
-| `${{UNCATEGORIZED}}`  | All pull requests not matching a label |
+## Template placeholders
+
+Table of supported placeholders allowed to be used in the `pr_template` configuration.
+
+| **Placeholder**      | **Description**                                                                                 |
+|----------------------|-------------------------------------------------------------------------------------------------|
+| `${{CHANGELOG}}`     | The contents of the changelog, matching the labels as specified in the categories configuration |
+| `${{UNCATEGORIZED}}` | All pull requests not matching a specified label in categories                                  |
 
 
-# Contribute
+# Contribute 🧬
 
 ```bash
 # Install the dependencies  
@@ -132,7 +175,6 @@ It's suggested to export the token to your path, before running the tests, so AP
 ```bash
 export GITHUB_TOKEN=your_personal_github_pat
 ```
-
 
 # Developed By
 
