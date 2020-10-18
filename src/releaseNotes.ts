@@ -49,6 +49,13 @@ export class ReleaseNotes {
       core.endGroup()
     }
 
+    if (!this.options.fromTag) {
+      core.error(`💥 Missing or couldn't resolve 'fromTag'`)
+      return configuration.empty_template ?? DefaultConfiguration.empty_template
+    } else {
+      core.setOutput('fromTag', this.options.fromTag)
+    }
+
     core.startGroup(`🚀 Load pull requests`)
     const mergedPullRequests = await this.getMergedPullRequests(octokit)
     core.endGroup()

@@ -51,7 +51,6 @@ Specify the action as part of your GitHub actions workflow:
 ```yml
 - name: "Build Changelog"
   id: build_changelog
-  if: startsWith(github.ref, 'refs/tags/')
   uses: mikepenz/release-changelog-builder-action@{latest-release}
   env:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -61,12 +60,22 @@ By default the action will try to automatically retrieve the `tag` from the curr
 
 ### Action outputs
 
-The action will succeed and return the `changelog` as a step output. Use it in any follow up step by referencing via its id. For example `build_changelog`.
+After action execution it will return the `changelog` and additional information as step output. You can use it in any follow up step by referenceing the output by referencing it via the steps id. For example `build_changelog`.
 
 ```yml
 # ${{steps.{CHANGELOG_STEP_ID}.outputs.changelog}}
 ${{steps.build_changelog.outputs.changelog}}
 ```
+
+A full set list of possible output values for this action.
+
+| **Output**          | **Description**                                                                     |
+|---------------------|-------------------------------------------------------------------------------------|
+| `outputs.changelog` | The built release changelog built from the merged pull requests                     |
+| `outputs.owner`     | Specifies the owner of the repository processed                                     |
+| `outputs.repo`      | Describes the repository name, which was processed                                  |
+| `outputs.fromTag`   | Defines the `fromTag` which describes the lower bound to process pull requests for  |
+| `outputs.toTag`     | Defines the `toTag` which describes the upper bound to process pull request for     |
 
 ## Customization 🖍️
 
@@ -190,16 +199,9 @@ on:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
-      - name: Retrieve tag
-        if: startsWith(github.ref, 'refs/tags/')
-        id: tag_version
-        run: echo ::set-output name=VERSION::$(echo ${GITHUB_REF:10})
-
       - name: Build Changelog
         id: github_release
         uses: mikepenz/release-changelog-builder-action@main
-        with:
-          toTag: ${{ steps.tag_version.outputs.VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
