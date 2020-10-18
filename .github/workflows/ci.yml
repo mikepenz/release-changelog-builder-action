@@ -34,7 +34,8 @@ jobs:
       - name: Echo Configuration without Checkout Changelog
         run: echo "${{steps.without_checkout.outputs.changelog}}"
 
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
         with:
           fetch-depth: 0 # Checkout full depth so tags can be discovered automatically if not specified
 
@@ -65,6 +66,9 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
       - name: Prepare Tag
         if: startsWith(github.ref, 'refs/tags/')
         id: tag_version
