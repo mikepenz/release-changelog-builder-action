@@ -89,6 +89,7 @@ async function run(): Promise<void> {
       core.error(`💥 Missing or couldn't resolve 'owner'`)
       return
     } else {
+      core.setOutput('owner', owner)
       core.debug(`Resolved 'owner' as ${owner}`)
     }
 
@@ -96,6 +97,7 @@ async function run(): Promise<void> {
       core.error(`💥 Missing or couldn't resolve 'owner'`)
       return
     } else {
+      core.setOutput('repo', repo)
       core.debug(`Resolved 'repo' as ${repo}`)
     }
 
@@ -103,6 +105,7 @@ async function run(): Promise<void> {
       core.error(`💥 Missing or couldn't resolve 'toTag'`)
       return
     } else {
+      core.setOutput('toTag', toTag)
       core.debug(`Resolved 'toTag' as ${toTag}`)
     }
     core.endGroup()
