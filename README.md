@@ -21,9 +21,9 @@
 <p align="center">
     <a href="#whats-included-">What's included 🚀</a> &bull;
     <a href="#setup">Setup 🛠️</a> &bull;
+    <a href="#full-sample-%EF%B8%8F">Full Sample 🖥️</a> &bull;
     <a href="#customization-%EF%B8%8F">Customization 🖍️</a> &bull;
     <a href="#contribute-">Contribute 🧬</a> &bull;
-    <a href="#complete-sample-%EF%B8%8F">Complete Sample 🖥️</a> &bull;
     <a href="#license">License 📓</a>
 </p>
 
@@ -79,9 +79,45 @@ A full set list of possible output values for this action.
 | `outputs.toTag`     | Defines the `toTag` which describes the upper bound to process pull request for                                           |
 | `outputs.failed`    | Defines if there was an issue with the action run, and the changelog may not have been generated correctly. [true, false] |
 
+
+## Full Sample 🖥️
+
+Below is a complete example showcasing how to define a build, which is executed when tagging the project. It consists of:
+- Prepare tag, via the GITHUB_REF environment variable
+- Build changelog, given the tag
+- Create release on GitHub - specifying body with constructed changelog
+ 
+```yml
+name: 'CI'
+on:
+  push:
+    tags:
+      - '*'
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Changelog
+        id: github_release
+        uses: mikepenz/release-changelog-builder-action@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          body: ${{steps.github_release.outputs.changelog}}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+
 ## Customization 🖍️
 
-### Changelog Configuration
+### Configuration
 
 The action supports flexible configuration options to modify vast areas of its behavior. To do so, provide the configuration file to the workflow using the `configuration` setting.
 
@@ -131,9 +167,9 @@ This configuration is a `.json` file in the following format.
 }
 ```
 
-Any section of the configruation can be ommited to have defaults apply.
-Defaults for the configuraiton can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
-
+Any section of the configuration can be ommited to have defaults apply.
+Defaults for the configuration can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
+Please see the [Configuration Specification](https://github.com/mikepenz/release-changelog-builder-action#configuration-specification) for detailed descriptions on the offered configuration options. 
 
 ### Advanced workflow specification
 
@@ -149,12 +185,12 @@ For advanced usecases additional settings can be provided to the action
     owner: "mikepenz"
     repo: "release-changelog-builder-action"
     ignorePreReleases: "false"
-    fromTag: "0.0.2"
-    toTag: "0.0.3"
+    fromTag: "0.3.0"
+    toTag: "0.5.0"
     token: ${{ secrets.PAT }}
 ```
 
-💡 All input values are optional. It is only required to privde the `token` either via the input, or as `env` variable.
+💡 All input values are optional. It is only required to provide the `token` either via the input, or as `env` variable.
 
 | **Input**         | **Description**                                                                                                                                                          |
 |-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -196,40 +232,26 @@ Table of supported placeholders allowed to be used in the `pr_template` configur
 | `${{CHANGELOG}}`     | The contents of the changelog, matching the labels as specified in the categories configuration |
 | `${{UNCATEGORIZED}}` | All pull requests not matching a specified label in categories                                  |
 
+### Configuration Specification
 
-## Complete Sample 🖥️
+Table of descriptions for the `configuration.json` options. 
 
-Below is a complete example showcasing how to define a build, which is executed when tagging the project. It consists of:
-- Prepare tag, via the GITHUB_REF environment variable
-- Build changelog, given the tag
-- Create release on GitHub - specifying body with constructed changelog
- 
-```yml
-name: 'CI'
-on:
-  push:
-    tags:
-      - '*'
-
-  release:
-    if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Build Changelog
-        id: github_release
-        uses: mikepenz/release-changelog-builder-action@main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create Release
-        uses: actions/create-release@v1
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
-          body: ${{steps.github_release.outputs.changelog}}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-```
+| **Input**                | **Description**                                                                                                                                                                                                                   |
+|--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| categories               | An array of `category` specifications, offering a flexible way to group changes into categories                                                                                                                                   |
+| category.title           | The display name of a category in the changelog                                                                                                                                                                                   |
+| category.labels          | An array of labels, to match pull request label against. If any PR label, matches any category label, the pull request will show up under this category                                                                           |
+| sort                     | The sort order of pull requests. [ASC, DESC]                                                                                                                                                                                      |
+| template                 | Specifies the global template to pick for creating the changelog. See [Template placeholders](https://github.com/mikepenz/release-changelog-builder-action#template-placeholders) for possible values                             |
+| pr_template              | Defines the per pull request template. See [PR Template placeholders](https://github.com/mikepenz/release-changelog-builder-action#pr-template-placeholders) for possible values                                                  |
+| empty_template           | Template to pick if no changes are detected. Does not support placeholders                                                                                                                                                        |
+| transformers             | An array of `transform` specification, offering a flexible API to modify the text per pull request. This is applied on the change text created with `pr_template`. `transformers` are executed per change, in the order specified |
+| transformer.pattern      | A `regex` pattern, extracting values of the change message.                                                                                                                                                                       |
+| transformer.target       | The result pattern, the regex groups will be filled into. Allows for full transformation of a pull request message. Including potentially specified texts                                                                         |
+| max_tags_to_fetch        | The maximum amount of tags to load from the API to find the previous tag. Loaded paginated with 100 per page                                                                                                                      |
+| max_pull_requests        | The maximum amount of pull requests to load from the API. Loaded paginated with 30 per page                                                                                                                                       |
+| max_back_track_time_days | Defines the max amount of days to go back in time per changelog                                                                                                                                                                   |
+| exclude_merge_branches   | An array of branches to be ignored from processing as merge commits                                                                                                                                                               |
 
 ## Contribute 🧬
 
