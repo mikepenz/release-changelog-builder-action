@@ -199,16 +199,9 @@ on:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
-      - name: Retrieve tag
-        if: startsWith(github.ref, 'refs/tags/')
-        id: tag_version
-        run: echo ::set-output name=VERSION::$(echo ${GITHUB_REF:10})
-
       - name: Build Changelog
         id: github_release
         uses: mikepenz/release-changelog-builder-action@main
-        with:
-          toTag: ${{ steps.tag_version.outputs.VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
