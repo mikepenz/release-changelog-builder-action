@@ -48,11 +48,21 @@ async function run(): Promise<void> {
     const ignorePreReleases = core.getInput('ignorePreReleases')
 
     if (!toTag) {
-      // if not specified try to retrieve tag from git
-      const gitHelper = await createCommandManager(repositoryPath)
-      const latestTag = await gitHelper.latestTag()
-      toTag = latestTag
-      core.debug(`toTag = '${latestTag}'`)
+      // if not specified try to retrieve tag from github.context.ref
+      if (github.context.ref.startsWith('refs/tags/')) {
+        toTag = github.context.ref.replace('refs/tags/', '')
+        core.info(
+          `🔖 Resolved current tag (${toTag}) from the 'github.context.ref'`
+        )
+      } else {
+        // if not specified try to retrieve tag from git
+        const gitHelper = await createCommandManager(repositoryPath)
+        const latestTag = await gitHelper.latestTag()
+        toTag = latestTag
+        core.info(
+          `🔖 Resolved current tag (${toTag}) from 'git rev-list --tags --skip=0 --max-count=1'`
+        )
+      }
     }
 
     if (!owner || !repo) {
