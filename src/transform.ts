@@ -12,7 +12,7 @@ export function buildChangelog(
   config: Configuration
 ): string {
   // sort to target order
-  const sort = config.sort ?? DefaultConfiguration.sort
+  const sort = config.sort || DefaultConfiguration.sort
   const sortAsc = sort.toUpperCase() === 'ASC'
   prs = sortPullRequests(prs, sortAsc)
   core.info(`ℹ️ Sorted all pull requests ascending: ${sort}`)
@@ -41,7 +41,7 @@ export function buildChangelog(
 
   // bring PRs into the order of categories
   const categorized = new Map<Category, string[]>()
-  const categories = config.categories ?? DefaultConfiguration.categories
+  const categories = config.categories || DefaultConfiguration.categories
   for (const category of categories) {
     categorized.set(category, [])
   }
@@ -89,7 +89,7 @@ export function buildChangelog(
   )
 
   // fill template
-  let transformedChangelog = config.template ?? DefaultConfiguration.template
+  let transformedChangelog = config.template || DefaultConfiguration.template
   transformedChangelog = transformedChangelog.replace(
     '${{CHANGELOG}}',
     changelog
@@ -113,16 +113,16 @@ function fillTemplate(pr: PullRequestInfo, template: string): string {
   transformed = transformed.replace('${{URL}}', pr.htmlURL)
   transformed = transformed.replace('${{MERGED_AT}}', pr.mergedAt.toISOString())
   transformed = transformed.replace('${{AUTHOR}}', pr.author)
-  transformed = transformed.replace('${{LABELS}}', pr.labels?.join(', ') ?? '')
-  transformed = transformed.replace('${{MILESTONE}}', pr.milestone ?? '')
+  transformed = transformed.replace('${{LABELS}}', pr.labels?.join(', ') || '')
+  transformed = transformed.replace('${{MILESTONE}}', pr.milestone || '')
   transformed = transformed.replace('${{BODY}}', pr.body)
   transformed = transformed.replace(
     '${{ASSIGNEES}}',
-    pr.assignees?.join(', ') ?? ''
+    pr.assignees?.join(', ') || ''
   )
   transformed = transformed.replace(
     '${{REVIEWERS}}',
-    pr.requestedReviewers?.join(', ') ?? ''
+    pr.requestedReviewers?.join(', ') || ''
   )
   return transformed
 }
@@ -142,7 +142,7 @@ function validateTransfomers(
   specifiedTransformers: Transformer[]
 ): RegexTransformer[] {
   const transformers =
-    specifiedTransformers ?? DefaultConfiguration.transformers
+    specifiedTransformers || DefaultConfiguration.transformers
   return transformers
     .map(transformer => {
       try {

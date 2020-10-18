@@ -27,8 +27,8 @@ async function run(): Promise<void> {
 
     // read in repository inputs
     const token = core.getInput('token')
-    const owner = core.getInput('owner') ?? github.context.repo.owner
-    const repo = core.getInput('repo') ?? github.context.repo.repo
+    const owner = core.getInput('owner') || github.context.repo.owner
+    const repo = core.getInput('repo') || github.context.repo.repo
     // read in from, to tag inputs
     const fromTag = core.getInput('fromTag')
     let toTag = core.getInput('toTag')
@@ -92,8 +92,8 @@ async function run(): Promise<void> {
 
     core.setOutput(
       'changelog',
-      (await releaseNotes.pull(token)) ??
-        configuration.empty_template ??
+      (await releaseNotes.pull(token)) ||
+        configuration.empty_template ||
         DefaultConfiguration.empty_template
     )
   } catch (error) {
