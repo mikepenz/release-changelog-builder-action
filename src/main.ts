@@ -27,8 +27,8 @@ async function run(): Promise<void> {
 
     // read in repository inputs
     const token = core.getInput('token')
-    const owner = core.getInput('owner') ?? github.context.repo.owner
-    const repo = core.getInput('repo') ?? github.context.repo.repo
+    const owner = core.getInput('owner') ?? github.context.repo.owner ?? core.getInput('repository').split('/')[0]
+    const repo = core.getInput('repo') ?? github.context.repo.repo ?? core.getInput('repository').split('/')[1]
     // read in from, to tag inputs
     const fromTag = core.getInput('fromTag')
     let toTag = core.getInput('toTag')
