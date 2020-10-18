@@ -5,6 +5,7 @@ import {buildChangelog} from './transform'
 import * as core from '@actions/core'
 import {Tags} from './tags'
 import {Configuration, DefaultConfiguration} from './configuration'
+import {failOrError} from './utils'
 
 export interface ReleaseNotesOptions {
   owner: string // the owner of the repository
@@ -12,18 +13,26 @@ export interface ReleaseNotesOptions {
   fromTag: string | null // the tag/ref to start from
   toTag: string // the tag/ref up to
   ignorePreReleases: boolean // defines if we should ignore any pre-releases for matching, only relevant if fromTag is null
+  failOnError: boolean // defines if we should fail the action in case of an error
   configuration: Configuration // the configuration as defined in `configuration.ts`
 }
 
 export class ReleaseNotes {
   constructor(private options: ReleaseNotesOptions) {}
 
-  async pull(token?: string): Promise<string> {
+  async pull(token?: string): Promise<string | null> {
     const octokit = new Octokit({
       auth: `token ${token || process.env.GITHUB_TOKEN}`
     })
 
-    const {owner, repo, toTag, ignorePreReleases, configuration} = this.options
+    const {
+      owner,
+      repo,
+      toTag,
+      ignorePreReleases,
+      failOnError,
+      configuration
+    } = this.options
 
     if (!this.options.fromTag) {
       core.startGroup(`🔖 Resolve previous tag`)
@@ -39,10 +48,11 @@ export class ReleaseNotes {
           DefaultConfiguration.max_tags_to_fetch
       )
       if (previousTag == null) {
-        core.error(`💥 Unable to retrieve previous tag given ${toTag}`)
-        return (
-          configuration.empty_template ?? DefaultConfiguration.empty_template
+        failOrError(
+          `💥 Unable to retrieve previous tag given ${toTag}`,
+          failOnError
         )
+        return null
       }
       this.options.fromTag = previousTag.name
       core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`)
@@ -50,8 +60,8 @@ export class ReleaseNotes {
     }
 
     if (!this.options.fromTag) {
-      core.error(`💥 Missing or couldn't resolve 'fromTag'`)
-      return configuration.empty_template ?? DefaultConfiguration.empty_template
+      failOrError(`💥 Missing or couldn't resolve 'fromTag'`, failOnError)
+      return null
     } else {
       core.setOutput('fromTag', this.options.fromTag)
     }
@@ -62,7 +72,7 @@ export class ReleaseNotes {
 
     if (mergedPullRequests.length === 0) {
       core.warning(`⚠️ No pull requests found`)
-      return configuration.empty_template ?? DefaultConfiguration.empty_template
+      return null
     }
 
     core.startGroup('📦 Build changelog')
@@ -74,7 +84,14 @@ export class ReleaseNotes {
   private async getMergedPullRequests(
     octokit: Octokit
   ): Promise<PullRequestInfo[]> {
-    const {owner, repo, fromTag, toTag, configuration} = this.options
+    const {
+      owner,
+      repo,
+      fromTag,
+      toTag,
+      failOnError,
+      configuration
+    } = this.options
     core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag}...${toTag}'`)
 
     const commitsApi = new Commits(octokit)
@@ -82,11 +99,14 @@ export class ReleaseNotes {
     try {
       commits = await commitsApi.getDiff(owner, repo, fromTag!!, toTag)
     } catch (error) {
-      core.error(`💥 Failed to retrieve - Invalid tag? - Because of: ${error}`)
+      failOrError(
+        `💥 Failed to retrieve - Invalid tag? - Because of: ${error}`,
+        failOnError
+      )
       return []
     }
     if (commits.length === 0) {
-      core.warning(`💥 No commits found between - ${fromTag}...${toTag}`)
+      core.warning(`⚠️ No commits found between - ${fromTag}...${toTag}`)
       return []
     }
 
