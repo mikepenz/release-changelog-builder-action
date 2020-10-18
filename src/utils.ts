@@ -1,7 +1,71 @@
 import * as fs from 'fs'
-import {Configuration} from './configuration'
+import {Configuration, DefaultConfiguration} from './configuration'
+import * as core from '@actions/core'
+import * as path from 'path'
 
-export function readConfiguration(filename: string): Configuration | null {
+/**
+ * Resolves the repository path, relatively to the GITHUB_WORKSPACE
+ */
+export function retrieveRepositoryPath(providedPath: string): string {
+  let githubWorkspacePath = process.env['GITHUB_WORKSPACE']
+  if (!githubWorkspacePath) {
+    throw new Error('GITHUB_WORKSPACE not defined')
+  }
+  githubWorkspacePath = path.resolve(githubWorkspacePath)
+  core.debug(`GITHUB_WORKSPACE = '${githubWorkspacePath}'`)
+
+  let repositoryPath = providedPath || '.'
+  repositoryPath = path.resolve(githubWorkspacePath, repositoryPath)
+  core.debug(`repositoryPath = '${repositoryPath}'`)
+  return repositoryPath
+}
+
+/**
+ * Will automatically either report the message to the log, or mark the action as failed. Additionally defining the output failed, allowing it to be read in by other actions
+ */
+export function failOrError(
+  message: string | Error,
+  failOnError: boolean
+): void {
+  // if we report any failure, consider the action to have failed, may not make the build fail
+  core.setOutput('failed', true)
+  if (failOnError) {
+    core.setFailed(message)
+  } else {
+    core.error(message)
+  }
+}
+
+/**
+ * Retrieves the configuration given the file path, if not found it will fallback to the `DefaultConfiguration`
+ */
+export function resolveConfiguration(
+  githubWorkspacePath: string,
+  configurationFile: string
+): Configuration {
+  let configuration = DefaultConfiguration
+  if (configurationFile) {
+    const configurationPath = path.resolve(
+      githubWorkspacePath,
+      configurationFile
+    )
+    core.debug(`configurationPath = '${configurationPath}'`)
+    const providedConfiguration = readConfiguration(configurationPath)
+    if (!providedConfiguration) {
+      core.info(
+        `⚠️ Configuration provided, but it couldn't be found, or failed to parse. Fallback to Defaults`
+      )
+    } else {
+      configuration = providedConfiguration
+    }
+  }
+  return configuration
+}
+
+/**
+ * Reads in the configuration from the JSON file
+ */
+function readConfiguration(filename: string): Configuration | null {
   try {
     const rawdata = fs.readFileSync(filename, 'utf8')
     const configurationJSON: Configuration = JSON.parse(rawdata)
@@ -11,25 +75,31 @@ export function readConfiguration(filename: string): Configuration | null {
   }
 }
 
-export function directoryExistsSync(path: string, required?: boolean): boolean {
-  if (!path) {
+/**
+ * Checks if a given directory exists
+ */
+export function directoryExistsSync(
+  inputPath: string,
+  required?: boolean
+): boolean {
+  if (!inputPath) {
     throw new Error("Arg 'path' must not be empty")
   }
 
   let stats: fs.Stats
   try {
-    stats = fs.statSync(path)
+    stats = fs.statSync(inputPath)
   } catch (error) {
     if (error.code === 'ENOENT') {
       if (!required) {
         return false
       }
 
-      throw new Error(`Directory '${path}' does not exist`)
+      throw new Error(`Directory '${inputPath}' does not exist`)
     }
 
     throw new Error(
-      `Encountered an error when checking whether path '${path}' exists: ${error.message}`
+      `Encountered an error when checking whether path '${inputPath}' exists: ${error.message}`
     )
   }
 
@@ -39,5 +109,5 @@ export function directoryExistsSync(path: string, required?: boolean): boolean {
     return false
   }
 
-  throw new Error(`Directory '${path}' does not exist`)
+  throw new Error(`Directory '${inputPath}' does not exist`)
 }

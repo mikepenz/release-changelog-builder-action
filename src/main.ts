@@ -1,52 +1,42 @@
 import * as core from '@actions/core'
-import {readConfiguration} from './utils'
+import {
+  failOrError,
+  retrieveRepositoryPath,
+  resolveConfiguration
+} from './utils'
 import {ReleaseNotes} from './releaseNotes'
 import {createCommandManager} from './gitHelper'
 import * as github from '@actions/github'
-import * as path from 'path'
 import {DefaultConfiguration} from './configuration'
 
 async function run(): Promise<void> {
+  core.setOutput('failed', false) // mark the action not failed by default
+
   core.startGroup(`📘 Reading input values`)
   try {
-    let githubWorkspacePath = process.env['GITHUB_WORKSPACE']
-    if (!githubWorkspacePath) {
-      throw new Error('GITHUB_WORKSPACE not defined')
-    }
-    githubWorkspacePath = path.resolve(githubWorkspacePath)
-    core.debug(`GITHUB_WORKSPACE = '${githubWorkspacePath}'`)
+    // read in path specification, resolve github workspace, and repo path
+    const inputPath = core.getInput('path')
+    const repositoryPath = retrieveRepositoryPath(inputPath)
 
-    let repositoryPath = core.getInput('path') || '.'
-    repositoryPath = path.resolve(githubWorkspacePath, repositoryPath)
-    core.debug(`repositoryPath = '${repositoryPath}'`)
-
+    // read in configuration file if possible
     const configurationFile: string = core.getInput('configuration')
-    let configuration = DefaultConfiguration
-    if (configurationFile) {
-      const configurationPath = path.resolve(
-        githubWorkspacePath,
-        configurationFile
-      )
-      core.debug(`configurationPath = '${configurationPath}'`)
-      const providedConfiguration = readConfiguration(configurationPath)
-      if (!providedConfiguration) {
-        core.info(
-          `⚠️ Configuration provided, but it couldn't be found, or failed to parse. Fallback to Defaults`
-        )
-      } else {
-        configuration = providedConfiguration
-      }
-    }
+    const configuration = resolveConfiguration(
+      repositoryPath,
+      configurationFile
+    )
 
+    // read in repository inputs
     const token = core.getInput('token')
-    let owner = core.getInput('owner')
-    let repo = core.getInput('repo')
-
+    const owner = core.getInput('owner') ?? github.context.repo.owner
+    const repo = core.getInput('repo') ?? github.context.repo.repo
+    // read in from, to tag inputs
     const fromTag = core.getInput('fromTag')
     let toTag = core.getInput('toTag')
+    // read in flags
+    const ignorePreReleases = core.getInput('ignorePreReleases') === 'true'
+    const failOnError = core.getInput('failOnError') === 'true'
 
-    const ignorePreReleases = core.getInput('ignorePreReleases')
-
+    // ensure to resolve the toTag if it was not provided
     if (!toTag) {
       // if not specified try to retrieve tag from github.context.ref
       if (github.context.ref.startsWith('refs/tags/')) {
@@ -65,28 +55,8 @@ async function run(): Promise<void> {
       }
     }
 
-    if (!owner || !repo) {
-      // Qualified repository
-      const qualifiedRepository =
-        core.getInput('repository') ||
-        `${github.context.repo.owner}/${github.context.repo.repo}`
-      core.debug(`qualified repository = '${qualifiedRepository}'`)
-      const splitRepository = qualifiedRepository.split('/')
-      if (
-        splitRepository.length !== 2 ||
-        !splitRepository[0] ||
-        !splitRepository[1]
-      ) {
-        throw new Error(
-          `Invalid repository '${qualifiedRepository}'. Expected format {owner}/{repo}.`
-        )
-      }
-      owner = splitRepository[0]
-      repo = splitRepository[1]
-    }
-
     if (!owner) {
-      core.error(`💥 Missing or couldn't resolve 'owner'`)
+      failOrError(`💥 Missing or couldn't resolve 'owner'`, failOnError)
       return
     } else {
       core.setOutput('owner', owner)
@@ -94,7 +64,7 @@ async function run(): Promise<void> {
     }
 
     if (!repo) {
-      core.error(`💥 Missing or couldn't resolve 'owner'`)
+      failOrError(`💥 Missing or couldn't resolve 'owner'`, failOnError)
       return
     } else {
       core.setOutput('repo', repo)
@@ -102,7 +72,7 @@ async function run(): Promise<void> {
     }
 
     if (!toTag) {
-      core.error(`💥 Missing or couldn't resolve 'toTag'`)
+      failOrError(`💥 Missing or couldn't resolve 'toTag'`, failOnError)
       return
     } else {
       core.setOutput('toTag', toTag)
@@ -115,11 +85,17 @@ async function run(): Promise<void> {
       repo,
       fromTag,
       toTag,
-      ignorePreReleases: ignorePreReleases === 'true',
+      ignorePreReleases,
+      failOnError,
       configuration
     })
 
-    core.setOutput('changelog', await releaseNotes.pull(token))
+    core.setOutput(
+      'changelog',
+      (await releaseNotes.pull(token)) ??
+        configuration.empty_template ??
+        DefaultConfiguration.empty_template
+    )
   } catch (error) {
     core.setFailed(error.message)
   }
