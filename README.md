@@ -290,7 +290,8 @@ Core parts of the PR fetching logic are based on [pull-release-notes](https://gi
 
 ## License
 
-   Copyright for portions of pr-release-notes are held by Nikolay Blagoev, 2019-2020 as part of project pull-release-notes. All other copyright for project pr-release-notes are held by Mike Penz, 2020.
+    Copyright for portions of pr-release-notes are held by Nikolay Blagoev, 2019-2020 as part of project pull-release-notes. 
+    All other copyright for project pr-release-notes are held by Mike Penz, 2020.
 
 ## Fork License
 
