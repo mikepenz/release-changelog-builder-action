@@ -85,7 +85,7 @@ export function buildChangelog(
     changelogUncategorized = `${changelogUncategorized + pr}\n`
   }
   core.info(
-    `✒️ Wrote ${changelogUncategorized.length} non categorized pull requests down`
+    `✒️ Wrote ${uncategorized.length} non categorized pull requests down`
   )
 
   // fill template
