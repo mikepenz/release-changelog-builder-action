@@ -10,6 +10,10 @@
 </p>
 
 <div align="center">
+  <img src=".github/images/release_changelog_builder_collapsed.png"/>
+</div>
+
+<div align="center">
   <a href="https://github.com/mikepenz/release-changelog-builder-action/actions">
 		<img src="https://github.com/mikepenz/release-changelog-builder-action/workflows/CI/badge.svg"/>
 	</a>
@@ -21,7 +25,7 @@
 <p align="center">
     <a href="#whats-included-">What's included 🚀</a> &bull;
     <a href="#setup">Setup 🛠️</a> &bull;
-    <a href="#full-sample-%EF%B8%8F">Full Sample 🖥️</a> &bull;
+    <a href="#full-sample-%EF%B8%8F">Sample 🖥️</a> &bull;
     <a href="#customization-%EF%B8%8F">Customization 🖍️</a> &bull;
     <a href="#contribute-">Contribute 🧬</a> &bull;
     <a href="#license">License 📓</a>
@@ -113,7 +117,6 @@ on:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
-
 
 ## Customization 🖍️
 
@@ -285,8 +288,9 @@ export GITHUB_TOKEN=your_personal_github_pat
 
 ## Credits
 
-Core parts of the PR fetching logic are based on [pull-release-notes](https://github.com/nblagoev/pull-release-notes)
-- Nikolay Blagoev - [GitHub](https://github.com/nblagoev/)
+- Core parts of the PR fetching logic are based on [pull-release-notes](https://github.com/nblagoev/pull-release-notes)
+  - Nikolay Blagoev - [GitHub](https://github.com/nblagoev/)
+- [action-gh-release](https://github.com/softprops/action-gh-release) for a few great README ideas
 
 ## License
 
@@ -310,3 +314,13 @@ All patches and changes applied to the original source are licensed under the Ap
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
+
+## Sample result changelog
+
+<div align="center">
+  <a href="https://github.com/mikepenz/release-changelog-builder-action/runs/1270879787"><img src=".github/images/release_changelog_builder_expanded.png"/></a>
+</div>
+
+<div align="center">
+  <a href="https://github.com/mikepenz/release-changelog-builder-action/releases/tag/v0.9.0"><img src=".github/images/release_changelog_result.png"/></a>
+</div>
