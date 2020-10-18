@@ -10,10 +10,13 @@ jobs:
     if: github.event_name  == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - run: |
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install NPM
+        run: |
           npm install
-      - run: |
+      - name: Run NPM
+        run: |
           npm run all
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -22,6 +25,8 @@ jobs:
     if: github.event_name  == 'pull_request'
     runs-on: ubuntu-latest
     steps:
+      # the below actions use the local state of the action. please replace `./` with `mikepenz/release-changelog-builder-action@{latest-release}`
+      # Showcases how to use the action without a prior checkout
       # Won't support providing a configuration file, as no checkout was done
       - name: "Configuration without Checkout"
         id: without_checkout
@@ -37,8 +42,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          fetch-depth: 0 # Checkout full depth so tags can be discovered automatically if not specified
+          fetch-depth: 0
 
+        # Showcase the most minimal configuration possible
       - name: "Minimal Configuration"
         id: minimal_release
         uses: ./
@@ -48,6 +54,7 @@ jobs:
       - name: Echo Minimal Configuration Changelog
         run: echo "${{steps.minimal_release.outputs.changelog}}"
 
+        # Showcases a more complex configuration, providing a configuration, and specifically referencing owner, repo, from and to tag
       - name: "Complex Configuration"
         id: complex_release
         uses: ./
@@ -61,6 +68,21 @@ jobs:
 
       - name: Echo Complex Configuration Changelog
         run: echo "${{steps.complex_release.outputs.changelog}}"
+
+        # Showcases the capability to generate the changelog for an external repository provided
+      - name: "External Repo Configuration"
+        id: external_changelog
+        uses: ./
+        with:
+          configuration: "configs/configuration_complex.json"
+          owner: "mikepenz"
+          repo: "MaterialDrawer"
+          fromTag: "v8.1.0"
+          toTag: "v8.1.6"
+          token: ${{ secrets.PERSONAL_TOKEN }}
+
+      - name: Echo External Repo Configuration Changelog
+        run: echo "${{steps.external_changelog.outputs.changelog}}"
 
   release:
     if: startsWith(github.ref, 'refs/tags/')
