@@ -152,7 +152,18 @@ For advanced usecases additional settings can be provided to the action
     token: ${{ secrets.PAT }}
 ```
 
-💡 `ignorePreReleases` will be ignored, if `fromTag` is specified. `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repos please use a PAT (Personal Access Token).
+| **Input**         | **Description**                                                                                                                                                          |
+|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| configuration     | Relative path, to the `configuration.json` file, providing additional configurations                                                                                     |
+| owner             | The owner of the repository to generate the changelog for                                                                                                                |
+| repo              | Name of the repository we want to process                                                                                                                                |
+| ignorePreReleases | Allows to ignore pre-releases for changelog generation (E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick). Only used if `fromTag` was not specified. Default: false |
+| fromTag           | Defines the 'start' from where the changelog will consider merged pull requests                                                                                          |
+| toTag             | Defines until which tag the changelog will consider merged pull requests                                                                                                 |
+| path              | Allows to specify an alternative sub directory, to use as base                                                                                                           |
+| token             | Alternative config to specify token. You should prefer `env.GITHUB_TOKEN` instead though                                                                                 |
+
+💡 `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repos please use a PAT (Personal Access Token).
 
 ### PR Template placeholders
 
