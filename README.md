@@ -32,13 +32,14 @@
 ### What's included 🚀
 
 - Super simple integration
-  - even on huge repositories with hundreds of tags
+  - ...even on huge repositories with hundreds of tags
 - Parallel releases support
 - Blazingly fast execution
 - Supports any git project
 - Highly flexible configuration
 - Lightweight
 - Supports any branch
+- Rich build log output
 
 -------
 
@@ -69,13 +70,14 @@ ${{steps.build_changelog.outputs.changelog}}
 
 A full set list of possible output values for this action.
 
-| **Output**          | **Description**                                                                     |
-|---------------------|-------------------------------------------------------------------------------------|
-| `outputs.changelog` | The built release changelog built from the merged pull requests                     |
-| `outputs.owner`     | Specifies the owner of the repository processed                                     |
-| `outputs.repo`      | Describes the repository name, which was processed                                  |
-| `outputs.fromTag`   | Defines the `fromTag` which describes the lower bound to process pull requests for  |
-| `outputs.toTag`     | Defines the `toTag` which describes the upper bound to process pull request for     |
+| **Output**          | **Description**                                                                                                           |
+|---------------------|---------------------------------------------------------------------------------------------------------------------------|
+| `outputs.changelog` | The built release changelog built from the merged pull requests                                                           |
+| `outputs.owner`     | Specifies the owner of the repository processed                                                                           |
+| `outputs.repo`      | Describes the repository name, which was processed                                                                        |
+| `outputs.fromTag`   | Defines the `fromTag` which describes the lower bound to process pull requests for                                        |
+| `outputs.toTag`     | Defines the `toTag` which describes the upper bound to process pull request for                                           |
+| `outputs.failed`    | Defines if there was an issue with the action run, and the changelog may not have been generated correctly. [true, false] |
 
 ## Customization 🖍️
 
@@ -152,16 +154,19 @@ For advanced usecases additional settings can be provided to the action
     token: ${{ secrets.PAT }}
 ```
 
+💡 All input values are optional. It is only required to privde the `token` either via the input, or as `env` variable.
+
 | **Input**         | **Description**                                                                                                                                                          |
 |-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | configuration     | Relative path, to the `configuration.json` file, providing additional configurations                                                                                     |
 | owner             | The owner of the repository to generate the changelog for                                                                                                                |
 | repo              | Name of the repository we want to process                                                                                                                                |
-| ignorePreReleases | Allows to ignore pre-releases for changelog generation (E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick). Only used if `fromTag` was not specified. Default: false |
 | fromTag           | Defines the 'start' from where the changelog will consider merged pull requests                                                                                          |
 | toTag             | Defines until which tag the changelog will consider merged pull requests                                                                                                 |
 | path              | Allows to specify an alternative sub directory, to use as base                                                                                                           |
 | token             | Alternative config to specify token. You should prefer `env.GITHUB_TOKEN` instead though                                                                                 |
+| ignorePreReleases | Allows to ignore pre-releases for changelog generation (E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick). Only used if `fromTag` was not specified. Default: false |
+| failOnError       | Defines if the action will result in a build failure, if problems occurred. Default: false                                                                               |
 
 💡 `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repos please use a PAT (Personal Access Token).
 
