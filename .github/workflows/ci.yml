@@ -30,7 +30,7 @@ jobs:
       # Won't support providing a configuration file, as no checkout was done
       - name: "Configuration without Checkout"
         id: without_checkout
-        uses: ./
+        uses: mikepenz/release-changelog-builder-action@develop
         with:
           toTag: "v0.0.3"
         env:
