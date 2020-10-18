@@ -168,8 +168,10 @@ This configuration is a `.json` file in the following format.
 ```
 
 Any section of the configuration can be ommited to have defaults apply.
+
 Defaults for the configuration can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
-Please see the [Configuration Specification](https://github.com/mikepenz/release-changelog-builder-action#configuration-specification) for detailed descriptions on the offered configuration options. 
+
+Please see the [Configuration Specification](#configuration-specification) for detailed descriptions on the offered configuration options. 
 
 ### Advanced workflow specification
 
@@ -242,8 +244,8 @@ Table of descriptions for the `configuration.json` options.
 | category.title           | The display name of a category in the changelog                                                                                                                                                                                   |
 | category.labels          | An array of labels, to match pull request label against. If any PR label, matches any category label, the pull request will show up under this category                                                                           |
 | sort                     | The sort order of pull requests. [ASC, DESC]                                                                                                                                                                                      |
-| template                 | Specifies the global template to pick for creating the changelog. See [Template placeholders](https://github.com/mikepenz/release-changelog-builder-action#template-placeholders) for possible values                             |
-| pr_template              | Defines the per pull request template. See [PR Template placeholders](https://github.com/mikepenz/release-changelog-builder-action#pr-template-placeholders) for possible values                                                  |
+| template                 | Specifies the global template to pick for creating the changelog. See [Template placeholders](#template-placeholders) for possible values                                                                                         |
+| pr_template              | Defines the per pull request template. See [PR Template placeholders](#pr-template-placeholders) for possible values                                                                                                              |
 | empty_template           | Template to pick if no changes are detected. Does not support placeholders                                                                                                                                                        |
 | transformers             | An array of `transform` specification, offering a flexible API to modify the text per pull request. This is applied on the change text created with `pr_template`. `transformers` are executed per change, in the order specified |
 | transformer.pattern      | A `regex` pattern, extracting values of the change message.                                                                                                                                                                       |
