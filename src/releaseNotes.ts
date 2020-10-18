@@ -44,7 +44,7 @@ export class ReleaseNotes {
         repo,
         toTag,
         ignorePreReleases,
-        configuration.max_tags_to_fetch ??
+        configuration.max_tags_to_fetch ||
           DefaultConfiguration.max_tags_to_fetch
       )
       if (previousTag == null) {
@@ -116,7 +116,7 @@ export class ReleaseNotes {
     const toDate = lastCommit.date
 
     const maxDays =
-      configuration.max_back_track_time_days ??
+      configuration.max_back_track_time_days ||
       DefaultConfiguration.max_back_track_time_days
     const maxFromDate = toDate.clone().subtract(maxDays, 'days')
     if (maxFromDate.isAfter(fromDate)) {
@@ -134,7 +134,7 @@ export class ReleaseNotes {
       repo,
       fromDate,
       toDate,
-      configuration.max_pull_requests ?? DefaultConfiguration.max_pull_requests
+      configuration.max_pull_requests || DefaultConfiguration.max_pull_requests
     )
 
     core.info(
@@ -143,7 +143,7 @@ export class ReleaseNotes {
 
     const prCommits = pullRequestsApi.filterCommits(
       commits,
-      configuration.exclude_merge_branches ??
+      configuration.exclude_merge_branches ||
         DefaultConfiguration.exclude_merge_branches
     )
 

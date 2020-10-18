@@ -301,7 +301,6 @@ const gitHelper_1 = __webpack_require__(353);
 const github = __importStar(__webpack_require__(5438));
 const configuration_1 = __webpack_require__(5527);
 function run() {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
     return __awaiter(this, void 0, void 0, function* () {
         core.setOutput('failed', false); // mark the action not failed by default
         core.startGroup(`📘 Reading input values`);
@@ -314,13 +313,8 @@ function run() {
             const configuration = utils_1.resolveConfiguration(repositoryPath, configurationFile);
             // read in repository inputs
             const token = core.getInput('token');
-            core.info(`owner: ${core.getInput('owner')}`);
-            core.info(`owner2: ${github.context.repo.owner}`);
-            core.info(`owner3: ${core.getInput('repository')}`);
-            core.info(`owner4: ${core.getInput('repository')[0]}`);
-            core.info(`owner5: ${(_b = (_a = core.getInput('owner')) !== null && _a !== void 0 ? _a : github.context.repo.owner) !== null && _b !== void 0 ? _b : core.getInput('repository').split('/')[0]}`);
-            const owner = (_d = (_c = core.getInput('owner')) !== null && _c !== void 0 ? _c : github.context.repo.owner) !== null && _d !== void 0 ? _d : core.getInput('repository').split('/')[0];
-            const repo = (_f = (_e = core.getInput('repo')) !== null && _e !== void 0 ? _e : github.context.repo.repo) !== null && _f !== void 0 ? _f : core.getInput('repository').split('/')[1];
+            const owner = core.getInput('owner') || github.context.repo.owner;
+            const repo = core.getInput('repo') || github.context.repo.repo;
             // read in from, to tag inputs
             const fromTag = core.getInput('fromTag');
             let toTag = core.getInput('toTag');
@@ -376,7 +370,9 @@ function run() {
                 failOnError,
                 configuration
             });
-            core.setOutput('changelog', (_h = (_g = (yield releaseNotes.pull(token))) !== null && _g !== void 0 ? _g : configuration.empty_template) !== null && _h !== void 0 ? _h : configuration_1.DefaultConfiguration.empty_template);
+            core.setOutput('changelog', (yield releaseNotes.pull(token)) ||
+                configuration.empty_template ||
+                configuration_1.DefaultConfiguration.empty_template);
         }
         catch (error) {
             core.setFailed(error.message);
@@ -637,7 +633,6 @@ class ReleaseNotes {
         this.options = options;
     }
     pull(token) {
-        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const octokit = new rest_1.Octokit({
                 auth: `token ${token || process.env.GITHUB_TOKEN}`
@@ -647,7 +642,8 @@ class ReleaseNotes {
                 core.startGroup(`🔖 Resolve previous tag`);
                 core.debug(`fromTag undefined, trying to resolve via API`);
                 const tagsApi = new tags_1.Tags(octokit);
-                const previousTag = yield tagsApi.findPredecessorTag(owner, repo, toTag, ignorePreReleases, (_a = configuration.max_tags_to_fetch) !== null && _a !== void 0 ? _a : configuration_1.DefaultConfiguration.max_tags_to_fetch);
+                const previousTag = yield tagsApi.findPredecessorTag(owner, repo, toTag, ignorePreReleases, configuration.max_tags_to_fetch ||
+                    configuration_1.DefaultConfiguration.max_tags_to_fetch);
                 if (previousTag == null) {
                     utils_1.failOrError(`💥 Unable to retrieve previous tag given ${toTag}`, failOnError);
                     return null;
@@ -677,7 +673,6 @@ class ReleaseNotes {
         });
     }
     getMergedPullRequests(octokit) {
-        var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const { owner, repo, fromTag, toTag, failOnError, configuration } = this.options;
             core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag}...${toTag}'`);
@@ -698,7 +693,8 @@ class ReleaseNotes {
             const lastCommit = commits[commits.length - 1];
             let fromDate = firstCommit.date;
             const toDate = lastCommit.date;
-            const maxDays = (_a = configuration.max_back_track_time_days) !== null && _a !== void 0 ? _a : configuration_1.DefaultConfiguration.max_back_track_time_days;
+            const maxDays = configuration.max_back_track_time_days ||
+                configuration_1.DefaultConfiguration.max_back_track_time_days;
             const maxFromDate = toDate.clone().subtract(maxDays, 'days');
             if (maxFromDate.isAfter(fromDate)) {
                 core.info(`⚠️ Adjusted 'fromDate' to go max ${maxDays} back`);
@@ -706,9 +702,10 @@ class ReleaseNotes {
             }
             core.info(`ℹ️ Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`);
             const pullRequestsApi = new pullRequests_1.PullRequests(octokit);
-            const pullRequests = yield pullRequestsApi.getBetweenDates(owner, repo, fromDate, toDate, (_b = configuration.max_pull_requests) !== null && _b !== void 0 ? _b : configuration_1.DefaultConfiguration.max_pull_requests);
+            const pullRequests = yield pullRequestsApi.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests || configuration_1.DefaultConfiguration.max_pull_requests);
             core.info(`ℹ️ Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`);
-            const prCommits = pullRequestsApi.filterCommits(commits, (_c = configuration.exclude_merge_branches) !== null && _c !== void 0 ? _c : configuration_1.DefaultConfiguration.exclude_merge_branches);
+            const prCommits = pullRequestsApi.filterCommits(commits, configuration.exclude_merge_branches ||
+                configuration_1.DefaultConfiguration.exclude_merge_branches);
             core.info(`ℹ️ Retrieved ${prCommits.length} PR merge commits for ${owner}/${repo}`);
             const filteredPullRequests = [];
             const pullRequestsByNumber = {};
@@ -926,9 +923,8 @@ const pullRequests_1 = __webpack_require__(4217);
 const core = __importStar(__webpack_require__(2186));
 const configuration_1 = __webpack_require__(5527);
 function buildChangelog(prs, config) {
-    var _a, _b, _c;
     // sort to target order
-    const sort = (_a = config.sort) !== null && _a !== void 0 ? _a : configuration_1.DefaultConfiguration.sort;
+    const sort = config.sort || configuration_1.DefaultConfiguration.sort;
     const sortAsc = sort.toUpperCase() === 'ASC';
     prs = pullRequests_1.sortPullRequests(prs, sortAsc);
     core.info(`ℹ️ Sorted all pull requests ascending: ${sort}`);
@@ -944,7 +940,7 @@ function buildChangelog(prs, config) {
     core.info(`✒️ Wrote messages for ${prs.length} pull requests`);
     // bring PRs into the order of categories
     const categorized = new Map();
-    const categories = (_b = config.categories) !== null && _b !== void 0 ? _b : configuration_1.DefaultConfiguration.categories;
+    const categories = config.categories || configuration_1.DefaultConfiguration.categories;
     for (const category of categories) {
         categorized.set(category, []);
     }
@@ -982,7 +978,7 @@ function buildChangelog(prs, config) {
     }
     core.info(`✒️ Wrote ${changelogUncategorized.length} non categorized pull requests down`);
     // fill template
-    let transformedChangelog = (_c = config.template) !== null && _c !== void 0 ? _c : configuration_1.DefaultConfiguration.template;
+    let transformedChangelog = config.template || configuration_1.DefaultConfiguration.template;
     transformedChangelog = transformedChangelog.replace('${{CHANGELOG}}', changelog);
     transformedChangelog = transformedChangelog.replace('${{UNCATEGORIZED}}', changelogUncategorized);
     core.info(`ℹ️ Filled template`);
@@ -993,18 +989,18 @@ function haveCommonElements(arr1, arr2) {
     return arr1.some(item => arr2.includes(item));
 }
 function fillTemplate(pr, template) {
-    var _a, _b, _c, _d, _e, _f, _g;
+    var _a, _b, _c;
     let transformed = template;
     transformed = transformed.replace('${{NUMBER}}', pr.number.toString());
     transformed = transformed.replace('${{TITLE}}', pr.title);
     transformed = transformed.replace('${{URL}}', pr.htmlURL);
     transformed = transformed.replace('${{MERGED_AT}}', pr.mergedAt.toISOString());
     transformed = transformed.replace('${{AUTHOR}}', pr.author);
-    transformed = transformed.replace('${{LABELS}}', (_b = (_a = pr.labels) === null || _a === void 0 ? void 0 : _a.join(', ')) !== null && _b !== void 0 ? _b : '');
-    transformed = transformed.replace('${{MILESTONE}}', (_c = pr.milestone) !== null && _c !== void 0 ? _c : '');
+    transformed = transformed.replace('${{LABELS}}', ((_a = pr.labels) === null || _a === void 0 ? void 0 : _a.join(', ')) || '');
+    transformed = transformed.replace('${{MILESTONE}}', pr.milestone || '');
     transformed = transformed.replace('${{BODY}}', pr.body);
-    transformed = transformed.replace('${{ASSIGNEES}}', (_e = (_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.join(', ')) !== null && _e !== void 0 ? _e : '');
-    transformed = transformed.replace('${{REVIEWERS}}', (_g = (_f = pr.requestedReviewers) === null || _f === void 0 ? void 0 : _f.join(', ')) !== null && _g !== void 0 ? _g : '');
+    transformed = transformed.replace('${{ASSIGNEES}}', ((_b = pr.assignees) === null || _b === void 0 ? void 0 : _b.join(', ')) || '');
+    transformed = transformed.replace('${{REVIEWERS}}', ((_c = pr.requestedReviewers) === null || _c === void 0 ? void 0 : _c.join(', ')) || '');
     return transformed;
 }
 function transform(filled, transformers) {
@@ -1018,7 +1014,7 @@ function transform(filled, transformers) {
     return transformed;
 }
 function validateTransfomers(specifiedTransformers) {
-    const transformers = specifiedTransformers !== null && specifiedTransformers !== void 0 ? specifiedTransformers : configuration_1.DefaultConfiguration.transformers;
+    const transformers = specifiedTransformers || configuration_1.DefaultConfiguration.transformers;
     return transformers
         .map(transformer => {
         try {
