@@ -301,7 +301,7 @@ const gitHelper_1 = __webpack_require__(353);
 const github = __importStar(__webpack_require__(5438));
 const configuration_1 = __webpack_require__(5527);
 function run() {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     return __awaiter(this, void 0, void 0, function* () {
         core.setOutput('failed', false); // mark the action not failed by default
         core.startGroup(`📘 Reading input values`);
@@ -314,8 +314,13 @@ function run() {
             const configuration = utils_1.resolveConfiguration(repositoryPath, configurationFile);
             // read in repository inputs
             const token = core.getInput('token');
-            const owner = (_b = (_a = core.getInput('owner')) !== null && _a !== void 0 ? _a : github.context.repo.owner) !== null && _b !== void 0 ? _b : core.getInput('repository').split('/')[0];
-            const repo = (_d = (_c = core.getInput('repo')) !== null && _c !== void 0 ? _c : github.context.repo.repo) !== null && _d !== void 0 ? _d : core.getInput('repository').split('/')[1];
+            core.info(`owner: ${core.getInput('owner')}`);
+            core.info(`owner2: ${github.context.repo.owner}`);
+            core.info(`owner3: ${core.getInput('repository')}`);
+            core.info(`owner4: ${core.getInput('repository')[0]}`);
+            core.info(`owner5: ${(_b = (_a = core.getInput('owner')) !== null && _a !== void 0 ? _a : github.context.repo.owner) !== null && _b !== void 0 ? _b : core.getInput('repository').split('/')[0]}`);
+            const owner = (_d = (_c = core.getInput('owner')) !== null && _c !== void 0 ? _c : github.context.repo.owner) !== null && _d !== void 0 ? _d : core.getInput('repository').split('/')[0];
+            const repo = (_f = (_e = core.getInput('repo')) !== null && _e !== void 0 ? _e : github.context.repo.repo) !== null && _f !== void 0 ? _f : core.getInput('repository').split('/')[1];
             // read in from, to tag inputs
             const fromTag = core.getInput('fromTag');
             let toTag = core.getInput('toTag');
@@ -371,7 +376,7 @@ function run() {
                 failOnError,
                 configuration
             });
-            core.setOutput('changelog', (_f = (_e = (yield releaseNotes.pull(token))) !== null && _e !== void 0 ? _e : configuration.empty_template) !== null && _f !== void 0 ? _f : configuration_1.DefaultConfiguration.empty_template);
+            core.setOutput('changelog', (_h = (_g = (yield releaseNotes.pull(token))) !== null && _g !== void 0 ? _g : configuration.empty_template) !== null && _h !== void 0 ? _h : configuration_1.DefaultConfiguration.empty_template);
         }
         catch (error) {
             core.setFailed(error.message);

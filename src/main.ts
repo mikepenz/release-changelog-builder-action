@@ -27,6 +27,13 @@ async function run(): Promise<void> {
 
     // read in repository inputs
     const token = core.getInput('token')
+
+    core.info(`owner: ${core.getInput('owner')}`)
+    core.info(`owner2: ${github.context.repo.owner}`)
+    core.info(`owner3: ${ core.getInput('repository')}`)
+    core.info(`owner4: ${ core.getInput('repository')[0]}`)
+    core.info(`owner5: ${ core.getInput('owner') ?? github.context.repo.owner ?? core.getInput('repository').split('/')[0]}`)
+    
     const owner = core.getInput('owner') ?? github.context.repo.owner ?? core.getInput('repository').split('/')[0]
     const repo = core.getInput('repo') ?? github.context.repo.repo ?? core.getInput('repository').split('/')[1]
     // read in from, to tag inputs
