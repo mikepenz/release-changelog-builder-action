@@ -299,80 +299,66 @@ const utils_1 = __webpack_require__(918);
 const releaseNotes_1 = __webpack_require__(5882);
 const gitHelper_1 = __webpack_require__(353);
 const github = __importStar(__webpack_require__(5438));
-const path = __importStar(__webpack_require__(5622));
 const configuration_1 = __webpack_require__(5527);
 function run() {
+    var _a, _b, _c, _d;
     return __awaiter(this, void 0, void 0, function* () {
+        core.setOutput('failed', false); // mark the action not failed by default
         core.startGroup(`📘 Reading input values`);
         try {
-            let githubWorkspacePath = process.env['GITHUB_WORKSPACE'];
-            if (!githubWorkspacePath) {
-                throw new Error('GITHUB_WORKSPACE not defined');
-            }
-            githubWorkspacePath = path.resolve(githubWorkspacePath);
-            core.debug(`GITHUB_WORKSPACE = '${githubWorkspacePath}'`);
-            let repositoryPath = core.getInput('path') || '.';
-            repositoryPath = path.resolve(githubWorkspacePath, repositoryPath);
-            core.debug(`repositoryPath = '${repositoryPath}'`);
+            // read in path specification, resolve github workspace, and repo path
+            const inputPath = core.getInput('path');
+            const repositoryPath = utils_1.retrieveRepositoryPath(inputPath);
+            // read in configuration file if possible
             const configurationFile = core.getInput('configuration');
-            let configuration = configuration_1.DefaultConfiguration;
-            if (configurationFile) {
-                const configurationPath = path.resolve(githubWorkspacePath, configurationFile);
-                core.debug(`configurationPath = '${configurationPath}'`);
-                const providedConfiguration = utils_1.readConfiguration(configurationPath);
-                if (!providedConfiguration) {
-                    core.info(`⚠️ Configuration provided, but it couldn't be found, or failed to parse. Fallback to Defaults`);
-                }
-                else {
-                    configuration = providedConfiguration;
-                }
-            }
+            const configuration = utils_1.resolveConfiguration(repositoryPath, configurationFile);
+            // read in repository inputs
             const token = core.getInput('token');
-            let owner = core.getInput('owner');
-            let repo = core.getInput('repo');
+            const owner = (_a = core.getInput('owner')) !== null && _a !== void 0 ? _a : github.context.repo.owner;
+            const repo = (_b = core.getInput('repo')) !== null && _b !== void 0 ? _b : github.context.repo.repo;
+            // read in from, to tag inputs
             const fromTag = core.getInput('fromTag');
             let toTag = core.getInput('toTag');
-            const ignorePreReleases = core.getInput('ignorePreReleases');
+            // read in flags
+            const ignorePreReleases = core.getInput('ignorePreReleases') === 'true';
+            const failOnError = core.getInput('failOnError') === 'true';
+            // ensure to resolve the toTag if it was not provided
             if (!toTag) {
-                // if not specified try to retrieve tag from git
-                const gitHelper = yield gitHelper_1.createCommandManager(repositoryPath);
-                const latestTag = yield gitHelper.latestTag();
-                toTag = latestTag;
-                core.debug(`toTag = '${latestTag}'`);
-            }
-            if (!owner || !repo) {
-                // Qualified repository
-                const qualifiedRepository = core.getInput('repository') ||
-                    `${github.context.repo.owner}/${github.context.repo.repo}`;
-                core.debug(`qualified repository = '${qualifiedRepository}'`);
-                const splitRepository = qualifiedRepository.split('/');
-                if (splitRepository.length !== 2 ||
-                    !splitRepository[0] ||
-                    !splitRepository[1]) {
-                    throw new Error(`Invalid repository '${qualifiedRepository}'. Expected format {owner}/{repo}.`);
+                // if not specified try to retrieve tag from github.context.ref
+                if (github.context.ref.startsWith('refs/tags/')) {
+                    toTag = github.context.ref.replace('refs/tags/', '');
+                    core.info(`🔖 Resolved current tag (${toTag}) from the 'github.context.ref'`);
                 }
-                owner = splitRepository[0];
-                repo = splitRepository[1];
+                else {
+                    // if not specified try to retrieve tag from git
+                    const gitHelper = yield gitHelper_1.createCommandManager(repositoryPath);
+                    const latestTag = yield gitHelper.latestTag();
+                    toTag = latestTag;
+                    core.info(`🔖 Resolved current tag (${toTag}) from 'git rev-list --tags --skip=0 --max-count=1'`);
+                }
             }
             if (!owner) {
-                core.error(`💥 Missing or couldn't resolve 'owner'`);
+                utils_1.failOrError(`💥 Missing or couldn't resolve 'owner'`, failOnError);
                 return;
             }
             else {
+                core.setOutput('owner', owner);
                 core.debug(`Resolved 'owner' as ${owner}`);
             }
             if (!repo) {
-                core.error(`💥 Missing or couldn't resolve 'owner'`);
+                utils_1.failOrError(`💥 Missing or couldn't resolve 'owner'`, failOnError);
                 return;
             }
             else {
+                core.setOutput('repo', repo);
                 core.debug(`Resolved 'repo' as ${repo}`);
             }
             if (!toTag) {
-                core.error(`💥 Missing or couldn't resolve 'toTag'`);
+                utils_1.failOrError(`💥 Missing or couldn't resolve 'toTag'`, failOnError);
                 return;
             }
             else {
+                core.setOutput('toTag', toTag);
                 core.debug(`Resolved 'toTag' as ${toTag}`);
             }
             core.endGroup();
@@ -381,10 +367,11 @@ function run() {
                 repo,
                 fromTag,
                 toTag,
-                ignorePreReleases: ignorePreReleases === 'true',
+                ignorePreReleases,
+                failOnError,
                 configuration
             });
-            core.setOutput('changelog', yield releaseNotes.pull(token));
+            core.setOutput('changelog', (_d = (_c = (yield releaseNotes.pull(token))) !== null && _c !== void 0 ? _c : configuration.empty_template) !== null && _d !== void 0 ? _d : configuration_1.DefaultConfiguration.empty_template);
         }
         catch (error) {
             core.setFailed(error.message);
@@ -639,36 +626,44 @@ const transform_1 = __webpack_require__(1644);
 const core = __importStar(__webpack_require__(2186));
 const tags_1 = __webpack_require__(7532);
 const configuration_1 = __webpack_require__(5527);
+const utils_1 = __webpack_require__(918);
 class ReleaseNotes {
     constructor(options) {
         this.options = options;
     }
     pull(token) {
-        var _a, _b, _c;
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const octokit = new rest_1.Octokit({
                 auth: `token ${token || process.env.GITHUB_TOKEN}`
             });
-            const { owner, repo, toTag, ignorePreReleases, configuration } = this.options;
+            const { owner, repo, toTag, ignorePreReleases, failOnError, configuration } = this.options;
             if (!this.options.fromTag) {
                 core.startGroup(`🔖 Resolve previous tag`);
                 core.debug(`fromTag undefined, trying to resolve via API`);
                 const tagsApi = new tags_1.Tags(octokit);
                 const previousTag = yield tagsApi.findPredecessorTag(owner, repo, toTag, ignorePreReleases, (_a = configuration.max_tags_to_fetch) !== null && _a !== void 0 ? _a : configuration_1.DefaultConfiguration.max_tags_to_fetch);
                 if (previousTag == null) {
-                    core.error(`💥 Unable to retrieve previous tag given ${toTag}`);
-                    return ((_b = configuration.empty_template) !== null && _b !== void 0 ? _b : configuration_1.DefaultConfiguration.empty_template);
+                    utils_1.failOrError(`💥 Unable to retrieve previous tag given ${toTag}`, failOnError);
+                    return null;
                 }
                 this.options.fromTag = previousTag.name;
                 core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`);
                 core.endGroup();
+            }
+            if (!this.options.fromTag) {
+                utils_1.failOrError(`💥 Missing or couldn't resolve 'fromTag'`, failOnError);
+                return null;
+            }
+            else {
+                core.setOutput('fromTag', this.options.fromTag);
             }
             core.startGroup(`🚀 Load pull requests`);
             const mergedPullRequests = yield this.getMergedPullRequests(octokit);
             core.endGroup();
             if (mergedPullRequests.length === 0) {
                 core.warning(`⚠️ No pull requests found`);
-                return (_c = configuration.empty_template) !== null && _c !== void 0 ? _c : configuration_1.DefaultConfiguration.empty_template;
+                return null;
             }
             core.startGroup('📦 Build changelog');
             const resultChangelog = transform_1.buildChangelog(mergedPullRequests, configuration);
@@ -679,7 +674,7 @@ class ReleaseNotes {
     getMergedPullRequests(octokit) {
         var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
-            const { owner, repo, fromTag, toTag, configuration } = this.options;
+            const { owner, repo, fromTag, toTag, failOnError, configuration } = this.options;
             core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag}...${toTag}'`);
             const commitsApi = new commits_1.Commits(octokit);
             let commits;
@@ -687,11 +682,11 @@ class ReleaseNotes {
                 commits = yield commitsApi.getDiff(owner, repo, fromTag, toTag);
             }
             catch (error) {
-                core.error(`💥 Failed to retrieve - Invalid tag? - Because of: ${error}`);
+                utils_1.failOrError(`💥 Failed to retrieve - Invalid tag? - Because of: ${error}`, failOnError);
                 return [];
             }
             if (commits.length === 0) {
-                core.warning(`💥 No commits found between - ${fromTag}...${toTag}`);
+                core.warning(`⚠️ No commits found between - ${fromTag}...${toTag}`);
                 return [];
             }
             const firstCommit = commits[0];
@@ -1066,8 +1061,63 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.directoryExistsSync = exports.readConfiguration = void 0;
+exports.directoryExistsSync = exports.resolveConfiguration = exports.failOrError = exports.retrieveRepositoryPath = void 0;
 const fs = __importStar(__webpack_require__(5747));
+const configuration_1 = __webpack_require__(5527);
+const core = __importStar(__webpack_require__(2186));
+const path = __importStar(__webpack_require__(5622));
+/**
+ * Resolves the repository path, relatively to the GITHUB_WORKSPACE
+ */
+function retrieveRepositoryPath(providedPath) {
+    let githubWorkspacePath = process.env['GITHUB_WORKSPACE'];
+    if (!githubWorkspacePath) {
+        throw new Error('GITHUB_WORKSPACE not defined');
+    }
+    githubWorkspacePath = path.resolve(githubWorkspacePath);
+    core.debug(`GITHUB_WORKSPACE = '${githubWorkspacePath}'`);
+    let repositoryPath = providedPath || '.';
+    repositoryPath = path.resolve(githubWorkspacePath, repositoryPath);
+    core.debug(`repositoryPath = '${repositoryPath}'`);
+    return repositoryPath;
+}
+exports.retrieveRepositoryPath = retrieveRepositoryPath;
+/**
+ * Will automatically either report the message to the log, or mark the action as failed. Additionally defining the output failed, allowing it to be read in by other actions
+ */
+function failOrError(message, failOnError) {
+    // if we report any failure, consider the action to have failed, may not make the build fail
+    core.setOutput('failed', true);
+    if (failOnError) {
+        core.setFailed(message);
+    }
+    else {
+        core.error(message);
+    }
+}
+exports.failOrError = failOrError;
+/**
+ * Retrieves the configuration given the file path, if not found it will fallback to the `DefaultConfiguration`
+ */
+function resolveConfiguration(githubWorkspacePath, configurationFile) {
+    let configuration = configuration_1.DefaultConfiguration;
+    if (configurationFile) {
+        const configurationPath = path.resolve(githubWorkspacePath, configurationFile);
+        core.debug(`configurationPath = '${configurationPath}'`);
+        const providedConfiguration = readConfiguration(configurationPath);
+        if (!providedConfiguration) {
+            core.info(`⚠️ Configuration provided, but it couldn't be found, or failed to parse. Fallback to Defaults`);
+        }
+        else {
+            configuration = providedConfiguration;
+        }
+    }
+    return configuration;
+}
+exports.resolveConfiguration = resolveConfiguration;
+/**
+ * Reads in the configuration from the JSON file
+ */
 function readConfiguration(filename) {
     try {
         const rawdata = fs.readFileSync(filename, 'utf8');
@@ -1078,23 +1128,25 @@ function readConfiguration(filename) {
         return null;
     }
 }
-exports.readConfiguration = readConfiguration;
-function directoryExistsSync(path, required) {
-    if (!path) {
+/**
+ * Checks if a given directory exists
+ */
+function directoryExistsSync(inputPath, required) {
+    if (!inputPath) {
         throw new Error("Arg 'path' must not be empty");
     }
     let stats;
     try {
-        stats = fs.statSync(path);
+        stats = fs.statSync(inputPath);
     }
     catch (error) {
         if (error.code === 'ENOENT') {
             if (!required) {
                 return false;
             }
-            throw new Error(`Directory '${path}' does not exist`);
+            throw new Error(`Directory '${inputPath}' does not exist`);
         }
-        throw new Error(`Encountered an error when checking whether path '${path}' exists: ${error.message}`);
+        throw new Error(`Encountered an error when checking whether path '${inputPath}' exists: ${error.message}`);
     }
     if (stats.isDirectory()) {
         return true;
@@ -1102,7 +1154,7 @@ function directoryExistsSync(path, required) {
     else if (!required) {
         return false;
     }
-    throw new Error(`Directory '${path}' does not exist`);
+    throw new Error(`Directory '${inputPath}' does not exist`);
 }
 exports.directoryExistsSync = directoryExistsSync;
 
