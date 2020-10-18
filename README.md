@@ -6,7 +6,7 @@
 </h1>
 
 <p align="center">
-    ... a github action that builds your release notes fast, easy and exactly the way you want.
+    ... a GitHub action that builds your release notes fast, easy and exactly the way you want.
 </p>
 
 <div align="center">
@@ -21,9 +21,9 @@
 <p align="center">
     <a href="#whats-included-">What's included 🚀</a> &bull;
     <a href="#setup">Setup 🛠️</a> &bull;
+    <a href="#full-sample-%EF%B8%8F">Full Sample 🖥️</a> &bull;
     <a href="#customization-%EF%B8%8F">Customization 🖍️</a> &bull;
     <a href="#contribute-">Contribute 🧬</a> &bull;
-    <a href="#complete-sample-%EF%B8%8F">Complete Sample 🖥️</a> &bull;
     <a href="#license">License 📓</a>
 </p>
 
@@ -32,13 +32,14 @@
 ### What's included 🚀
 
 - Super simple integration
-  - even on huge repositories with hundreds of tags
+  - ...even on huge repositories with hundreds of tags
 - Parallel releases support
 - Blazingly fast execution
 - Supports any git project
 - Highly flexible configuration
 - Lightweight
 - Supports any branch
+- Rich build log output
 
 -------
 
@@ -51,26 +52,72 @@ Specify the action as part of your GitHub actions workflow:
 ```yml
 - name: "Build Changelog"
   id: build_changelog
-  if: startsWith(github.ref, 'refs/tags/')
   uses: mikepenz/release-changelog-builder-action@{latest-release}
   env:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-By default the action will try to automatically retrieve the `tag` from the current commit and automtacally resolve the `tag` before. Read more about this here.
+By default the action will try to automatically retrieve the `tag` from the current commit and automatically resolve the `tag` before. Read more about this here.
 
 ### Action outputs
 
-The action will succeed and return the `changelog` as a step output. Use it in any follow up step by referencing via its id. For example `build_changelog`.
+After action execution it will return the `changelog` and additional information as step output. You can use it in any follow-up step by referencing the output by referencing it via the id of the step. For example `build_changelog`.
 
 ```yml
 # ${{steps.{CHANGELOG_STEP_ID}.outputs.changelog}}
 ${{steps.build_changelog.outputs.changelog}}
 ```
 
+A full set list of possible output values for this action.
+
+| **Output**          | **Description**                                                                                                           |
+|---------------------|---------------------------------------------------------------------------------------------------------------------------|
+| `outputs.changelog` | The built release changelog built from the merged pull requests                                                           |
+| `outputs.owner`     | Specifies the owner of the repository processed                                                                           |
+| `outputs.repo`      | Describes the repository name, which was processed                                                                        |
+| `outputs.fromTag`   | Defines the `fromTag` which describes the lower bound to process pull requests for                                        |
+| `outputs.toTag`     | Defines the `toTag` which describes the upper bound to process pull request for                                           |
+| `outputs.failed`    | Defines if there was an issue with the action run, and the changelog may not have been generated correctly. [true, false] |
+
+
+## Full Sample 🖥️
+
+Below is a complete example showcasing how to define a build, which is executed when tagging the project. It consists of:
+- Prepare tag, via the GITHUB_REF environment variable
+- Build changelog, given the tag
+- Create release on GitHub - specifying body with constructed changelog
+ 
+```yml
+name: 'CI'
+on:
+  push:
+    tags:
+      - '*'
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Changelog
+        id: github_release
+        uses: mikepenz/release-changelog-builder-action@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          body: ${{steps.github_release.outputs.changelog}}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+
 ## Customization 🖍️
 
-### Changelog Configuration
+### Configuration
 
 The action supports flexible configuration options to modify vast areas of its behavior. To do so, provide the configuration file to the workflow using the `configuration` setting.
 
@@ -120,13 +167,15 @@ This configuration is a `.json` file in the following format.
 }
 ```
 
-Any section of the configruation can be ommited to have defaults apply.
-Defaults for the configuraiton can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
+Any section of the configuration can be omitted to have defaults apply.
 
+Defaults for the configuration can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
+
+Please see the [Configuration Specification](#configuration-specification) for detailed descriptions on the offered configuration options. 
 
 ### Advanced workflow specification
 
-For advanced usecases additional settings can be provided to the action
+For advanced use cases additional settings can be provided to the action
 
 ```yml
 - name: "Complex Configuration"
@@ -138,12 +187,26 @@ For advanced usecases additional settings can be provided to the action
     owner: "mikepenz"
     repo: "release-changelog-builder-action"
     ignorePreReleases: "false"
-    fromTag: "0.0.2"
-    toTag: "0.0.3"
+    fromTag: "0.3.0"
+    toTag: "0.5.0"
     token: ${{ secrets.PAT }}
 ```
 
-💡 `ignorePreReleases` will be ignored, if `fromTag` is specified. `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repos please use a PAT (Personal Access Token).
+💡 All input values are optional. It is only required to provide the `token` either via the input, or as `env` variable.
+
+| **Input**         | **Description**                                                                                                                                                            |
+|-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `configuration`     | Relative path, to the `configuration.json` file, providing additional configurations                                                                                     |
+| `owner`             | The owner of the repository to generate the changelog for                                                                                                                |
+| `repo`              | Name of the repository we want to process                                                                                                                                |
+| `fromTag`           | Defines the 'start' from where the changelog will consider merged pull requests                                                                                          |
+| `toTag`             | Defines until which tag the changelog will consider merged pull requests                                                                                                 |
+| `path`              | Allows to specify an alternative sub directory, to use as base                                                                                                           |
+| `token`             | Alternative config to specify token. You should prefer `env.GITHUB_TOKEN` instead though                                                                                 |
+| `ignorePreReleases` | Allows to ignore pre-releases for changelog generation (E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick). Only used if `fromTag` was not specified. Default: false |
+| `failOnError`       | Defines if the action will result in a build failure if problems occurred. Default: false                                                                                |
+
+💡 `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repositories please use a PAT (Personal Access Token).
 
 ### PR Template placeholders
 
@@ -171,47 +234,26 @@ Table of supported placeholders allowed to be used in the `pr_template` configur
 | `${{CHANGELOG}}`     | The contents of the changelog, matching the labels as specified in the categories configuration |
 | `${{UNCATEGORIZED}}` | All pull requests not matching a specified label in categories                                  |
 
+### Configuration Specification
 
-## Complete Sample 🖥️
+Table of descriptions for the `configuration.json` options. 
 
-Below is a complete example showcasing how to define a build, which is executed when tagging the project. It consists of:
-- Prepare tag, via the GITHUB_REF environment variable
-- Build changelog, given the tag
-- Create release on GitHub - specifying body with constructed changelog
- 
-```yml
-name: 'CI'
-on:
-  push:
-    tags:
-      - '*'
-
-  release:
-    if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Retrieve tag
-        if: startsWith(github.ref, 'refs/tags/')
-        id: tag_version
-        run: echo ::set-output name=VERSION::$(echo ${GITHUB_REF:10})
-
-      - name: Build Changelog
-        id: github_release
-        uses: mikepenz/release-changelog-builder-action@main
-        with:
-          toTag: ${{ steps.tag_version.outputs.VERSION }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create Release
-        uses: actions/create-release@v1
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
-          body: ${{steps.github_release.outputs.changelog}}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-```
+| **Input**                | **Description**                                                                                                                                                                                                                   |
+|--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| categories               | An array of `category` specifications, offering a flexible way to group changes into categories                                                                                                                                   |
+| category.title           | The display name of a category in the changelog                                                                                                                                                                                   |
+| category.labels          | An array of labels, to match pull request labels against. If any PR label, matches any category label, the pull request will show up under this category                                                                           |
+| sort                     | The sort order of pull requests. [ASC, DESC]                                                                                                                                                                                      |
+| template                 | Specifies the global template to pick for creating the changelog. See [Template placeholders](#template-placeholders) for possible values                                                                                         |
+| pr_template              | Defines the per pull request template. See [PR Template placeholders](#pr-template-placeholders) for possible values                                                                                                              |
+| empty_template           | Template to pick if no changes are detected. Does not support placeholders                                                                                                                                                        |
+| transformers             | An array of `transform` specifications, offering a flexible API to modify the text per pull request. This is applied on the change text created with `pr_template`. `transformers` are executed per change, in the order specified |
+| transformer.pattern      | A `regex` pattern, extracting values of the change message.                                                                                                                                                                       |
+| transformer.target       | The result pattern, the regex groups will be filled into. Allows for full transformation of a pull request message. Including potentially specified texts                                                                         |
+| max_tags_to_fetch        | The maximum amount of tags to load from the API to find the previous tag. Loaded paginated with 100 per page                                                                                                                      |
+| max_pull_requests        | The maximum amount of pull requests to load from the API. Loaded paginated with 30 per page                                                                                                                                       |
+| max_back_track_time_days | Defines the max amount of days to go back in time per changelog                                                                                                                                                                   |
+| exclude_merge_branches   | An array of branches to be ignored from processing as merge commits                                                                                                                                                               |
 
 ## Contribute 🧬
 
@@ -229,7 +271,7 @@ $ npm test
 $ npm run lint -- --fix
 ```
 
-It's suggested to export the token to your path before running the tests, so that API calls can be done to github.
+It's suggested to export the token to your path before running the tests so that API calls can be done to GitHub.
 
 ```bash
 export GITHUB_TOKEN=your_personal_github_pat
@@ -248,7 +290,8 @@ Core parts of the PR fetching logic are based on [pull-release-notes](https://gi
 
 ## License
 
-   Copyright for portions of pr-release-notes are held by Nikolay Blagoev, 2019-2020 as part of project pull-release-notes. All other copyright for project pr-release-notes are held by Mike Penz, 2020.
+    Copyright for portions of pr-release-notes are held by Nikolay Blagoev, 2019-2020 as part of project pull-release-notes. 
+    All other copyright for project pr-release-notes are held by Mike Penz, 2020.
 
 ## Fork License
 
