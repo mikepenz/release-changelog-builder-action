@@ -976,7 +976,7 @@ function buildChangelog(prs, config) {
     for (const pr of uncategorized) {
         changelogUncategorized = `${changelogUncategorized + pr}\n`;
     }
-    core.info(`✒️ Wrote ${changelogUncategorized.length} non categorized pull requests down`);
+    core.info(`✒️ Wrote ${uncategorized.length} non categorized pull requests down`);
     // fill template
     let transformedChangelog = config.template || configuration_1.DefaultConfiguration.template;
     transformedChangelog = transformedChangelog.replace('${{CHANGELOG}}', changelog);
