@@ -1,5 +1,5 @@
 import {ReleaseNotes} from '../src/releaseNotes'
-import {readConfiguration} from '../src/utils'
+import { resolveConfiguration } from '../src/utils';
 
 // shows how the runner will run a javascript action with env / stdout protocol
 /*
@@ -17,31 +17,33 @@ test('test runs', () => {
 it('Should have empty changelog (tags)', async () => {
   jest.setTimeout(180000)
 
-  const configuration = readConfiguration('configs/configuration.json')!!
+  const configuration = resolveConfiguration('', 'configs/configuration.json')
   const releaseNotes = new ReleaseNotes({
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
     fromTag: 'v0.0.1',
     toTag: 'v0.0.2',
     ignorePreReleases: false,
+    failOnError: false,
     configuration: configuration
   })
 
   const changeLog = await releaseNotes.pull()
   console.log(changeLog)
-  expect(changeLog).toStrictEqual(`- no changes`)
+  expect(changeLog).toStrictEqual(null)
 })
 
 it('Should match generated changelog (tags)', async () => {
   jest.setTimeout(180000)
 
-  const configuration = readConfiguration('configs/configuration.json')!!
+  const configuration = resolveConfiguration('', 'configs/configuration.json')
   const releaseNotes = new ReleaseNotes({
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
     fromTag: 'v0.0.1',
     toTag: 'v0.0.3',
     ignorePreReleases: false,
+    failOnError: false,
     configuration: configuration
   })
 
@@ -58,13 +60,14 @@ it('Should match generated changelog (tags)', async () => {
 it('Should match generated changelog (unspecified fromTag)', async () => {
   jest.setTimeout(180000)
 
-  const configuration = readConfiguration('configs/configuration.json')!!
+  const configuration = resolveConfiguration('', 'configs/configuration.json')
   const releaseNotes = new ReleaseNotes({
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
     fromTag: null,
     toTag: 'v0.0.3',
     ignorePreReleases: false,
+    failOnError: false,
     configuration: configuration
   })
 
@@ -81,13 +84,14 @@ it('Should match generated changelog (unspecified fromTag)', async () => {
 it('Should match generated changelog (refs)', async () => {
   jest.setTimeout(180000)
 
-  const configuration = readConfiguration('configs_test/configuration_all_placeholders.json')!!
+  const configuration = resolveConfiguration('', 'configs_test/configuration_all_placeholders.json')
   const releaseNotes = new ReleaseNotes({
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
     fromTag: '5ec7a2d86fe9f43fdd38d5e254a1117c8a51b4c3',
     toTag: 'fa3788c8c4b3373ef8424ce3eb008a5cd07cc5aa',
     ignorePreReleases: false,
+    failOnError: false,
     configuration: configuration
   })
 
@@ -112,13 +116,14 @@ nhoelzl
 it('Should match ordered ASC', async () => {
   jest.setTimeout(180000)
 
-  const configuration = readConfiguration('configs_test/configuration_asc.json')!!
+  const configuration = resolveConfiguration('', 'configs_test/configuration_asc.json')
   const releaseNotes = new ReleaseNotes({
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
     fromTag: 'v0.3.0',
     toTag: 'v0.5.0',
     ignorePreReleases: false,
+    failOnError: false,
     configuration: configuration
   })
 
@@ -130,13 +135,14 @@ it('Should match ordered ASC', async () => {
 it('Should match ordered DESC', async () => {
   jest.setTimeout(180000)
 
-  const configuration = readConfiguration('configs_test/configuration_desc.json')!!
+  const configuration = resolveConfiguration('', 'configs_test/configuration_desc.json')
   const releaseNotes = new ReleaseNotes({
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
     fromTag: 'v0.3.0',
     toTag: 'v0.5.0',
     ignorePreReleases: false,
+    failOnError: false,
     configuration: configuration
   })
 
