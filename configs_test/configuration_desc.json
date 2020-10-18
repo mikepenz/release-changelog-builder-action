@@ -1,0 +1,4 @@
+{
+    "sort": "DESC",
+    "pr_template": "${{NUMBER}}"
+}

@@ -81,7 +81,7 @@ it('Should match generated changelog (unspecified fromTag)', async () => {
 it('Should match generated changelog (refs)', async () => {
   jest.setTimeout(180000)
 
-  const configuration = readConfiguration('configs/configuration_all_placeholders.json')!!
+  const configuration = readConfiguration('configs_test/configuration_all_placeholders.json')!!
   const releaseNotes = new ReleaseNotes({
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -107,4 +107,40 @@ mikepenz, nhoelzl
 nhoelzl
 
 `)
+})
+
+it('Should match ordered ASC', async () => {
+  jest.setTimeout(180000)
+
+  const configuration = readConfiguration('configs_test/configuration_asc.json')!!
+  const releaseNotes = new ReleaseNotes({
+    owner: 'mikepenz',
+    repo: 'release-changelog-builder-action',
+    fromTag: 'v0.3.0',
+    toTag: 'v0.5.0',
+    ignorePreReleases: false,
+    configuration: configuration
+  })
+
+  const changeLog = await releaseNotes.pull()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(`## 🚀 Features\n\n22\n24\n25\n26\n28\n\n## 🐛 Fixes\n\n23\n\n`)
+})
+
+it('Should match ordered DESC', async () => {
+  jest.setTimeout(180000)
+
+  const configuration = readConfiguration('configs_test/configuration_desc.json')!!
+  const releaseNotes = new ReleaseNotes({
+    owner: 'mikepenz',
+    repo: 'release-changelog-builder-action',
+    fromTag: 'v0.3.0',
+    toTag: 'v0.5.0',
+    ignorePreReleases: false,
+    configuration: configuration
+  })
+
+  const changeLog = await releaseNotes.pull()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(`## 🚀 Features\n\n28\n26\n25\n24\n22\n\n## 🐛 Fixes\n\n23\n\n`)
 })
