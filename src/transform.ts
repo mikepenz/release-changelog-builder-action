@@ -45,6 +45,7 @@ export function buildChangelog(
   for (const category of categories) {
     categorized.set(category, [])
   }
+  const categorizedPrs: string[] = []
   const uncategorized: string[] = []
 
   // bring elements in order
@@ -60,6 +61,8 @@ export function buildChangelog(
 
     if (!matched) {
       uncategorized.push(body)
+    } else {
+      categorizedPrs.push(body)
     }
   }
   core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`)
@@ -102,7 +105,7 @@ export function buildChangelog(
   // fill other placeholders
   transformedChangelog = transformedChangelog.replace(
     '${{CATEGORIZED_COUNT}}',
-    categorized.size.toString()
+    categorizedPrs.length.toString()
   )
   transformedChangelog = transformedChangelog.replace(
     '${{UNCATEGORIZED_COUNT}}',

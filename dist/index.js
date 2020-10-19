@@ -1002,6 +1002,7 @@ function buildChangelog(prs, config, options) {
     for (const category of categories) {
         categorized.set(category, []);
     }
+    const categorizedPrs = [];
     const uncategorized = [];
     // bring elements in order
     for (const [pr, body] of transformedMap) {
@@ -1014,6 +1015,9 @@ function buildChangelog(prs, config, options) {
         }
         if (!matched) {
             uncategorized.push(body);
+        }
+        else {
+            categorizedPrs.push(body);
         }
     }
     core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`);
@@ -1040,7 +1044,7 @@ function buildChangelog(prs, config, options) {
     transformedChangelog = transformedChangelog.replace('${{CHANGELOG}}', changelog);
     transformedChangelog = transformedChangelog.replace('${{UNCATEGORIZED}}', changelogUncategorized);
     // fill other placeholders
-    transformedChangelog = transformedChangelog.replace('${{CATEGORIZED_COUNT}}', categorized.size.toString());
+    transformedChangelog = transformedChangelog.replace('${{CATEGORIZED_COUNT}}', categorizedPrs.length.toString());
     transformedChangelog = transformedChangelog.replace('${{UNCATEGORIZED_COUNT}}', uncategorized.length.toString());
     transformedChangelog = fillAdditionalPlaceholders(transformedChangelog, options);
     core.info(`ℹ️ Filled template`);
