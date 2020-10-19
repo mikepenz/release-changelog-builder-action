@@ -1,4 +1,4 @@
-import {ReleaseNotes} from '../src/releaseNotes'
+import { ReleaseNotes } from '../src/releaseNotes'
 import { resolveConfiguration } from '../src/utils';
 import { Octokit } from '@octokit/rest';
 
