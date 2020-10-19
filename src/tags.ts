@@ -1,5 +1,6 @@
 import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import * as core from '@actions/core'
+import { SemVer } from 'semver'
 
 export interface TagInfo {
   name: string
@@ -94,20 +95,7 @@ export class Tags {
   */
  export function sortTags(tags: TagInfo[]): TagInfo[] {
   tags.sort((b, a) => {
-    const partsA = a.name.replace(/^v/, '').split('-')
-    const partsB = b.name.replace(/^v/, '').split('-')
-    const versionCompare = partsA[0].localeCompare(partsB[0])
-    if (versionCompare !== 0) {
-      return versionCompare
-    } else {
-      if (partsA.length === 1) {
-        return 0
-      } else if (partsB.length === 1) {
-        return 1
-      } else {
-        return partsA[1].localeCompare(partsB[1])
-      }
-    }
+    return new SemVer(a.name).compare(b.name)
   })
   return tags
 }
