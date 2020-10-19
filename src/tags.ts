@@ -1,5 +1,6 @@
 import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import * as core from '@actions/core'
+import * as semver from 'semver'
 import {SemVer} from 'semver'
 
 export interface TagInfo {
@@ -94,8 +95,18 @@ export class Tags {
   2020.3.0
   */
 export function sortTags(tags: TagInfo[]): TagInfo[] {
-  tags.sort((b, a) => {
+  // filter out tags which do not follow semver
+  const validatedTags = tags.filter(tag => {
+    const isValid = semver.valid(tag.name) !== null
+    if(!isValid) {
+      core.debug(`⚠️ dropped tag ${tag.name} because it is not a valid semver tag`)
+    }
+    return isValid
+  })
+
+  // sort using semver
+  validatedTags.sort((b, a) => {
     return new SemVer(a.name).compare(b.name)
   })
-  return tags
+  return validatedTags
 }
