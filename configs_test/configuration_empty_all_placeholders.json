@@ -1,0 +1,4 @@
+{
+    "template": "${{CHANGELOG}}\n${{UNCATEGORIZED}}\n${{OWNER}}\n${{REPO}}\n${{FROM_TAG}}\n${{TO_TAG}}\n${{CATEGORIZED_COUNT}}\n${{UNCATEGORIZED_COUNT}}",
+    "empty_template": "${{OWNER}}\n${{REPO}}\n${{FROM_TAG}}\n${{TO_TAG}}"
+}
