@@ -300,6 +300,8 @@ const releaseNotes_1 = __webpack_require__(5882);
 const gitHelper_1 = __webpack_require__(353);
 const github = __importStar(__webpack_require__(5438));
 const configuration_1 = __webpack_require__(5527);
+const rest_1 = __webpack_require__(5375);
+const tags_1 = __webpack_require__(7532);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         core.setOutput('failed', false); // mark the action not failed by default
@@ -316,7 +318,7 @@ function run() {
             const owner = core.getInput('owner') || github.context.repo.owner;
             const repo = core.getInput('repo') || github.context.repo.repo;
             // read in from, to tag inputs
-            const fromTag = core.getInput('fromTag');
+            let fromTag = core.getInput('fromTag');
             let toTag = core.getInput('toTag');
             // read in flags
             const ignorePreReleases = core.getInput('ignorePreReleases') === 'true';
@@ -361,16 +363,34 @@ function run() {
                 core.debug(`Resolved 'toTag' as ${toTag}`);
             }
             core.endGroup();
-            const releaseNotes = new releaseNotes_1.ReleaseNotes({
+            // load octokit instance
+            const octokit = new rest_1.Octokit({
+                auth: `token ${token || process.env.GITHUB_TOKEN}`
+            });
+            // ensure to resolve the fromTag if it was not provided specifically
+            if (!fromTag) {
+                core.startGroup(`🔖 Resolve previous tag`);
+                core.debug(`fromTag undefined, trying to resolve via API`);
+                const tagsApi = new tags_1.Tags(octokit);
+                const previousTag = yield tagsApi.findPredecessorTag(owner, repo, toTag, ignorePreReleases, configuration.max_tags_to_fetch ||
+                    configuration_1.DefaultConfiguration.max_tags_to_fetch);
+                if (previousTag == null) {
+                    utils_1.failOrError(`💥 Unable to retrieve previous tag given ${toTag}`, failOnError);
+                    return;
+                }
+                fromTag = previousTag.name;
+                core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`);
+                core.endGroup();
+            }
+            const releaseNotes = new releaseNotes_1.ReleaseNotes(octokit, {
                 owner,
                 repo,
                 fromTag,
                 toTag,
-                ignorePreReleases,
                 failOnError,
                 configuration
             });
-            core.setOutput('changelog', (yield releaseNotes.pull(token)) ||
+            core.setOutput('changelog', (yield releaseNotes.pull()) ||
                 configuration.empty_template ||
                 configuration_1.DefaultConfiguration.empty_template);
         }
@@ -620,47 +640,22 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ReleaseNotes = void 0;
-const rest_1 = __webpack_require__(5375);
 const commits_1 = __webpack_require__(3916);
 const pullRequests_1 = __webpack_require__(4217);
 const transform_1 = __webpack_require__(1644);
 const core = __importStar(__webpack_require__(2186));
-const tags_1 = __webpack_require__(7532);
 const configuration_1 = __webpack_require__(5527);
 const utils_1 = __webpack_require__(918);
 class ReleaseNotes {
-    constructor(options) {
+    constructor(octokit, options) {
+        this.octokit = octokit;
         this.options = options;
     }
-    pull(token) {
+    pull() {
         return __awaiter(this, void 0, void 0, function* () {
-            const octokit = new rest_1.Octokit({
-                auth: `token ${token || process.env.GITHUB_TOKEN}`
-            });
-            const { owner, repo, toTag, ignorePreReleases, failOnError, configuration } = this.options;
-            if (!this.options.fromTag) {
-                core.startGroup(`🔖 Resolve previous tag`);
-                core.debug(`fromTag undefined, trying to resolve via API`);
-                const tagsApi = new tags_1.Tags(octokit);
-                const previousTag = yield tagsApi.findPredecessorTag(owner, repo, toTag, ignorePreReleases, configuration.max_tags_to_fetch ||
-                    configuration_1.DefaultConfiguration.max_tags_to_fetch);
-                if (previousTag == null) {
-                    utils_1.failOrError(`💥 Unable to retrieve previous tag given ${toTag}`, failOnError);
-                    return null;
-                }
-                this.options.fromTag = previousTag.name;
-                core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`);
-                core.endGroup();
-            }
-            if (!this.options.fromTag) {
-                utils_1.failOrError(`💥 Missing or couldn't resolve 'fromTag'`, failOnError);
-                return null;
-            }
-            else {
-                core.setOutput('fromTag', this.options.fromTag);
-            }
+            const { configuration } = this.options;
             core.startGroup(`🚀 Load pull requests`);
-            const mergedPullRequests = yield this.getMergedPullRequests(octokit);
+            const mergedPullRequests = yield this.getMergedPullRequests(this.octokit);
             core.endGroup();
             if (mergedPullRequests.length === 0) {
                 core.warning(`⚠️ No pull requests found`);
@@ -932,9 +927,7 @@ function buildChangelog(prs, config) {
     const transformedMap = new Map();
     // convert PRs to their text representation
     for (const pr of prs) {
-        transformedMap.set(pr, transform(fillTemplate(pr, config.pr_template
-            ? config.pr_template
-            : configuration_1.DefaultConfiguration.pr_template), validatedTransformers));
+        transformedMap.set(pr, transform(fillTemplate(pr, config.pr_template || configuration_1.DefaultConfiguration.pr_template), validatedTransformers));
     }
     core.info(`ℹ️ Used ${validateTransfomers.length} transformers to adjust message`);
     core.info(`✒️ Wrote messages for ${prs.length} pull requests`);
@@ -1009,7 +1002,9 @@ function transform(filled, transformers) {
     }
     let transformed = filled;
     for (const { target, pattern } of transformers) {
-        transformed = transformed.replace(pattern, target);
+        if (pattern) {
+            transformed = transformed.replace(pattern, target);
+        }
     }
     return transformed;
 }
