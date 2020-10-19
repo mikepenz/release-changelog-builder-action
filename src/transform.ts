@@ -26,9 +26,7 @@ export function buildChangelog(
       transform(
         fillTemplate(
           pr,
-          config.pr_template
-            ? config.pr_template
-            : DefaultConfiguration.pr_template
+          config.pr_template || DefaultConfiguration.pr_template
         ),
         validatedTransformers
       )
@@ -133,7 +131,9 @@ function transform(filled: string, transformers: RegexTransformer[]): string {
   }
   let transformed = filled
   for (const {target, pattern} of transformers) {
-    transformed = transformed.replace(pattern!!, target)
+    if (pattern) {
+      transformed = transformed.replace(pattern, target)
+    }
   }
   return transformed
 }
