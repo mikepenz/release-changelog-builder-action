@@ -3,71 +3,26 @@ import {Commits, CommitInfo} from './commits'
 import {PullRequestInfo, PullRequests} from './pullRequests'
 import {buildChangelog} from './transform'
 import * as core from '@actions/core'
-import {Tags} from './tags'
 import {Configuration, DefaultConfiguration} from './configuration'
 import {failOrError} from './utils'
 
 export interface ReleaseNotesOptions {
   owner: string // the owner of the repository
   repo: string // the repository
-  fromTag: string | null // the tag/ref to start from
+  fromTag: string // the tag/ref to start from
   toTag: string // the tag/ref up to
-  ignorePreReleases: boolean // defines if we should ignore any pre-releases for matching, only relevant if fromTag is null
   failOnError: boolean // defines if we should fail the action in case of an error
   configuration: Configuration // the configuration as defined in `configuration.ts`
 }
 
 export class ReleaseNotes {
-  constructor(private options: ReleaseNotesOptions) {}
+  constructor(private octokit: Octokit, private options: ReleaseNotesOptions) {}
 
-  async pull(token?: string): Promise<string | null> {
-    const octokit = new Octokit({
-      auth: `token ${token || process.env.GITHUB_TOKEN}`
-    })
-
-    const {
-      owner,
-      repo,
-      toTag,
-      ignorePreReleases,
-      failOnError,
-      configuration
-    } = this.options
-
-    if (!this.options.fromTag) {
-      core.startGroup(`🔖 Resolve previous tag`)
-      core.debug(`fromTag undefined, trying to resolve via API`)
-      const tagsApi = new Tags(octokit)
-
-      const previousTag = await tagsApi.findPredecessorTag(
-        owner,
-        repo,
-        toTag,
-        ignorePreReleases,
-        configuration.max_tags_to_fetch ||
-          DefaultConfiguration.max_tags_to_fetch
-      )
-      if (previousTag == null) {
-        failOrError(
-          `💥 Unable to retrieve previous tag given ${toTag}`,
-          failOnError
-        )
-        return null
-      }
-      this.options.fromTag = previousTag.name
-      core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`)
-      core.endGroup()
-    }
-
-    if (!this.options.fromTag) {
-      failOrError(`💥 Missing or couldn't resolve 'fromTag'`, failOnError)
-      return null
-    } else {
-      core.setOutput('fromTag', this.options.fromTag)
-    }
+  async pull(): Promise<string | null> {
+    const {configuration} = this.options
 
     core.startGroup(`🚀 Load pull requests`)
-    const mergedPullRequests = await this.getMergedPullRequests(octokit)
+    const mergedPullRequests = await this.getMergedPullRequests(this.octokit)
     core.endGroup()
 
     if (mergedPullRequests.length === 0) {
@@ -76,7 +31,11 @@ export class ReleaseNotes {
     }
 
     core.startGroup('📦 Build changelog')
-    const resultChangelog = buildChangelog(mergedPullRequests, configuration)
+    const resultChangelog = buildChangelog(
+      mergedPullRequests,
+      configuration,
+      this.options
+    )
     core.endGroup()
     return resultChangelog
   }
@@ -97,7 +56,7 @@ export class ReleaseNotes {
     const commitsApi = new Commits(octokit)
     let commits: CommitInfo[]
     try {
-      commits = await commitsApi.getDiff(owner, repo, fromTag!!, toTag)
+      commits = await commitsApi.getDiff(owner, repo, fromTag, toTag)
     } catch (error) {
       failOrError(
         `💥 Failed to retrieve - Invalid tag? - Because of: ${error}`,

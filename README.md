@@ -61,7 +61,9 @@ Specify the action as part of your GitHub actions workflow:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-By default the action will try to automatically retrieve the `tag` from the current commit and automatically resolve the `tag` before. Read more about this here.
+By default the action will try to automatically retrieve the `tag` from the current commit and automatically resolve the `tag` before. Automatic previous tag resolving is done using `semver`.
+
+If you require a different versioning scheme please open an issue [issue](https://github.com/mikepenz/release-changelog-builder-action/issues). Alternative you can always specifically supply the `fromTag` via the [configuration](#advanced-workflow-specification). 
 
 ### Action outputs
 
@@ -213,7 +215,7 @@ For advanced use cases additional settings can be provided to the action
 
 ### PR Template placeholders
 
-Table of supported placeholders allowed to be used in the `template` configuration.
+Table of supported placeholders allowed to be used in the `pr_template` configuration.
 
 | **Placeholder**  | **Description**                                             |
 |------------------|-------------------------------------------------------------|
@@ -230,33 +232,40 @@ Table of supported placeholders allowed to be used in the `template` configurati
 
 ### Template placeholders
 
-Table of supported placeholders allowed to be used in the `pr_template` configuration.
+Table of supported placeholders allowed to be used in the `template` and `empty_template` (only supports placeholder marked for empty) configuration.
 
-| **Placeholder**      | **Description**                                                                                 |
-|----------------------|-------------------------------------------------------------------------------------------------|
-| `${{CHANGELOG}}`     | The contents of the changelog, matching the labels as specified in the categories configuration |
-| `${{UNCATEGORIZED}}` | All pull requests not matching a specified label in categories                                  |
+| **Placeholder**            | **Description**                                                                                    | **Empty** |
+|----------------------------|----------------------------------------------------------------------------------------------------|:---------:|
+| `${{CHANGELOG}}`           | The contents of the changelog, matching the labels as specified in the categories configuration    |           |
+| `${{UNCATEGORIZED}}`       | All pull requests not matching a specified label in categories                                     |           |
+| `${{OWNER}}`               | Describes the owner of the repository the changelog was generated for                              | x         |
+| `${{REPO}}`                | The repository name of the repo the changelog was generated for                                    | x         |
+| `${{FROM_TAG}}`            | Defines the 'start' from where the changelog did consider merged pull requests                     | x         |
+| `${{TO_TAG}}`              | Defines until which tag the changelog did consider merged pull requests                            | x         |
+| `${{CATEGORIZED_COUNT}}`   | The count of PRs which were categorized                                                            |           |
+| `${{UNCATEGORIZED_COUNT}}` | The count of PRs and changes which were not categorized. No label overlapping with category labels |           |
+
 
 ### Configuration Specification
 
 Table of descriptions for the `configuration.json` options. 
 
-| **Input**                | **Description**                                                                                                                                                                                                                   |
-|--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| categories               | An array of `category` specifications, offering a flexible way to group changes into categories                                                                                                                                   |
-| category.title           | The display name of a category in the changelog                                                                                                                                                                                   |
+| **Input**                | **Description**                                                                                                                                                                                                                    |
+|--------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| categories               | An array of `category` specifications, offering a flexible way to group changes into categories                                                                                                                                    |
+| category.title           | The display name of a category in the changelog                                                                                                                                                                                    |
 | category.labels          | An array of labels, to match pull request labels against. If any PR label, matches any category label, the pull request will show up under this category                                                                           |
-| sort                     | The sort order of pull requests. [ASC, DESC]                                                                                                                                                                                      |
-| template                 | Specifies the global template to pick for creating the changelog. See [Template placeholders](#template-placeholders) for possible values                                                                                         |
-| pr_template              | Defines the per pull request template. See [PR Template placeholders](#pr-template-placeholders) for possible values                                                                                                              |
-| empty_template           | Template to pick if no changes are detected. Does not support placeholders                                                                                                                                                        |
+| sort                     | The sort order of pull requests. [ASC, DESC]                                                                                                                                                                                       |
+| template                 | Specifies the global template to pick for creating the changelog. See [Template placeholders](#template-placeholders) for possible values                                                                                          |
+| pr_template              | Defines the per pull request template. See [PR Template placeholders](#pr-template-placeholders) for possible values                                                                                                               |
+| empty_template           | Template to pick if no changes are detected. See [Template placeholders](#template-placeholders) for possible values                                                                                                               |
 | transformers             | An array of `transform` specifications, offering a flexible API to modify the text per pull request. This is applied on the change text created with `pr_template`. `transformers` are executed per change, in the order specified |
-| transformer.pattern      | A `regex` pattern, extracting values of the change message.                                                                                                                                                                       |
-| transformer.target       | The result pattern, the regex groups will be filled into. Allows for full transformation of a pull request message. Including potentially specified texts                                                                         |
-| max_tags_to_fetch        | The maximum amount of tags to load from the API to find the previous tag. Loaded paginated with 100 per page                                                                                                                      |
-| max_pull_requests        | The maximum amount of pull requests to load from the API. Loaded paginated with 30 per page                                                                                                                                       |
-| max_back_track_time_days | Defines the max amount of days to go back in time per changelog                                                                                                                                                                   |
-| exclude_merge_branches   | An array of branches to be ignored from processing as merge commits                                                                                                                                                               |
+| transformer.pattern      | A `regex` pattern, extracting values of the change message.                                                                                                                                                                        |
+| transformer.target       | The result pattern, the regex groups will be filled into. Allows for full transformation of a pull request message. Including potentially specified texts                                                                          |
+| max_tags_to_fetch        | The maximum amount of tags to load from the API to find the previous tag. Loaded paginated with 100 per page                                                                                                                       |
+| max_pull_requests        | The maximum amount of pull requests to load from the API. Loaded paginated with 30 per page                                                                                                                                        |
+| max_back_track_time_days | Defines the max amount of days to go back in time per changelog                                                                                                                                                                    |
+| exclude_merge_branches   | An array of branches to be ignored from processing as merge commits                                                                                                                                                                |
 
 ## Contribute 🧬
 
