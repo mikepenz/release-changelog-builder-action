@@ -52,7 +52,7 @@ export class Tags {
     ignorePreReleases: boolean,
     maxTagsToFetch: number
   ): Promise<TagInfo | null> {
-    const tags = this.sortTags(await this.getTags(owner, repo, maxTagsToFetch))
+    const tags = sortTags(await this.getTags(owner, repo, maxTagsToFetch))
 
     try {
       const length = tags.length
@@ -76,8 +76,9 @@ export class Tags {
       return null
     }
   }
+}
 
-  /*
+/*
   Sorts an array of tags as shown below:
   
   2020.4.0
@@ -91,23 +92,22 @@ export class Tags {
   2020.3.1-a01
   2020.3.0
   */
-  private sortTags(commits: TagInfo[]): TagInfo[] {
-    commits.sort((b, a) => {
-      const partsA = a.name.replace(/^v/, '').split('-')
-      const partsB = b.name.replace(/^v/, '').split('-')
-      const versionCompare = partsA[0].localeCompare(partsB[0])
-      if (versionCompare !== 0) {
-        return versionCompare
+ export function sortTags(tags: TagInfo[]): TagInfo[] {
+  tags.sort((b, a) => {
+    const partsA = a.name.replace(/^v/, '').split('-')
+    const partsB = b.name.replace(/^v/, '').split('-')
+    const versionCompare = partsA[0].localeCompare(partsB[0])
+    if (versionCompare !== 0) {
+      return versionCompare
+    } else {
+      if (partsA.length === 1) {
+        return 0
+      } else if (partsB.length === 1) {
+        return 1
       } else {
-        if (partsA.length === 1) {
-          return 0
-        } else if (partsB.length === 1) {
-          return 1
-        } else {
-          return partsA[1].localeCompare(partsB[1])
-        }
+        return partsA[1].localeCompare(partsB[1])
       }
-    })
-    return commits
-  }
+    }
+  })
+  return tags
 }
