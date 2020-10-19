@@ -6,7 +6,7 @@
 </h1>
 
 <p align="center">
-    ... a GitHub action that builds your release notes fast, easy and exactly the way you want.
+    ... a GitHub action that builds your release notes / changelog fast, easy and exactly the way you want.
 </p>
 
 <div align="center">
