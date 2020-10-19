@@ -1,8 +1,8 @@
 {
   "name": "release-changelog-builder-action",
-  "version": "1.0.0",
+  "version": "v1.0.0",
   "private": true,
-  "description": "Action to retrieve merged pull requests for a release, and construct the changelog",
+  "description": "A GitHub action that builds your release notes / changelog fast, easy and exactly the way you want.",
   "main": "lib/main.js",
   "scripts": {
     "build": "tsc",
@@ -19,8 +19,15 @@
   },
   "keywords": [
     "actions",
-    "node",
-    "setup"
+    "changelog",
+    "release-notes",
+    "release",
+    "notes",
+    "change",
+    "release-automation",
+    "pull-requests",
+    "issues",
+    "labels"
   ],
   "author": "Mike Penz",
   "license": "Apache 2.0",
