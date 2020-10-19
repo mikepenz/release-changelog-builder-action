@@ -845,6 +845,7 @@ var __asyncValues = (this && this.__asyncValues) || function (o) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.sortTags = exports.Tags = void 0;
 const core = __importStar(__webpack_require__(2186));
+const semver = __importStar(__webpack_require__(1383));
 const semver_1 = __webpack_require__(1383);
 class Tags {
     constructor(octokit) {
@@ -929,10 +930,19 @@ exports.Tags = Tags;
   2020.3.0
   */
 function sortTags(tags) {
-    tags.sort((b, a) => {
+    // filter out tags which do not follow semver
+    const validatedTags = tags.filter(tag => {
+        const isValid = semver.valid(tag.name) !== null;
+        if (!isValid) {
+            core.debug(`⚠️ dropped tag ${tag.name} because it is not a valid semver tag`);
+        }
+        return isValid;
+    });
+    // sort using semver
+    validatedTags.sort((b, a) => {
         return new semver_1.SemVer(a.name).compare(b.name);
     });
-    return tags;
+    return validatedTags;
 }
 exports.sortTags = sortTags;
 
