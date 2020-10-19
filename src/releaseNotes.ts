@@ -31,7 +31,11 @@ export class ReleaseNotes {
     }
 
     core.startGroup('📦 Build changelog')
-    const resultChangelog = buildChangelog(mergedPullRequests, configuration)
+    const resultChangelog = buildChangelog(
+      mergedPullRequests,
+      configuration,
+      this.options
+    )
     core.endGroup()
     return resultChangelog
   }
