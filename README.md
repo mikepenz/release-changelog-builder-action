@@ -61,7 +61,9 @@ Specify the action as part of your GitHub actions workflow:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-By default the action will try to automatically retrieve the `tag` from the current commit and automatically resolve the `tag` before. Read more about this here.
+By default the action will try to automatically retrieve the `tag` from the current commit and automatically resolve the `tag` before. Automatic previous tag resolving is done using `semver`.
+
+If you require a different versioning scheme please open an issue [issue](https://github.com/mikepenz/release-changelog-builder-action/issues). Alternative you can always specifically supply the `fromTag` via the [configuration](#advanced-workflow-specification). 
 
 ### Action outputs
 
