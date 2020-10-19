@@ -6,6 +6,7 @@ import {failOrError} from './utils'
 import {Octokit} from '@octokit/rest'
 import {Tags} from './tags'
 import {ReleaseNotes} from './releaseNotes'
+import {fillAdditionalPlaceholders} from './transform'
 
 export class ReleaseNotesBuilder {
   constructor(
@@ -96,19 +97,23 @@ export class ReleaseNotesBuilder {
       core.endGroup()
     }
 
-    const releaseNotes = new ReleaseNotes(octokit, {
+    const options = {
       owner: this.owner,
       repo: this.repo,
       fromTag: this.fromTag,
       toTag: this.toTag,
       failOnError: this.failOnError,
       configuration: this.configuration
-    })
+    }
+    const releaseNotes = new ReleaseNotes(octokit, options)
 
     return (
       (await releaseNotes.pull()) ||
-      this.configuration.empty_template ||
-      DefaultConfiguration.empty_template
+      fillAdditionalPlaceholders(
+        this.configuration.empty_template ||
+          DefaultConfiguration.empty_template,
+        options
+      )
     )
   }
 }

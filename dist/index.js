@@ -590,7 +590,7 @@ class ReleaseNotes {
                 return null;
             }
             core.startGroup('📦 Build changelog');
-            const resultChangelog = transform_1.buildChangelog(mergedPullRequests, configuration);
+            const resultChangelog = transform_1.buildChangelog(mergedPullRequests, configuration, this.options);
             core.endGroup();
             return resultChangelog;
         });
@@ -708,6 +708,7 @@ const utils_1 = __webpack_require__(918);
 const rest_1 = __webpack_require__(5375);
 const tags_1 = __webpack_require__(7532);
 const releaseNotes_1 = __webpack_require__(5882);
+const transform_1 = __webpack_require__(1644);
 class ReleaseNotesBuilder {
     constructor(token, repositoryPath, owner, repo, fromTag, toTag, failOnError, ignorePreReleases, configuration) {
         this.token = token;
@@ -781,17 +782,18 @@ class ReleaseNotesBuilder {
                 core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`);
                 core.endGroup();
             }
-            const releaseNotes = new releaseNotes_1.ReleaseNotes(octokit, {
+            const options = {
                 owner: this.owner,
                 repo: this.repo,
                 fromTag: this.fromTag,
                 toTag: this.toTag,
                 failOnError: this.failOnError,
                 configuration: this.configuration
-            });
+            };
+            const releaseNotes = new releaseNotes_1.ReleaseNotes(octokit, options);
             return ((yield releaseNotes.pull()) ||
-                this.configuration.empty_template ||
-                configuration_1.DefaultConfiguration.empty_template);
+                transform_1.fillAdditionalPlaceholders(this.configuration.empty_template ||
+                    configuration_1.DefaultConfiguration.empty_template, options));
         });
     }
 }
@@ -976,11 +978,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.buildChangelog = void 0;
+exports.fillAdditionalPlaceholders = exports.buildChangelog = void 0;
 const pullRequests_1 = __webpack_require__(4217);
 const core = __importStar(__webpack_require__(2186));
 const configuration_1 = __webpack_require__(5527);
-function buildChangelog(prs, config) {
+function buildChangelog(prs, config, options) {
     // sort to target order
     const sort = config.sort || configuration_1.DefaultConfiguration.sort;
     const sortAsc = sort.toUpperCase() === 'ASC';
@@ -1000,6 +1002,7 @@ function buildChangelog(prs, config) {
     for (const category of categories) {
         categorized.set(category, []);
     }
+    const categorizedPrs = [];
     const uncategorized = [];
     // bring elements in order
     for (const [pr, body] of transformedMap) {
@@ -1012,6 +1015,9 @@ function buildChangelog(prs, config) {
         }
         if (!matched) {
             uncategorized.push(body);
+        }
+        else {
+            categorizedPrs.push(body);
         }
     }
     core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`);
@@ -1037,10 +1043,23 @@ function buildChangelog(prs, config) {
     let transformedChangelog = config.template || configuration_1.DefaultConfiguration.template;
     transformedChangelog = transformedChangelog.replace('${{CHANGELOG}}', changelog);
     transformedChangelog = transformedChangelog.replace('${{UNCATEGORIZED}}', changelogUncategorized);
+    // fill other placeholders
+    transformedChangelog = transformedChangelog.replace('${{CATEGORIZED_COUNT}}', categorizedPrs.length.toString());
+    transformedChangelog = transformedChangelog.replace('${{UNCATEGORIZED_COUNT}}', uncategorized.length.toString());
+    transformedChangelog = fillAdditionalPlaceholders(transformedChangelog, options);
     core.info(`ℹ️ Filled template`);
     return transformedChangelog;
 }
 exports.buildChangelog = buildChangelog;
+function fillAdditionalPlaceholders(text, options) {
+    let transformed = text;
+    transformed = transformed.replace('${{OWNER}}', options.owner);
+    transformed = transformed.replace('${{REPO}}', options.repo);
+    transformed = transformed.replace('${{FROM_TAG}}', options.fromTag);
+    transformed = transformed.replace('${{TO_TAG}}', options.toTag);
+    return transformed;
+}
+exports.fillAdditionalPlaceholders = fillAdditionalPlaceholders;
 function haveCommonElements(arr1, arr2) {
     return arr1.some(item => arr2.includes(item));
 }

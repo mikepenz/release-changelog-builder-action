@@ -1,5 +1,6 @@
 import {PullRequestInfo, sortPullRequests} from './pullRequests'
 import * as core from '@actions/core'
+import {ReleaseNotesOptions} from './releaseNotes'
 import {
   Category,
   Configuration,
@@ -9,7 +10,8 @@ import {
 
 export function buildChangelog(
   prs: PullRequestInfo[],
-  config: Configuration
+  config: Configuration,
+  options: ReleaseNotesOptions
 ): string {
   // sort to target order
   const sort = config.sort || DefaultConfiguration.sort
@@ -43,6 +45,7 @@ export function buildChangelog(
   for (const category of categories) {
     categorized.set(category, [])
   }
+  const categorizedPrs: string[] = []
   const uncategorized: string[] = []
 
   // bring elements in order
@@ -58,6 +61,8 @@ export function buildChangelog(
 
     if (!matched) {
       uncategorized.push(body)
+    } else {
+      categorizedPrs.push(body)
     }
   }
   core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`)
@@ -96,8 +101,35 @@ export function buildChangelog(
     '${{UNCATEGORIZED}}',
     changelogUncategorized
   )
+
+  // fill other placeholders
+  transformedChangelog = transformedChangelog.replace(
+    '${{CATEGORIZED_COUNT}}',
+    categorizedPrs.length.toString()
+  )
+  transformedChangelog = transformedChangelog.replace(
+    '${{UNCATEGORIZED_COUNT}}',
+    uncategorized.length.toString()
+  )
+  transformedChangelog = fillAdditionalPlaceholders(
+    transformedChangelog,
+    options
+  )
+
   core.info(`ℹ️ Filled template`)
   return transformedChangelog
+}
+
+export function fillAdditionalPlaceholders(
+  text: string,
+  options: ReleaseNotesOptions
+): string {
+  let transformed = text
+  transformed = transformed.replace('${{OWNER}}', options.owner)
+  transformed = transformed.replace('${{REPO}}', options.repo)
+  transformed = transformed.replace('${{FROM_TAG}}', options.fromTag)
+  transformed = transformed.replace('${{TO_TAG}}', options.toTag)
+  return transformed
 }
 
 function haveCommonElements(arr1: string[], arr2: string[]): Boolean {
