@@ -1,6 +1,6 @@
 import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import * as core from '@actions/core'
-import { SemVer } from 'semver'
+import {SemVer} from 'semver'
 
 export interface TagInfo {
   name: string
@@ -93,7 +93,7 @@ export class Tags {
   2020.3.1-a01
   2020.3.0
   */
- export function sortTags(tags: TagInfo[]): TagInfo[] {
+export function sortTags(tags: TagInfo[]): TagInfo[] {
   tags.sort((b, a) => {
     return new SemVer(a.name).compare(b.name)
   })
