@@ -61,10 +61,6 @@ Specify the action as part of your GitHub actions workflow:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-By default the action will try to automatically retrieve the `tag` from the current commit and automatically resolve the `tag` before. Automatic previous tag resolving is done using `semver`.
-
-If you require a different versioning scheme please open an issue [issue](https://github.com/mikepenz/release-changelog-builder-action/issues). Alternative you can always specifically supply the `fromTag` via the [configuration](#advanced-workflow-specification). 
-
 ### Action outputs
 
 After action execution it will return the `changelog` and additional information as step output. You can use it in any follow-up step by referencing the output by referencing it via the id of the step. For example `build_changelog`.
@@ -135,40 +131,45 @@ The action supports flexible configuration options to modify vast areas of its b
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
+💡 By default not specifying `fromTag` or `toTag` will resolve `toTag` from either the `ref` or alternatively fallback to the latest tag from git. `fromTag` is resolved by sorting tags using [semver](https://semver.org/). Check the [configuration](#configuration-specification) for alternatives.
+
 This configuration is a `.json` file in the following format.
 
 ```json
 {
     "categories": [
-        {
-            "title": "## 🚀 Features",
-            "labels": ["feature"]
-        },
-        {
-            "title": "## 🐛 Fixes",
-            "labels": ["fix"]
-        },
-        {
-            "title": "## 🧪 Tests",
-            "labels": ["test"]
-        }
+      {
+        "title": "## 🚀 Features",
+        "labels": ["feature"]
+      },
+      {
+        "title": "## 🐛 Fixes",
+        "labels": ["fix"]
+      },
+      {
+        "title": "## 🧪 Tests",
+        "labels": ["test"]
+      }
     ],
     "sort": "ASC",
     "template": "${{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n${{UNCATEGORIZED}}\n</details>",
     "pr_template": "- ${{TITLE}}\n   - PR: #${{NUMBER}}",
     "empty_template": "- no changes",
     "transformers": [
-        {
-            "pattern": "[\\-\\*] (\\[(...|TEST|CI|SKIP)\\])( )?(.+?)\n(.+?[\\-\\*] )(.+)",
-            "target": "- $4\n  - $6"
-        }
+      {
+        "pattern": "[\\-\\*] (\\[(...|TEST|CI|SKIP)\\])( )?(.+?)\n(.+?[\\-\\*] )(.+)",
+        "target": "- $4\n  - $6"
+      }
     ],
     "max_tags_to_fetch": 200,
     "max_pull_requests": 200,
     "max_back_track_time_days": 90,
     "exclude_merge_branches": [
-        "Owner/qa"
-    ]
+      "Owner/qa"
+    ],
+    "tag_resolver": {
+      "method": "semver"
+    }
 }
 ```
 
@@ -266,6 +267,8 @@ Table of descriptions for the `configuration.json` options.
 | max_pull_requests        | The maximum amount of pull requests to load from the API. Loaded paginated with 30 per page                                                                                                                                        |
 | max_back_track_time_days | Defines the max amount of days to go back in time per changelog                                                                                                                                                                    |
 | exclude_merge_branches   | An array of branches to be ignored from processing as merge commits                                                                                                                                                                |
+| tag_resolver             | Section to provide configuration for the tag resolving logic. Used if no `fromTag` is provided                                                                                                                                     |
+| tag_resolver.method      | Defines the method to use. Current options are: `semver`, `sort`. Default: `semver`                                                                                                                                                |
 
 ## Contribute 🧬
 
