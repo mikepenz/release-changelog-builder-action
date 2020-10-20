@@ -1,5 +1,5 @@
 name: 'Release Changelog Builder'
-description: 'A GitHub action that builds your release notes fast, easy and exactly the way you want.'
+description: 'A GitHub action that builds your release notes / changelog fast, easy and exactly the way you want.'
 author: 'Mike Penz'
 branding:
   icon: 'award'  

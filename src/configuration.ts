@@ -9,6 +9,7 @@ export interface Configuration {
   empty_template: string
   categories: Category[]
   transformers: Transformer[]
+  tag_resolver: TagResolver
 }
 
 export interface Category {
@@ -19,6 +20,10 @@ export interface Category {
 export interface Transformer {
   pattern: string
   target: string
+}
+
+export interface TagResolver {
+  method: string // semver, sort
 }
 
 export const DefaultConfiguration: Configuration = {
@@ -44,5 +49,9 @@ export const DefaultConfiguration: Configuration = {
       labels: ['test']
     }
   ], // the categories to support for the ordering
-  transformers: [] // transformers to apply on the PR description according to the `pr_template`
+  transformers: [], // transformers to apply on the PR description according to the `pr_template`
+  tag_resolver: {
+    // defines the logic on how to resolve the previous tag, only relevant if `fromTag` is not specified
+    method: 'semver' // defines which method to use, by default it will use `semver` (dropping all non matching tags). Alternative `sort` is also available.
+  }
 }
