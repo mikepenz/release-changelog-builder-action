@@ -2,7 +2,7 @@ import { resolveConfiguration } from '../src/utils';
 import { ReleaseNotesBuilder } from '../src/releaseNotesBuilder';
 import { TagInfo, sortTags } from '../src/tags';
 
-it('Should order tags correctly', async () => {
+it('Should order tags correctly using semver', async () => {
   jest.setTimeout(180000)
 
   const tags: TagInfo[] = [
@@ -16,7 +16,10 @@ it('Should order tags correctly', async () => {
     { name: "v2020.3.0", commit: "" }
   ]
 
-  const sorted = sortTags(tags).map(function (tag) {
+  const tagResolver = {
+    method: "semver"
+  }
+  const sorted = sortTags(tags, tagResolver).map(function (tag) {
     return tag.name
   }).join(",")
 
@@ -24,7 +27,7 @@ it('Should order tags correctly', async () => {
 })
 
 
-it('Should order tags correctly', async () => {
+it('Should order tags correctly using semver', async () => {
   jest.setTimeout(180000)
 
   const tags: TagInfo[] = [
@@ -43,9 +46,42 @@ it('Should order tags correctly', async () => {
     { name: "1000.0.0", commit: "" },
   ]
 
-  const sorted = sortTags(tags).map(function (tag) {
+  const tagResolver = {
+    method: "non-existing-method"
+  }
+  const sorted = sortTags(tags, tagResolver).map(function (tag) {
     return tag.name
   }).join(",")
 
   expect(sorted).toStrictEqual(`1000.0.0,100.0.0,20.0.2,10.1.0,10.1.0-2,10.0.0,2.0.0,1.0.0,1.0.0-a01,0.1.0,0.1.0-b01,0.0.1,0.0.1-rc01`)
+})
+
+
+it('Should order tags alphabetical', async () => {
+  jest.setTimeout(180000)
+
+  const tags: TagInfo[] = [
+    { name: "0.0.1", commit: "" },
+    { name: "0.0.1-rc01", commit: "" },
+    { name: "0.1.0-b01", commit: "" },
+    { name: "1.0.0", commit: "" },
+    { name: "a", commit: "" },
+    { name: "1.0.0-a01", commit: "" },
+    { name: "2.0.0", commit: "" },
+    { name: "10.0.0", commit: "" },
+    { name: "v1", commit: "" },
+    { name: "10.1.0", commit: "" },
+    { name: "10.1.0-2", commit: "" },
+    { name: "20.0.2", commit: "" },
+    { name: "1000.0.0", commit: "" },
+  ]
+
+  const tagResolver = {
+    method: "sort"
+  }
+  const sorted = sortTags(tags, tagResolver).map(function (tag) {
+    return tag.name
+  }).join(",")
+
+  expect(sorted).toStrictEqual(`a,20.0.2,2.0.0,1000.0.0,10.1.0,10.1.0-2,10.0.0,1.0.0,1.0.0-a01,v1,0.1.0-b01,0.0.1,0.0.1-rc01`)
 })
