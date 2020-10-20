@@ -83,7 +83,8 @@ export class ReleaseNotesBuilder {
         this.toTag,
         this.ignorePreReleases,
         this.configuration.max_tags_to_fetch ||
-          DefaultConfiguration.max_tags_to_fetch
+          DefaultConfiguration.max_tags_to_fetch,
+        this.configuration.tag_resolver || DefaultConfiguration.tag_resolver
       )
       if (previousTag == null) {
         failOrError(

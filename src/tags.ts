@@ -2,6 +2,7 @@ import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import * as core from '@actions/core'
 import * as semver from 'semver'
 import {SemVer} from 'semver'
+import {TagResolver} from './configuration'
 
 export interface TagInfo {
   name: string
@@ -52,9 +53,13 @@ export class Tags {
     repo: string,
     tag: string,
     ignorePreReleases: boolean,
-    maxTagsToFetch: number
+    maxTagsToFetch: number,
+    tagResolver: TagResolver
   ): Promise<TagInfo | null> {
-    const tags = sortTags(await this.getTags(owner, repo, maxTagsToFetch))
+    const tags = sortTags(
+      await this.getTags(owner, repo, maxTagsToFetch),
+      tagResolver
+    )
 
     try {
       const length = tags.length
@@ -94,12 +99,22 @@ export class Tags {
   2020.3.1-a01
   2020.3.0
   */
-export function sortTags(tags: TagInfo[]): TagInfo[] {
+export function sortTags(tags: TagInfo[], tagResolver: TagResolver): TagInfo[] {
+  if (tagResolver.method === 'sort') {
+    return stringSorting(tags)
+  } else {
+    return semVerSorting(tags)
+  }
+}
+
+function semVerSorting(tags: TagInfo[]): TagInfo[] {
   // filter out tags which do not follow semver
   const validatedTags = tags.filter(tag => {
     const isValid = semver.valid(tag.name) !== null
-    if(!isValid) {
-      core.debug(`⚠️ dropped tag ${tag.name} because it is not a valid semver tag`)
+    if (!isValid) {
+      core.debug(
+        `⚠️ dropped tag ${tag.name} because it is not a valid semver tag`
+      )
     }
     return isValid
   })
@@ -109,4 +124,23 @@ export function sortTags(tags: TagInfo[]): TagInfo[] {
     return new SemVer(a.name).compare(b.name)
   })
   return validatedTags
+}
+
+function stringSorting(tags: TagInfo[]): TagInfo[] {
+  return tags.sort((b, a) => {
+    const partsA = a.name.replace(/^v/, '').split('-')
+    const partsB = b.name.replace(/^v/, '').split('-')
+    const versionCompare = partsA[0].localeCompare(partsB[0])
+    if (versionCompare !== 0) {
+      return versionCompare
+    } else {
+      if (partsA.length === 1) {
+        return 0
+      } else if (partsB.length === 1) {
+        return 1
+      } else {
+        return partsA[1].localeCompare(partsB[1])
+      }
+    }
+  })
 }
