@@ -140,7 +140,11 @@ exports.DefaultConfiguration = {
             labels: ['test']
         }
     ],
-    transformers: [] // transformers to apply on the PR description according to the `pr_template`
+    transformers: [],
+    tag_resolver: {
+        // defines the logic on how to resolve the previous tag, only relevant if `fromTag` is not specified
+        method: 'semver' // defines which method to use, by default it will use `semver` (dropping all non matching tags). Alternative `sort` is also available.
+    }
 };
 
 
@@ -773,7 +777,7 @@ class ReleaseNotesBuilder {
                 core.debug(`fromTag undefined, trying to resolve via API`);
                 const tagsApi = new tags_1.Tags(octokit);
                 const previousTag = yield tagsApi.findPredecessorTag(this.owner, this.repo, this.toTag, this.ignorePreReleases, this.configuration.max_tags_to_fetch ||
-                    configuration_1.DefaultConfiguration.max_tags_to_fetch);
+                    configuration_1.DefaultConfiguration.max_tags_to_fetch, this.configuration.tag_resolver || configuration_1.DefaultConfiguration.tag_resolver);
                 if (previousTag == null) {
                     utils_1.failOrError(`💥 Unable to retrieve previous tag given ${this.toTag}`, this.failOnError);
                     return null;
@@ -888,9 +892,9 @@ class Tags {
             return tagsInfo;
         });
     }
-    findPredecessorTag(owner, repo, tag, ignorePreReleases, maxTagsToFetch) {
+    findPredecessorTag(owner, repo, tag, ignorePreReleases, maxTagsToFetch, tagResolver) {
         return __awaiter(this, void 0, void 0, function* () {
-            const tags = sortTags(yield this.getTags(owner, repo, maxTagsToFetch));
+            const tags = sortTags(yield this.getTags(owner, repo, maxTagsToFetch), tagResolver);
             try {
                 const length = tags.length;
                 for (let i = 0; i < length; i++) {
@@ -929,7 +933,16 @@ exports.Tags = Tags;
   2020.3.1-a01
   2020.3.0
   */
-function sortTags(tags) {
+function sortTags(tags, tagResolver) {
+    if (tagResolver.method === 'sort') {
+        return stringSorting(tags);
+    }
+    else {
+        return semVerSorting(tags);
+    }
+}
+exports.sortTags = sortTags;
+function semVerSorting(tags) {
     // filter out tags which do not follow semver
     const validatedTags = tags.filter(tag => {
         const isValid = semver.valid(tag.name) !== null;
@@ -944,7 +957,27 @@ function sortTags(tags) {
     });
     return validatedTags;
 }
-exports.sortTags = sortTags;
+function stringSorting(tags) {
+    return tags.sort((b, a) => {
+        const partsA = a.name.replace(/^v/, '').split('-');
+        const partsB = b.name.replace(/^v/, '').split('-');
+        const versionCompare = partsA[0].localeCompare(partsB[0]);
+        if (versionCompare !== 0) {
+            return versionCompare;
+        }
+        else {
+            if (partsA.length === 1) {
+                return 0;
+            }
+            else if (partsB.length === 1) {
+                return 1;
+            }
+            else {
+                return partsA[1].localeCompare(partsB[1]);
+            }
+        }
+    });
+}
 
 
 /***/ }),
