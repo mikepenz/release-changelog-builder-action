@@ -27,7 +27,17 @@ inputs:
     description: 'Defines the token to use to execute the git API requests with, uses `env.GITHUB_TOKEN` by default'
 outputs:
   changelog:
-    description: Returns the generated changelog as markdown.
+    description: The built release changelog built from the merged pull requests
+  owner:
+    description: Specifies the owner of the repository processed
+  repo:
+    description: Describes the repository name, which was processed
+  fromTag:
+    description: Defines the `fromTag` which describes the lower bound to process pull requests for
+  toTag:
+    description: Defines the `toTag` which describes the upper bound to process pull request for
+  failed:
+    description: Defines if there was an issue with the action run, and the changelog may not have been generated correctly. [true, false]
 runs:
   using: 'node12'
   main: 'dist/index.js'
