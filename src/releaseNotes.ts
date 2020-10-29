@@ -107,42 +107,17 @@ export class ReleaseNotes {
     )
 
     core.info(
-      `ℹ️ Retrieved ${prCommits.length} PR merge commits for ${owner}/${repo}`
+      `ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`
     )
 
-    const filteredPullRequests = []
-    const pullRequestsByNumber: {[key: number]: PullRequestInfo} = {}
+    // create array of commits for this release
+    const releaseCommitHashes = prCommits.map(commmit => {
+      return commmit.sha
+    })
 
-    for (const pr of pullRequests) {
-      pullRequestsByNumber[pr.number] = pr
-    }
-
-    for (const commit of prCommits) {
-      if (!commit.prNumber) {
-        continue
-      }
-
-      const prRef = `${owner}/${repo}#${commit.prNumber}`
-
-      if (pullRequestsByNumber[commit.prNumber]) {
-        filteredPullRequests.push(pullRequestsByNumber[commit.prNumber])
-      } else if (fromDate.toISOString() === toDate.toISOString()) {
-        const pullRequest = await pullRequestsApi.getSingle(
-          owner,
-          repo,
-          commit.prNumber
-        )
-
-        if (pullRequest) {
-          filteredPullRequests.push(pullRequest)
-        } else {
-          core.warning(`⚠️ ${prRef} not found! Commit text: ${commit.summary}`)
-        }
-      } else {
-        core.info(`ℹ️ ${prRef} not in date range, excluding from changelog`)
-      }
-    }
-
-    return filteredPullRequests
+    // return only the pull requests associated with this release
+    return pullRequests.filter(pr => {
+      return releaseCommitHashes.includes(pr.mergeCommitSha)
+    })
   }
 }

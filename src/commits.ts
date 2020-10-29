@@ -8,7 +8,6 @@ export interface CommitInfo {
   message: string
   author: string
   date: moment.Moment
-  prNumber: number | undefined
 }
 
 export class Commits {
