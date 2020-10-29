@@ -401,6 +401,7 @@ class PullRequests {
                     title: pr.data.title,
                     htmlURL: pr.data.html_url,
                     mergedAt: moment_1.default(pr.data.merged_at),
+                    mergeCommitSha: pr.data.merge_commit_sha,
                     author: pr.data.user.login,
                     repoName: pr.data.base.repo.full_name,
                     labels: pr.data.labels.map(function (label) {
@@ -444,6 +445,7 @@ class PullRequests {
                             title: pr.title,
                             htmlURL: pr.html_url,
                             mergedAt: moment_1.default(pr.merged_at),
+                            mergeCommitSha: pr.merge_commit_sha,
                             author: pr.user.login,
                             repoName: pr.base.repo.full_name,
                             labels: (_b = pr.labels) === null || _b === void 0 ? void 0 : _b.map(function (label) {
@@ -480,8 +482,10 @@ class PullRequests {
             return sortPullRequests(mergedPRs, true);
         });
     }
+    /**
+     * Filters out all commits which match the exclude pattern
+     */
     filterCommits(commits, excludeMergeBranches) {
-        const prRegex = /Merge pull request #(\d+)/;
         const filteredCommits = [];
         for (const commit of commits) {
             if (excludeMergeBranches) {
@@ -496,11 +500,6 @@ class PullRequests {
                     continue;
                 }
             }
-            const match = commit.summary.match(prRegex);
-            if (!match) {
-                continue;
-            }
-            commit.prNumber = Number.parseInt(match[1], 10);
             filteredCommits.push(commit);
         }
         return filteredCommits;
@@ -633,34 +632,15 @@ class ReleaseNotes {
             core.info(`ℹ️ Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`);
             const prCommits = pullRequestsApi.filterCommits(commits, configuration.exclude_merge_branches ||
                 configuration_1.DefaultConfiguration.exclude_merge_branches);
-            core.info(`ℹ️ Retrieved ${prCommits.length} PR merge commits for ${owner}/${repo}`);
-            const filteredPullRequests = [];
-            const pullRequestsByNumber = {};
-            for (const pr of pullRequests) {
-                pullRequestsByNumber[pr.number] = pr;
-            }
-            for (const commit of prCommits) {
-                if (!commit.prNumber) {
-                    continue;
-                }
-                const prRef = `${owner}/${repo}#${commit.prNumber}`;
-                if (pullRequestsByNumber[commit.prNumber]) {
-                    filteredPullRequests.push(pullRequestsByNumber[commit.prNumber]);
-                }
-                else if (fromDate.toISOString() === toDate.toISOString()) {
-                    const pullRequest = yield pullRequestsApi.getSingle(owner, repo, commit.prNumber);
-                    if (pullRequest) {
-                        filteredPullRequests.push(pullRequest);
-                    }
-                    else {
-                        core.warning(`⚠️ ${prRef} not found! Commit text: ${commit.summary}`);
-                    }
-                }
-                else {
-                    core.info(`ℹ️ ${prRef} not in date range, excluding from changelog`);
-                }
-            }
-            return filteredPullRequests;
+            core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`);
+            // create array of commits for this release
+            const releaseCommitHashes = prCommits.map(commmit => {
+                return commmit.sha;
+            });
+            // return only the pull requests associated with this release
+            return pullRequests.filter(pr => {
+                return releaseCommitHashes.includes(pr.mergeCommitSha);
+            });
         });
     }
 }

@@ -9,6 +9,7 @@ export interface PullRequestInfo {
   title: string
   htmlURL: string
   mergedAt: moment.Moment
+  mergeCommitSha: string
   author: string
   repoName: string
   labels: string[]
@@ -38,6 +39,7 @@ export class PullRequests {
         title: pr.data.title,
         htmlURL: pr.data.html_url,
         mergedAt: moment(pr.data.merged_at),
+        mergeCommitSha: pr.data.merge_commit_sha,
         author: pr.data.user.login,
         repoName: pr.data.base.repo.full_name,
         labels: pr.data.labels.map(function (label) {
@@ -88,6 +90,7 @@ export class PullRequests {
           title: pr.title,
           htmlURL: pr.html_url,
           mergedAt: moment(pr.merged_at),
+          mergeCommitSha: pr.merge_commit_sha,
           author: pr.user.login,
           repoName: pr.base.repo.full_name,
           labels: pr.labels?.map(function (label) {
@@ -121,11 +124,13 @@ export class PullRequests {
     return sortPullRequests(mergedPRs, true)
   }
 
+  /**
+   * Filters out all commits which match the exclude pattern
+   */
   filterCommits(
     commits: CommitInfo[],
     excludeMergeBranches: string[]
   ): CommitInfo[] {
-    const prRegex = /Merge pull request #(\d+)/
     const filteredCommits = []
 
     for (const commit of commits) {
@@ -141,12 +146,6 @@ export class PullRequests {
           continue
         }
       }
-
-      const match = commit.summary.match(prRegex)
-      if (!match) {
-        continue
-      }
-      commit.prNumber = Number.parseInt(match[1], 10)
       filteredCommits.push(commit)
     }
 
