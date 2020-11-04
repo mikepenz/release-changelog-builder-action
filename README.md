@@ -151,6 +151,9 @@ This configuration is a `.json` file in the following format.
         "labels": ["test"]
       }
     ],
+    "ignore_labels": [ 
+      "ignore" 
+    ],
     "sort": "ASC",
     "template": "${{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n${{UNCATEGORIZED}}\n</details>",
     "pr_template": "- ${{TITLE}}\n   - PR: #${{NUMBER}}",
@@ -174,6 +177,8 @@ This configuration is a `.json` file in the following format.
 ```
 
 Any section of the configuration can be omitted to have defaults apply.
+
+💡 `ignore_labels` take precedence over category labels, allowing to specifically exclude certain PRs.
 
 Defaults for the configuration can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
 
@@ -239,12 +244,14 @@ Table of supported placeholders allowed to be used in the `template` and `empty_
 |----------------------------|----------------------------------------------------------------------------------------------------|:---------:|
 | `${{CHANGELOG}}`           | The contents of the changelog, matching the labels as specified in the categories configuration    |           |
 | `${{UNCATEGORIZED}}`       | All pull requests not matching a specified label in categories                                     |           |
+| `${{IGNORED}}`             | All pull requests defining labels matching the `ignore_labels` configuration                       |           |
 | `${{OWNER}}`               | Describes the owner of the repository the changelog was generated for                              | x         |
 | `${{REPO}}`                | The repository name of the repo the changelog was generated for                                    | x         |
 | `${{FROM_TAG}}`            | Defines the 'start' from where the changelog did consider merged pull requests                     | x         |
 | `${{TO_TAG}}`              | Defines until which tag the changelog did consider merged pull requests                            | x         |
 | `${{CATEGORIZED_COUNT}}`   | The count of PRs which were categorized                                                            |           |
 | `${{UNCATEGORIZED_COUNT}}` | The count of PRs and changes which were not categorized. No label overlapping with category labels |           |
+| `${{IGNORED_COUNT}}`       | The count of PRs and changes which were specifically ignored from the changelog.                   |           |
 
 
 ### Configuration Specification
@@ -255,7 +262,8 @@ Table of descriptions for the `configuration.json` options.
 |--------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | categories               | An array of `category` specifications, offering a flexible way to group changes into categories                                                                                                                                    |
 | category.title           | The display name of a category in the changelog                                                                                                                                                                                    |
-| category.labels          | An array of labels, to match pull request labels against. If any PR label, matches any category label, the pull request will show up under this category                                                                           |
+| category.labels          | An array of labels, to match pull request labels against. If any PR label matches any category label, the pull request will show up under this category                                                                            |
+| ignore_labels            | An array of labels, to match pull request labels against. If any PR label overlaps, the pull request will be ignored from the changelog. This takes precedence over category labels                                                |
 | sort                     | The sort order of pull requests. [ASC, DESC]                                                                                                                                                                                       |
 | template                 | Specifies the global template to pick for creating the changelog. See [Template placeholders](#template-placeholders) for possible values                                                                                          |
 | pr_template              | Defines the per pull request template. See [PR Template placeholders](#pr-template-placeholders) for possible values                                                                                                               |
