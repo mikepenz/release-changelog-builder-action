@@ -42,25 +42,34 @@ export function buildChangelog(
   // bring PRs into the order of categories
   const categorized = new Map<Category, string[]>()
   const categories = config.categories || DefaultConfiguration.categories
+  const ignoredLabels = config.ignore_labels || DefaultConfiguration.ignore_labels
+  
   for (const category of categories) {
     categorized.set(category, [])
   }
+  
   const categorizedPrs: string[] = []
-  const uncategorized: string[] = []
+  const ignoredPrs: string[] = []
+  const uncategorizedPrs: string[] = []
 
   // bring elements in order
   for (const [pr, body] of transformedMap) {
-    let matched = false
+    if (haveCommonElements(ignoredLabels, pr.labels)) {
+      ignoredPrs.push(body)
+      continue
+    }
 
+    let matched = false
     for (const [category, pullRequests] of categorized) {
       if (haveCommonElements(category.labels, pr.labels)) {
         pullRequests.push(body)
         matched = true
+        break
       }
     }
-
+    
     if (!matched) {
-      uncategorized.push(body)
+      uncategorizedPrs.push(body)
     } else {
       categorizedPrs.push(body)
     }
@@ -81,14 +90,22 @@ export function buildChangelog(
       changelog = `${changelog}\n`
     }
   }
-  core.info(`✒️ Wrote ${categorized.size} categorized pull requests down`)
+  core.info(`✒️ Wrote ${categorizedPrs.length} categorized pull requests down`)
 
   let changelogUncategorized = ''
-  for (const pr of uncategorized) {
+  for (const pr of uncategorizedPrs) {
     changelogUncategorized = `${changelogUncategorized + pr}\n`
   }
   core.info(
-    `✒️ Wrote ${uncategorized.length} non categorized pull requests down`
+    `✒️ Wrote ${uncategorizedPrs.length} non categorized pull requests down`
+  )
+
+  let changelogIgnored = ''
+  for (const pr of ignoredPrs) {
+    changelogIgnored = `${changelogIgnored + pr}\n`
+  }
+  core.info(
+    `✒️ Wrote ${ignoredPrs.length} ignored pull requests down`
   )
 
   // fill template
@@ -101,6 +118,10 @@ export function buildChangelog(
     '${{UNCATEGORIZED}}',
     changelogUncategorized
   )
+  transformedChangelog = transformedChangelog.replace(
+    '${{IGNORED}}',
+    changelogIgnored
+  )
 
   // fill other placeholders
   transformedChangelog = transformedChangelog.replace(
@@ -109,7 +130,11 @@ export function buildChangelog(
   )
   transformedChangelog = transformedChangelog.replace(
     '${{UNCATEGORIZED_COUNT}}',
-    uncategorized.length.toString()
+    uncategorizedPrs.length.toString()
+  )
+  transformedChangelog = transformedChangelog.replace(
+    '${{IGNORED_COUNT}}',
+    ignoredPrs.length.toString()
   )
   transformedChangelog = fillAdditionalPlaceholders(
     transformedChangelog,
