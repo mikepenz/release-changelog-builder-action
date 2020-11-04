@@ -1,0 +1,14 @@
+{
+    "categories": [
+        {
+            "title": "## 🚀 Features",
+            "labels": ["feature"]
+        },
+        {
+            "title": "## 📦 Uncategorized",
+            "labels": []
+        }
+    ],
+    "template": "${{CHANGELOG}}\n\nUncategorized:\n${{UNCATEGORIZED}}\n\nIgnored:\n${{IGNORED}}\n\n${{UNCATEGORIZED_COUNT}}\n${{IGNORED_COUNT}}",
+    "empty_template": "${{OWNER}}\n${{REPO}}\n${{FROM_TAG}}\n${{TO_TAG}}"
+}

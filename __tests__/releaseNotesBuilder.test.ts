@@ -87,5 +87,48 @@ it('Should fill `template` placeholders', async () => {
 
   const changeLog = await releaseNotesBuilder.build()
   console.log(changeLog)
-  expect(changeLog).toStrictEqual(`## 🧪 Tests\n\n- [CI] Specify Test Case\n   - PR: #10\n\n\n\nmikepenz\nrelease-changelog-builder-action\nv0.0.1\nv0.0.3\n1\n0`)
+  expect(changeLog).toStrictEqual(`## 🧪 Tests\n\n- [CI] Specify Test Case\n   - PR: #10\n\n\n\n\nmikepenz\nrelease-changelog-builder-action\nv0.0.1\nv0.0.3\n1\n0\n0`)
+})
+
+it('Should fill `template` placeholders, ignore', async () => {
+  jest.setTimeout(180000)
+
+  const configuration = resolveConfiguration('', 'configs_test/configuration_empty_all_placeholders.json')
+  const releaseNotesBuilder = new ReleaseNotesBuilder(
+    null,
+    '.',
+    'mikepenz',
+    'release-changelog-builder-action',
+    'v0.9.1',
+    'v0.9.5',
+    false,
+    false,
+    configuration
+  )
+
+  const changeLog = await releaseNotesBuilder.build()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(`## 🚀 Features\n\n- Enhance sorting by using proper semver\n   - PR: #51\n\n## 🧪 Tests\n\n- Improve test cases\n   - PR: #49\n\n\n- Bump @types/node from 14.11.8 to 14.11.10\n   - PR: #47\n- Adjust code to move fromTag resolving to main.ts\n   - PR: #48\n- dev -> main\n   - PR: #52\n- Update package.json to updated description\n   - PR: #53\n- dev -> main\n   - PR: #54\n\n- New additional placeholders for \`template\` and \`empty_template\`\n   - PR: #50\n\nmikepenz\nrelease-changelog-builder-action\nv0.9.1\nv0.9.5\n2\n5\n1`)
+})
+
+
+it('Uncategorized category', async () => {
+  jest.setTimeout(180000)
+
+  const configuration = resolveConfiguration('', 'configs_test/configuration_uncategorized_category.json')
+  const releaseNotesBuilder = new ReleaseNotesBuilder(
+    null,
+    '.',
+    'mikepenz',
+    'release-changelog-builder-action',
+    'v0.9.1',
+    'v0.9.5',
+    false,
+    false,
+    configuration
+  )
+
+  const changeLog = await releaseNotesBuilder.build()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(`## 🚀 Features\n\n- Enhance sorting by using proper semver\n   - PR: #51\n\n## 📦 Uncategorized\n\n- Bump @types/node from 14.11.8 to 14.11.10\n   - PR: #47\n- Adjust code to move fromTag resolving to main.ts\n   - PR: #48\n- Improve test cases\n   - PR: #49\n- dev -> main\n   - PR: #52\n- Update package.json to updated description\n   - PR: #53\n- dev -> main\n   - PR: #54\n\n\n\nUncategorized:\n- Bump @types/node from 14.11.8 to 14.11.10\n   - PR: #47\n- Adjust code to move fromTag resolving to main.ts\n   - PR: #48\n- Improve test cases\n   - PR: #49\n- dev -> main\n   - PR: #52\n- Update package.json to updated description\n   - PR: #53\n- dev -> main\n   - PR: #54\n\n\nIgnored:\n- New additional placeholders for \`template\` and \`empty_template\`\n   - PR: #50\n\n\n6\n1`)
 })
