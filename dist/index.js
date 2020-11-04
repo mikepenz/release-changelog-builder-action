@@ -1027,10 +1027,16 @@ function buildChangelog(prs, config, options) {
             if (haveCommonElements(category.labels, pr.labels)) {
                 pullRequests.push(body);
                 matched = true;
-                break;
             }
         }
         if (!matched) {
+            // we allow to have pull requests included in an "uncategorized" category
+            for (const [category, pullRequests] of categorized) {
+                if (category.labels.length == 0) {
+                    pullRequests.push(body);
+                    break;
+                }
+            }
             uncategorizedPrs.push(body);
         }
         else {
