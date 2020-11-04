@@ -70,7 +70,7 @@ export function buildChangelog(
     if (!matched) {
       // we allow to have pull requests included in an "uncategorized" category
       for (const [category, pullRequests] of categorized) {
-        if (category.labels.length == 0) {
+        if (category.labels.length === 0) {
           pullRequests.push(body)
           break
         }
