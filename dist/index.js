@@ -140,7 +140,7 @@ exports.DefaultConfiguration = {
             labels: ['test']
         }
     ],
-    ignore_labels: ["ignore"],
+    ignore_labels: ['ignore'],
     transformers: [],
     tag_resolver: {
         // defines the logic on how to resolve the previous tag, only relevant if `fromTag` is not specified
@@ -926,7 +926,10 @@ exports.sortTags = sortTags;
 function semVerSorting(tags) {
     // filter out tags which do not follow semver
     const validatedTags = tags.filter(tag => {
-        const isValid = semver.valid(tag.name) !== null;
+        const isValid = semver.valid(tag.name, {
+            includePrerelease: true,
+            loose: true
+        }) !== null;
         if (!isValid) {
             core.debug(`⚠️ dropped tag ${tag.name} because it is not a valid semver tag`);
         }
@@ -934,7 +937,10 @@ function semVerSorting(tags) {
     });
     // sort using semver
     validatedTags.sort((b, a) => {
-        return new semver_1.SemVer(a.name).compare(b.name);
+        return new semver_1.SemVer(a.name, {
+            includePrerelease: true,
+            loose: true
+        }).compare(b.name);
     });
     return validatedTags;
 }
@@ -1032,7 +1038,7 @@ function buildChangelog(prs, config, options) {
         if (!matched) {
             // we allow to have pull requests included in an "uncategorized" category
             for (const [category, pullRequests] of categorized) {
-                if (category.labels.length == 0) {
+                if (category.labels.length === 0) {
                     pullRequests.push(body);
                     break;
                 }
@@ -17318,7 +17324,7 @@ module.exports = eval("require")("encoding");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("assert");
+module.exports = require("assert");;
 
 /***/ }),
 
@@ -17326,7 +17332,7 @@ module.exports = require("assert");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("child_process");
+module.exports = require("child_process");;
 
 /***/ }),
 
@@ -17334,7 +17340,7 @@ module.exports = require("child_process");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("events");
+module.exports = require("events");;
 
 /***/ }),
 
@@ -17342,7 +17348,7 @@ module.exports = require("events");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("fs");
+module.exports = require("fs");;
 
 /***/ }),
 
@@ -17350,7 +17356,7 @@ module.exports = require("fs");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("http");
+module.exports = require("http");;
 
 /***/ }),
 
@@ -17358,7 +17364,7 @@ module.exports = require("http");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("https");
+module.exports = require("https");;
 
 /***/ }),
 
@@ -17366,7 +17372,7 @@ module.exports = require("https");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("net");
+module.exports = require("net");;
 
 /***/ }),
 
@@ -17374,7 +17380,7 @@ module.exports = require("net");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("os");
+module.exports = require("os");;
 
 /***/ }),
 
@@ -17382,7 +17388,7 @@ module.exports = require("os");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("path");
+module.exports = require("path");;
 
 /***/ }),
 
@@ -17390,7 +17396,7 @@ module.exports = require("path");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("stream");
+module.exports = require("stream");;
 
 /***/ }),
 
@@ -17398,7 +17404,7 @@ module.exports = require("stream");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("tls");
+module.exports = require("tls");;
 
 /***/ }),
 
@@ -17406,7 +17412,7 @@ module.exports = require("tls");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("url");
+module.exports = require("url");;
 
 /***/ }),
 
@@ -17414,7 +17420,7 @@ module.exports = require("url");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("util");
+module.exports = require("util");;
 
 /***/ }),
 
@@ -17422,7 +17428,7 @@ module.exports = require("util");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("zlib");
+module.exports = require("zlib");;
 
 /***/ })
 
