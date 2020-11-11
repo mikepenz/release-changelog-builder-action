@@ -110,7 +110,11 @@ export function sortTags(tags: TagInfo[], tagResolver: TagResolver): TagInfo[] {
 function semVerSorting(tags: TagInfo[]): TagInfo[] {
   // filter out tags which do not follow semver
   const validatedTags = tags.filter(tag => {
-    const isValid = semver.valid(tag.name) !== null
+    const isValid =
+      semver.valid(tag.name, {
+        includePrerelease: true,
+        loose: true
+      }) !== null
     if (!isValid) {
       core.debug(
         `⚠️ dropped tag ${tag.name} because it is not a valid semver tag`
@@ -121,7 +125,10 @@ function semVerSorting(tags: TagInfo[]): TagInfo[] {
 
   // sort using semver
   validatedTags.sort((b, a) => {
-    return new SemVer(a.name).compare(b.name)
+    return new SemVer(a.name, {
+      includePrerelease: true,
+      loose: true
+    }).compare(b.name)
   })
   return validatedTags
 }
