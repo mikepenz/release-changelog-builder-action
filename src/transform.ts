@@ -42,12 +42,13 @@ export function buildChangelog(
   // bring PRs into the order of categories
   const categorized = new Map<Category, string[]>()
   const categories = config.categories || DefaultConfiguration.categories
-  const ignoredLabels = config.ignore_labels || DefaultConfiguration.ignore_labels
-  
+  const ignoredLabels =
+    config.ignore_labels || DefaultConfiguration.ignore_labels
+
   for (const category of categories) {
     categorized.set(category, [])
   }
-  
+
   const categorizedPrs: string[] = []
   const ignoredPrs: string[] = []
   const uncategorizedPrs: string[] = []
@@ -111,9 +112,7 @@ export function buildChangelog(
   for (const pr of ignoredPrs) {
     changelogIgnored = `${changelogIgnored + pr}\n`
   }
-  core.info(
-    `✒️ Wrote ${ignoredPrs.length} ignored pull requests down`
-  )
+  core.info(`✒️ Wrote ${ignoredPrs.length} ignored pull requests down`)
 
   // fill template
   let transformedChangelog = config.template || DefaultConfiguration.template

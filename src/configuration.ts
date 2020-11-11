@@ -50,7 +50,7 @@ export const DefaultConfiguration: Configuration = {
       labels: ['test']
     }
   ], // the categories to support for the ordering
-  ignore_labels: [ "ignore" ], // list of lables being ignored from the changelog
+  ignore_labels: ['ignore'], // list of lables being ignored from the changelog
   transformers: [], // transformers to apply on the PR description according to the `pr_template`
   tag_resolver: {
     // defines the logic on how to resolve the previous tag, only relevant if `fromTag` is not specified
