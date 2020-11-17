@@ -1,16 +1,15 @@
-import { ReleaseNotes } from '../src/releaseNotes'
-import { resolveConfiguration } from '../src/utils';
-import { Octokit } from '@octokit/rest';
+import {ReleaseNotes} from '../src/releaseNotes'
+import {resolveConfiguration} from '../src/utils'
+import {Octokit} from '@octokit/rest'
+
+jest.setTimeout(180000)
 
 // load octokit instance
 const octokit = new Octokit({
   auth: `token ${process.env.GITHUB_TOKEN}`
 })
 
-
 it('Should have empty changelog (tags)', async () => {
-  jest.setTimeout(180000)
-
   const configuration = resolveConfiguration('', 'configs/configuration.json')
   const releaseNotes = new ReleaseNotes(octokit, {
     owner: 'mikepenz',
@@ -27,8 +26,6 @@ it('Should have empty changelog (tags)', async () => {
 })
 
 it('Should match generated changelog (tags)', async () => {
-  jest.setTimeout(180000)
-
   const configuration = resolveConfiguration('', 'configs/configuration.json')
   const releaseNotes = new ReleaseNotes(octokit, {
     owner: 'mikepenz',
@@ -50,9 +47,10 @@ it('Should match generated changelog (tags)', async () => {
 })
 
 it('Should match generated changelog (refs)', async () => {
-  jest.setTimeout(180000)
-
-  const configuration = resolveConfiguration('', 'configs_test/configuration_all_placeholders.json')
+  const configuration = resolveConfiguration(
+    '',
+    'configs_test/configuration_all_placeholders.json'
+  )
   const releaseNotes = new ReleaseNotes(octokit, {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -81,9 +79,10 @@ nhoelzl
 })
 
 it('Should match ordered ASC', async () => {
-  jest.setTimeout(180000)
-
-  const configuration = resolveConfiguration('', 'configs_test/configuration_asc.json')
+  const configuration = resolveConfiguration(
+    '',
+    'configs_test/configuration_asc.json'
+  )
   const releaseNotes = new ReleaseNotes(octokit, {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -95,13 +94,16 @@ it('Should match ordered ASC', async () => {
 
   const changeLog = await releaseNotes.pull()
   console.log(changeLog)
-  expect(changeLog).toStrictEqual(`## 🚀 Features\n\n22\n24\n25\n26\n28\n\n## 🐛 Fixes\n\n23\n\n`)
+  expect(changeLog).toStrictEqual(
+    `## 🚀 Features\n\n22\n24\n25\n26\n28\n\n## 🐛 Fixes\n\n23\n\n`
+  )
 })
 
 it('Should match ordered DESC', async () => {
-  jest.setTimeout(180000)
-
-  const configuration = resolveConfiguration('', 'configs_test/configuration_desc.json')
+  const configuration = resolveConfiguration(
+    '',
+    'configs_test/configuration_desc.json'
+  )
   const releaseNotes = new ReleaseNotes(octokit, {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -113,5 +115,7 @@ it('Should match ordered DESC', async () => {
 
   const changeLog = await releaseNotes.pull()
   console.log(changeLog)
-  expect(changeLog).toStrictEqual(`## 🚀 Features\n\n28\n26\n25\n24\n22\n\n## 🐛 Fixes\n\n23\n\n`)
+  expect(changeLog).toStrictEqual(
+    `## 🚀 Features\n\n28\n26\n25\n24\n22\n\n## 🐛 Fixes\n\n23\n\n`
+  )
 })
