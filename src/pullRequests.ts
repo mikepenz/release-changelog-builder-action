@@ -39,22 +39,23 @@ export class PullRequests {
         title: pr.data.title,
         htmlURL: pr.data.html_url,
         mergedAt: moment(pr.data.merged_at),
-        mergeCommitSha: pr.data.merge_commit_sha,
-        author: pr.data.user.login,
+        mergeCommitSha: pr.data.merge_commit_sha || '',
+        author: pr.data.user?.login || '',
         repoName: pr.data.base.repo.full_name,
-        labels: pr.data.labels.map(function (label) {
-          return label.name
-        }),
-        milestone: pr.data.milestone?.title,
-        body: pr.data.body,
-        assignees: pr.data.assignees?.map(function (asignee) {
-          return asignee.login
-        }),
-        requestedReviewers: pr.data.requested_reviewers?.map(function (
-          reviewer
-        ) {
-          return reviewer.login
-        })
+        labels:
+          pr.data.labels?.map(function (label) {
+            return label.name || ''
+          }) || [],
+        milestone: pr.data.milestone?.title || '',
+        body: pr.data.body || '',
+        assignees:
+          pr.data.assignees?.map(function (asignee) {
+            return asignee?.login || ''
+          }) || [],
+        requestedReviewers:
+          pr.data.requested_reviewers?.map(function (reviewer) {
+            return reviewer?.login || ''
+          }) || []
       }
     } catch (e) {
       core.warning(
@@ -90,20 +91,23 @@ export class PullRequests {
           title: pr.title,
           htmlURL: pr.html_url,
           mergedAt: moment(pr.merged_at),
-          mergeCommitSha: pr.merge_commit_sha,
-          author: pr.user.login,
+          mergeCommitSha: pr.merge_commit_sha || '',
+          author: pr.user?.login || '',
           repoName: pr.base.repo.full_name,
-          labels: pr.labels?.map(function (label) {
-            return label.name
-          }),
-          milestone: pr.milestone?.title,
-          body: pr.body,
-          assignees: pr.assignees?.map(function (asignee) {
-            return asignee.login
-          }),
-          requestedReviewers: pr.requested_reviewers?.map(function (reviewer) {
-            return reviewer.login
-          })
+          labels:
+            pr.labels?.map(function (label) {
+              return label.name || ''
+            }) || [],
+          milestone: pr.milestone?.title || '',
+          body: pr.body || '',
+          assignees:
+            pr.assignees?.map(function (asignee) {
+              return asignee?.login || ''
+            }) || [],
+          requestedReviewers:
+            pr.requested_reviewers?.map(function (reviewer) {
+              return reviewer?.login || ''
+            }) || []
         })
       }
 
