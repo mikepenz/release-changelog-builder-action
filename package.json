@@ -35,24 +35,24 @@
     "@actions/core": "^1.2.6",
     "@actions/exec": "^1.0.4",
     "@actions/github": "^4.0.0",
-    "@octokit/rest": "^18.0.9",
+    "@octokit/rest": "^18.0.10",
     "@types/semver": "^7.3.4",
     "moment": "^2.29.1",
-    "semver": "^7.3.2"
+    "semver": "^7.3.4"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.15",
-    "@types/node": "^14.14.7",
-    "@typescript-eslint/parser": "^4.7.0",
+    "@types/jest": "^26.0.16",
+    "@types/node": "^14.14.10",
+    "@typescript-eslint/parser": "^4.9.0",
     "@vercel/ncc": "^0.25.1",
-    "eslint": "^7.13.0",
+    "eslint": "^7.14.0",
     "eslint-plugin-github": "^4.1.1",
-    "eslint-plugin-jest": "^24.1.0",
+    "eslint-plugin-jest": "^24.1.3",
     "jest": "^24.9.0",
     "jest-circus": "^26.6.3",
     "js-yaml": "^3.14.0",
-    "prettier": "2.1.2",
-    "ts-jest": "^24.3.0",
-    "typescript": "^4.0.5"
+    "prettier": "2.2.1",
+    "ts-jest": "^26.4.4",
+    "typescript": "^4.1.2"
   }
 }
