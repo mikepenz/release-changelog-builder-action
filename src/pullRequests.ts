@@ -113,6 +113,7 @@ export class PullRequests {
 
       const firstPR = prs[0]
       if (
+        firstPR === undefined ||
         (firstPR.merged_at && fromDate.isAfter(moment(firstPR.merged_at))) ||
         mergedPRs.length >= maxPullRequests
       ) {
