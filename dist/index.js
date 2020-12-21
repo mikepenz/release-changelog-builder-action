@@ -73,14 +73,16 @@ class Commits {
                 compareHead = `${commits[0].sha}^`;
             }
             core.info(`ℹ️ Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`);
-            return commits.filter(commit => commit.sha).map(commit => {
+            return commits
+                .filter(commit => commit.sha)
+                .map(commit => {
                 var _a, _b;
                 return ({
-                    sha: commit.sha || "",
+                    sha: commit.sha || '',
                     summary: commit.commit.message.split('\n')[0],
                     message: commit.commit.message,
                     date: moment_1.default((_a = commit.commit.committer) === null || _a === void 0 ? void 0 : _a.date),
-                    author: ((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.name) || "",
+                    author: ((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.name) || '',
                     prNumber: undefined
                 });
             });
@@ -405,19 +407,19 @@ class PullRequests {
                     title: pr.data.title,
                     htmlURL: pr.data.html_url,
                     mergedAt: moment_1.default(pr.data.merged_at),
-                    mergeCommitSha: pr.data.merge_commit_sha || "",
-                    author: ((_a = pr.data.user) === null || _a === void 0 ? void 0 : _a.login) || "",
+                    mergeCommitSha: pr.data.merge_commit_sha || '',
+                    author: ((_a = pr.data.user) === null || _a === void 0 ? void 0 : _a.login) || '',
                     repoName: pr.data.base.repo.full_name,
                     labels: ((_b = pr.data.labels) === null || _b === void 0 ? void 0 : _b.map(function (label) {
-                        return label.name || "";
+                        return label.name || '';
                     })) || [],
-                    milestone: ((_c = pr.data.milestone) === null || _c === void 0 ? void 0 : _c.title) || "",
-                    body: pr.data.body || "",
+                    milestone: ((_c = pr.data.milestone) === null || _c === void 0 ? void 0 : _c.title) || '',
+                    body: pr.data.body || '',
                     assignees: ((_d = pr.data.assignees) === null || _d === void 0 ? void 0 : _d.map(function (asignee) {
-                        return (asignee === null || asignee === void 0 ? void 0 : asignee.login) || "";
+                        return (asignee === null || asignee === void 0 ? void 0 : asignee.login) || '';
                     })) || [],
                     requestedReviewers: ((_e = pr.data.requested_reviewers) === null || _e === void 0 ? void 0 : _e.map(function (reviewer) {
-                        return (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || "";
+                        return (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '';
                     })) || []
                 };
             }
@@ -449,24 +451,25 @@ class PullRequests {
                             title: pr.title,
                             htmlURL: pr.html_url,
                             mergedAt: moment_1.default(pr.merged_at),
-                            mergeCommitSha: pr.merge_commit_sha || "",
-                            author: ((_b = pr.user) === null || _b === void 0 ? void 0 : _b.login) || "",
+                            mergeCommitSha: pr.merge_commit_sha || '',
+                            author: ((_b = pr.user) === null || _b === void 0 ? void 0 : _b.login) || '',
                             repoName: pr.base.repo.full_name,
                             labels: ((_c = pr.labels) === null || _c === void 0 ? void 0 : _c.map(function (label) {
-                                return label.name || "";
+                                return label.name || '';
                             })) || [],
-                            milestone: ((_d = pr.milestone) === null || _d === void 0 ? void 0 : _d.title) || "",
-                            body: pr.body || "",
+                            milestone: ((_d = pr.milestone) === null || _d === void 0 ? void 0 : _d.title) || '',
+                            body: pr.body || '',
                             assignees: ((_e = pr.assignees) === null || _e === void 0 ? void 0 : _e.map(function (asignee) {
-                                return (asignee === null || asignee === void 0 ? void 0 : asignee.login) || "";
+                                return (asignee === null || asignee === void 0 ? void 0 : asignee.login) || '';
                             })) || [],
                             requestedReviewers: ((_f = pr.requested_reviewers) === null || _f === void 0 ? void 0 : _f.map(function (reviewer) {
-                                return (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || "";
+                                return (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '';
                             })) || []
                         });
                     }
                     const firstPR = prs[0];
-                    if ((firstPR.merged_at && fromDate.isAfter(moment_1.default(firstPR.merged_at))) ||
+                    if (firstPR === undefined ||
+                        (firstPR.merged_at && fromDate.isAfter(moment_1.default(firstPR.merged_at))) ||
                         mergedPRs.length >= maxPullRequests) {
                         if (mergedPRs.length >= maxPullRequests) {
                             core.info(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
@@ -6064,13 +6067,70 @@ var pluginRequestLog = __webpack_require__(8883);
 var pluginPaginateRest = __webpack_require__(606);
 var pluginRestEndpointMethods = __webpack_require__(4923);
 
-const VERSION = "18.0.10";
+const VERSION = "18.0.12";
 
 const Octokit = core.Octokit.plugin(pluginRequestLog.requestLog, pluginRestEndpointMethods.restEndpointMethods, pluginPaginateRest.paginateRest).defaults({
   userAgent: `octokit-rest.js/${VERSION}`
 });
 
 exports.Octokit = Octokit;
+//# sourceMappingURL=index.js.map
+
+
+/***/ }),
+
+/***/ 7633:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+async function auth(token) {
+  const tokenType = token.split(/\./).length === 3 ? "app" : /^v\d+\./.test(token) ? "installation" : "oauth";
+  return {
+    type: "token",
+    token: token,
+    tokenType
+  };
+}
+
+/**
+ * Prefix token for usage in the Authorization header
+ *
+ * @param token OAuth token or JSON Web Token
+ */
+function withAuthorizationPrefix(token) {
+  if (token.split(/\./).length === 3) {
+    return `bearer ${token}`;
+  }
+
+  return `token ${token}`;
+}
+
+async function hook(token, request, route, parameters) {
+  const endpoint = request.endpoint.merge(route, parameters);
+  endpoint.headers.authorization = withAuthorizationPrefix(token);
+  return request(endpoint);
+}
+
+const createTokenAuth = function createTokenAuth(token) {
+  if (!token) {
+    throw new Error("[@octokit/auth-token] No token passed to createTokenAuth");
+  }
+
+  if (typeof token !== "string") {
+    throw new Error("[@octokit/auth-token] Token passed to createTokenAuth is not a string");
+  }
+
+  token = token.replace(/^(token|bearer) +/i, "");
+  return Object.assign(auth.bind(null, token), {
+    hook: hook.bind(null, token)
+  });
+};
+
+exports.createTokenAuth = createTokenAuth;
 //# sourceMappingURL=index.js.map
 
 
@@ -6086,9 +6146,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 
 var universalUserAgent = __webpack_require__(5030);
 var beforeAfterHook = __webpack_require__(3682);
-var request = __webpack_require__(6234);
-var graphql = __webpack_require__(8467);
-var authToken = __webpack_require__(334);
+var request = __webpack_require__(6206);
+var graphql = __webpack_require__(7461);
+var authToken = __webpack_require__(7633);
 
 function _objectWithoutPropertiesLoose(source, excluded) {
   if (source == null) return {};
@@ -6126,7 +6186,7 @@ function _objectWithoutProperties(source, excluded) {
   return target;
 }
 
-const VERSION = "3.2.2";
+const VERSION = "3.2.4";
 
 class Octokit {
   constructor(options = {}) {
@@ -6258,6 +6318,122 @@ exports.Octokit = Octokit;
 
 /***/ }),
 
+/***/ 7461:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+var request = __webpack_require__(6206);
+var universalUserAgent = __webpack_require__(5030);
+
+const VERSION = "4.5.8";
+
+class GraphqlError extends Error {
+  constructor(request, response) {
+    const message = response.data.errors[0].message;
+    super(message);
+    Object.assign(this, response.data);
+    Object.assign(this, {
+      headers: response.headers
+    });
+    this.name = "GraphqlError";
+    this.request = request; // Maintains proper stack trace (only available on V8)
+
+    /* istanbul ignore next */
+
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
+  }
+
+}
+
+const NON_VARIABLE_OPTIONS = ["method", "baseUrl", "url", "headers", "request", "query", "mediaType"];
+const GHES_V3_SUFFIX_REGEX = /\/api\/v3\/?$/;
+function graphql(request, query, options) {
+  if (typeof query === "string" && options && "query" in options) {
+    return Promise.reject(new Error(`[@octokit/graphql] "query" cannot be used as variable name`));
+  }
+
+  const parsedOptions = typeof query === "string" ? Object.assign({
+    query
+  }, options) : query;
+  const requestOptions = Object.keys(parsedOptions).reduce((result, key) => {
+    if (NON_VARIABLE_OPTIONS.includes(key)) {
+      result[key] = parsedOptions[key];
+      return result;
+    }
+
+    if (!result.variables) {
+      result.variables = {};
+    }
+
+    result.variables[key] = parsedOptions[key];
+    return result;
+  }, {}); // workaround for GitHub Enterprise baseUrl set with /api/v3 suffix
+  // https://github.com/octokit/auth-app.js/issues/111#issuecomment-657610451
+
+  const baseUrl = parsedOptions.baseUrl || request.endpoint.DEFAULTS.baseUrl;
+
+  if (GHES_V3_SUFFIX_REGEX.test(baseUrl)) {
+    requestOptions.url = baseUrl.replace(GHES_V3_SUFFIX_REGEX, "/api/graphql");
+  }
+
+  return request(requestOptions).then(response => {
+    if (response.data.errors) {
+      const headers = {};
+
+      for (const key of Object.keys(response.headers)) {
+        headers[key] = response.headers[key];
+      }
+
+      throw new GraphqlError(requestOptions, {
+        headers,
+        data: response.data
+      });
+    }
+
+    return response.data.data;
+  });
+}
+
+function withDefaults(request$1, newDefaults) {
+  const newRequest = request$1.defaults(newDefaults);
+
+  const newApi = (query, options) => {
+    return graphql(newRequest, query, options);
+  };
+
+  return Object.assign(newApi, {
+    defaults: withDefaults.bind(null, newRequest),
+    endpoint: request.request.endpoint
+  });
+}
+
+const graphql$1 = withDefaults(request.request, {
+  headers: {
+    "user-agent": `octokit-graphql.js/${VERSION} ${universalUserAgent.getUserAgent()}`
+  },
+  method: "POST",
+  url: "/graphql"
+});
+function withCustomRequest(customRequest) {
+  return withDefaults(customRequest, {
+    method: "POST",
+    url: "/graphql"
+  });
+}
+
+exports.graphql = graphql$1;
+exports.withCustomRequest = withCustomRequest;
+//# sourceMappingURL=index.js.map
+
+
+/***/ }),
+
 /***/ 606:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -6266,7 +6442,7 @@ exports.Octokit = Octokit;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 
-const VERSION = "2.6.1";
+const VERSION = "2.6.2";
 
 /**
  * Some “list” response that can be paginated have a different response structure
@@ -7349,6 +7525,11 @@ const Endpoints = {
     }],
     users: ["GET /search/users"]
   },
+  secretScanning: {
+    getAlert: ["GET /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}"],
+    listAlertsForRepo: ["GET /repos/{owner}/{repo}/secret-scanning/alerts"],
+    updateAlert: ["PATCH /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}"]
+  },
   teams: {
     addOrUpdateMembershipForUserInOrg: ["PUT /orgs/{org}/teams/{team_slug}/memberships/{username}"],
     addOrUpdateProjectPermissionsInOrg: ["PUT /orgs/{org}/teams/{team_slug}/projects/{project_id}", {
@@ -7429,7 +7610,7 @@ const Endpoints = {
   }
 };
 
-const VERSION = "4.3.0";
+const VERSION = "4.4.1";
 
 function endpointsToMethods(octokit, endpointsMap) {
   const newMethods = {};
@@ -7530,6 +7711,208 @@ restEndpointMethods.VERSION = VERSION;
 
 exports.restEndpointMethods = restEndpointMethods;
 //# sourceMappingURL=index.js.map
+
+
+/***/ }),
+
+/***/ 6206:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+
+var endpoint = __webpack_require__(9440);
+var universalUserAgent = __webpack_require__(5030);
+var isPlainObject = __webpack_require__(2278);
+var nodeFetch = _interopDefault(__webpack_require__(467));
+var requestError = __webpack_require__(537);
+
+const VERSION = "5.4.12";
+
+function getBufferResponse(response) {
+  return response.arrayBuffer();
+}
+
+function fetchWrapper(requestOptions) {
+  if (isPlainObject.isPlainObject(requestOptions.body) || Array.isArray(requestOptions.body)) {
+    requestOptions.body = JSON.stringify(requestOptions.body);
+  }
+
+  let headers = {};
+  let status;
+  let url;
+  const fetch = requestOptions.request && requestOptions.request.fetch || nodeFetch;
+  return fetch(requestOptions.url, Object.assign({
+    method: requestOptions.method,
+    body: requestOptions.body,
+    headers: requestOptions.headers,
+    redirect: requestOptions.redirect
+  }, requestOptions.request)).then(response => {
+    url = response.url;
+    status = response.status;
+
+    for (const keyAndValue of response.headers) {
+      headers[keyAndValue[0]] = keyAndValue[1];
+    }
+
+    if (status === 204 || status === 205) {
+      return;
+    } // GitHub API returns 200 for HEAD requests
+
+
+    if (requestOptions.method === "HEAD") {
+      if (status < 400) {
+        return;
+      }
+
+      throw new requestError.RequestError(response.statusText, status, {
+        headers,
+        request: requestOptions
+      });
+    }
+
+    if (status === 304) {
+      throw new requestError.RequestError("Not modified", status, {
+        headers,
+        request: requestOptions
+      });
+    }
+
+    if (status >= 400) {
+      return response.text().then(message => {
+        const error = new requestError.RequestError(message, status, {
+          headers,
+          request: requestOptions
+        });
+
+        try {
+          let responseBody = JSON.parse(error.message);
+          Object.assign(error, responseBody);
+          let errors = responseBody.errors; // Assumption `errors` would always be in Array format
+
+          error.message = error.message + ": " + errors.map(JSON.stringify).join(", ");
+        } catch (e) {// ignore, see octokit/rest.js#684
+        }
+
+        throw error;
+      });
+    }
+
+    const contentType = response.headers.get("content-type");
+
+    if (/application\/json/.test(contentType)) {
+      return response.json();
+    }
+
+    if (!contentType || /^text\/|charset=utf-8$/.test(contentType)) {
+      return response.text();
+    }
+
+    return getBufferResponse(response);
+  }).then(data => {
+    return {
+      status,
+      url,
+      headers,
+      data
+    };
+  }).catch(error => {
+    if (error instanceof requestError.RequestError) {
+      throw error;
+    }
+
+    throw new requestError.RequestError(error.message, 500, {
+      headers,
+      request: requestOptions
+    });
+  });
+}
+
+function withDefaults(oldEndpoint, newDefaults) {
+  const endpoint = oldEndpoint.defaults(newDefaults);
+
+  const newApi = function (route, parameters) {
+    const endpointOptions = endpoint.merge(route, parameters);
+
+    if (!endpointOptions.request || !endpointOptions.request.hook) {
+      return fetchWrapper(endpoint.parse(endpointOptions));
+    }
+
+    const request = (route, parameters) => {
+      return fetchWrapper(endpoint.parse(endpoint.merge(route, parameters)));
+    };
+
+    Object.assign(request, {
+      endpoint,
+      defaults: withDefaults.bind(null, endpoint)
+    });
+    return endpointOptions.request.hook(request, endpointOptions);
+  };
+
+  return Object.assign(newApi, {
+    endpoint,
+    defaults: withDefaults.bind(null, endpoint)
+  });
+}
+
+const request = withDefaults(endpoint.endpoint, {
+  headers: {
+    "user-agent": `octokit-request.js/${VERSION} ${universalUserAgent.getUserAgent()}`
+  }
+});
+
+exports.request = request;
+//# sourceMappingURL=index.js.map
+
+
+/***/ }),
+
+/***/ 2278:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+/*!
+ * is-plain-object <https://github.com/jonschlinkert/is-plain-object>
+ *
+ * Copyright (c) 2014-2017, Jon Schlinkert.
+ * Released under the MIT License.
+ */
+
+function isObject(o) {
+  return Object.prototype.toString.call(o) === '[object Object]';
+}
+
+function isPlainObject(o) {
+  var ctor,prot;
+
+  if (isObject(o) === false) return false;
+
+  // If has modified constructor
+  ctor = o.constructor;
+  if (ctor === undefined) return true;
+
+  // If has modified prototype
+  prot = ctor.prototype;
+  if (isObject(prot) === false) return false;
+
+  // If constructor does not have an Object-specific method
+  if (prot.hasOwnProperty('isPrototypeOf') === false) {
+    return false;
+  }
+
+  // Most likely a plain Object
+  return true;
+}
+
+exports.isPlainObject = isPlainObject;
 
 
 /***/ }),
