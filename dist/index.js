@@ -468,7 +468,8 @@ class PullRequests {
                         });
                     }
                     const firstPR = prs[0];
-                    if ((firstPR.merged_at && fromDate.isAfter(moment_1.default(firstPR.merged_at))) ||
+                    if (firstPR === undefined ||
+                        (firstPR.merged_at && fromDate.isAfter(moment_1.default(firstPR.merged_at))) ||
                         mergedPRs.length >= maxPullRequests) {
                         if (mergedPRs.length >= maxPullRequests) {
                             core.info(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
