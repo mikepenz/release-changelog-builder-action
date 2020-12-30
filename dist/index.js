@@ -331,6 +331,12 @@ function run() {
             const failOnError = core.getInput('failOnError') === 'true';
             const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(token, repositoryPath, owner, repo, fromTag, toTag, failOnError, ignorePreReleases, configuration).build();
             core.setOutput('changelog', result);
+            // write the result in changelog to file if possible
+            const outputFile = core.getInput('outputFile');
+            if (outputFile !== "") {
+                core.debug(`Enabled writing the changelog to disk`);
+                utils_1.writeOutput(repositoryPath, outputFile, result);
+            }
         }
         catch (error) {
             core.setFailed(error.message);
@@ -1181,7 +1187,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.directoryExistsSync = exports.resolveConfiguration = exports.failOrError = exports.retrieveRepositoryPath = void 0;
+exports.writeOutput = exports.directoryExistsSync = exports.resolveConfiguration = exports.failOrError = exports.retrieveRepositoryPath = void 0;
 const fs = __importStar(__webpack_require__(5747));
 const configuration_1 = __webpack_require__(5527);
 const core = __importStar(__webpack_require__(2186));
@@ -1277,6 +1283,22 @@ function directoryExistsSync(inputPath, required) {
     throw new Error(`Directory '${inputPath}' does not exist`);
 }
 exports.directoryExistsSync = directoryExistsSync;
+/**
+ * Writes the changelog to the given the file
+ */
+function writeOutput(githubWorkspacePath, outputFile, changelog) {
+    if (outputFile && changelog) {
+        const outputPath = path.resolve(githubWorkspacePath, outputFile);
+        core.debug(`outputPath = '${outputPath}'`);
+        try {
+            fs.writeFileSync(outputPath, changelog);
+        }
+        catch (error) {
+            core.warning(`⚠️ Could not write the file to disk - ${error.message}`);
+        }
+    }
+}
+exports.writeOutput = writeOutput;
 
 
 /***/ }),

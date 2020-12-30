@@ -23,6 +23,8 @@ inputs:
   failOnError:
     description: 'Defines if the action should result in a build failure, if an error was discovered'
     default: "false"
+  outputFile:
+    description: 'If defined, the changelog will get written to this file. (relative to the checkout dir)'
   token:
     description: 'Defines the token to use to execute the git API requests with, uses `env.GITHUB_TOKEN` by default'
 outputs:

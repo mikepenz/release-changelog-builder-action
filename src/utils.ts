@@ -111,3 +111,22 @@ export function directoryExistsSync(
 
   throw new Error(`Directory '${inputPath}' does not exist`)
 }
+
+/**
+ * Writes the changelog to the given the file
+ */
+export function writeOutput(
+  githubWorkspacePath: string,
+  outputFile: string,
+  changelog: string | null
+): void {
+  if (outputFile && changelog) {
+    const outputPath = path.resolve(githubWorkspacePath, outputFile)
+    core.debug(`outputPath = '${outputPath}'`)
+    try {
+      fs.writeFileSync(outputPath, changelog)
+    } catch (error) {
+      core.warning(`⚠️ Could not write the file to disk - ${error.message}`)
+    }
+  }
+}
