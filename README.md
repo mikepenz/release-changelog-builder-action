@@ -208,6 +208,7 @@ For advanced use cases additional settings can be provided to the action
 | **Input**         | **Description**                                                                                                                                                            |
 |-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `configuration`     | Relative path, to the `configuration.json` file, providing additional configurations                                                                                     |
+| `outputFile`        | Optional relative path to a file to store the resulting changelog in.                                                                                    |
 | `owner`             | The owner of the repository to generate the changelog for                                                                                                                |
 | `repo`              | Name of the repository we want to process                                                                                                                                |
 | `fromTag`           | Defines the 'start' from where the changelog will consider merged pull requests                                                                                          |
