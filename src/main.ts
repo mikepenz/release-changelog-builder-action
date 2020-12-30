@@ -1,5 +1,9 @@
 import * as core from '@actions/core'
-import {retrieveRepositoryPath, resolveConfiguration} from './utils'
+import {
+  retrieveRepositoryPath,
+  resolveConfiguration,
+  writeOutput
+} from './utils'
 import * as github from '@actions/github'
 import {ReleaseNotesBuilder} from './releaseNotesBuilder'
 
@@ -43,6 +47,13 @@ async function run(): Promise<void> {
     ).build()
 
     core.setOutput('changelog', result)
+
+    // write the result in changelog to file if possible
+    const outputFile: string = core.getInput('outputFile')
+    if (outputFile !== '') {
+      core.debug(`Enabled writing the changelog to disk`)
+      writeOutput(repositoryPath, outputFile, result)
+    }
   } catch (error) {
     core.setFailed(error.message)
   }
