@@ -316,13 +316,13 @@ export GITHUB_TOKEN=your_personal_github_pat
 ## License
 
     Copyright for portions of pr-release-notes are held by Nikolay Blagoev, 2019-2020 as part of project pull-release-notes. 
-    All other copyright for project pr-release-notes are held by Mike Penz, 2020.
+    All other copyright for project pr-release-notes are held by Mike Penz, 2021.
 
 ## Fork License
 
 All patches and changes applied to the original source are licensed under the Apache 2.0 license.
 
-    Copyright 2020 Mike Penz
+    Copyright 2021 Mike Penz
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
