@@ -333,7 +333,7 @@ function run() {
             core.setOutput('changelog', result);
             // write the result in changelog to file if possible
             const outputFile = core.getInput('outputFile');
-            if (outputFile !== "") {
+            if (outputFile !== '') {
                 core.debug(`Enabled writing the changelog to disk`);
                 utils_1.writeOutput(repositoryPath, outputFile, result);
             }
@@ -1231,10 +1231,7 @@ function resolveConfiguration(githubWorkspacePath, configurationFile) {
         const configurationPath = path.resolve(githubWorkspacePath, configurationFile);
         core.debug(`configurationPath = '${configurationPath}'`);
         const providedConfiguration = readConfiguration(configurationPath);
-        if (!providedConfiguration) {
-            core.info(`⚠️ Configuration provided, but it couldn't be found, or failed to parse. Fallback to Defaults`);
-        }
-        else {
+        if (providedConfiguration) {
             configuration = providedConfiguration;
         }
     }
@@ -1245,12 +1242,20 @@ exports.resolveConfiguration = resolveConfiguration;
  * Reads in the configuration from the JSON file
  */
 function readConfiguration(filename) {
+    let rawdata;
     try {
-        const rawdata = fs.readFileSync(filename, 'utf8');
+        rawdata = fs.readFileSync(filename, 'utf8');
+    }
+    catch (error) {
+        core.info(`⚠️ Configuration provided, but it couldn't be found. Fallback to Defaults.`);
+        return null;
+    }
+    try {
         const configurationJSON = JSON.parse(rawdata);
         return configurationJSON;
     }
     catch (error) {
+        core.info(`⚠️ Configuration provided, but it couldn't be parsed. Fallback to Defaults.`);
         return null;
     }
 }
