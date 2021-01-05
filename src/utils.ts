@@ -51,11 +51,7 @@ export function resolveConfiguration(
     )
     core.debug(`configurationPath = '${configurationPath}'`)
     const providedConfiguration = readConfiguration(configurationPath)
-    if (!providedConfiguration) {
-      core.info(
-        `⚠️ Configuration provided, but it couldn't be found, or failed to parse. Fallback to Defaults`
-      )
-    } else {
+    if (providedConfiguration) {
       configuration = providedConfiguration
     }
   }
@@ -66,11 +62,22 @@ export function resolveConfiguration(
  * Reads in the configuration from the JSON file
  */
 function readConfiguration(filename: string): Configuration | null {
+  let rawdata: string
   try {
-    const rawdata = fs.readFileSync(filename, 'utf8')
+    rawdata = fs.readFileSync(filename, 'utf8')
+  } catch (error) {
+    core.info(
+      `⚠️ Configuration provided, but it couldn't be found. Fallback to Defaults.`
+    )
+    return null
+  }
+  try {
     const configurationJSON: Configuration = JSON.parse(rawdata)
     return configurationJSON
   } catch (error) {
+    core.info(
+      `⚠️ Configuration provided, but it couldn't be parsed. Fallback to Defaults.`
+    )
     return null
   }
 }
