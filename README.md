@@ -222,7 +222,7 @@ For advanced use cases additional settings can be provided to the action
 
 ### PR Template placeholders
 
-Table of supported placeholders allowed to be used in the `pr_template` configuration.
+Table of supported placeholders allowed to be used in the `pr_template` configuration, which will be included in the release notes / changelog.
 
 | **Placeholder**  | **Description**                                             |
 |------------------|-------------------------------------------------------------|
@@ -239,7 +239,7 @@ Table of supported placeholders allowed to be used in the `pr_template` configur
 
 ### Template placeholders
 
-Table of supported placeholders allowed to be used in the `template` and `empty_template` (only supports placeholder marked for empty) configuration.
+Table of supported placeholders allowed to be used in the `template` and `empty_template` (only supports placeholder marked for empty) configuration, to give additional control on defining the contents of the release notes / changelog. 
 
 | **Placeholder**            | **Description**                                                                                    | **Empty** |
 |----------------------------|----------------------------------------------------------------------------------------------------|:---------:|
@@ -257,7 +257,7 @@ Table of supported placeholders allowed to be used in the `template` and `empty_
 
 ### Configuration Specification
 
-Table of descriptions for the `configuration.json` options. 
+Table of descriptions for the `configuration.json` options to configure the resulting release notes / changelog.
 
 | **Input**                | **Description**                                                                                                                                                                                                                    |
 |--------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -316,13 +316,13 @@ export GITHUB_TOKEN=your_personal_github_pat
 ## License
 
     Copyright for portions of pr-release-notes are held by Nikolay Blagoev, 2019-2020 as part of project pull-release-notes. 
-    All other copyright for project pr-release-notes are held by Mike Penz, 2020.
+    All other copyright for project pr-release-notes are held by Mike Penz, 2021.
 
 ## Fork License
 
 All patches and changes applied to the original source are licensed under the Apache 2.0 license.
 
-    Copyright 2020 Mike Penz
+    Copyright 2021 Mike Penz
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -336,7 +336,7 @@ All patches and changes applied to the original source are licensed under the Ap
     See the License for the specific language governing permissions and
     limitations under the License.
 
-## Sample result changelog
+## Sample result release notes / changelog
 
 <div align="center">
   <a href="https://github.com/mikepenz/release-changelog-builder-action/runs/1270879787"><img src=".github/images/release_changelog_builder_expanded.png"/></a>
