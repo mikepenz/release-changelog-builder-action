@@ -12,6 +12,7 @@ export interface ReleaseNotesOptions {
   fromTag: string // the tag/ref to start from
   toTag: string // the tag/ref up to
   failOnError: boolean // defines if we should fail the action in case of an error
+  commitMode: boolean // defines if we use the alternative commit based mode. note: this is only partially supported
   configuration: Configuration // the configuration as defined in `configuration.ts`
 }
 
@@ -21,9 +22,17 @@ export class ReleaseNotes {
   async pull(): Promise<string | null> {
     const {configuration} = this.options
 
-    core.startGroup(`🚀 Load pull requests`)
-    const mergedPullRequests = await this.getMergedPullRequests(this.octokit)
-    core.endGroup()
+    let mergedPullRequests: PullRequestInfo[]
+    if (!this.options.commitMode) {
+      core.startGroup(`🚀 Load pull requests`)
+      mergedPullRequests = await this.getMergedPullRequests(this.octokit)
+      core.endGroup()
+    } else {
+      core.startGroup(`🚀 Load commit history`)
+      core.info(`⚠️ Executing experimental commit mode`)
+      mergedPullRequests = await this.generateCommitPRs(this.octokit)
+      core.endGroup()
+    }
 
     if (mergedPullRequests.length === 0) {
       core.warning(`⚠️ No pull requests found`)
@@ -40,17 +49,8 @@ export class ReleaseNotes {
     return resultChangelog
   }
 
-  private async getMergedPullRequests(
-    octokit: Octokit
-  ): Promise<PullRequestInfo[]> {
-    const {
-      owner,
-      repo,
-      fromTag,
-      toTag,
-      failOnError,
-      configuration
-    } = this.options
+  private async getCommitHistory(octokit: Octokit): Promise<CommitInfo[]> {
+    const {owner, repo, fromTag, toTag, failOnError} = this.options
     core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag}...${toTag}'`)
 
     const commitsApi = new Commits(octokit)
@@ -66,6 +66,19 @@ export class ReleaseNotes {
     }
     if (commits.length === 0) {
       core.warning(`⚠️ No commits found between - ${fromTag}...${toTag}`)
+      return []
+    }
+
+    return commits
+  }
+
+  private async getMergedPullRequests(
+    octokit: Octokit
+  ): Promise<PullRequestInfo[]> {
+    const {owner, repo, configuration} = this.options
+
+    const commits = await this.getCommitHistory(octokit)
+    if (commits.length === 0) {
       return []
     }
 
@@ -118,6 +131,32 @@ export class ReleaseNotes {
     // return only the pull requests associated with this release
     return pullRequests.filter(pr => {
       return releaseCommitHashes.includes(pr.mergeCommitSha)
+    })
+  }
+
+  private async generateCommitPRs(
+    octokit: Octokit
+  ): Promise<PullRequestInfo[]> {
+    const commits = await this.getCommitHistory(octokit)
+    if (commits.length === 0) {
+      return []
+    }
+
+    return commits.map(function (commit) {
+      return {
+        number: 0,
+        title: commit.summary,
+        htmlURL: '',
+        mergedAt: commit.date,
+        mergeCommitSha: '',
+        author: commit.author || '',
+        repoName: '',
+        labels: [],
+        milestone: '',
+        body: commit.message || '',
+        assignees: [],
+        requestedReviewers: []
+      }
     })
   }
 }
