@@ -17,6 +17,7 @@ it('Should have empty changelog (tags)', async () => {
     fromTag: 'v0.0.1',
     toTag: 'v0.0.2',
     failOnError: false,
+    commitMode: false,
     configuration: configuration
   })
 
@@ -33,6 +34,7 @@ it('Should match generated changelog (tags)', async () => {
     fromTag: 'v0.0.1',
     toTag: 'v0.0.3',
     failOnError: false,
+    commitMode: false,
     configuration: configuration
   })
 
@@ -57,6 +59,7 @@ it('Should match generated changelog (refs)', async () => {
     fromTag: '5ec7a2d86fe9f43fdd38d5e254a1117c8a51b4c3',
     toTag: 'fa3788c8c4b3373ef8424ce3eb008a5cd07cc5aa',
     failOnError: false,
+    commitMode: false,
     configuration: configuration
   })
 
@@ -89,6 +92,7 @@ it('Should match ordered ASC', async () => {
     fromTag: 'v0.3.0',
     toTag: 'v0.5.0',
     failOnError: false,
+    commitMode: false,
     configuration: configuration
   })
 
@@ -110,6 +114,7 @@ it('Should match ordered DESC', async () => {
     fromTag: 'v0.3.0',
     toTag: 'v0.5.0',
     failOnError: false,
+    commitMode: false,
     configuration: configuration
   })
 
