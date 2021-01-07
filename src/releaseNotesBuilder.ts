@@ -18,6 +18,7 @@ export class ReleaseNotesBuilder {
     private toTag: string | null,
     private failOnError: boolean,
     private ignorePreReleases: boolean,
+    private commitMode: boolean,
     private configuration: Configuration
   ) {}
 
@@ -104,6 +105,7 @@ export class ReleaseNotesBuilder {
       fromTag: this.fromTag,
       toTag: this.toTag,
       failOnError: this.failOnError,
+      commitMode: this.commitMode,
       configuration: this.configuration
     }
     const releaseNotes = new ReleaseNotes(octokit, options)

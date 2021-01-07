@@ -33,6 +33,7 @@ async function run(): Promise<void> {
     // read in flags
     const ignorePreReleases = core.getInput('ignorePreReleases') === 'true'
     const failOnError = core.getInput('failOnError') === 'true'
+    const commitMode = core.getInput('commitMode') === 'true'
 
     const result = await new ReleaseNotesBuilder(
       token,
@@ -43,6 +44,7 @@ async function run(): Promise<void> {
       toTag,
       failOnError,
       ignorePreReleases,
+      commitMode,
       configuration
     ).build()
 
