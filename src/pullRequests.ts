@@ -78,6 +78,7 @@ export class PullRequests {
       repo,
       state: 'closed',
       sort: 'updated',
+      per_page: '100',
       direction: 'desc'
     })
 
