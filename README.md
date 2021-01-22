@@ -313,6 +313,12 @@ export GITHUB_TOKEN=your_personal_github_pat
   - Nikolay Blagoev - [GitHub](https://github.com/nblagoev/)
 - [action-gh-release](https://github.com/softprops/action-gh-release) for a few great README ideas
 
+## Other actions
+
+- [xray-action](https://github.com/mikepenz/xray-action/)
+- [action-junit-report](https://github.com/mikepenz/action-junit-report)
+- [jira-release-composition-action](https://github.com/mikepenz/jira-release-composite-action)
+
 ## License
 
     Copyright for portions of pr-release-notes are held by Nikolay Blagoev, 2019-2020 as part of project pull-release-notes. 
