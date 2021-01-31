@@ -131,9 +131,9 @@ The action supports flexible configuration options to modify vast areas of its b
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-💡 By default not specifying `fromTag` or `toTag` will resolve `toTag` from either the `ref` or alternatively fallback to the latest tag from git. `fromTag` is resolved by sorting tags using [semver](https://semver.org/). Check the [configuration](#configuration-specification) for alternatives.
-
 ⚠️ When running this action for a non tags trigger the `toTag` can't be automatically resolved, as such it is either required to provide `toTag` directly, or to specify a different `fetch-depth:` with the checkout action to include tags.   
+
+💡 By default not specifying `fromTag` or `toTag` will resolve `toTag` from either the `ref` or alternatively fallback to the latest tag from git. `fromTag` is resolved by sorting tags using [semver](https://semver.org/). Check the [configuration](#configuration-specification) for alternatives.
 
 This configuration is a `.json` file in the following format.
 
