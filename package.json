@@ -35,7 +35,7 @@
     "@actions/core": "^1.2.6",
     "@actions/exec": "^1.0.4",
     "@actions/github": "^4.0.0",
-    "@octokit/rest": "^18.1.1",
+    "@octokit/rest": "^18.2.0",
     "@types/semver": "^7.3.4",
     "moment": "^2.29.1",
     "semver": "^7.3.4"
