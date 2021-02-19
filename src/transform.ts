@@ -19,6 +19,19 @@ export function buildChangelog(
   prs = sortPullRequests(prs, sortAsc)
   core.info(`ℹ️ Sorted all pull requests ascending: ${sort}`)
 
+  // extract additional labels from the commit message
+  const labelExtractors = validateTransfomers(config.label_extractor)
+  for (const extractor of labelExtractors) {
+    if (extractor.pattern != null) {
+      for (const pr of prs) {
+        const label = pr.body.replace(extractor.pattern, extractor.target)
+        if (label !== '') {
+          pr.labels.push(label)
+        }
+      }
+    }
+  }
+
   const validatedTransformers = validateTransfomers(config.transformers)
   const transformedMap = new Map<PullRequestInfo, string>()
   // convert PRs to their text representation
@@ -210,7 +223,7 @@ function validateTransfomers(
     .map(transformer => {
       try {
         return {
-          pattern: new RegExp(transformer.pattern.replace('\\\\', '\\'), 'g'),
+          pattern: new RegExp(transformer.pattern.replace('\\\\', '\\'), 'gu'),
           target: transformer.target
         }
       } catch (e) {
