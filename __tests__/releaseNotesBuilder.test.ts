@@ -149,7 +149,6 @@ it('Uncategorized category', async () => {
 })
 
 
-
 it('Verify commit based changelog', async () => {
   const configuration = resolveConfiguration(
     '',
@@ -172,5 +171,31 @@ it('Verify commit based changelog', async () => {
   console.log(changeLog)
   expect(changeLog).toStrictEqual(
     `## 📦 Uncategorized\n\n- - introduce proper approach to retrieve tag before a given tag\n\n- - configure test case\n\n- Merge pull request #10 from mikepenz/feature/specify_test\n\n\n\n\nUncategorized:\n- - introduce proper approach to retrieve tag before a given tag\n\n- - configure test case\n\n- Merge pull request #10 from mikepenz/feature/specify_test\n\n\n\nIgnored:\n\n\n3\n0`
+  )
+})
+
+
+it('Verify commit based changelog, with emoji categorisation', async () => {
+  const configuration = resolveConfiguration(
+    '',
+    'configs_test/configuration_commits_emoji.json'
+  )
+  const releaseNotesBuilder = new ReleaseNotesBuilder(
+    null,
+    '.',
+    'theapache64',
+    'stackzy',
+    'bd3242a6b6eadb24744c478e112c4628e89609c2',
+    '17a9e4dfaedcabe6a6eff2754bebb715e1c58ec4',
+    false,
+    false,
+    true,
+    configuration
+  )
+
+  const changeLog = await releaseNotesBuilder.build()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(
+    `## 🚀 Features\n\n- add dynamic merging\n- add auto-cleaning\n- add built-in adb support\n- add adb fallback (thanks to @mikepenz ;))\n- add install note\n- add @mikepenz to credits\n\n## 🐛 Fixes\n\n- fix dynamic lib replacement\n- fix apostrophe issue with app name\n- fix java.util.logger error\n\n## 💬 Other\n\n- update screenshot with truecaller stack\n\n`
   )
 })

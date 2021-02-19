@@ -38,6 +38,8 @@
 - Super simple integration
   - ...even on huge repositories with hundreds of tags
 - Parallel releases support
+- Rich changelogs based on PRs
+  - Alternative commit based mode
 - Blazingly fast execution
 - Supports any git project
 - Highly flexible configuration
@@ -160,6 +162,12 @@ This configuration is a `.json` file in the following format.
     "template": "${{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n${{UNCATEGORIZED}}\n</details>",
     "pr_template": "- ${{TITLE}}\n   - PR: #${{NUMBER}}",
     "empty_template": "- no changes",
+    "label_extractor": [
+      {
+        "pattern": "(.) (.+)",
+        "target": "$1"
+      }
+    ],
     "transformers": [
       {
         "pattern": "[\\-\\*] (\\[(...|TEST|CI|SKIP)\\])( )?(.+?)\n(.+?[\\-\\*] )(.+)",
@@ -207,18 +215,19 @@ For advanced use cases additional settings can be provided to the action
 
 💡 All input values are optional. It is only required to provide the `token` either via the input, or as `env` variable.
 
-| **Input**         | **Description**                                                                                                                                                            |
-|-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `configuration`     | Relative path, to the `configuration.json` file, providing additional configurations                                                                                     |
-| `outputFile`        | Optional relative path to a file to store the resulting changelog in.                                                                                    |
-| `owner`             | The owner of the repository to generate the changelog for                                                                                                                |
-| `repo`              | Name of the repository we want to process                                                                                                                                |
-| `fromTag`           | Defines the 'start' from where the changelog will consider merged pull requests                                                                                          |
-| `toTag`             | Defines until which tag the changelog will consider merged pull requests                                                                                                 |
-| `path`              | Allows to specify an alternative sub directory, to use as base                                                                                                           |
-| `token`             | Alternative config to specify token. You should prefer `env.GITHUB_TOKEN` instead though                                                                                 |
-| `ignorePreReleases` | Allows to ignore pre-releases for changelog generation (E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick). Only used if `fromTag` was not specified. Default: false |
-| `failOnError`       | Defines if the action will result in a build failure if problems occurred. Default: false                                                                                |
+| **Input**         | **Description**                                                                                                                                                               |
+|-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `configuration`     | Relative path, to the `configuration.json` file, providing additional configurations                                                                                        |
+| `outputFile`        | Optional relative path to a file to store the resulting changelog in.                                                                                                       |
+| `owner`             | The owner of the repository to generate the changelog for                                                                                                                   |
+| `repo`              | Name of the repository we want to process                                                                                                                                   |
+| `fromTag`           | Defines the 'start' from where the changelog will consider merged pull requests                                                                                             |
+| `toTag`             | Defines until which tag the changelog will consider merged pull requests                                                                                                    |
+| `path`              | Allows to specify an alternative sub directory, to use as base                                                                                                              |
+| `token`             | Alternative config to specify token. You should prefer `env.GITHUB_TOKEN` instead though                                                                                    |
+| `ignorePreReleases` | Allows to ignore pre-releases for changelog generation (E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick). Only used if `fromTag` was not specified. Default: false    |
+| `failOnError`       | Defines if the action will result in a build failure if problems occurred. Default: false                                                                                   |
+| `commitMode`        | Special configuration for projects which work without PRs. Uses commit messages as changelog. This mode looses access to information only available for PRs. Default: false |
 
 💡 `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repositories please use a PAT (Personal Access Token).
 
@@ -271,6 +280,9 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | template                 | Specifies the global template to pick for creating the changelog. See [Template placeholders](#template-placeholders) for possible values                                                                                          |
 | pr_template              | Defines the per pull request template. See [PR Template placeholders](#pr-template-placeholders) for possible values                                                                                                               |
 | empty_template           | Template to pick if no changes are detected. See [Template placeholders](#template-placeholders) for possible values                                                                                                               |
+| label_extractor          | An array of `transform` specifications, offering a flexible API to extract additinal labels from the body of a PR (in case of commit mode, from the commit message).                                                               |
+| label_extractor.pattern  | A `regex` pattern, extracting values of the change message.                                                                                                                                                                        |
+| label_extractor.target   | The result pattern. The result text will be used as label. If empty, no label is created                                                                                                                                           |
 | transformers             | An array of `transform` specifications, offering a flexible API to modify the text per pull request. This is applied on the change text created with `pr_template`. `transformers` are executed per change, in the order specified |
 | transformer.pattern      | A `regex` pattern, extracting values of the change message.                                                                                                                                                                        |
 | transformer.target       | The result pattern, the regex groups will be filled into. Allows for full transformation of a pull request message. Including potentially specified texts                                                                          |

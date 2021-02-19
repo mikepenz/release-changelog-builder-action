@@ -9,6 +9,7 @@ export interface Configuration {
   empty_template: string
   categories: Category[]
   ignore_labels: string[]
+  label_extractor: Transformer[]
   transformers: Transformer[]
   tag_resolver: TagResolver
 }
@@ -51,6 +52,7 @@ export const DefaultConfiguration: Configuration = {
     }
   ], // the categories to support for the ordering
   ignore_labels: ['ignore'], // list of lables being ignored from the changelog
+  label_extractor: [], // extracts additional labels from the commit message given a regex
   transformers: [], // transformers to apply on the PR description according to the `pr_template`
   tag_resolver: {
     // defines the logic on how to resolve the previous tag, only relevant if `fromTag` is not specified
