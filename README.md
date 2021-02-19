@@ -38,6 +38,8 @@
 - Super simple integration
   - ...even on huge repositories with hundreds of tags
 - Parallel releases support
+- Rich changelogs based on PRs
+  - Alternative commit based mode
 - Blazingly fast execution
 - Supports any git project
 - Highly flexible configuration
