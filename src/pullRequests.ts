@@ -10,6 +10,10 @@ export interface PullRequestInfo {
   htmlURL: string
   mergedAt: moment.Moment
   mergeCommitSha: string
+  mergeCommitAuthor: string
+  mergeCommitMessage: string
+  mergeCommitDate: moment.Moment
+  mergeCommitSummary: string
   author: string
   repoName: string
   labels: string[]
@@ -33,6 +37,7 @@ export class PullRequests {
         repo,
         pull_number: prNumber
       })
+      const commitsList = await this.getFirstCommit(owner, repo, prNumber, 1)
 
       return {
         number: pr.data.number,
@@ -40,6 +45,10 @@ export class PullRequests {
         htmlURL: pr.data.html_url,
         mergedAt: moment(pr.data.merged_at),
         mergeCommitSha: pr.data.merge_commit_sha || '',
+        mergeCommitAuthor: commitsList?.author || '',
+        mergeCommitMessage: commitsList?.message || '',
+        mergeCommitDate: moment(commitsList?.date) || pr.data.merged_at,
+        mergeCommitSummary: commitsList?.message.split('\n')[0] || '',
         author: pr.data.user?.login || '',
         repoName: pr.data.base.repo.full_name,
         labels:
@@ -60,6 +69,36 @@ export class PullRequests {
     } catch (e) {
       core.warning(
         `⚠️ Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`
+      )
+      return null
+    }
+  }
+
+  async getFirstCommit(
+    owner: string,
+    repo: string,
+    prNumber: number,
+    perPage: number
+  ): Promise<CommitInfo | null> {
+    try {
+      const commitsList = await this.octokit.pulls.listCommits({
+        owner,
+        repo,
+        pull_number: prNumber,
+        per_page: perPage
+      })
+      const commitMessage = commitsList.data[0].commit.message
+
+      return {
+        author: commitsList.data[0].commit.author?.name || '',
+        message: commitMessage,
+        date: moment(commitsList.data[0].commit.author?.date) || '',
+        summary: commitMessage.split('\n')[0],
+        sha: commitsList.data[0].sha
+      }
+    } catch (e) {
+      core.warning(
+        `⚠️ Could not get a list of commits: ${owner}/${repo}#${prNumber} - ${e.message}`
       )
       return null
     }
@@ -87,12 +126,18 @@ export class PullRequests {
       const prs: PullsListData = response.data as PullsListData
 
       for (const pr of prs.filter(p => !!p.merged_at)) {
+        const commitsList = await this.getFirstCommit(owner, repo, pr.number, 1)
+
         mergedPRs.push({
           number: pr.number,
           title: pr.title,
           htmlURL: pr.html_url,
           mergedAt: moment(pr.merged_at),
           mergeCommitSha: pr.merge_commit_sha || '',
+          mergeCommitAuthor: commitsList?.author || '',
+          mergeCommitMessage: commitsList?.message || '',
+          mergeCommitDate: moment(commitsList?.date) || pr.merged_at,
+          mergeCommitSummary: commitsList?.message.split('\n')[0] || '',
           author: pr.user?.login || '',
           repoName: pr.base.repo.full_name,
           labels:

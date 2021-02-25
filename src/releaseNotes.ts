@@ -5,6 +5,7 @@ import {buildChangelog} from './transform'
 import * as core from '@actions/core'
 import {Configuration, DefaultConfiguration} from './configuration'
 import {failOrError} from './utils'
+import * as crypto from 'crypto'
 
 export interface ReleaseNotesOptions {
   owner: string // the owner of the repository
@@ -120,18 +121,54 @@ export class ReleaseNotes {
     )
 
     core.info(
-      `ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`
+      `ℹ️ Retrieved ${prCommits.length} LEO release commits for ${owner}/${repo}`
     )
+    
+    core.info(`configuration.use_metadata_hash: ${configuration.use_metadata_hash}`)
+
+    if (configuration.use_metadata_hash) {
+      core.info(
+        `Metadata hash configuration is enabled. Using metadata hash to compare values`
+      )
+    }
 
     // create array of commits for this release
     const releaseCommitHashes = prCommits.map(commmit => {
+      if (configuration.use_metadata_hash) {
+        return this.generateMetadataHash(commmit)
+      }
+
       return commmit.sha
     })
 
     // return only the pull requests associated with this release
     return pullRequests.filter(pr => {
+      if (configuration.use_metadata_hash) {
+        const commit = this.createCommitInfo(pr)
+        const metadataHash = this.generateMetadataHash(commit)
+        return releaseCommitHashes.includes(metadataHash)
+      }
+
       return releaseCommitHashes.includes(pr.mergeCommitSha)
     })
+  }
+
+  private createCommitInfo(pr: PullRequestInfo): CommitInfo {
+    return {
+      sha: pr.mergeCommitSha,
+      summary: pr.mergeCommitSummary,
+      message: pr.mergeCommitMessage,
+      author: pr.mergeCommitAuthor,
+      date: pr.mergeCommitDate
+    }
+  }
+
+  private generateMetadataHash(commitInfo: CommitInfo): string {
+    const input = commitInfo.author
+      .concat(commitInfo.message)
+      .concat(commitInfo.date.unix().toString())
+
+    return crypto.createHash('sha256').update(input).digest('hex')
   }
 
   private async generateCommitPRs(
@@ -149,6 +186,10 @@ export class ReleaseNotes {
         htmlURL: '',
         mergedAt: commit.date,
         mergeCommitSha: '',
+        mergeCommitAuthor: '',
+        mergeCommitMessage: '',
+        mergeCommitDate: commit.date,
+        mergeCommitSummary: '',
         author: commit.author || '',
         repoName: '',
         labels: [],

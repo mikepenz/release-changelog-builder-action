@@ -52,9 +52,9 @@ test('should write result to file', () => {
   // should succeed
   expect(result).toBeDefined()
 
-  const readOutput = fs.readFileSync("test.md")
+  const readOutput = fs.readFileSync('test.md')
 
-  fs.unlinkSync("test.md")
+  fs.unlinkSync('test.md')
 
   expect(readOutput.toString()).not.toBe('')
 })

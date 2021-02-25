@@ -148,7 +148,6 @@ it('Uncategorized category', async () => {
   )
 })
 
-
 it('Verify commit based changelog', async () => {
   const configuration = resolveConfiguration(
     '',
@@ -173,7 +172,6 @@ it('Verify commit based changelog', async () => {
     `## 📦 Uncategorized\n\n- - introduce proper approach to retrieve tag before a given tag\n\n- - configure test case\n\n- Merge pull request #10 from mikepenz/feature/specify_test\n\n\n\n\nUncategorized:\n- - introduce proper approach to retrieve tag before a given tag\n\n- - configure test case\n\n- Merge pull request #10 from mikepenz/feature/specify_test\n\n\n\nIgnored:\n\n\n3\n0`
   )
 })
-
 
 it('Verify commit based changelog, with emoji categorisation', async () => {
   const configuration = resolveConfiguration(
