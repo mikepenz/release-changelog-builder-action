@@ -152,7 +152,7 @@ export class ReleaseNotes {
 
     core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`)
 
-    return commits.map(function (commit) {
+    return prCommits.map(function (commit) {
       return {
         number: 0,
         title: commit.summary,
