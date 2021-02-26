@@ -689,7 +689,7 @@ class ReleaseNotes {
             const prCommits = commits_1.filterCommits(commits, configuration.exclude_merge_branches ||
                 configuration_1.DefaultConfiguration.exclude_merge_branches);
             core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`);
-            return commits.map(function (commit) {
+            return prCommits.map(function (commit) {
                 return {
                     number: 0,
                     title: commit.summary,
