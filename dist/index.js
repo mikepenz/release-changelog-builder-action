@@ -39,7 +39,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Commits = void 0;
+exports.filterCommits = exports.Commits = void 0;
 const moment_1 = __importDefault(__nccwpck_require__(9623));
 const core = __importStar(__nccwpck_require__(2186));
 class Commits {
@@ -111,6 +111,29 @@ class Commits {
     }
 }
 exports.Commits = Commits;
+/**
+ * Filters out all commits which match the exclude pattern
+ */
+function filterCommits(commits, excludeMergeBranches) {
+    const filteredCommits = [];
+    for (const commit of commits) {
+        if (excludeMergeBranches) {
+            let matched = false;
+            for (const excludeMergeBranch of excludeMergeBranches) {
+                if (commit.summary.includes(excludeMergeBranch)) {
+                    matched = true;
+                    break;
+                }
+            }
+            if (matched) {
+                continue;
+            }
+        }
+        filteredCommits.push(commit);
+    }
+    return filteredCommits;
+}
+exports.filterCommits = filterCommits;
 
 
 /***/ }),
@@ -498,28 +521,6 @@ class PullRequests {
             return sortPullRequests(mergedPRs, true);
         });
     }
-    /**
-     * Filters out all commits which match the exclude pattern
-     */
-    filterCommits(commits, excludeMergeBranches) {
-        const filteredCommits = [];
-        for (const commit of commits) {
-            if (excludeMergeBranches) {
-                let matched = false;
-                for (const excludeMergeBranch of excludeMergeBranches) {
-                    if (commit.summary.includes(excludeMergeBranch)) {
-                        matched = true;
-                        break;
-                    }
-                }
-                if (matched) {
-                    continue;
-                }
-            }
-            filteredCommits.push(commit);
-        }
-        return filteredCommits;
-    }
 }
 exports.PullRequests = PullRequests;
 function sortPullRequests(pullRequests, ascending) {
@@ -665,7 +666,7 @@ class ReleaseNotes {
             const pullRequestsApi = new pullRequests_1.PullRequests(octokit);
             const pullRequests = yield pullRequestsApi.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests || configuration_1.DefaultConfiguration.max_pull_requests);
             core.info(`ℹ️ Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`);
-            const prCommits = pullRequestsApi.filterCommits(commits, configuration.exclude_merge_branches ||
+            const prCommits = commits_1.filterCommits(commits, configuration.exclude_merge_branches ||
                 configuration_1.DefaultConfiguration.exclude_merge_branches);
             core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`);
             // create array of commits for this release
@@ -680,10 +681,14 @@ class ReleaseNotes {
     }
     generateCommitPRs(octokit) {
         return __awaiter(this, void 0, void 0, function* () {
+            const { owner, repo, configuration } = this.options;
             const commits = yield this.getCommitHistory(octokit);
             if (commits.length === 0) {
                 return [];
             }
+            const prCommits = commits_1.filterCommits(commits, configuration.exclude_merge_branches ||
+                configuration_1.DefaultConfiguration.exclude_merge_branches);
+            core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`);
             return commits.map(function (commit) {
                 return {
                     number: 0,
@@ -1070,7 +1075,7 @@ function buildChangelog(prs, config, options) {
         if (extractor.pattern != null) {
             for (const pr of prs) {
                 const label = pr.body.replace(extractor.pattern, extractor.target);
-                if (label !== "") {
+                if (label !== '') {
                     pr.labels.push(label);
                 }
             }
@@ -5740,7 +5745,7 @@ const Endpoints = {
   }
 };
 
-const VERSION = "4.12.0";
+const VERSION = "4.12.2";
 
 function endpointsToMethods(octokit, endpointsMap) {
   const newMethods = {};
@@ -6066,7 +6071,7 @@ var pluginRequestLog = __nccwpck_require__(8883);
 var pluginPaginateRest = __nccwpck_require__(4193);
 var pluginRestEndpointMethods = __nccwpck_require__(3044);
 
-const VERSION = "18.2.0";
+const VERSION = "18.2.1";
 
 const Octokit = core.Octokit.plugin(pluginRequestLog.requestLog, pluginRestEndpointMethods.restEndpointMethods, pluginPaginateRest.paginateRest).defaults({
   userAgent: `octokit-rest.js/${VERSION}`
