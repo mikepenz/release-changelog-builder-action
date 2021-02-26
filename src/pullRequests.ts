@@ -1,7 +1,6 @@
 import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import moment from 'moment'
 
-import {CommitInfo} from './commits'
 import * as core from '@actions/core'
 
 export interface PullRequestInfo {
@@ -128,34 +127,6 @@ export class PullRequests {
     }
 
     return sortPullRequests(mergedPRs, true)
-  }
-
-  /**
-   * Filters out all commits which match the exclude pattern
-   */
-  filterCommits(
-    commits: CommitInfo[],
-    excludeMergeBranches: string[]
-  ): CommitInfo[] {
-    const filteredCommits = []
-
-    for (const commit of commits) {
-      if (excludeMergeBranches) {
-        let matched = false
-        for (const excludeMergeBranch of excludeMergeBranches) {
-          if (commit.summary.includes(excludeMergeBranch)) {
-            matched = true
-            break
-          }
-        }
-        if (matched) {
-          continue
-        }
-      }
-      filteredCommits.push(commit)
-    }
-
-    return filteredCommits
   }
 }
 

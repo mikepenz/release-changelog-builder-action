@@ -1,5 +1,5 @@
 import {Octokit} from '@octokit/rest'
-import {Commits, CommitInfo} from './commits'
+import {Commits, CommitInfo, filterCommits} from './commits'
 import {PullRequestInfo, PullRequests} from './pullRequests'
 import {buildChangelog} from './transform'
 import * as core from '@actions/core'
@@ -113,7 +113,7 @@ export class ReleaseNotes {
       `ℹ️ Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`
     )
 
-    const prCommits = pullRequestsApi.filterCommits(
+    const prCommits = filterCommits(
       commits,
       configuration.exclude_merge_branches ||
         DefaultConfiguration.exclude_merge_branches
@@ -137,12 +137,22 @@ export class ReleaseNotes {
   private async generateCommitPRs(
     octokit: Octokit
   ): Promise<PullRequestInfo[]> {
+    const {owner, repo, configuration} = this.options
+
     const commits = await this.getCommitHistory(octokit)
     if (commits.length === 0) {
       return []
     }
 
-    return commits.map(function (commit) {
+    const prCommits = filterCommits(
+      commits,
+      configuration.exclude_merge_branches ||
+        DefaultConfiguration.exclude_merge_branches
+    )
+
+    core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`)
+
+    return prCommits.map(function (commit) {
       return {
         number: 0,
         title: commit.summary,

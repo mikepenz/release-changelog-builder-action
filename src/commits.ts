@@ -93,3 +93,31 @@ export class Commits {
     return commitsResult
   }
 }
+
+/**
+ * Filters out all commits which match the exclude pattern
+ */
+export function filterCommits(
+  commits: CommitInfo[],
+  excludeMergeBranches: string[]
+): CommitInfo[] {
+  const filteredCommits = []
+
+  for (const commit of commits) {
+    if (excludeMergeBranches) {
+      let matched = false
+      for (const excludeMergeBranch of excludeMergeBranches) {
+        if (commit.summary.includes(excludeMergeBranch)) {
+          matched = true
+          break
+        }
+      }
+      if (matched) {
+        continue
+      }
+    }
+    filteredCommits.push(commit)
+  }
+
+  return filteredCommits
+}
