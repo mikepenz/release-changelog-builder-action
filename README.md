@@ -98,6 +98,7 @@ on:
     tags:
       - '*'
 
+jobs:
   release:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
@@ -166,6 +167,11 @@ This configuration is a `.json` file in the following format.
       {
         "pattern": "(.) (.+)",
         "target": "$1"
+      },
+      {
+        "pattern": "(.) (.+)",
+        "target": "$1",
+        "on_property": "title"
       }
     ],
     "transformers": [
@@ -270,28 +276,29 @@ Table of supported placeholders allowed to be used in the `template` and `empty_
 
 Table of descriptions for the `configuration.json` options to configure the resulting release notes / changelog.
 
-| **Input**                | **Description**                                                                                                                                                                                                                    |
-|--------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| categories               | An array of `category` specifications, offering a flexible way to group changes into categories                                                                                                                                    |
-| category.title           | The display name of a category in the changelog                                                                                                                                                                                    |
-| category.labels          | An array of labels, to match pull request labels against. If any PR label matches any category label, the pull request will show up under this category                                                                            |
-| ignore_labels            | An array of labels, to match pull request labels against. If any PR label overlaps, the pull request will be ignored from the changelog. This takes precedence over category labels                                                |
-| sort                     | The sort order of pull requests. [ASC, DESC]                                                                                                                                                                                       |
-| template                 | Specifies the global template to pick for creating the changelog. See [Template placeholders](#template-placeholders) for possible values                                                                                          |
-| pr_template              | Defines the per pull request template. See [PR Template placeholders](#pr-template-placeholders) for possible values                                                                                                               |
-| empty_template           | Template to pick if no changes are detected. See [Template placeholders](#template-placeholders) for possible values                                                                                                               |
-| label_extractor          | An array of `transform` specifications, offering a flexible API to extract additinal labels from the body of a PR (in case of commit mode, from the commit message).                                                               |
-| label_extractor.pattern  | A `regex` pattern, extracting values of the change message.                                                                                                                                                                        |
-| label_extractor.target   | The result pattern. The result text will be used as label. If empty, no label is created                                                                                                                                           |
-| transformers             | An array of `transform` specifications, offering a flexible API to modify the text per pull request. This is applied on the change text created with `pr_template`. `transformers` are executed per change, in the order specified |
-| transformer.pattern      | A `regex` pattern, extracting values of the change message.                                                                                                                                                                        |
-| transformer.target       | The result pattern, the regex groups will be filled into. Allows for full transformation of a pull request message. Including potentially specified texts                                                                          |
-| max_tags_to_fetch        | The maximum amount of tags to load from the API to find the previous tag. Loaded paginated with 100 per page                                                                                                                       |
-| max_pull_requests        | The maximum amount of pull requests to load from the API. Loaded paginated with 30 per page                                                                                                                                        |
-| max_back_track_time_days | Defines the max amount of days to go back in time per changelog                                                                                                                                                                    |
-| exclude_merge_branches   | An array of branches to be ignored from processing as merge commits                                                                                                                                                                |
-| tag_resolver             | Section to provide configuration for the tag resolving logic. Used if no `fromTag` is provided                                                                                                                                     |
-| tag_resolver.method      | Defines the method to use. Current options are: `semver`, `sort`. Default: `semver`                                                                                                                                                |
+| **Input**                   | **Description**                                                                                                                                                                                                                    |
+|-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| categories                  | An array of `category` specifications, offering a flexible way to group changes into categories                                                                                                                                    |
+| category.title              | The display name of a category in the changelog                                                                                                                                                                                    |
+| category.labels             | An array of labels, to match pull request labels against. If any PR label matches any category label, the pull request will show up under this category                                                                            |
+| ignore_labels               | An array of labels, to match pull request labels against. If any PR label overlaps, the pull request will be ignored from the changelog. This takes precedence over category labels                                                |
+| sort                        | The sort order of pull requests. [ASC, DESC]                                                                                                                                                                                       |
+| template                    | Specifies the global template to pick for creating the changelog. See [Template placeholders](#template-placeholders) for possible values                                                                                          |
+| pr_template                 | Defines the per pull request template. See [PR Template placeholders](#pr-template-placeholders) for possible values                                                                                                               |
+| empty_template              | Template to pick if no changes are detected. See [Template placeholders](#template-placeholders) for possible values                                                                                                               |
+| label_extractor             | An array of `transform` specifications, offering a flexible API to extract additinal labels from a PR (Default: `body`, Default in commit mode: `commit message`).                                                                 |
+| label_extractor.pattern     | A `regex` pattern, extracting values of the change message.                                                                                                                                                                        |
+| label_extractor.target      | The result pattern. The result text will be used as label. If empty, no label is created.                                                                                                                                          |
+| label_extractor.on_property | The property to retrieve the text from. This is optional. Defaults to: `body`. Alternative values: `title`, `author`, `milestone`.                                                                                                 |
+| transformers                | An array of `transform` specifications, offering a flexible API to modify the text per pull request. This is applied on the change text created with `pr_template`. `transformers` are executed per change, in the order specified |
+| transformer.pattern         | A `regex` pattern, extracting values of the change message.                                                                                                                                                                        |
+| transformer.target          | The result pattern, the regex groups will be filled into. Allows for full transformation of a pull request message. Including potentially specified texts                                                                          |
+| max_tags_to_fetch           | The maximum amount of tags to load from the API to find the previous tag. Loaded paginated with 100 per page                                                                                                                       |
+| max_pull_requests           | The maximum amount of pull requests to load from the API. Loaded paginated with 30 per page                                                                                                                                        |
+| max_back_track_time_days    | Defines the max amount of days to go back in time per changelog                                                                                                                                                                    |
+| exclude_merge_branches      | An array of branches to be ignored from processing as merge commits                                                                                                                                                                |
+| tag_resolver                | Section to provide configuration for the tag resolving logic. Used if no `fromTag` is provided                                                                                                                                     |
+| tag_resolver.method         | Defines the method to use. Current options are: `semver`, `sort`. Default: `semver`                                                                                                                                                |
 
 ## Contribute 🧬
 
