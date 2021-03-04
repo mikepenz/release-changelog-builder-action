@@ -98,6 +98,7 @@ on:
     tags:
       - '*'
 
+jobs:
   release:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
