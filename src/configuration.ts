@@ -9,7 +9,7 @@ export interface Configuration {
   empty_template: string
   categories: Category[]
   ignore_labels: string[]
-  label_extractor: Transformer[]
+  label_extractor: Extractor[]
   transformers: Transformer[]
   tag_resolver: TagResolver
 }
@@ -22,6 +22,10 @@ export interface Category {
 export interface Transformer {
   pattern: string
   target: string
+}
+
+export interface Extractor extends Transformer {
+  on_property: 'title' | 'author' | 'milestone' | 'body' | undefined
 }
 
 export interface TagResolver {

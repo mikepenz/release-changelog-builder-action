@@ -2,6 +2,7 @@ import {PullRequestInfo, sortPullRequests} from './pullRequests'
 import * as core from '@actions/core'
 import {ReleaseNotesOptions} from './releaseNotes'
 import {
+  Extractor,
   Category,
   Configuration,
   Transformer,
@@ -24,7 +25,19 @@ export function buildChangelog(
   for (const extractor of labelExtractors) {
     if (extractor.pattern != null) {
       for (const pr of prs) {
-        const label = pr.body.replace(extractor.pattern, extractor.target)
+        let label
+        if (extractor.onProperty !== undefined) {
+          let value: string = pr[extractor.onProperty]
+          if (value === undefined) {
+            core.warning(
+              `⚠️ the provided property '${extractor.onProperty}' for \`label_extractor\` is not valid`
+            )
+            value = pr['body']
+          }
+          label = value.replace(extractor.pattern, extractor.target)
+        } else {
+          label = pr.body.replace(extractor.pattern, extractor.target)
+        }
         if (label !== '') {
           pr.labels.push(label)
         }
@@ -222,15 +235,22 @@ function validateTransfomers(
   return transformers
     .map(transformer => {
       try {
+        let onProperty = undefined
+        if (transformer.hasOwnProperty('on_property')) {
+          onProperty = (transformer as Extractor).on_property
+        }
+
         return {
           pattern: new RegExp(transformer.pattern.replace('\\\\', '\\'), 'gu'),
-          target: transformer.target
+          target: transformer.target,
+          onProperty
         }
       } catch (e) {
         core.warning(`⚠️ Bad replacer regex: ${transformer.pattern}`)
         return {
           pattern: null,
-          target: ''
+          target: '',
+          onProperty: undefined
         }
       }
     })
@@ -240,4 +260,5 @@ function validateTransfomers(
 interface RegexTransformer {
   pattern: RegExp | null
   target: string
+  onProperty: 'title' | 'author' | 'milestone' | 'body' | undefined
 }
