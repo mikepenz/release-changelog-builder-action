@@ -37,7 +37,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Echo Configuration without Checkout Changelog
-        run: echo "${{steps.without_checkout.outputs.changelog}}"
+        env:
+          CHANGELOG: ${{ steps.without_checkout.outputs.changelog }}
+        run: echo "CHANGELOG"
 
       - name: Checkout
         uses: actions/checkout@v2
@@ -52,7 +54,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Echo Minimal Configuration Changelog
-        run: echo "${{steps.minimal_release.outputs.changelog}}"
+        env:
+          CHANGELOG: ${{ steps.minimal_release.outputs.changelog }}
+        run: echo "$CHANGELOG"
 
         # Showcases a more complex configuration, providing a configuration, and specifically referencing owner, repo, from and to tag
       - name: "Complex Configuration"
@@ -67,7 +71,9 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Echo Complex Configuration Changelog
-        run: echo "${{steps.complex_release.outputs.changelog}}"
+        env:
+          CHANGELOG: ${{ steps.complex_release.outputs.changelog }}
+        run: echo "CHANGELOG"
 
         # Showcases the capability to generate the changelog for an external repository provided
       - name: "External Repo Configuration"
@@ -82,7 +88,9 @@ jobs:
           token: ${{ secrets.PERSONAL_TOKEN }}
 
       - name: Echo External Repo Configuration Changelog
-        run: echo "${{steps.external_changelog.outputs.changelog}}"
+        env:
+          CHANGELOG: ${{ steps.external_changelog.outputs.changelog }}
+        run: echo "$CHANGELOG"
 
   release:
     if: startsWith(github.ref, 'refs/tags/')
@@ -104,7 +112,7 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           release_name: ${{ github.ref }}
-          body: ${{steps.github_release.outputs.changelog}}
+          body: ${{ steps.github_release.outputs.changelog }}
           prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-b') || contains(github.ref, '-a') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
