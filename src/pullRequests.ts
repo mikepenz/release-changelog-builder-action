@@ -118,7 +118,7 @@ export class PullRequests {
         mergedPRs.length >= maxPullRequests
       ) {
         if (mergedPRs.length >= maxPullRequests) {
-          core.info(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`)
+          core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`)
         }
 
         // bail out early to not keep iterating on PRs super old
