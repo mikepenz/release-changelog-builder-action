@@ -90,7 +90,7 @@ Below is a complete example showcasing how to define a build, which is executed 
 - Prepare tag, via the GITHUB_REF environment variable
 - Build changelog, given the tag
 - Create release on GitHub - specifying body with constructed changelog
- 
+
 ```yml
 name: 'CI'
 on:
@@ -105,7 +105,7 @@ jobs:
     steps:
       - name: Build Changelog
         id: github_release
-        uses: mikepenz/release-changelog-builder-action@main
+        uses: mikepenz/release-changelog-builder-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -134,7 +134,7 @@ The action supports flexible configuration options to modify vast areas of its b
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-⚠️ When running this action for a non tags trigger the `toTag` can't be automatically resolved, as such it is either required to provide `toTag` directly, or to specify a different `fetch-depth:` with the checkout action to include tags.   
+⚠️ When running this action for a non tags trigger the `toTag` can't be automatically resolved, as such it is either required to provide `toTag` directly, or to specify a different `fetch-depth:` with the checkout action to include tags.
 
 💡 By default not specifying `fromTag` or `toTag` will resolve `toTag` from either the `ref` or alternatively fallback to the latest tag from git. `fromTag` is resolved by sorting tags using [semver](https://semver.org/). Check the [configuration](#configuration-specification) for alternatives.
 
@@ -156,8 +156,8 @@ This configuration is a `.json` file in the following format.
         "labels": ["test"]
       }
     ],
-    "ignore_labels": [ 
-      "ignore" 
+    "ignore_labels": [
+      "ignore"
     ],
     "sort": "ASC",
     "template": "${{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n${{UNCATEGORIZED}}\n</details>",
@@ -198,7 +198,7 @@ Any section of the configuration can be omitted to have defaults apply.
 
 Defaults for the configuration can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
 
-Please see the [Configuration Specification](#configuration-specification) for detailed descriptions on the offered configuration options. 
+Please see the [Configuration Specification](#configuration-specification) for detailed descriptions on the offered configuration options.
 
 ### Advanced workflow specification
 
@@ -256,7 +256,7 @@ Table of supported placeholders allowed to be used in the `pr_template` configur
 
 ### Template placeholders
 
-Table of supported placeholders allowed to be used in the `template` and `empty_template` (only supports placeholder marked for empty) configuration, to give additional control on defining the contents of the release notes / changelog. 
+Table of supported placeholders allowed to be used in the `template` and `empty_template` (only supports placeholder marked for empty) configuration, to give additional control on defining the contents of the release notes / changelog.
 
 | **Placeholder**            | **Description**                                                                                    | **Empty** |
 |----------------------------|----------------------------------------------------------------------------------------------------|:---------:|
@@ -303,7 +303,7 @@ Table of descriptions for the `configuration.json` options to configure the resu
 ## Contribute 🧬
 
 ```bash
-# Install the dependencies  
+# Install the dependencies
 $ npm install
 
 # Build the typescript and package it for distribution
@@ -342,7 +342,7 @@ export GITHUB_TOKEN=your_personal_github_pat
 
 ## License
 
-    Copyright for portions of pr-release-notes are held by Nikolay Blagoev, 2019-2020 as part of project pull-release-notes. 
+    Copyright for portions of pr-release-notes are held by Nikolay Blagoev, 2019-2020 as part of project pull-release-notes.
     All other copyright for project pr-release-notes are held by Mike Penz, 2021.
 
 ## Fork License
