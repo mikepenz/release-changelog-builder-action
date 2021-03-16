@@ -504,7 +504,7 @@ class PullRequests {
                         (firstPR.merged_at && fromDate.isAfter(moment_1.default(firstPR.merged_at))) ||
                         mergedPRs.length >= maxPullRequests) {
                         if (mergedPRs.length >= maxPullRequests) {
-                            core.info(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
+                            core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
                         }
                         // bail out early to not keep iterating on PRs super old
                         return sortPullRequests(mergedPRs, true);
@@ -1163,13 +1163,13 @@ function buildChangelog(prs, config, options) {
     core.info(`✒️ Wrote ${ignoredPrs.length} ignored pull requests down`);
     // fill template
     let transformedChangelog = config.template || configuration_1.DefaultConfiguration.template;
-    transformedChangelog = transformedChangelog.replace('${{CHANGELOG}}', changelog);
-    transformedChangelog = transformedChangelog.replace('${{UNCATEGORIZED}}', changelogUncategorized);
-    transformedChangelog = transformedChangelog.replace('${{IGNORED}}', changelogIgnored);
+    transformedChangelog = transformedChangelog.replace(/\${{CHANGELOG}}/g, changelog);
+    transformedChangelog = transformedChangelog.replace(/\${{UNCATEGORIZED}}/g, changelogUncategorized);
+    transformedChangelog = transformedChangelog.replace(/\${{IGNORED}}/g, changelogIgnored);
     // fill other placeholders
-    transformedChangelog = transformedChangelog.replace('${{CATEGORIZED_COUNT}}', categorizedPrs.length.toString());
-    transformedChangelog = transformedChangelog.replace('${{UNCATEGORIZED_COUNT}}', uncategorizedPrs.length.toString());
-    transformedChangelog = transformedChangelog.replace('${{IGNORED_COUNT}}', ignoredPrs.length.toString());
+    transformedChangelog = transformedChangelog.replace(/\${{CATEGORIZED_COUNT}}/g, categorizedPrs.length.toString());
+    transformedChangelog = transformedChangelog.replace(/\${{UNCATEGORIZED_COUNT}}/g, uncategorizedPrs.length.toString());
+    transformedChangelog = transformedChangelog.replace(/\${{IGNORED_COUNT}}/g, ignoredPrs.length.toString());
     transformedChangelog = fillAdditionalPlaceholders(transformedChangelog, options);
     core.info(`ℹ️ Filled template`);
     return transformedChangelog;
@@ -1177,10 +1177,10 @@ function buildChangelog(prs, config, options) {
 exports.buildChangelog = buildChangelog;
 function fillAdditionalPlaceholders(text, options) {
     let transformed = text;
-    transformed = transformed.replace('${{OWNER}}', options.owner);
-    transformed = transformed.replace('${{REPO}}', options.repo);
-    transformed = transformed.replace('${{FROM_TAG}}', options.fromTag);
-    transformed = transformed.replace('${{TO_TAG}}', options.toTag);
+    transformed = transformed.replace(/\${{OWNER}}/g, options.owner);
+    transformed = transformed.replace(/\${{REPO}}/g, options.repo);
+    transformed = transformed.replace(/\${{FROM_TAG}}/g, options.fromTag);
+    transformed = transformed.replace(/\${{TO_TAG}}/g, options.toTag);
     return transformed;
 }
 exports.fillAdditionalPlaceholders = fillAdditionalPlaceholders;
@@ -1190,16 +1190,16 @@ function haveCommonElements(arr1, arr2) {
 function fillTemplate(pr, template) {
     var _a, _b, _c;
     let transformed = template;
-    transformed = transformed.replace('${{NUMBER}}', pr.number.toString());
-    transformed = transformed.replace('${{TITLE}}', pr.title);
-    transformed = transformed.replace('${{URL}}', pr.htmlURL);
-    transformed = transformed.replace('${{MERGED_AT}}', pr.mergedAt.toISOString());
-    transformed = transformed.replace('${{AUTHOR}}', pr.author);
-    transformed = transformed.replace('${{LABELS}}', ((_a = pr.labels) === null || _a === void 0 ? void 0 : _a.join(', ')) || '');
-    transformed = transformed.replace('${{MILESTONE}}', pr.milestone || '');
-    transformed = transformed.replace('${{BODY}}', pr.body);
-    transformed = transformed.replace('${{ASSIGNEES}}', ((_b = pr.assignees) === null || _b === void 0 ? void 0 : _b.join(', ')) || '');
-    transformed = transformed.replace('${{REVIEWERS}}', ((_c = pr.requestedReviewers) === null || _c === void 0 ? void 0 : _c.join(', ')) || '');
+    transformed = transformed.replace(/\${{NUMBER}}/g, pr.number.toString());
+    transformed = transformed.replace(/\${{TITLE}}/g, pr.title);
+    transformed = transformed.replace(/\${{URL}}/g, pr.htmlURL);
+    transformed = transformed.replace(/\${{MERGED_AT}}/g, pr.mergedAt.toISOString());
+    transformed = transformed.replace(/\${{AUTHOR}}/g, pr.author);
+    transformed = transformed.replace(/\${{LABELS}}/g, ((_a = pr.labels) === null || _a === void 0 ? void 0 : _a.join(', ')) || '');
+    transformed = transformed.replace(/\${{MILESTONE}}/g, pr.milestone || '');
+    transformed = transformed.replace(/\${{BODY}}/g, pr.body);
+    transformed = transformed.replace(/\${{ASSIGNEES}}/g, ((_b = pr.assignees) === null || _b === void 0 ? void 0 : _b.join(', ')) || '');
+    transformed = transformed.replace(/\${{REVIEWERS}}/g, ((_c = pr.requestedReviewers) === null || _c === void 0 ? void 0 : _c.join(', ')) || '');
     return transformed;
 }
 function transform(filled, transformers) {
@@ -5774,7 +5774,7 @@ const Endpoints = {
   }
 };
 
-const VERSION = "4.13.2";
+const VERSION = "4.13.5";
 
 function endpointsToMethods(octokit, endpointsMap) {
   const newMethods = {};
@@ -6100,7 +6100,7 @@ var pluginRequestLog = __nccwpck_require__(8883);
 var pluginPaginateRest = __nccwpck_require__(4193);
 var pluginRestEndpointMethods = __nccwpck_require__(3044);
 
-const VERSION = "18.3.2";
+const VERSION = "18.3.5";
 
 const Octokit = core.Octokit.plugin(pluginRequestLog.requestLog, pluginRestEndpointMethods.restEndpointMethods, pluginPaginateRest.paginateRest).defaults({
   userAgent: `octokit-rest.js/${VERSION}`

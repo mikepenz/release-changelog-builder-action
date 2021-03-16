@@ -81,6 +81,41 @@ nhoelzl
 `)
 })
 
+it('Should match generated changelog and replace all occurrences (refs)', async () => {
+  const configuration = resolveConfiguration(
+    '',
+    'configs_test/configuration_replace_all_placeholders.json'
+  )
+  const releaseNotes = new ReleaseNotes(octokit, {
+    owner: 'mikepenz',
+    repo: 'release-changelog-builder-action',
+    fromTag: '5ec7a2d86fe9f43fdd38d5e254a1117c8a51b4c3',
+    toTag: 'fa3788c8c4b3373ef8424ce3eb008a5cd07cc5aa',
+    failOnError: false,
+    commitMode: false,
+    configuration: configuration
+  })
+
+  const changeLog = await releaseNotes.pull()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(`## 🧪 Tests
+
+[CI] Specify Test Case
+[CI] Specify Test Case
+10
+https://github.com/mikepenz/release-changelog-builder-action/pull/10
+2020-10-16T13:59:36.000Z
+mikepenz
+mikepenz
+test
+1.0.0
+- specify test case
+mikepenz, nhoelzl
+nhoelzl
+
+`)
+})
+
 it('Should match ordered ASC', async () => {
   const configuration = resolveConfiguration(
     '',

@@ -143,29 +143,29 @@ export function buildChangelog(
   // fill template
   let transformedChangelog = config.template || DefaultConfiguration.template
   transformedChangelog = transformedChangelog.replace(
-    '${{CHANGELOG}}',
+    /\${{CHANGELOG}}/g,
     changelog
   )
   transformedChangelog = transformedChangelog.replace(
-    '${{UNCATEGORIZED}}',
+    /\${{UNCATEGORIZED}}/g,
     changelogUncategorized
   )
   transformedChangelog = transformedChangelog.replace(
-    '${{IGNORED}}',
+    /\${{IGNORED}}/g,
     changelogIgnored
   )
 
   // fill other placeholders
   transformedChangelog = transformedChangelog.replace(
-    '${{CATEGORIZED_COUNT}}',
+    /\${{CATEGORIZED_COUNT}}/g,
     categorizedPrs.length.toString()
   )
   transformedChangelog = transformedChangelog.replace(
-    '${{UNCATEGORIZED_COUNT}}',
+    /\${{UNCATEGORIZED_COUNT}}/g,
     uncategorizedPrs.length.toString()
   )
   transformedChangelog = transformedChangelog.replace(
-    '${{IGNORED_COUNT}}',
+    /\${{IGNORED_COUNT}}/g,
     ignoredPrs.length.toString()
   )
   transformedChangelog = fillAdditionalPlaceholders(
@@ -182,10 +182,10 @@ export function fillAdditionalPlaceholders(
   options: ReleaseNotesOptions
 ): string {
   let transformed = text
-  transformed = transformed.replace('${{OWNER}}', options.owner)
-  transformed = transformed.replace('${{REPO}}', options.repo)
-  transformed = transformed.replace('${{FROM_TAG}}', options.fromTag)
-  transformed = transformed.replace('${{TO_TAG}}', options.toTag)
+  transformed = transformed.replace(/\${{OWNER}}/g, options.owner)
+  transformed = transformed.replace(/\${{REPO}}/g, options.repo)
+  transformed = transformed.replace(/\${{FROM_TAG}}/g, options.fromTag)
+  transformed = transformed.replace(/\${{TO_TAG}}/g, options.toTag)
   return transformed
 }
 
@@ -195,20 +195,26 @@ function haveCommonElements(arr1: string[], arr2: string[]): Boolean {
 
 function fillTemplate(pr: PullRequestInfo, template: string): string {
   let transformed = template
-  transformed = transformed.replace('${{NUMBER}}', pr.number.toString())
-  transformed = transformed.replace('${{TITLE}}', pr.title)
-  transformed = transformed.replace('${{URL}}', pr.htmlURL)
-  transformed = transformed.replace('${{MERGED_AT}}', pr.mergedAt.toISOString())
-  transformed = transformed.replace('${{AUTHOR}}', pr.author)
-  transformed = transformed.replace('${{LABELS}}', pr.labels?.join(', ') || '')
-  transformed = transformed.replace('${{MILESTONE}}', pr.milestone || '')
-  transformed = transformed.replace('${{BODY}}', pr.body)
+  transformed = transformed.replace(/\${{NUMBER}}/g, pr.number.toString())
+  transformed = transformed.replace(/\${{TITLE}}/g, pr.title)
+  transformed = transformed.replace(/\${{URL}}/g, pr.htmlURL)
   transformed = transformed.replace(
-    '${{ASSIGNEES}}',
+    /\${{MERGED_AT}}/g,
+    pr.mergedAt.toISOString()
+  )
+  transformed = transformed.replace(/\${{AUTHOR}}/g, pr.author)
+  transformed = transformed.replace(
+    /\${{LABELS}}/g,
+    pr.labels?.join(', ') || ''
+  )
+  transformed = transformed.replace(/\${{MILESTONE}}/g, pr.milestone || '')
+  transformed = transformed.replace(/\${{BODY}}/g, pr.body)
+  transformed = transformed.replace(
+    /\${{ASSIGNEES}}/g,
     pr.assignees?.join(', ') || ''
   )
   transformed = transformed.replace(
-    '${{REVIEWERS}}',
+    /\${{REVIEWERS}}/g,
     pr.requestedReviewers?.join(', ') || ''
   )
   return transformed
