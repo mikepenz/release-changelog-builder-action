@@ -12,6 +12,7 @@ export interface Configuration {
   label_extractor: Extractor[]
   transformers: Transformer[]
   tag_resolver: TagResolver
+  base_branches: string[]
 }
 
 export interface Category {
@@ -61,5 +62,6 @@ export const DefaultConfiguration: Configuration = {
   tag_resolver: {
     // defines the logic on how to resolve the previous tag, only relevant if `fromTag` is not specified
     method: 'semver' // defines which method to use, by default it will use `semver` (dropping all non matching tags). Alternative `sort` is also available.
-  }
+  },
+  base_branches: [] // target branches for the merged PR ignoring PRs with different target branch, by default it will get all PRs
 }

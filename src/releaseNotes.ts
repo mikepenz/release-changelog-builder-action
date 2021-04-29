@@ -130,7 +130,11 @@ export class ReleaseNotes {
 
     // return only the pull requests associated with this release
     return pullRequests.filter(pr => {
+      const baseBranches = configuration.base_branches || DefaultConfiguration.base_branches
+      const allBaseBranchesAllowed = baseBranches.length === 0
+
       return releaseCommitHashes.includes(pr.mergeCommitSha)
+        && (allBaseBranchesAllowed || baseBranches.includes(pr.baseBranch))
     })
   }
 
@@ -157,6 +161,7 @@ export class ReleaseNotes {
         number: 0,
         title: commit.summary,
         htmlURL: '',
+        baseBranch: '',
         mergedAt: commit.date,
         mergeCommitSha: '',
         author: commit.author || '',
