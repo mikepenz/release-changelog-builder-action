@@ -304,7 +304,7 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | exclude_merge_branches      | An array of branches to be ignored from processing as merge commits                                                                                                                                                                |
 | tag_resolver                | Section to provide configuration for the tag resolving logic. Used if no `fromTag` is provided                                                                                                                                     |
 | tag_resolver.method         | Defines the method to use. Current options are: `semver`, `sort`. Default: `semver`                                                                                                                                                |
-| base_branches         | The target branches for the merged PR, ingnores PRs with different target branch. If empty gets all base branches. Default: all base branches
+| base_branches         | The target branches for the merged PR, ingnores PRs with different target branch. Values can be a `regex`. Default: allow all base branches
 
 ## Contribute 🧬
 
