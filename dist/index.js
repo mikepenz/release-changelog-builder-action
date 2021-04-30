@@ -173,7 +173,8 @@ exports.DefaultConfiguration = {
     tag_resolver: {
         // defines the logic on how to resolve the previous tag, only relevant if `fromTag` is not specified
         method: 'semver' // defines which method to use, by default it will use `semver` (dropping all non matching tags). Alternative `sort` is also available.
-    }
+    },
+    base_branches: [] // target branches for the merged PR ignoring PRs with different target branch, by default it will get all PRs
 };
 
 
@@ -436,6 +437,7 @@ class PullRequests {
                     number: pr.data.number,
                     title: pr.data.title,
                     htmlURL: pr.data.html_url,
+                    baseBranch: pr.data.base.ref,
                     mergedAt: moment_1.default(pr.data.merged_at),
                     mergeCommitSha: pr.data.merge_commit_sha || '',
                     author: ((_a = pr.data.user) === null || _a === void 0 ? void 0 : _a.login) || '',
@@ -481,6 +483,7 @@ class PullRequests {
                             number: pr.number,
                             title: pr.title,
                             htmlURL: pr.html_url,
+                            baseBranch: pr.base.ref,
                             mergedAt: moment_1.default(pr.merged_at),
                             mergeCommitSha: pr.merge_commit_sha || '',
                             author: ((_b = pr.user) === null || _b === void 0 ? void 0 : _b.login) || '',
@@ -672,9 +675,13 @@ class ReleaseNotes {
             const releaseCommitHashes = prCommits.map(commmit => {
                 return commmit.sha;
             });
+            // retrieve base branches we allow
+            const baseBranches = configuration.base_branches || configuration_1.DefaultConfiguration.base_branches;
+            const allBaseBranchesAllowed = baseBranches.length === 0;
             // return only the pull requests associated with this release
             return pullRequests.filter(pr => {
-                return releaseCommitHashes.includes(pr.mergeCommitSha);
+                return releaseCommitHashes.includes(pr.mergeCommitSha)
+                    && (allBaseBranchesAllowed || baseBranches.includes(pr.baseBranch));
             });
         });
     }
@@ -693,6 +700,7 @@ class ReleaseNotes {
                     number: 0,
                     title: commit.summary,
                     htmlURL: '',
+                    baseBranch: '',
                     mergedAt: commit.date,
                     mergeCommitSha: '',
                     author: commit.author || '',
