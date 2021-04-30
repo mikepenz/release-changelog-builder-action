@@ -131,14 +131,20 @@ export class ReleaseNotes {
     // retrieve base branches we allow
     const baseBranches =
       configuration.base_branches || DefaultConfiguration.base_branches
-    const allBaseBranchesAllowed = baseBranches.length === 0
+    const baseBranchPatterns = baseBranches.map(baseBranch => {
+      return new RegExp(baseBranch.replace('\\\\', '\\'), 'gu')
+    })
 
     // return only the pull requests associated with this release
+    // and if the baseBranch is matching the configuration
     return pullRequests.filter(pr => {
-      return (
-        releaseCommitHashes.includes(pr.mergeCommitSha) &&
-        (allBaseBranchesAllowed || baseBranches.includes(pr.baseBranch))
-      )
+      let keep = releaseCommitHashes.includes(pr.mergeCommitSha)
+      if (keep && baseBranches.length !== 0) {
+        keep = baseBranchPatterns.some(pattern => {
+          return pr.baseBranch.match(pattern) !== null
+        })
+      }
+      return keep
     })
   }
 
