@@ -191,7 +191,9 @@ This configuration is a `.json` file in the following format.
     "tag_resolver": {
       "method": "semver"
     },
-    "base_branches": []
+    "base_branches": [
+      "dev"
+    ]
 }
 ```
 

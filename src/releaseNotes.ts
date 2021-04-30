@@ -128,11 +128,12 @@ export class ReleaseNotes {
       return commmit.sha
     })
 
+    // retrieve base branches we allow
+    const baseBranches = configuration.base_branches || DefaultConfiguration.base_branches
+    const allBaseBranchesAllowed = baseBranches.length === 0
+
     // return only the pull requests associated with this release
     return pullRequests.filter(pr => {
-      const baseBranches = configuration.base_branches || DefaultConfiguration.base_branches
-      const allBaseBranchesAllowed = baseBranches.length === 0
-
       return releaseCommitHashes.includes(pr.mergeCommitSha)
         && (allBaseBranchesAllowed || baseBranches.includes(pr.baseBranch))
     })
