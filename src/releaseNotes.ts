@@ -128,9 +128,23 @@ export class ReleaseNotes {
       return commmit.sha
     })
 
+    // retrieve base branches we allow
+    const baseBranches =
+      configuration.base_branches || DefaultConfiguration.base_branches
+    const baseBranchPatterns = baseBranches.map(baseBranch => {
+      return new RegExp(baseBranch.replace('\\\\', '\\'), 'gu')
+    })
+
     // return only the pull requests associated with this release
+    // and if the baseBranch is matching the configuration
     return pullRequests.filter(pr => {
-      return releaseCommitHashes.includes(pr.mergeCommitSha)
+      let keep = releaseCommitHashes.includes(pr.mergeCommitSha)
+      if (keep && baseBranches.length !== 0) {
+        keep = baseBranchPatterns.some(pattern => {
+          return pr.baseBranch.match(pattern) !== null
+        })
+      }
+      return keep
     })
   }
 
@@ -157,6 +171,7 @@ export class ReleaseNotes {
         number: 0,
         title: commit.summary,
         htmlURL: '',
+        baseBranch: '',
         mergedAt: commit.date,
         mergeCommitSha: '',
         author: commit.author || '',
