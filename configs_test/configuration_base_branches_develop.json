@@ -1,0 +1,24 @@
+{
+  "categories": [
+    {
+      "title": "",
+      "labels": [
+        "dev",
+        "Bump"
+      ]
+    }
+  ],
+  "ignore_labels": [],
+  "sort": "DESC",
+  "pr_template": "${{NUMBER}}",
+  "label_extractor": [
+    {
+      "pattern": ".*(dev|Bump).*",
+      "target": "$1",
+      "on_property": "title"
+    }
+  ],
+  "base_branches": [
+    "develop"
+  ]
+}

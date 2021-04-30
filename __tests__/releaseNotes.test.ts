@@ -159,3 +159,43 @@ it('Should match ordered DESC', async () => {
     `## 🚀 Features\n\n28\n26\n25\n24\n22\n\n## 🐛 Fixes\n\n23\n\n`
   )
 })
+
+it('Should ignore PRs not merged into develop branch', async () => {
+  const configuration = resolveConfiguration(
+    '',
+    'configs_test/configuration_base_branches_develop.json'
+  )
+  const releaseNotes = new ReleaseNotes(octokit, {
+    owner: 'mikepenz',
+    repo: 'release-changelog-builder-action',
+    fromTag: 'v1.3.1',
+    toTag: 'v1.4.0',
+    failOnError: false,
+    commitMode: false,
+    configuration: configuration
+  })
+
+  const changeLog = await releaseNotes.pull()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(`\n\n150\n\n`)
+})
+
+it('Should ignore PRs not merged into main branch', async () => {
+  const configuration = resolveConfiguration(
+    '',
+    'configs_test/configuration_base_branches_main.json'
+  )
+  const releaseNotes = new ReleaseNotes(octokit, {
+    owner: 'mikepenz',
+    repo: 'release-changelog-builder-action',
+    fromTag: 'v1.3.1',
+    toTag: 'v1.4.0',
+    failOnError: false,
+    commitMode: false,
+    configuration: configuration
+  })
+
+  const changeLog = await releaseNotes.pull()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(`\n\n153\n\n`)
+})

@@ -7,6 +7,7 @@ export interface PullRequestInfo {
   number: number
   title: string
   htmlURL: string
+  baseBranch: string
   mergedAt: moment.Moment
   mergeCommitSha: string
   author: string
@@ -37,6 +38,7 @@ export class PullRequests {
         number: pr.data.number,
         title: pr.data.title,
         htmlURL: pr.data.html_url,
+        baseBranch: pr.data.base.ref,
         mergedAt: moment(pr.data.merged_at),
         mergeCommitSha: pr.data.merge_commit_sha || '',
         author: pr.data.user?.login || '',
@@ -90,6 +92,7 @@ export class PullRequests {
           number: pr.number,
           title: pr.title,
           htmlURL: pr.html_url,
+          baseBranch: pr.base.ref,
           mergedAt: moment(pr.merged_at),
           mergeCommitSha: pr.merge_commit_sha || '',
           author: pr.user?.login || '',
