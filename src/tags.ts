@@ -26,7 +26,8 @@ export class Tags {
     })
 
     for await (const response of this.octokit.paginate.iterator(options)) {
-      type TagsListData = RestEndpointMethodTypes['repos']['listTags']['response']['data']
+      type TagsListData =
+        RestEndpointMethodTypes['repos']['listTags']['response']['data']
       const tags: TagsListData = response.data as TagsListData
 
       for (const tag of tags) {
