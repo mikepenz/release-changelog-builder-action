@@ -84,7 +84,8 @@ export class PullRequests {
     })
 
     for await (const response of this.octokit.paginate.iterator(options)) {
-      type PullsListData = RestEndpointMethodTypes['pulls']['list']['response']['data']
+      type PullsListData =
+        RestEndpointMethodTypes['pulls']['list']['response']['data']
       const prs: PullsListData = response.data as PullsListData
 
       for (const pr of prs.filter(p => !!p.merged_at)) {
