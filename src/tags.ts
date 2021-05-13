@@ -81,6 +81,11 @@ export class Tags {
       }
       return tags[0]
     } catch (error) {
+      if (tags.length < 1) {
+        core.warning(`⚠️ Only one tag found for the given repository`)
+      } else if (tags.length < 0) {
+        core.warning(`⚠️ No tag found for the given repository`)
+      }
       return null
     }
   }
