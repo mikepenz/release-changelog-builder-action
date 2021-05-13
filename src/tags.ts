@@ -26,7 +26,8 @@ export class Tags {
     })
 
     for await (const response of this.octokit.paginate.iterator(options)) {
-      type TagsListData = RestEndpointMethodTypes['repos']['listTags']['response']['data']
+      type TagsListData =
+        RestEndpointMethodTypes['repos']['listTags']['response']['data']
       const tags: TagsListData = response.data as TagsListData
 
       for (const tag of tags) {
@@ -80,6 +81,11 @@ export class Tags {
       }
       return tags[0]
     } catch (error) {
+      if (tags.length < 1) {
+        core.warning(`⚠️ Only one tag found for the given repository`)
+      } else if (tags.length < 0) {
+        core.warning(`⚠️ No tag found for the given repository`)
+      }
       return null
     }
   }
