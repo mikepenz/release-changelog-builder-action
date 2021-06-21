@@ -3,6 +3,8 @@ import * as process from 'process'
 import * as cp from 'child_process'
 import * as fs from 'fs'
 
+jest.setTimeout(180000)
+
 test('missing values should result in failure', () => {
   process.env['GITHUB_WORKSPACE'] = '.'
   process.env['INPUT_CONFIGURATION'] = 'configuration.json'
