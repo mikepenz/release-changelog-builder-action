@@ -1,4 +1,6 @@
 {
     "template": "${{CHANGELOG}}\n${{UNCATEGORIZED}}\n${{IGNORED}}\n${{OWNER}}\n${{REPO}}\n${{FROM_TAG}}\n${{TO_TAG}}\n${{CATEGORIZED_COUNT}}\n${{UNCATEGORIZED_COUNT}}\n${{IGNORED_COUNT}}",
-    "empty_template": "${{OWNER}}\n${{REPO}}\n${{FROM_TAG}}\n${{TO_TAG}}"
+    "empty_template": "${{OWNER}}\n${{REPO}}\n${{FROM_TAG}}\n${{TO_TAG}}",
+    "max_pull_requests": 1000,
+    "max_back_track_time_days": 1000
 }
