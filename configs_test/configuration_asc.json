@@ -1,4 +1,6 @@
 {
     "sort": "ASC",
-    "pr_template": "${{NUMBER}}"
+    "pr_template": "${{NUMBER}}",
+    "max_pull_requests": 1000,
+    "max_back_track_time_days": 1000
 }
