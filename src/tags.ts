@@ -65,7 +65,7 @@ export class Tags {
     try {
       const length = tags.length
       for (let i = 0; i < length; i++) {
-        if (tags[i].name.toLowerCase() === tag.toLowerCase()) {
+        if (tags[i].name.toLocaleLowerCase() === tag.toLocaleLowerCase()) {
           if (ignorePreReleases) {
             core.info(
               `ℹ️ Enabled 'ignorePreReleases', searching for the closest release`

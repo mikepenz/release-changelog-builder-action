@@ -131,7 +131,7 @@ const mapPullRequest = (
   repoName: pr.base.repo.full_name,
   labels: new Set(
     pr.labels?.map(function (label) {
-      return label.name?.toLowerCase() || ''
+      return label.name?.toLocaleLowerCase() || ''
     }) || []
   ),
   milestone: pr.milestone?.title || '',

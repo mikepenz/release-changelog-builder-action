@@ -522,7 +522,7 @@ const mapPullRequest = (pr) => {
         repoName: pr.base.repo.full_name,
         labels: new Set(((_b = pr.labels) === null || _b === void 0 ? void 0 : _b.map(function (label) {
             var _a;
-            return ((_a = label.name) === null || _a === void 0 ? void 0 : _a.toLowerCase()) || '';
+            return ((_a = label.name) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase()) || '';
         })) || []),
         milestone: ((_c = pr.milestone) === null || _c === void 0 ? void 0 : _c.title) || '',
         body: pr.body || '',
@@ -942,7 +942,7 @@ class Tags {
             try {
                 const length = tags.length;
                 for (let i = 0; i < length; i++) {
-                    if (tags[i].name.toLowerCase() === tag.toLowerCase()) {
+                    if (tags[i].name.toLocaleLowerCase() === tag.toLocaleLowerCase()) {
                         if (ignorePreReleases) {
                             core.info(`ℹ️ Enabled 'ignorePreReleases', searching for the closest release`);
                             for (let ii = i + 1; ii < length; ii++) {
@@ -1091,7 +1091,7 @@ function buildChangelog(prs, config, options) {
                     label = pr.body.replace(extractor.pattern, extractor.target);
                 }
                 if (label !== '') {
-                    pr.labels.add(label.toLowerCase());
+                    pr.labels.add(label.toLocaleLowerCase());
                 }
             }
         }
@@ -1116,13 +1116,13 @@ function buildChangelog(prs, config, options) {
     const uncategorizedPrs = [];
     // bring elements in order
     for (const [pr, body] of transformedMap) {
-        if (haveCommonElements(ignoredLabels, pr.labels)) {
+        if (haveCommonElements(ignoredLabels.map(lbl => lbl.toLocaleLowerCase()), pr.labels)) {
             ignoredPrs.push(body);
             continue;
         }
         let matched = false;
         for (const [category, pullRequests] of categorized) {
-            if (haveCommonElements(category.labels, pr.labels)) {
+            if (haveCommonElements(category.labels.map(lbl => lbl.toLocaleLowerCase()), pr.labels)) {
                 pullRequests.push(body);
                 matched = true;
             }

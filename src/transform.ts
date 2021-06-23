@@ -39,7 +39,7 @@ export function buildChangelog(
           label = pr.body.replace(extractor.pattern, extractor.target)
         }
         if (label !== '') {
-          pr.labels.add(label.toLowerCase())
+          pr.labels.add(label.toLocaleLowerCase())
         }
       }
     }
@@ -81,14 +81,24 @@ export function buildChangelog(
 
   // bring elements in order
   for (const [pr, body] of transformedMap) {
-    if (haveCommonElements(ignoredLabels, pr.labels)) {
+    if (
+      haveCommonElements(
+        ignoredLabels.map(lbl => lbl.toLocaleLowerCase()),
+        pr.labels
+      )
+    ) {
       ignoredPrs.push(body)
       continue
     }
 
     let matched = false
     for (const [category, pullRequests] of categorized) {
-      if (haveCommonElements(category.labels, pr.labels)) {
+      if (
+        haveCommonElements(
+          category.labels.map(lbl => lbl.toLocaleLowerCase()),
+          pr.labels
+        )
+      ) {
         pullRequests.push(body)
         matched = true
       }
