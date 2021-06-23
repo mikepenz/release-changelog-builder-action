@@ -520,18 +520,11 @@ const mapPullRequest = (pr) => {
         mergeCommitSha: pr.merge_commit_sha || '',
         author: ((_a = pr.user) === null || _a === void 0 ? void 0 : _a.login) || '',
         repoName: pr.base.repo.full_name,
-        labels: new Set(((_b = pr.labels) === null || _b === void 0 ? void 0 : _b.map(function (label) {
-            var _a;
-            return ((_a = label.name) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase()) || '';
-        })) || []),
+        labels: new Set(((_b = pr.labels) === null || _b === void 0 ? void 0 : _b.map(lbl => { var _a; return ((_a = lbl.name) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase()) || ''; })) || []),
         milestone: ((_c = pr.milestone) === null || _c === void 0 ? void 0 : _c.title) || '',
         body: pr.body || '',
-        assignees: ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.map(function (asignee) {
-            return (asignee === null || asignee === void 0 ? void 0 : asignee.login) || '';
-        })) || [],
-        requestedReviewers: ((_e = pr.requested_reviewers) === null || _e === void 0 ? void 0 : _e.map(function (reviewer) {
-            return (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '';
-        })) || []
+        assignees: ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.map(asignee => (asignee === null || asignee === void 0 ? void 0 : asignee.login) || '')) || [],
+        requestedReviewers: ((_e = pr.requested_reviewers) === null || _e === void 0 ? void 0 : _e.map(reviewer => (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '')) || []
     });
 };
 

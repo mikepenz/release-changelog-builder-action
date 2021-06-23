@@ -130,18 +130,11 @@ const mapPullRequest = (
   author: pr.user?.login || '',
   repoName: pr.base.repo.full_name,
   labels: new Set(
-    pr.labels?.map(function (label) {
-      return label.name?.toLocaleLowerCase() || ''
-    }) || []
+    pr.labels?.map(lbl => lbl.name?.toLocaleLowerCase() || '') || []
   ),
   milestone: pr.milestone?.title || '',
   body: pr.body || '',
-  assignees:
-    pr.assignees?.map(function (asignee) {
-      return asignee?.login || ''
-    }) || [],
+  assignees: pr.assignees?.map(asignee => asignee?.login || '') || [],
   requestedReviewers:
-    pr.requested_reviewers?.map(function (reviewer) {
-      return reviewer?.login || ''
-    }) || []
+    pr.requested_reviewers?.map(reviewer => reviewer?.login || '') || []
 })
