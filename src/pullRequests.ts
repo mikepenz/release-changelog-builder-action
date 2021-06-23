@@ -2,6 +2,7 @@ import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import moment from 'moment'
 
 import * as core from '@actions/core'
+import {Unpacked} from './utils'
 
 export interface PullRequestInfo {
   number: number
@@ -12,12 +13,17 @@ export interface PullRequestInfo {
   mergeCommitSha: string
   author: string
   repoName: string
-  labels: string[]
+  labels: Set<string>
   milestone: string
   body: string
   assignees: string[]
   requestedReviewers: string[]
 }
+
+type PullData = RestEndpointMethodTypes['pulls']['get']['response']['data']
+
+type PullsListData =
+  RestEndpointMethodTypes['pulls']['list']['response']['data']
 
 export class PullRequests {
   constructor(private octokit: Octokit) {}
@@ -43,10 +49,11 @@ export class PullRequests {
         mergeCommitSha: pr.data.merge_commit_sha || '',
         author: pr.data.user?.login || '',
         repoName: pr.data.base.repo.full_name,
-        labels:
+        labels: new Set(
           pr.data.labels?.map(function (label) {
-            return label.name || ''
-          }) || [],
+            return label.name?.toLowerCase() || ''
+          }) || []
+        ),
         milestone: pr.data.milestone?.title || '',
         body: pr.data.body || '',
         assignees:
@@ -84,35 +91,10 @@ export class PullRequests {
     })
 
     for await (const response of this.octokit.paginate.iterator(options)) {
-      type PullsListData =
-        RestEndpointMethodTypes['pulls']['list']['response']['data']
       const prs: PullsListData = response.data as PullsListData
 
       for (const pr of prs.filter(p => !!p.merged_at)) {
-        mergedPRs.push({
-          number: pr.number,
-          title: pr.title,
-          htmlURL: pr.html_url,
-          baseBranch: pr.base.ref,
-          mergedAt: moment(pr.merged_at),
-          mergeCommitSha: pr.merge_commit_sha || '',
-          author: pr.user?.login || '',
-          repoName: pr.base.repo.full_name,
-          labels:
-            pr.labels?.map(function (label) {
-              return label.name || ''
-            }) || [],
-          milestone: pr.milestone?.title || '',
-          body: pr.body || '',
-          assignees:
-            pr.assignees?.map(function (asignee) {
-              return asignee?.login || ''
-            }) || [],
-          requestedReviewers:
-            pr.requested_reviewers?.map(function (reviewer) {
-              return reviewer?.login || ''
-            }) || []
-        })
+        mergedPRs.push(mapPullRequest(pr))
       }
 
       const firstPR = prs[0]
@@ -159,3 +141,31 @@ export function sortPullRequests(
   }
   return pullRequests
 }
+
+const mapPullRequest = (
+  pr: PullData | Unpacked<PullsListData>
+): PullRequestInfo => ({
+  number: pr.number,
+  title: pr.title,
+  htmlURL: pr.html_url,
+  baseBranch: pr.base.ref,
+  mergedAt: moment(pr.merged_at),
+  mergeCommitSha: pr.merge_commit_sha || '',
+  author: pr.user?.login || '',
+  repoName: pr.base.repo.full_name,
+  labels: new Set(
+    pr.labels?.map(function (label) {
+      return label.name?.toLowerCase() || ''
+    }) || []
+  ),
+  milestone: pr.milestone?.title || '',
+  body: pr.body || '',
+  assignees:
+    pr.assignees?.map(function (asignee) {
+      return asignee?.login || ''
+    }) || [],
+  requestedReviewers:
+    pr.requested_reviewers?.map(function (reviewer) {
+      return reviewer?.login || ''
+    }) || []
+})

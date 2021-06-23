@@ -39,7 +39,7 @@ export function buildChangelog(
           label = pr.body.replace(extractor.pattern, extractor.target)
         }
         if (label !== '') {
-          pr.labels.push(label)
+          pr.labels.add(label.toLowerCase())
         }
       }
     }
@@ -189,8 +189,8 @@ export function fillAdditionalPlaceholders(
   return transformed
 }
 
-function haveCommonElements(arr1: string[], arr2: string[]): Boolean {
-  return arr1.some(item => arr2.includes(item))
+function haveCommonElements(arr1: string[], arr2: Set<string>): Boolean {
+  return arr1.some(item => arr2.has(item))
 }
 
 function fillTemplate(pr: PullRequestInfo, template: string): string {
@@ -205,7 +205,7 @@ function fillTemplate(pr: PullRequestInfo, template: string): string {
   transformed = transformed.replace(/\${{AUTHOR}}/g, pr.author)
   transformed = transformed.replace(
     /\${{LABELS}}/g,
-    pr.labels?.join(', ') || ''
+    [...pr.labels]?.join(', ') || ''
   )
   transformed = transformed.replace(/\${{MILESTONE}}/g, pr.milestone || '')
   transformed = transformed.replace(/\${{BODY}}/g, pr.body)
