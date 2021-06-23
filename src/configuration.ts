@@ -23,6 +23,7 @@ export interface Category {
 export interface Transformer {
   pattern: string
   target: string
+  flags?: string
 }
 
 export interface Extractor extends Transformer {

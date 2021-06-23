@@ -176,7 +176,7 @@ export class ReleaseNotes {
         mergeCommitSha: '',
         author: commit.author || '',
         repoName: '',
-        labels: [],
+        labels: new Set(),
         milestone: '',
         body: commit.message || '',
         assignees: [],

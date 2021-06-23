@@ -168,7 +168,8 @@ This configuration is a `.json` file in the following format.
     "label_extractor": [
       {
         "pattern": "(.) (.+)",
-        "target": "$1"
+        "target": "$1",
+        "flags": "gu"
       },
       {
         "pattern": "(.) (.+)",
@@ -295,6 +296,7 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | label_extractor.pattern     | A `regex` pattern, extracting values of the change message.                                                                                                                                                                        |
 | label_extractor.target      | The result pattern. The result text will be used as label. If empty, no label is created.                                                                                                                                          |
 | label_extractor.on_property | The property to retrieve the text from. This is optional. Defaults to: `body`. Alternative values: `title`, `author`, `milestone`.                                                                                                 |
+| label_extractor.flags       | Defines the regex flags specified for the pattern. Default: `gu`                                                                                                                                                                   |
 | transformers                | An array of `transform` specifications, offering a flexible API to modify the text per pull request. This is applied on the change text created with `pr_template`. `transformers` are executed per change, in the order specified |
 | transformer.pattern         | A `regex` pattern, extracting values of the change message.                                                                                                                                                                        |
 | transformer.target          | The result pattern, the regex groups will be filled into. Allows for full transformation of a pull request message. Including potentially specified texts                                                                          |
