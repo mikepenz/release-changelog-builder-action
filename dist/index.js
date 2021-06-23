@@ -425,35 +425,14 @@ class PullRequests {
         this.octokit = octokit;
     }
     getSingle(owner, repo, prNumber) {
-        var _a, _b, _c, _d, _e;
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const pr = yield this.octokit.pulls.get({
+                const { data } = yield this.octokit.pulls.get({
                     owner,
                     repo,
                     pull_number: prNumber
                 });
-                return {
-                    number: pr.data.number,
-                    title: pr.data.title,
-                    htmlURL: pr.data.html_url,
-                    baseBranch: pr.data.base.ref,
-                    mergedAt: moment_1.default(pr.data.merged_at),
-                    mergeCommitSha: pr.data.merge_commit_sha || '',
-                    author: ((_a = pr.data.user) === null || _a === void 0 ? void 0 : _a.login) || '',
-                    repoName: pr.data.base.repo.full_name,
-                    labels: ((_b = pr.data.labels) === null || _b === void 0 ? void 0 : _b.map(function (label) {
-                        return label.name || '';
-                    })) || [],
-                    milestone: ((_c = pr.data.milestone) === null || _c === void 0 ? void 0 : _c.title) || '',
-                    body: pr.data.body || '',
-                    assignees: ((_d = pr.data.assignees) === null || _d === void 0 ? void 0 : _d.map(function (asignee) {
-                        return (asignee === null || asignee === void 0 ? void 0 : asignee.login) || '';
-                    })) || [],
-                    requestedReviewers: ((_e = pr.data.requested_reviewers) === null || _e === void 0 ? void 0 : _e.map(function (reviewer) {
-                        return (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '';
-                    })) || []
-                };
+                return mapPullRequest(data);
             }
             catch (e) {
                 core.warning(`⚠️ Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`);
@@ -463,7 +442,6 @@ class PullRequests {
     }
     getBetweenDates(owner, repo, fromDate, toDate, maxPullRequests) {
         var e_1, _a;
-        var _b, _c, _d, _e, _f;
         return __awaiter(this, void 0, void 0, function* () {
             const mergedPRs = [];
             const options = this.octokit.pulls.list.endpoint.merge({
@@ -475,31 +453,11 @@ class PullRequests {
                 direction: 'desc'
             });
             try {
-                for (var _g = __asyncValues(this.octokit.paginate.iterator(options)), _h; _h = yield _g.next(), !_h.done;) {
-                    const response = _h.value;
+                for (var _b = __asyncValues(this.octokit.paginate.iterator(options)), _c; _c = yield _b.next(), !_c.done;) {
+                    const response = _c.value;
                     const prs = response.data;
                     for (const pr of prs.filter(p => !!p.merged_at)) {
-                        mergedPRs.push({
-                            number: pr.number,
-                            title: pr.title,
-                            htmlURL: pr.html_url,
-                            baseBranch: pr.base.ref,
-                            mergedAt: moment_1.default(pr.merged_at),
-                            mergeCommitSha: pr.merge_commit_sha || '',
-                            author: ((_b = pr.user) === null || _b === void 0 ? void 0 : _b.login) || '',
-                            repoName: pr.base.repo.full_name,
-                            labels: ((_c = pr.labels) === null || _c === void 0 ? void 0 : _c.map(function (label) {
-                                return label.name || '';
-                            })) || [],
-                            milestone: ((_d = pr.milestone) === null || _d === void 0 ? void 0 : _d.title) || '',
-                            body: pr.body || '',
-                            assignees: ((_e = pr.assignees) === null || _e === void 0 ? void 0 : _e.map(function (asignee) {
-                                return (asignee === null || asignee === void 0 ? void 0 : asignee.login) || '';
-                            })) || [],
-                            requestedReviewers: ((_f = pr.requested_reviewers) === null || _f === void 0 ? void 0 : _f.map(function (reviewer) {
-                                return (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '';
-                            })) || []
-                        });
+                        mergedPRs.push(mapPullRequest(pr));
                     }
                     const firstPR = prs[0];
                     if (firstPR === undefined ||
@@ -516,7 +474,7 @@ class PullRequests {
             catch (e_1_1) { e_1 = { error: e_1_1 }; }
             finally {
                 try {
-                    if (_h && !_h.done && (_a = _g.return)) yield _a.call(_g);
+                    if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
                 }
                 finally { if (e_1) throw e_1.error; }
             }
@@ -551,6 +509,24 @@ function sortPullRequests(pullRequests, ascending) {
     return pullRequests;
 }
 exports.sortPullRequests = sortPullRequests;
+const mapPullRequest = (pr) => {
+    var _a, _b, _c, _d, _e;
+    return ({
+        number: pr.number,
+        title: pr.title,
+        htmlURL: pr.html_url,
+        baseBranch: pr.base.ref,
+        mergedAt: moment_1.default(pr.merged_at),
+        mergeCommitSha: pr.merge_commit_sha || '',
+        author: ((_a = pr.user) === null || _a === void 0 ? void 0 : _a.login) || '',
+        repoName: pr.base.repo.full_name,
+        labels: new Set(((_b = pr.labels) === null || _b === void 0 ? void 0 : _b.map(lbl => { var _a; return ((_a = lbl.name) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase()) || ''; })) || []),
+        milestone: ((_c = pr.milestone) === null || _c === void 0 ? void 0 : _c.title) || '',
+        body: pr.body || '',
+        assignees: ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.map(asignee => (asignee === null || asignee === void 0 ? void 0 : asignee.login) || '')) || [],
+        requestedReviewers: ((_e = pr.requested_reviewers) === null || _e === void 0 ? void 0 : _e.map(reviewer => (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '')) || []
+    });
+};
 
 
 /***/ }),
@@ -713,7 +689,7 @@ class ReleaseNotes {
                     mergeCommitSha: '',
                     author: commit.author || '',
                     repoName: '',
-                    labels: [],
+                    labels: new Set(),
                     milestone: '',
                     body: commit.message || '',
                     assignees: [],
@@ -959,7 +935,7 @@ class Tags {
             try {
                 const length = tags.length;
                 for (let i = 0; i < length; i++) {
-                    if (tags[i].name.toLowerCase() === tag.toLowerCase()) {
+                    if (tags[i].name.toLocaleLowerCase() === tag.toLocaleLowerCase()) {
                         if (ignorePreReleases) {
                             core.info(`ℹ️ Enabled 'ignorePreReleases', searching for the closest release`);
                             for (let ii = i + 1; ii < length; ii++) {
@@ -1091,7 +1067,7 @@ function buildChangelog(prs, config, options) {
     prs = pullRequests_1.sortPullRequests(prs, sortAsc);
     core.info(`ℹ️ Sorted all pull requests ascending: ${sort}`);
     // extract additional labels from the commit message
-    const labelExtractors = validateTransfomers(config.label_extractor);
+    const labelExtractors = validateTransformers(config.label_extractor);
     for (const extractor of labelExtractors) {
         if (extractor.pattern != null) {
             for (const pr of prs) {
@@ -1108,18 +1084,18 @@ function buildChangelog(prs, config, options) {
                     label = pr.body.replace(extractor.pattern, extractor.target);
                 }
                 if (label !== '') {
-                    pr.labels.push(label);
+                    pr.labels.add(label.toLocaleLowerCase());
                 }
             }
         }
     }
-    const validatedTransformers = validateTransfomers(config.transformers);
+    const validatedTransformers = validateTransformers(config.transformers);
     const transformedMap = new Map();
     // convert PRs to their text representation
     for (const pr of prs) {
         transformedMap.set(pr, transform(fillTemplate(pr, config.pr_template || configuration_1.DefaultConfiguration.pr_template), validatedTransformers));
     }
-    core.info(`ℹ️ Used ${validateTransfomers.length} transformers to adjust message`);
+    core.info(`ℹ️ Used ${validatedTransformers.length} transformers to adjust message`);
     core.info(`✒️ Wrote messages for ${prs.length} pull requests`);
     // bring PRs into the order of categories
     const categorized = new Map();
@@ -1133,13 +1109,13 @@ function buildChangelog(prs, config, options) {
     const uncategorizedPrs = [];
     // bring elements in order
     for (const [pr, body] of transformedMap) {
-        if (haveCommonElements(ignoredLabels, pr.labels)) {
+        if (haveCommonElements(ignoredLabels.map(lbl => lbl.toLocaleLowerCase()), pr.labels)) {
             ignoredPrs.push(body);
             continue;
         }
         let matched = false;
         for (const [category, pullRequests] of categorized) {
-            if (haveCommonElements(category.labels, pr.labels)) {
+            if (haveCommonElements(category.labels.map(lbl => lbl.toLocaleLowerCase()), pr.labels)) {
                 pullRequests.push(body);
                 matched = true;
             }
@@ -1206,7 +1182,7 @@ function fillAdditionalPlaceholders(text, options) {
 }
 exports.fillAdditionalPlaceholders = fillAdditionalPlaceholders;
 function haveCommonElements(arr1, arr2) {
-    return arr1.some(item => arr2.includes(item));
+    return arr1.some(item => arr2.has(item));
 }
 function fillTemplate(pr, template) {
     var _a, _b, _c;
@@ -1216,7 +1192,7 @@ function fillTemplate(pr, template) {
     transformed = transformed.replace(/\${{URL}}/g, pr.htmlURL);
     transformed = transformed.replace(/\${{MERGED_AT}}/g, pr.mergedAt.toISOString());
     transformed = transformed.replace(/\${{AUTHOR}}/g, pr.author);
-    transformed = transformed.replace(/\${{LABELS}}/g, ((_a = pr.labels) === null || _a === void 0 ? void 0 : _a.join(', ')) || '');
+    transformed = transformed.replace(/\${{LABELS}}/g, ((_a = [...pr.labels]) === null || _a === void 0 ? void 0 : _a.join(', ')) || '');
     transformed = transformed.replace(/\${{MILESTONE}}/g, pr.milestone || '');
     transformed = transformed.replace(/\${{BODY}}/g, pr.body);
     transformed = transformed.replace(/\${{ASSIGNEES}}/g, ((_b = pr.assignees) === null || _b === void 0 ? void 0 : _b.join(', ')) || '');
@@ -1235,17 +1211,18 @@ function transform(filled, transformers) {
     }
     return transformed;
 }
-function validateTransfomers(specifiedTransformers) {
+function validateTransformers(specifiedTransformers) {
     const transformers = specifiedTransformers || configuration_1.DefaultConfiguration.transformers;
     return transformers
         .map(transformer => {
+        var _a;
         try {
             let onProperty = undefined;
             if (transformer.hasOwnProperty('on_property')) {
                 onProperty = transformer.on_property;
             }
             return {
-                pattern: new RegExp(transformer.pattern.replace('\\\\', '\\'), 'gu'),
+                pattern: new RegExp(transformer.pattern.replace('\\\\', '\\'), (_a = transformer.flags) !== null && _a !== void 0 ? _a : 'gu'),
                 target: transformer.target,
                 onProperty
             };

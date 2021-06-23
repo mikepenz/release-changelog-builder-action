@@ -21,7 +21,7 @@ export function buildChangelog(
   core.info(`ℹ️ Sorted all pull requests ascending: ${sort}`)
 
   // extract additional labels from the commit message
-  const labelExtractors = validateTransfomers(config.label_extractor)
+  const labelExtractors = validateTransformers(config.label_extractor)
   for (const extractor of labelExtractors) {
     if (extractor.pattern != null) {
       for (const pr of prs) {
@@ -39,13 +39,13 @@ export function buildChangelog(
           label = pr.body.replace(extractor.pattern, extractor.target)
         }
         if (label !== '') {
-          pr.labels.push(label)
+          pr.labels.add(label.toLocaleLowerCase())
         }
       }
     }
   }
 
-  const validatedTransformers = validateTransfomers(config.transformers)
+  const validatedTransformers = validateTransformers(config.transformers)
   const transformedMap = new Map<PullRequestInfo, string>()
   // convert PRs to their text representation
   for (const pr of prs) {
@@ -61,7 +61,7 @@ export function buildChangelog(
     )
   }
   core.info(
-    `ℹ️ Used ${validateTransfomers.length} transformers to adjust message`
+    `ℹ️ Used ${validatedTransformers.length} transformers to adjust message`
   )
   core.info(`✒️ Wrote messages for ${prs.length} pull requests`)
 
@@ -81,14 +81,24 @@ export function buildChangelog(
 
   // bring elements in order
   for (const [pr, body] of transformedMap) {
-    if (haveCommonElements(ignoredLabels, pr.labels)) {
+    if (
+      haveCommonElements(
+        ignoredLabels.map(lbl => lbl.toLocaleLowerCase()),
+        pr.labels
+      )
+    ) {
       ignoredPrs.push(body)
       continue
     }
 
     let matched = false
     for (const [category, pullRequests] of categorized) {
-      if (haveCommonElements(category.labels, pr.labels)) {
+      if (
+        haveCommonElements(
+          category.labels.map(lbl => lbl.toLocaleLowerCase()),
+          pr.labels
+        )
+      ) {
         pullRequests.push(body)
         matched = true
       }
@@ -189,8 +199,8 @@ export function fillAdditionalPlaceholders(
   return transformed
 }
 
-function haveCommonElements(arr1: string[], arr2: string[]): Boolean {
-  return arr1.some(item => arr2.includes(item))
+function haveCommonElements(arr1: string[], arr2: Set<string>): Boolean {
+  return arr1.some(item => arr2.has(item))
 }
 
 function fillTemplate(pr: PullRequestInfo, template: string): string {
@@ -205,7 +215,7 @@ function fillTemplate(pr: PullRequestInfo, template: string): string {
   transformed = transformed.replace(/\${{AUTHOR}}/g, pr.author)
   transformed = transformed.replace(
     /\${{LABELS}}/g,
-    pr.labels?.join(', ') || ''
+    [...pr.labels]?.join(', ') || ''
   )
   transformed = transformed.replace(/\${{MILESTONE}}/g, pr.milestone || '')
   transformed = transformed.replace(/\${{BODY}}/g, pr.body)
@@ -233,7 +243,7 @@ function transform(filled: string, transformers: RegexTransformer[]): string {
   return transformed
 }
 
-function validateTransfomers(
+function validateTransformers(
   specifiedTransformers: Transformer[]
 ): RegexTransformer[] {
   const transformers =
@@ -247,7 +257,10 @@ function validateTransfomers(
         }
 
         return {
-          pattern: new RegExp(transformer.pattern.replace('\\\\', '\\'), 'gu'),
+          pattern: new RegExp(
+            transformer.pattern.replace('\\\\', '\\'),
+            transformer.flags ?? 'gu'
+          ),
           target: transformer.target,
           onProperty
         }
