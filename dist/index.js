@@ -425,36 +425,14 @@ class PullRequests {
         this.octokit = octokit;
     }
     getSingle(owner, repo, prNumber) {
-        var _a, _b, _c, _d, _e;
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const pr = yield this.octokit.pulls.get({
+                const { data } = yield this.octokit.pulls.get({
                     owner,
                     repo,
                     pull_number: prNumber
                 });
-                return {
-                    number: pr.data.number,
-                    title: pr.data.title,
-                    htmlURL: pr.data.html_url,
-                    baseBranch: pr.data.base.ref,
-                    mergedAt: moment_1.default(pr.data.merged_at),
-                    mergeCommitSha: pr.data.merge_commit_sha || '',
-                    author: ((_a = pr.data.user) === null || _a === void 0 ? void 0 : _a.login) || '',
-                    repoName: pr.data.base.repo.full_name,
-                    labels: new Set(((_b = pr.data.labels) === null || _b === void 0 ? void 0 : _b.map(function (label) {
-                        var _a;
-                        return ((_a = label.name) === null || _a === void 0 ? void 0 : _a.toLowerCase()) || '';
-                    })) || []),
-                    milestone: ((_c = pr.data.milestone) === null || _c === void 0 ? void 0 : _c.title) || '',
-                    body: pr.data.body || '',
-                    assignees: ((_d = pr.data.assignees) === null || _d === void 0 ? void 0 : _d.map(function (asignee) {
-                        return (asignee === null || asignee === void 0 ? void 0 : asignee.login) || '';
-                    })) || [],
-                    requestedReviewers: ((_e = pr.data.requested_reviewers) === null || _e === void 0 ? void 0 : _e.map(function (reviewer) {
-                        return (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '';
-                    })) || []
-                };
+                return mapPullRequest(data);
             }
             catch (e) {
                 core.warning(`⚠️ Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`);
