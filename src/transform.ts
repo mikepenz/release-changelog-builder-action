@@ -21,7 +21,7 @@ export function buildChangelog(
   core.info(`ℹ️ Sorted all pull requests ascending: ${sort}`)
 
   // extract additional labels from the commit message
-  const labelExtractors = validateTransfomers(config.label_extractor)
+  const labelExtractors = validateTransformers(config.label_extractor)
   for (const extractor of labelExtractors) {
     if (extractor.pattern != null) {
       for (const pr of prs) {
@@ -45,7 +45,7 @@ export function buildChangelog(
     }
   }
 
-  const validatedTransformers = validateTransfomers(config.transformers)
+  const validatedTransformers = validateTransformers(config.transformers)
   const transformedMap = new Map<PullRequestInfo, string>()
   // convert PRs to their text representation
   for (const pr of prs) {
@@ -61,7 +61,7 @@ export function buildChangelog(
     )
   }
   core.info(
-    `ℹ️ Used ${validateTransfomers.length} transformers to adjust message`
+    `ℹ️ Used ${validatedTransformers.length} transformers to adjust message`
   )
   core.info(`✒️ Wrote messages for ${prs.length} pull requests`)
 
@@ -233,7 +233,7 @@ function transform(filled: string, transformers: RegexTransformer[]): string {
   return transformed
 }
 
-function validateTransfomers(
+function validateTransformers(
   specifiedTransformers: Transformer[]
 ): RegexTransformer[] {
   const transformers =
