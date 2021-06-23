@@ -34,37 +34,13 @@ export class PullRequests {
     prNumber: number
   ): Promise<PullRequestInfo | null> {
     try {
-      const pr = await this.octokit.pulls.get({
+      const {data} = await this.octokit.pulls.get({
         owner,
         repo,
         pull_number: prNumber
       })
 
-      return {
-        number: pr.data.number,
-        title: pr.data.title,
-        htmlURL: pr.data.html_url,
-        baseBranch: pr.data.base.ref,
-        mergedAt: moment(pr.data.merged_at),
-        mergeCommitSha: pr.data.merge_commit_sha || '',
-        author: pr.data.user?.login || '',
-        repoName: pr.data.base.repo.full_name,
-        labels: new Set(
-          pr.data.labels?.map(function (label) {
-            return label.name?.toLowerCase() || ''
-          }) || []
-        ),
-        milestone: pr.data.milestone?.title || '',
-        body: pr.data.body || '',
-        assignees:
-          pr.data.assignees?.map(function (asignee) {
-            return asignee?.login || ''
-          }) || [],
-        requestedReviewers:
-          pr.data.requested_reviewers?.map(function (reviewer) {
-            return reviewer?.login || ''
-          }) || []
-      }
+      return mapPullRequest(data)
     } catch (e) {
       core.warning(
         `⚠️ Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`
