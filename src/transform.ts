@@ -247,7 +247,10 @@ function validateTransfomers(
         }
 
         return {
-          pattern: new RegExp(transformer.pattern.replace('\\\\', '\\'), 'gu'),
+          pattern: new RegExp(
+            transformer.pattern.replace('\\\\', '\\'),
+            transformer.flags ?? 'gu'
+          ),
           target: transformer.target,
           onProperty
         }
