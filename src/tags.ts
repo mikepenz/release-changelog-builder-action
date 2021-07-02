@@ -3,6 +3,7 @@ import * as core from '@actions/core'
 import * as semver from 'semver'
 import {SemVer} from 'semver'
 import {TagResolver} from './configuration'
+import {createCommandManager} from './gitHelper'
 
 export interface TagInfo {
   name: string
@@ -50,6 +51,7 @@ export class Tags {
   }
 
   async findPredecessorTag(
+    repositoryPath: string,
     owner: string,
     repo: string,
     tag: string,
@@ -64,26 +66,37 @@ export class Tags {
 
     try {
       const length = tags.length
-      for (let i = 0; i < length; i++) {
-        if (tags[i].name.toLocaleLowerCase() === tag.toLocaleLowerCase()) {
-          if (ignorePreReleases) {
-            core.info(
-              `ℹ️ Enabled 'ignorePreReleases', searching for the closest release`
-            )
-            for (let ii = i + 1; ii < length; ii++) {
-              if (!tags[ii].name.includes('-')) {
-                return tags[ii]
+      if (tags.length > 1) {
+        for (let i = 0; i < length; i++) {
+          if (tags[i].name.toLocaleLowerCase() === tag.toLocaleLowerCase()) {
+            if (ignorePreReleases) {
+              core.info(
+                `ℹ️ Enabled 'ignorePreReleases', searching for the closest release`
+              )
+              for (let ii = i + 1; ii < length; ii++) {
+                if (!tags[ii].name.includes('-')) {
+                  return tags[ii]
+                }
               }
             }
+            return tags[i + 1]
           }
-          return tags[i + 1]
         }
+      } else {
+        core.info(
+          `ℹ️ Only one tag found for the given repository. Usually this is the case for the initial release.`
+        )
+        // if not specified try to retrieve tag from git
+        const gitHelper = await createCommandManager(repositoryPath)
+        const initialCommit = await gitHelper.initialCommit()
+        core.info(
+          `🔖 Resolved initial commit (${initialCommit}) from 'git rev-list --max-parents=0 HEAD'`
+        )
+        return {name: 'initial', commit: initialCommit}
       }
       return tags[0]
     } catch (error) {
-      if (tags.length < 1) {
-        core.warning(`⚠️ Only one tag found for the given repository`)
-      } else if (tags.length < 0) {
+      if (tags.length <= 0) {
         core.warning(`⚠️ No tag found for the given repository`)
       }
       return null

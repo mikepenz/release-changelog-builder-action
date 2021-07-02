@@ -35,6 +35,15 @@ class GitCommandManager {
     return output.stdout.trim()
   }
 
+  async initialCommit(): Promise<string> {
+    const revListOutput = await this.execGit([
+      'rev-list',
+      '--max-parents=0',
+      'HEAD'
+    ])
+    return revListOutput.stdout.trim()
+  }
+
   static async createCommandManager(
     workingDirectory: string
   ): Promise<GitCommandManager> {
