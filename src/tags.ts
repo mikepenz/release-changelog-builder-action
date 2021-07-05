@@ -92,7 +92,7 @@ export class Tags {
         core.info(
           `🔖 Resolved initial commit (${initialCommit}) from 'git rev-list --max-parents=0 HEAD'`
         )
-        return {name: 'initial', commit: initialCommit}
+        return {name: initialCommit, commit: initialCommit}
       }
       return tags[0]
     } catch (error) {
