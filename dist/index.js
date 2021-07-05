@@ -966,7 +966,7 @@ class Tags {
                     const gitHelper = yield gitHelper_1.createCommandManager(repositoryPath);
                     const initialCommit = yield gitHelper.initialCommit();
                     core.info(`🔖 Resolved initial commit (${initialCommit}) from 'git rev-list --max-parents=0 HEAD'`);
-                    return { name: 'initial', commit: initialCommit };
+                    return { name: initialCommit, commit: initialCommit };
                 }
                 return tags[0];
             }
