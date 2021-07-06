@@ -79,6 +79,7 @@ export class ReleaseNotesBuilder {
       const tagsApi = new Tags(octokit)
 
       const previousTag = await tagsApi.findPredecessorTag(
+        this.repositoryPath,
         this.owner,
         this.repo,
         this.toTag,
