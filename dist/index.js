@@ -250,6 +250,16 @@ class GitCommandManager {
             return output.stdout.trim();
         });
     }
+    initialCommit() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const revListOutput = yield this.execGit([
+                'rev-list',
+                '--max-parents=0',
+                'HEAD'
+            ]);
+            return revListOutput.stdout.trim();
+        });
+    }
     static createCommandManager(workingDirectory) {
         return __awaiter(this, void 0, void 0, function* () {
             const result = new GitCommandManager();
@@ -812,7 +822,7 @@ class ReleaseNotesBuilder {
                 core.startGroup(`🔖 Resolve previous tag`);
                 core.debug(`fromTag undefined, trying to resolve via API`);
                 const tagsApi = new tags_1.Tags(octokit);
-                const previousTag = yield tagsApi.findPredecessorTag(this.owner, this.repo, this.toTag, this.ignorePreReleases, this.configuration.max_tags_to_fetch ||
+                const previousTag = yield tagsApi.findPredecessorTag(this.repositoryPath, this.owner, this.repo, this.toTag, this.ignorePreReleases, this.configuration.max_tags_to_fetch ||
                     configuration_1.DefaultConfiguration.max_tags_to_fetch, this.configuration.tag_resolver || configuration_1.DefaultConfiguration.tag_resolver);
                 if (previousTag == null) {
                     utils_1.failOrError(`💥 Unable to retrieve previous tag given ${this.toTag}`, this.failOnError);
@@ -888,6 +898,7 @@ exports.sortTags = exports.Tags = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const semver = __importStar(__nccwpck_require__(1383));
 const semver_1 = __nccwpck_require__(1383);
+const gitHelper_1 = __nccwpck_require__(353);
 class Tags {
     constructor(octokit) {
         this.octokit = octokit;
@@ -929,31 +940,38 @@ class Tags {
             return tagsInfo;
         });
     }
-    findPredecessorTag(owner, repo, tag, ignorePreReleases, maxTagsToFetch, tagResolver) {
+    findPredecessorTag(repositoryPath, owner, repo, tag, ignorePreReleases, maxTagsToFetch, tagResolver) {
         return __awaiter(this, void 0, void 0, function* () {
             const tags = sortTags(yield this.getTags(owner, repo, maxTagsToFetch), tagResolver);
             try {
                 const length = tags.length;
-                for (let i = 0; i < length; i++) {
-                    if (tags[i].name.toLocaleLowerCase() === tag.toLocaleLowerCase()) {
-                        if (ignorePreReleases) {
-                            core.info(`ℹ️ Enabled 'ignorePreReleases', searching for the closest release`);
-                            for (let ii = i + 1; ii < length; ii++) {
-                                if (!tags[ii].name.includes('-')) {
-                                    return tags[ii];
+                if (tags.length > 1) {
+                    for (let i = 0; i < length; i++) {
+                        if (tags[i].name.toLocaleLowerCase() === tag.toLocaleLowerCase()) {
+                            if (ignorePreReleases) {
+                                core.info(`ℹ️ Enabled 'ignorePreReleases', searching for the closest release`);
+                                for (let ii = i + 1; ii < length; ii++) {
+                                    if (!tags[ii].name.includes('-')) {
+                                        return tags[ii];
+                                    }
                                 }
                             }
+                            return tags[i + 1];
                         }
-                        return tags[i + 1];
                     }
+                }
+                else {
+                    core.info(`ℹ️ Only one tag found for the given repository. Usually this is the case for the initial release.`);
+                    // if not specified try to retrieve tag from git
+                    const gitHelper = yield gitHelper_1.createCommandManager(repositoryPath);
+                    const initialCommit = yield gitHelper.initialCommit();
+                    core.info(`🔖 Resolved initial commit (${initialCommit}) from 'git rev-list --max-parents=0 HEAD'`);
+                    return { name: initialCommit, commit: initialCommit };
                 }
                 return tags[0];
             }
             catch (error) {
-                if (tags.length < 1) {
-                    core.warning(`⚠️ Only one tag found for the given repository`);
-                }
-                else if (tags.length < 0) {
+                if (tags.length <= 0) {
                     core.warning(`⚠️ No tag found for the given repository`);
                 }
                 return null;
@@ -5179,6 +5197,7 @@ const Endpoints = {
     getSubscriptionPlanForAccountStubbed: ["GET /marketplace_listing/stubbed/accounts/{account_id}"],
     getUserInstallation: ["GET /users/{username}/installation"],
     getWebhookConfigForApp: ["GET /app/hook/config"],
+    getWebhookDelivery: ["GET /app/hook/deliveries/{delivery_id}"],
     listAccountsForPlan: ["GET /marketplace_listing/plans/{plan_id}/accounts"],
     listAccountsForPlanStubbed: ["GET /marketplace_listing/stubbed/plans/{plan_id}/accounts"],
     listInstallationReposForAuthenticatedUser: ["GET /user/installations/{installation_id}/repositories"],
@@ -5189,6 +5208,8 @@ const Endpoints = {
     listReposAccessibleToInstallation: ["GET /installation/repositories"],
     listSubscriptionsForAuthenticatedUser: ["GET /user/marketplace_purchases"],
     listSubscriptionsForAuthenticatedUserStubbed: ["GET /user/marketplace_purchases/stubbed"],
+    listWebhookDeliveries: ["GET /app/hook/deliveries"],
+    redeliverWebhookDelivery: ["POST /app/hook/deliveries/{delivery_id}/attempts"],
     removeRepoFromInstallation: ["DELETE /user/installations/{installation_id}/repositories/{repository_id}"],
     resetToken: ["PATCH /applications/{client_id}/token"],
     revokeInstallationAccessToken: ["DELETE /installation/token"],
@@ -5478,6 +5499,7 @@ const Endpoints = {
     getMembershipForUser: ["GET /orgs/{org}/memberships/{username}"],
     getWebhook: ["GET /orgs/{org}/hooks/{hook_id}"],
     getWebhookConfigForOrg: ["GET /orgs/{org}/hooks/{hook_id}/config"],
+    getWebhookDelivery: ["GET /orgs/{org}/hooks/{hook_id}/deliveries/{delivery_id}"],
     list: ["GET /organizations"],
     listAppInstallations: ["GET /orgs/{org}/installations"],
     listBlockedUsers: ["GET /orgs/{org}/blocks"],
@@ -5490,8 +5512,10 @@ const Endpoints = {
     listOutsideCollaborators: ["GET /orgs/{org}/outside_collaborators"],
     listPendingInvitations: ["GET /orgs/{org}/invitations"],
     listPublicMembers: ["GET /orgs/{org}/public_members"],
+    listWebhookDeliveries: ["GET /orgs/{org}/hooks/{hook_id}/deliveries"],
     listWebhooks: ["GET /orgs/{org}/hooks"],
     pingWebhook: ["POST /orgs/{org}/hooks/{hook_id}/pings"],
+    redeliverWebhookDelivery: ["POST /orgs/{org}/hooks/{hook_id}/deliveries/{delivery_id}/attempts"],
     removeMember: ["DELETE /orgs/{org}/members/{username}"],
     removeMembershipForUser: ["DELETE /orgs/{org}/memberships/{username}"],
     removeOutsideCollaborator: ["DELETE /orgs/{org}/outside_collaborators/{username}"],
@@ -5950,6 +5974,7 @@ const Endpoints = {
     getViews: ["GET /repos/{owner}/{repo}/traffic/views"],
     getWebhook: ["GET /repos/{owner}/{repo}/hooks/{hook_id}"],
     getWebhookConfigForRepo: ["GET /repos/{owner}/{repo}/hooks/{hook_id}/config"],
+    getWebhookDelivery: ["GET /repos/{owner}/{repo}/hooks/{hook_id}/deliveries/{delivery_id}"],
     listBranches: ["GET /repos/{owner}/{repo}/branches"],
     listBranchesForHeadCommit: ["GET /repos/{owner}/{repo}/commits/{commit_sha}/branches-where-head", {
       mediaType: {
@@ -5983,9 +6008,11 @@ const Endpoints = {
     listReleases: ["GET /repos/{owner}/{repo}/releases"],
     listTags: ["GET /repos/{owner}/{repo}/tags"],
     listTeams: ["GET /repos/{owner}/{repo}/teams"],
+    listWebhookDeliveries: ["GET /repos/{owner}/{repo}/hooks/{hook_id}/deliveries"],
     listWebhooks: ["GET /repos/{owner}/{repo}/hooks"],
     merge: ["POST /repos/{owner}/{repo}/merges"],
     pingWebhook: ["POST /repos/{owner}/{repo}/hooks/{hook_id}/pings"],
+    redeliverWebhookDelivery: ["POST /repos/{owner}/{repo}/hooks/{hook_id}/deliveries/{delivery_id}/attempts"],
     removeAppAccessRestrictions: ["DELETE /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/apps", {}, {
       mapToData: "apps"
     }],
@@ -6142,7 +6169,7 @@ const Endpoints = {
   }
 };
 
-const VERSION = "5.3.1";
+const VERSION = "5.4.1";
 
 function endpointsToMethods(octokit, endpointsMap) {
   const newMethods = {};
@@ -6527,7 +6554,7 @@ var pluginRequestLog = __nccwpck_require__(8883);
 var pluginPaginateRest = __nccwpck_require__(4193);
 var pluginRestEndpointMethods = __nccwpck_require__(3044);
 
-const VERSION = "18.6.0";
+const VERSION = "18.6.7";
 
 const Octokit = core.Octokit.plugin(pluginRequestLog.requestLog, pluginRestEndpointMethods.legacyRestEndpointMethods, pluginPaginateRest.paginateRest).defaults({
   userAgent: `octokit-rest.js/${VERSION}`
