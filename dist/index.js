@@ -5258,16 +5258,8 @@ const Endpoints = {
     uploadSarif: ["POST /repos/{owner}/{repo}/code-scanning/sarifs"]
   },
   codesOfConduct: {
-    getAllCodesOfConduct: ["GET /codes_of_conduct", {
-      mediaType: {
-        previews: ["scarlet-witch"]
-      }
-    }],
-    getConductCode: ["GET /codes_of_conduct/{key}", {
-      mediaType: {
-        previews: ["scarlet-witch"]
-      }
-    }],
+    getAllCodesOfConduct: ["GET /codes_of_conduct"],
+    getConductCode: ["GET /codes_of_conduct/{key}"],
     getForRepo: ["GET /repos/{owner}/{repo}/community/code_of_conduct", {
       mediaType: {
         previews: ["scarlet-witch"]
@@ -6169,7 +6161,7 @@ const Endpoints = {
   }
 };
 
-const VERSION = "5.4.1";
+const VERSION = "5.5.2";
 
 function endpointsToMethods(octokit, endpointsMap) {
   const newMethods = {};
@@ -6554,7 +6546,7 @@ var pluginRequestLog = __nccwpck_require__(8883);
 var pluginPaginateRest = __nccwpck_require__(4193);
 var pluginRestEndpointMethods = __nccwpck_require__(3044);
 
-const VERSION = "18.6.7";
+const VERSION = "18.7.2";
 
 const Octokit = core.Octokit.plugin(pluginRequestLog.requestLog, pluginRestEndpointMethods.legacyRestEndpointMethods, pluginPaginateRest.paginateRest).defaults({
   userAgent: `octokit-rest.js/${VERSION}`
@@ -17618,7 +17610,7 @@ module.exports = eval("require")("encoding");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("assert");;
+module.exports = require("assert");
 
 /***/ }),
 
@@ -17626,7 +17618,7 @@ module.exports = require("assert");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("child_process");;
+module.exports = require("child_process");
 
 /***/ }),
 
@@ -17634,7 +17626,7 @@ module.exports = require("child_process");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("events");;
+module.exports = require("events");
 
 /***/ }),
 
@@ -17642,7 +17634,7 @@ module.exports = require("events");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("fs");;
+module.exports = require("fs");
 
 /***/ }),
 
@@ -17650,7 +17642,7 @@ module.exports = require("fs");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("http");;
+module.exports = require("http");
 
 /***/ }),
 
@@ -17658,7 +17650,7 @@ module.exports = require("http");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("https");;
+module.exports = require("https");
 
 /***/ }),
 
@@ -17666,7 +17658,7 @@ module.exports = require("https");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("net");;
+module.exports = require("net");
 
 /***/ }),
 
@@ -17674,7 +17666,7 @@ module.exports = require("net");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("os");;
+module.exports = require("os");
 
 /***/ }),
 
@@ -17682,7 +17674,7 @@ module.exports = require("os");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("path");;
+module.exports = require("path");
 
 /***/ }),
 
@@ -17690,7 +17682,7 @@ module.exports = require("path");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("stream");;
+module.exports = require("stream");
 
 /***/ }),
 
@@ -17698,7 +17690,7 @@ module.exports = require("stream");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("string_decoder");;
+module.exports = require("string_decoder");
 
 /***/ }),
 
@@ -17706,7 +17698,7 @@ module.exports = require("string_decoder");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("timers");;
+module.exports = require("timers");
 
 /***/ }),
 
@@ -17714,7 +17706,7 @@ module.exports = require("timers");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("tls");;
+module.exports = require("tls");
 
 /***/ }),
 
@@ -17722,7 +17714,7 @@ module.exports = require("tls");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("url");;
+module.exports = require("url");
 
 /***/ }),
 
@@ -17730,7 +17722,7 @@ module.exports = require("url");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("util");;
+module.exports = require("util");
 
 /***/ }),
 
@@ -17738,7 +17730,7 @@ module.exports = require("util");;
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("zlib");;
+module.exports = require("zlib");
 
 /***/ })
 
@@ -17789,7 +17781,9 @@ module.exports = require("zlib");;
 /******/ 	
 /******/ 	/* webpack/runtime/compat */
 /******/ 	
-/******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";/************************************************************************/
+/******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
+/******/ 	
+/************************************************************************/
 /******/ 	
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
