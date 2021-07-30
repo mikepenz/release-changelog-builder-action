@@ -91,6 +91,8 @@ Below is a complete example showcasing how to define a build, which is executed 
 - Build changelog, given the tag
 - Create release on GitHub - specifying body with constructed changelog
 
+> Note: PRs will only show up in the changelog if assigned one of the default label categories "feature", "fix" or "test"
+
 ```yml
 name: 'CI'
 on:
