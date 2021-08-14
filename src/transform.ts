@@ -1,13 +1,13 @@
-import {PullRequestInfo, sortPullRequests} from './pullRequests'
 import * as core from '@actions/core'
-import {ReleaseNotesOptions} from './releaseNotes'
 import {
-  Extractor,
   Category,
   Configuration,
-  Transformer,
-  DefaultConfiguration
+  DefaultConfiguration,
+  Extractor,
+  Transformer
 } from './configuration'
+import {PullRequestInfo, sortPullRequests} from './pullRequests'
+import {ReleaseNotesOptions} from './releaseNotes'
 
 export function buildChangelog(
   prs: PullRequestInfo[],

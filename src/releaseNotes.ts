@@ -1,9 +1,9 @@
-import {Octokit} from '@octokit/rest'
-import {Commits, CommitInfo, filterCommits} from './commits'
-import {PullRequestInfo, PullRequests} from './pullRequests'
-import {buildChangelog} from './transform'
 import * as core from '@actions/core'
+import {CommitInfo, Commits, filterCommits} from './commits'
 import {Configuration, DefaultConfiguration} from './configuration'
+import {PullRequestInfo, PullRequests} from './pullRequests'
+import {Octokit} from '@octokit/rest'
+import {buildChangelog} from './transform'
 import {failOrError} from './utils'
 
 export interface ReleaseNotesOptions {

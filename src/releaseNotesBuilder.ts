@@ -1,11 +1,11 @@
-import {Configuration, DefaultConfiguration} from './configuration'
-import * as github from '@actions/github'
 import * as core from '@actions/core'
-import {createCommandManager} from './gitHelper'
-import {failOrError} from './utils'
+import * as github from '@actions/github'
+import {Configuration, DefaultConfiguration} from './configuration'
 import {Octokit} from '@octokit/rest'
-import {Tags} from './tags'
+import {createCommandManager} from './gitHelper'
 import {ReleaseNotes} from './releaseNotes'
+import {Tags} from './tags'
+import {failOrError} from './utils'
 import {fillAdditionalPlaceholders} from './transform'
 
 export class ReleaseNotesBuilder {
