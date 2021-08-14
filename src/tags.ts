@@ -1,6 +1,6 @@
-import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import * as core from '@actions/core'
 import * as semver from 'semver'
+import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import {SemVer} from 'semver'
 import {TagResolver} from './configuration'
 import {createCommandManager} from './gitHelper'

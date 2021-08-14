@@ -1,6 +1,6 @@
-import moment from 'moment'
 import * as core from '@actions/core'
 import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
+import moment from 'moment'
 
 export interface CommitInfo {
   sha: string
