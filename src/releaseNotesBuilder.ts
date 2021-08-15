@@ -1,11 +1,9 @@
-import {Configuration, DefaultConfiguration} from './configuration'
-import * as github from '@actions/github'
 import * as core from '@actions/core'
-import {createCommandManager} from './gitHelper'
-import {failOrError} from './utils'
+import {Configuration, DefaultConfiguration} from './configuration'
 import {Octokit} from '@octokit/rest'
-import {Tags} from './tags'
 import {ReleaseNotes} from './releaseNotes'
+import {Tags} from './tags'
+import {failOrError} from './utils'
 import {fillAdditionalPlaceholders} from './transform'
 
 export class ReleaseNotesBuilder {
@@ -23,25 +21,6 @@ export class ReleaseNotesBuilder {
   ) {}
 
   async build(): Promise<string | null> {
-    // ensure to resolve the toTag if it was not provided
-    if (!this.toTag) {
-      // if not specified try to retrieve tag from github.context.ref
-      if (github.context.ref.startsWith('refs/tags/')) {
-        this.toTag = github.context.ref.replace('refs/tags/', '')
-        core.info(
-          `🔖 Resolved current tag (${this.toTag}) from the 'github.context.ref'`
-        )
-      } else {
-        // if not specified try to retrieve tag from git
-        const gitHelper = await createCommandManager(this.repositoryPath)
-        const latestTag = await gitHelper.latestTag()
-        this.toTag = latestTag
-        core.info(
-          `🔖 Resolved current tag (${this.toTag}) from 'git rev-list --tags --skip=0 --max-count=1'`
-        )
-      }
-    }
-
     if (!this.owner) {
       failOrError(`💥 Missing or couldn't resolve 'owner'`, this.failOnError)
       return null
@@ -57,14 +36,6 @@ export class ReleaseNotesBuilder {
       core.setOutput('repo', this.repo)
       core.debug(`Resolved 'repo' as ${this.repo}`)
     }
-
-    if (!this.toTag) {
-      failOrError(`💥 Missing or couldn't resolve 'toTag'`, this.failOnError)
-      return null
-    } else {
-      core.setOutput('toTag', this.toTag)
-      core.debug(`Resolved 'toTag' as ${this.toTag}`)
-    }
     core.endGroup()
 
     // load octokit instance
@@ -72,33 +43,42 @@ export class ReleaseNotesBuilder {
       auth: `token ${this.token || process.env.GITHUB_TOKEN}`
     })
 
-    // ensure to resolve the fromTag if it was not provided specifically
-    if (!this.fromTag) {
-      core.startGroup(`🔖 Resolve previous tag`)
-      core.debug(`fromTag undefined, trying to resolve via API`)
-      const tagsApi = new Tags(octokit)
+    // ensure proper from <-> to tag range
+    core.startGroup(`🔖 Resolve tags`)
+    const tagsApi = new Tags(octokit)
+    const tagRange = await tagsApi.retrieveRange(
+      this.repositoryPath,
+      this.owner,
+      this.repo,
+      this.fromTag,
+      this.toTag,
+      this.ignorePreReleases,
+      this.configuration.max_tags_to_fetch ||
+        DefaultConfiguration.max_tags_to_fetch,
+      this.configuration.tag_resolver || DefaultConfiguration.tag_resolver
+    )
 
-      const previousTag = await tagsApi.findPredecessorTag(
-        this.repositoryPath,
-        this.owner,
-        this.repo,
-        this.toTag,
-        this.ignorePreReleases,
-        this.configuration.max_tags_to_fetch ||
-          DefaultConfiguration.max_tags_to_fetch,
-        this.configuration.tag_resolver || DefaultConfiguration.tag_resolver
-      )
-      if (previousTag == null) {
-        failOrError(
-          `💥 Unable to retrieve previous tag given ${this.toTag}`,
-          this.failOnError
-        )
-        return null
-      }
-      this.fromTag = previousTag.name
-      core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`)
-      core.endGroup()
+    const thisTag = tagRange.to?.name
+    if (!thisTag) {
+      failOrError(`💥 Missing or couldn't resolve 'toTag'`, this.failOnError)
+      return null
+    } else {
+      this.toTag = thisTag
+      core.setOutput('toTag', thisTag)
+      core.debug(`Resolved 'toTag' as ${thisTag}`)
     }
+
+    const previousTag = tagRange.from?.name
+    if (previousTag == null) {
+      failOrError(
+        `💥 Unable to retrieve previous tag given ${this.toTag}`,
+        this.failOnError
+      )
+      return null
+    }
+    this.fromTag = previousTag
+    core.debug(`fromTag resolved via previousTag as: ${previousTag}`)
+    core.endGroup()
 
     const options = {
       owner: this.owner,

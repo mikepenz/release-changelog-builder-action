@@ -1,7 +1,7 @@
-import * as fs from 'fs'
-import {Configuration, DefaultConfiguration} from './configuration'
 import * as core from '@actions/core'
+import * as fs from 'fs'
 import * as path from 'path'
+import {Configuration, DefaultConfiguration} from './configuration'
 
 /**
  * Resolves the repository path, relatively to the GITHUB_WORKSPACE

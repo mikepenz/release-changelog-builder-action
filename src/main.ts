@@ -1,10 +1,10 @@
 import * as core from '@actions/core'
+import * as github from '@actions/github'
 import {
-  retrieveRepositoryPath,
   resolveConfiguration,
+  retrieveRepositoryPath,
   writeOutput
 } from './utils'
-import * as github from '@actions/github'
 import {ReleaseNotesBuilder} from './releaseNotesBuilder'
 
 async function run(): Promise<void> {
