@@ -750,10 +750,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ReleaseNotesBuilder = void 0;
 const core = __importStar(__nccwpck_require__(2186));
-const github = __importStar(__nccwpck_require__(5438));
 const configuration_1 = __nccwpck_require__(5527);
 const rest_1 = __nccwpck_require__(5375);
-const gitHelper_1 = __nccwpck_require__(353);
 const releaseNotes_1 = __nccwpck_require__(5882);
 const tags_1 = __nccwpck_require__(7532);
 const utils_1 = __nccwpck_require__(918);
@@ -772,22 +770,8 @@ class ReleaseNotesBuilder {
         this.configuration = configuration;
     }
     build() {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
-            // ensure to resolve the toTag if it was not provided
-            if (!this.toTag) {
-                // if not specified try to retrieve tag from github.context.ref
-                if (github.context.ref.startsWith('refs/tags/')) {
-                    this.toTag = github.context.ref.replace('refs/tags/', '');
-                    core.info(`🔖 Resolved current tag (${this.toTag}) from the 'github.context.ref'`);
-                }
-                else {
-                    // if not specified try to retrieve tag from git
-                    const gitHelper = yield gitHelper_1.createCommandManager(this.repositoryPath);
-                    const latestTag = yield gitHelper.latestTag();
-                    this.toTag = latestTag;
-                    core.info(`🔖 Resolved current tag (${this.toTag}) from 'git rev-list --tags --skip=0 --max-count=1'`);
-                }
-            }
             if (!this.owner) {
                 utils_1.failOrError(`💥 Missing or couldn't resolve 'owner'`, this.failOnError);
                 return null;
@@ -804,34 +788,34 @@ class ReleaseNotesBuilder {
                 core.setOutput('repo', this.repo);
                 core.debug(`Resolved 'repo' as ${this.repo}`);
             }
-            if (!this.toTag) {
-                utils_1.failOrError(`💥 Missing or couldn't resolve 'toTag'`, this.failOnError);
-                return null;
-            }
-            else {
-                core.setOutput('toTag', this.toTag);
-                core.debug(`Resolved 'toTag' as ${this.toTag}`);
-            }
             core.endGroup();
             // load octokit instance
             const octokit = new rest_1.Octokit({
                 auth: `token ${this.token || process.env.GITHUB_TOKEN}`
             });
-            // ensure to resolve the fromTag if it was not provided specifically
-            if (!this.fromTag) {
-                core.startGroup(`🔖 Resolve previous tag`);
-                core.debug(`fromTag undefined, trying to resolve via API`);
-                const tagsApi = new tags_1.Tags(octokit);
-                const previousTag = yield tagsApi.findPredecessorTag(this.repositoryPath, this.owner, this.repo, this.toTag, this.ignorePreReleases, this.configuration.max_tags_to_fetch ||
-                    configuration_1.DefaultConfiguration.max_tags_to_fetch, this.configuration.tag_resolver || configuration_1.DefaultConfiguration.tag_resolver);
-                if (previousTag == null) {
-                    utils_1.failOrError(`💥 Unable to retrieve previous tag given ${this.toTag}`, this.failOnError);
-                    return null;
-                }
-                this.fromTag = previousTag.name;
-                core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`);
-                core.endGroup();
+            // ensure proper from <-> to tag range
+            core.startGroup(`🔖 Resolve tags`);
+            const tagsApi = new tags_1.Tags(octokit);
+            const tagRange = yield tagsApi.retrieveRange(this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.ignorePreReleases, this.configuration.max_tags_to_fetch ||
+                configuration_1.DefaultConfiguration.max_tags_to_fetch, this.configuration.tag_resolver || configuration_1.DefaultConfiguration.tag_resolver);
+            const thisTag = (_a = tagRange.to) === null || _a === void 0 ? void 0 : _a.name;
+            if (!thisTag) {
+                utils_1.failOrError(`💥 Missing or couldn't resolve 'toTag'`, this.failOnError);
+                return null;
             }
+            else {
+                this.toTag = thisTag;
+                core.setOutput('toTag', thisTag);
+                core.debug(`Resolved 'toTag' as ${thisTag}`);
+            }
+            const previousTag = (_b = tagRange.from) === null || _b === void 0 ? void 0 : _b.name;
+            if (previousTag == null) {
+                utils_1.failOrError(`💥 Unable to retrieve previous tag given ${this.toTag}`, this.failOnError);
+                return null;
+            }
+            this.fromTag = previousTag;
+            core.debug(`fromTag resolved via previousTag as: ${previousTag}`);
+            core.endGroup();
             const options = {
                 owner: this.owner,
                 repo: this.repo,
@@ -896,6 +880,7 @@ var __asyncValues = (this && this.__asyncValues) || function (o) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.sortTags = exports.Tags = void 0;
 const core = __importStar(__nccwpck_require__(2186));
+const github = __importStar(__nccwpck_require__(5438));
 const semver = __importStar(__nccwpck_require__(1383));
 const semver_1 = __nccwpck_require__(1383);
 const gitHelper_1 = __nccwpck_require__(353);
@@ -940,9 +925,9 @@ class Tags {
             return tagsInfo;
         });
     }
-    findPredecessorTag(repositoryPath, owner, repo, tag, ignorePreReleases, maxTagsToFetch, tagResolver) {
+    findPredecessorTag(sortedTags, repositoryPath, tag, ignorePreReleases) {
         return __awaiter(this, void 0, void 0, function* () {
-            const tags = sortTags(yield this.getTags(owner, repo, maxTagsToFetch), tagResolver);
+            const tags = sortedTags;
             try {
                 const length = tags.length;
                 if (tags.length > 1) {
@@ -976,6 +961,66 @@ class Tags {
                 }
                 return null;
             }
+        });
+    }
+    retrieveRange(repositoryPath, owner, repo, fromTag, toTag, ignorePreReleases, maxTagsToFetch, tagResolver) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            const tags = sortTags(yield this.getTags(owner, repo, maxTagsToFetch), tagResolver);
+            let resultToTag;
+            let resultFromTag;
+            // ensure to resolve the toTag if it was not provided
+            if (!toTag) {
+                // if not specified try to retrieve tag from github.context.ref
+                if (((_a = github.context.ref) === null || _a === void 0 ? void 0 : _a.startsWith('refs/tags/')) === true) {
+                    toTag = github.context.ref.replace('refs/tags/', '');
+                    core.info(`🔖 Resolved current tag (${toTag}) from the 'github.context.ref'`);
+                    resultToTag = {
+                        name: toTag,
+                        commit: toTag
+                    };
+                }
+                else if (tags.length > 1) {
+                    resultToTag = tags[0];
+                    core.info(`🔖 Resolved current tag (${resultToTag.name}) from the tags git API`);
+                }
+                else {
+                    // if not specified try to retrieve tag from git
+                    const gitHelper = yield gitHelper_1.createCommandManager(repositoryPath);
+                    const latestTag = yield gitHelper.latestTag();
+                    core.info(`🔖 Resolved current tag (${latestTag}) from 'git rev-list --tags --skip=0 --max-count=1'`);
+                    resultToTag = {
+                        name: latestTag,
+                        commit: latestTag
+                    };
+                }
+            }
+            else {
+                resultToTag = {
+                    name: toTag,
+                    commit: toTag
+                };
+            }
+            // ensure toTag is specified
+            toTag = resultToTag.name;
+            // resolve the fromTag if not defined
+            if (!fromTag) {
+                core.debug(`fromTag undefined, trying to resolve via API`);
+                resultFromTag = yield this.findPredecessorTag(tags, repositoryPath, toTag, ignorePreReleases);
+                if (resultFromTag != null) {
+                    core.info(`🔖 Resolved previous tag (${resultFromTag.name}) from the tags git API`);
+                }
+            }
+            else {
+                resultFromTag = {
+                    name: fromTag,
+                    commit: fromTag
+                };
+            }
+            return {
+                from: resultFromTag,
+                to: resultToTag
+            };
         });
     }
 }

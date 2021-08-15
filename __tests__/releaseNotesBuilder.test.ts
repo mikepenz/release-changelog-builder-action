@@ -28,6 +28,26 @@ it('Should match generated changelog (unspecified fromTag)', async () => {
 `)
 })
 
+it('Should match generated changelog (unspecified tags)', async () => {
+  const configuration = resolveConfiguration('', 'configs/configuration.json')
+  const releaseNotesBuilder = new ReleaseNotesBuilder(
+    null,
+    '.',
+    'mikepenz',
+    'action-junit-report-legacy',
+    null,
+    null,
+    false,
+    false,
+    false,
+    configuration
+  )
+
+  const changeLog = await releaseNotesBuilder.build()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(`## 🐛 Fixes\n\n- Stacktrace Data can be an array\n   - PR: #39\n\n`)
+})
+
 it('Should use empty placeholder', async () => {
   const configuration = resolveConfiguration('', 'configs/configuration.json')
   const releaseNotesBuilder = new ReleaseNotesBuilder(
