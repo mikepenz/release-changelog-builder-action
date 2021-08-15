@@ -1,9 +1,15 @@
 import * as core from '@actions/core'
+import * as github from '@actions/github'
 import * as semver from 'semver'
 import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import {SemVer} from 'semver'
 import {TagResolver} from './configuration'
 import {createCommandManager} from './gitHelper'
+
+export interface TagResult {
+  from: TagInfo | null
+  to: TagInfo | null
+}
 
 export interface TagInfo {
   name: string
@@ -51,19 +57,12 @@ export class Tags {
   }
 
   async findPredecessorTag(
+    sortedTags: TagInfo[],
     repositoryPath: string,
-    owner: string,
-    repo: string,
     tag: string,
-    ignorePreReleases: boolean,
-    maxTagsToFetch: number,
-    tagResolver: TagResolver
+    ignorePreReleases: boolean
   ): Promise<TagInfo | null> {
-    const tags = sortTags(
-      await this.getTags(owner, repo, maxTagsToFetch),
-      tagResolver
-    )
-
+    const tags = sortedTags
     try {
       const length = tags.length
       if (tags.length > 1) {
@@ -100,6 +99,92 @@ export class Tags {
         core.warning(`⚠️ No tag found for the given repository`)
       }
       return null
+    }
+  }
+
+  async retrieveRange(
+    repositoryPath: string,
+    owner: string,
+    repo: string,
+    fromTag: string | null,
+    toTag: string | null,
+    ignorePreReleases: boolean,
+    maxTagsToFetch: number,
+    tagResolver: TagResolver
+  ): Promise<TagResult> {
+    const tags = sortTags(
+      await this.getTags(owner, repo, maxTagsToFetch),
+      tagResolver
+    )
+
+    let resultToTag: TagInfo | null
+    let resultFromTag: TagInfo | null
+
+    // ensure to resolve the toTag if it was not provided
+    if (!toTag) {
+      // if not specified try to retrieve tag from github.context.ref
+      if (github.context.ref?.startsWith('refs/tags/') === true) {
+        toTag = github.context.ref.replace('refs/tags/', '')
+        core.info(
+          `🔖 Resolved current tag (${toTag}) from the 'github.context.ref'`
+        )
+        resultToTag = {
+          name: toTag,
+          commit: toTag
+        }
+      } else if (tags.length > 1) {
+        resultToTag = tags[0]
+        core.info(
+          `🔖 Resolved current tag (${resultToTag.name}) from the tags git API`
+        )
+      } else {
+        // if not specified try to retrieve tag from git
+        const gitHelper = await createCommandManager(repositoryPath)
+        const latestTag = await gitHelper.latestTag()
+        core.info(
+          `🔖 Resolved current tag (${latestTag}) from 'git rev-list --tags --skip=0 --max-count=1'`
+        )
+        resultToTag = {
+          name: latestTag,
+          commit: latestTag
+        }
+      }
+    } else {
+      resultToTag = {
+        name: toTag,
+        commit: toTag
+      }
+    }
+
+    // ensure toTag is specified
+    toTag = resultToTag.name
+
+    // resolve the fromTag if not defined
+    if (!fromTag) {
+      core.debug(`fromTag undefined, trying to resolve via API`)
+
+      resultFromTag = await this.findPredecessorTag(
+        tags,
+        repositoryPath,
+        toTag,
+        ignorePreReleases
+      )
+
+      if (resultFromTag != null) {
+        core.info(
+          `🔖 Resolved previous tag (${resultFromTag.name}) from the tags git API`
+        )
+      }
+    } else {
+      resultFromTag = {
+        name: fromTag,
+        commit: fromTag
+      }
+    }
+
+    return {
+      from: resultFromTag,
+      to: resultToTag
     }
   }
 }
