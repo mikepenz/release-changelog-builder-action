@@ -1,7 +1,6 @@
 import * as core from '@actions/core'
 import {
   Category,
-  Configuration,
   DefaultConfiguration,
   Extractor,
   Transformer
@@ -11,10 +10,10 @@ import {ReleaseNotesOptions} from './releaseNotes'
 
 export function buildChangelog(
   prs: PullRequestInfo[],
-  config: Configuration,
   options: ReleaseNotesOptions
 ): string {
   // sort to target order
+  const config = options.configuration
   const sort = config.sort || DefaultConfiguration.sort
   const sortAsc = sort.toUpperCase() === 'ASC'
   prs = sortPullRequests(prs, sortAsc)

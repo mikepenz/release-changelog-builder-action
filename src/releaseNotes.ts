@@ -20,8 +20,6 @@ export class ReleaseNotes {
   constructor(private octokit: Octokit, private options: ReleaseNotesOptions) {}
 
   async pull(): Promise<string | null> {
-    const {configuration} = this.options
-
     let mergedPullRequests: PullRequestInfo[]
     if (!this.options.commitMode) {
       core.startGroup(`🚀 Load pull requests`)
@@ -40,11 +38,7 @@ export class ReleaseNotes {
     }
 
     core.startGroup('📦 Build changelog')
-    const resultChangelog = buildChangelog(
-      mergedPullRequests,
-      configuration,
-      this.options
-    )
+    const resultChangelog = buildChangelog(mergedPullRequests, this.options)
     core.endGroup()
     return resultChangelog
   }
