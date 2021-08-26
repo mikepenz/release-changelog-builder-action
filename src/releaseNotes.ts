@@ -20,12 +20,21 @@ export class ReleaseNotes {
   constructor(private octokit: Octokit, private options: ReleaseNotesOptions) {}
 
   async pull(): Promise<string | null> {
-    const {configuration} = this.options
-
     let mergedPullRequests: PullRequestInfo[]
     if (!this.options.commitMode) {
       core.startGroup(`🚀 Load pull requests`)
       mergedPullRequests = await this.getMergedPullRequests(this.octokit)
+
+      // define the included PRs within this release as output
+      core.setOutput(
+        'pull_requests',
+        mergedPullRequests
+          .map(pr => {
+            return pr.number
+          })
+          .join(',')
+      )
+
       core.endGroup()
     } else {
       core.startGroup(`🚀 Load commit history`)
@@ -40,11 +49,7 @@ export class ReleaseNotes {
     }
 
     core.startGroup('📦 Build changelog')
-    const resultChangelog = buildChangelog(
-      mergedPullRequests,
-      configuration,
-      this.options
-    )
+    const resultChangelog = buildChangelog(mergedPullRequests, this.options)
     core.endGroup()
     return resultChangelog
   }

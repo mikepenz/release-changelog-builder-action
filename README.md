@@ -76,12 +76,13 @@ A full set list of possible output values for this action.
 
 | **Output**          | **Description**                                                                                                           |
 |---------------------|---------------------------------------------------------------------------------------------------------------------------|
-| `outputs.changelog` | The built release changelog built from the merged pull requests                                                           |
-| `outputs.owner`     | Specifies the owner of the repository processed                                                                           |
-| `outputs.repo`      | Describes the repository name, which was processed                                                                        |
-| `outputs.fromTag`   | Defines the `fromTag` which describes the lower bound to process pull requests for                                        |
-| `outputs.toTag`     | Defines the `toTag` which describes the upper bound to process pull request for                                           |
-| `outputs.failed`    | Defines if there was an issue with the action run, and the changelog may not have been generated correctly. [true, false] |
+| `outputs.changelog`       | The built release changelog built from the merged pull requests                                                           |
+| `outputs.owner`           | Specifies the owner of the repository processed                                                                           |
+| `outputs.repo`            | Describes the repository name, which was processed                                                                        |
+| `outputs.fromTag`         | Defines the `fromTag` which describes the lower bound to process pull requests for                                        |
+| `outputs.toTag`           | Defines the `toTag` which describes the upper bound to process pull request for                                           |
+| `outputs.failed`          | Defines if there was an issue with the action run, and the changelog may not have been generated correctly. [true, false] |
+| `outputs.pull_requests`   | Defines a `,` joined array with all PR IDs associated with the generated changelog.                                       |
 
 
 ## Full Sample 🖥️
@@ -296,8 +297,9 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | empty_template              | Template to pick if no changes are detected. See [Template placeholders](#template-placeholders) for possible values                                                                                                               |
 | label_extractor             | An array of `transform` specifications, offering a flexible API to extract additinal labels from a PR (Default: `body`, Default in commit mode: `commit message`).                                                                 |
 | label_extractor.pattern     | A `regex` pattern, extracting values of the change message.                                                                                                                                                                        |
-| label_extractor.target      | The result pattern. The result text will be used as label. If empty, no label is created.                                                                                                                                          |
+| label_extractor.target      | The result pattern. The result text will be used as label. If empty, no label is created. (Unused for `match` method)                                                                                                              |
 | label_extractor.on_property | The property to retrieve the text from. This is optional. Defaults to: `body`. Alternative values: `title`, `author`, `milestone`.                                                                                                 |
+| label_extractor.method      | The extraction method used. Defaults to: `replace`. Alternative value: `match`. The method specified references the JavaScript String method.                                                                                      |
 | label_extractor.flags       | Defines the regex flags specified for the pattern. Default: `gu`                                                                                                                                                                   |
 | transformers                | An array of `transform` specifications, offering a flexible API to modify the text per pull request. This is applied on the change text created with `pr_template`. `transformers` are executed per change, in the order specified |
 | transformer.pattern         | A `regex` pattern, extracting values of the change message.                                                                                                                                                                        |
