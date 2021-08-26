@@ -26,7 +26,14 @@ export class ReleaseNotes {
       mergedPullRequests = await this.getMergedPullRequests(this.octokit)
 
       // define the included PRs within this release as output
-      core.setOutput('pull_requests', mergedPullRequests.map(pr => { return pr.number }).join(','))
+      core.setOutput(
+        'pull_requests',
+        mergedPullRequests
+          .map(pr => {
+            return pr.number
+          })
+          .join(',')
+      )
 
       core.endGroup()
     } else {
