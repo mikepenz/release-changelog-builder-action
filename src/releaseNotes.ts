@@ -24,6 +24,17 @@ export class ReleaseNotes {
     if (!this.options.commitMode) {
       core.startGroup(`🚀 Load pull requests`)
       mergedPullRequests = await this.getMergedPullRequests(this.octokit)
+
+      // define the included PRs within this release as output
+      core.setOutput(
+        'pull_requests',
+        mergedPullRequests
+          .map(pr => {
+            return pr.number
+          })
+          .join(',')
+      )
+
       core.endGroup()
     } else {
       core.startGroup(`🚀 Load commit history`)
