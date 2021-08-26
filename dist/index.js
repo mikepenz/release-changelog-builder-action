@@ -1134,20 +1134,31 @@ function buildChangelog(prs, options) {
     for (const extractor of labelExtractors) {
         if (extractor.pattern != null) {
             for (const pr of prs) {
-                let label;
+                let onValue;
                 if (extractor.onProperty !== undefined) {
                     let value = pr[extractor.onProperty];
                     if (value === undefined) {
                         core.warning(`⚠️ the provided property '${extractor.onProperty}' for \`label_extractor\` is not valid`);
                         value = pr['body'];
                     }
-                    label = value.replace(extractor.pattern, extractor.target);
+                    onValue = value;
                 }
                 else {
-                    label = pr.body.replace(extractor.pattern, extractor.target);
+                    onValue = pr.body;
                 }
-                if (label !== '') {
-                    pr.labels.add(label.toLocaleLowerCase());
+                if (extractor.method === 'match') {
+                    const lables = onValue.match(extractor.pattern);
+                    if (lables !== null) {
+                        for (const label of lables) {
+                            pr.labels.add(label.toLocaleLowerCase());
+                        }
+                    }
+                }
+                else {
+                    const label = onValue.replace(extractor.pattern, extractor.target);
+                    if (label !== '') {
+                        pr.labels.add(label.toLocaleLowerCase());
+                    }
                 }
             }
         }
@@ -1281,21 +1292,23 @@ function validateTransformers(specifiedTransformers) {
         var _a;
         try {
             let onProperty = undefined;
+            let method = undefined;
             if (transformer.hasOwnProperty('on_property')) {
                 onProperty = transformer.on_property;
+                method = transformer.method;
             }
             return {
                 pattern: new RegExp(transformer.pattern.replace('\\\\', '\\'), (_a = transformer.flags) !== null && _a !== void 0 ? _a : 'gu'),
-                target: transformer.target,
-                onProperty
+                target: transformer.target || '',
+                onProperty,
+                method
             };
         }
         catch (e) {
             core.warning(`⚠️ Bad replacer regex: ${transformer.pattern}`);
             return {
                 pattern: null,
-                target: '',
-                onProperty: undefined
+                target: ''
             };
         }
     })

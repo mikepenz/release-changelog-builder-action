@@ -22,12 +22,13 @@ export interface Category {
 
 export interface Transformer {
   pattern: string
-  target: string
-  flags?: string
+  target?: string
+  flags?: string // the regex flag to use for RegExp
 }
 
 export interface Extractor extends Transformer {
-  on_property: 'title' | 'author' | 'milestone' | 'body' | undefined
+  on_property?: 'title' | 'author' | 'milestone' | 'body' | undefined // retrieve the property to extract the value from
+  method?: 'replace' | 'match' | undefined // the method to use to extract the value
 }
 
 export interface TagResolver {
