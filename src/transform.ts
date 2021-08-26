@@ -1,7 +1,6 @@
 import * as core from '@actions/core'
 import {
   Category,
-  Configuration,
   DefaultConfiguration,
   Extractor,
   Transformer
@@ -11,10 +10,10 @@ import {ReleaseNotesOptions} from './releaseNotes'
 
 export function buildChangelog(
   prs: PullRequestInfo[],
-  config: Configuration,
   options: ReleaseNotesOptions
 ): string {
   // sort to target order
+  const config = options.configuration
   const sort = config.sort || DefaultConfiguration.sort
   const sortAsc = sort.toUpperCase() === 'ASC'
   prs = sortPullRequests(prs, sortAsc)
@@ -25,7 +24,7 @@ export function buildChangelog(
   for (const extractor of labelExtractors) {
     if (extractor.pattern != null) {
       for (const pr of prs) {
-        let label
+        let onValue
         if (extractor.onProperty !== undefined) {
           let value: string = pr[extractor.onProperty]
           if (value === undefined) {
@@ -34,12 +33,23 @@ export function buildChangelog(
             )
             value = pr['body']
           }
-          label = value.replace(extractor.pattern, extractor.target)
+          onValue = value
         } else {
-          label = pr.body.replace(extractor.pattern, extractor.target)
+          onValue = pr.body
         }
-        if (label !== '') {
-          pr.labels.add(label.toLocaleLowerCase())
+
+        if (extractor.method === 'match') {
+          const lables = onValue.match(extractor.pattern)
+          if (lables !== null) {
+            for (const label of lables) {
+              pr.labels.add(label.toLocaleLowerCase())
+            }
+          }
+        } else {
+          const label = onValue.replace(extractor.pattern, extractor.target)
+          if (label !== '') {
+            pr.labels.add(label.toLocaleLowerCase())
+          }
         }
       }
     }
@@ -252,8 +262,10 @@ function validateTransformers(
     .map(transformer => {
       try {
         let onProperty = undefined
+        let method = undefined
         if (transformer.hasOwnProperty('on_property')) {
           onProperty = (transformer as Extractor).on_property
+          method = (transformer as Extractor).method
         }
 
         return {
@@ -261,15 +273,15 @@ function validateTransformers(
             transformer.pattern.replace('\\\\', '\\'),
             transformer.flags ?? 'gu'
           ),
-          target: transformer.target,
-          onProperty
+          target: transformer.target || '',
+          onProperty,
+          method
         }
       } catch (e) {
         core.warning(`⚠️ Bad replacer regex: ${transformer.pattern}`)
         return {
           pattern: null,
-          target: '',
-          onProperty: undefined
+          target: ''
         }
       }
     })
@@ -279,5 +291,6 @@ function validateTransformers(
 interface RegexTransformer {
   pattern: RegExp | null
   target: string
-  onProperty: 'title' | 'author' | 'milestone' | 'body' | undefined
+  onProperty?: 'title' | 'author' | 'milestone' | 'body' | undefined
+  method?: 'replace' | 'match' | undefined
 }
