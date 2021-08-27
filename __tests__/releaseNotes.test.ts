@@ -18,7 +18,7 @@ it('Should have empty changelog (tags)', async () => {
     toTag: 'v0.0.2',
     failOnError: false,
     commitMode: false,
-    configuration: configuration
+    configuration
   })
 
   const changeLog = await releaseNotes.pull()
@@ -35,7 +35,7 @@ it('Should match generated changelog (tags)', async () => {
     toTag: 'v0.0.3',
     failOnError: false,
     commitMode: false,
-    configuration: configuration
+    configuration
   })
 
   const changeLog = await releaseNotes.pull()
@@ -60,7 +60,7 @@ it('Should match generated changelog (refs)', async () => {
     toTag: 'fa3788c8c4b3373ef8424ce3eb008a5cd07cc5aa',
     failOnError: false,
     commitMode: false,
-    configuration: configuration
+    configuration
   })
 
   const changeLog = await releaseNotes.pull()
@@ -93,7 +93,7 @@ it('Should match generated changelog and replace all occurrences (refs)', async 
     toTag: 'fa3788c8c4b3373ef8424ce3eb008a5cd07cc5aa',
     failOnError: false,
     commitMode: false,
-    configuration: configuration
+    configuration
   })
 
   const changeLog = await releaseNotes.pull()
@@ -128,7 +128,7 @@ it('Should match ordered ASC', async () => {
     toTag: 'v0.5.0',
     failOnError: false,
     commitMode: false,
-    configuration: configuration
+    configuration
   })
 
   const changeLog = await releaseNotes.pull()
@@ -150,7 +150,7 @@ it('Should match ordered DESC', async () => {
     toTag: 'v0.5.0',
     failOnError: false,
     commitMode: false,
-    configuration: configuration
+    configuration
   })
 
   const changeLog = await releaseNotes.pull()
@@ -172,7 +172,7 @@ it('Should ignore PRs not merged into develop branch', async () => {
     toTag: 'v1.4.0',
     failOnError: false,
     commitMode: false,
-    configuration: configuration
+    configuration
   })
 
   const changeLog = await releaseNotes.pull()
@@ -192,7 +192,7 @@ it('Should ignore PRs not merged into main branch', async () => {
     toTag: 'v1.4.0',
     failOnError: false,
     commitMode: false,
-    configuration: configuration
+    configuration
   })
 
   const changeLog = await releaseNotes.pull()

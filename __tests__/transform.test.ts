@@ -1,240 +1,293 @@
 import {buildChangelog} from '../src/transform'
-import { PullRequestInfo } from '../src/pullRequests'
+import {PullRequestInfo} from '../src/pullRequests'
 import moment from 'moment'
-import { DefaultConfiguration } from '../src/configuration';
+import {DefaultConfiguration} from '../src/configuration'
 
 jest.setTimeout(180000)
 
-let configuration = DefaultConfiguration
+const configuration = DefaultConfiguration
 configuration.categories = [
   {
-    "title": "## 🚀 Features",
-    "labels": ["[Feature]"]
+    title: '## 🚀 Features',
+    labels: ['[Feature]']
   },
   {
-    "title": "## 🐛 Fixes",
-    "labels": ["[Bug]", "[Issue]"]
+    title: '## 🐛 Fixes',
+    labels: ['[Bug]', '[Issue]']
   },
   {
-    "title": "## 🧪 Tests",
-    "labels": ["[Test]"]
+    title: '## 🧪 Tests',
+    labels: ['[Test]']
   }
 ]
 
-let mergedPullRequests: PullRequestInfo[] = []
-mergedPullRequests.push({
-  number: 1,
-  title: "[Feature][AB-1234] - this is a PR 1 title message",
-  htmlURL: "",
-  baseBranch: "",
-  mergedAt: moment(),
-  mergeCommitSha: "sha1",
-  author: "Mike",
-  repoName: "test-repo",
-  labels: new Set<string>(),
-  milestone: "",
-  body: "no magic body for this matter",
-  assignees: [],
-  requestedReviewers: []
-}, {
-  number: 2,
-  title: "[Issue][AB-4321] - this is a PR 2 title message",
-  htmlURL: "",
-  baseBranch: "",
-  mergedAt: moment(),
-  mergeCommitSha: "sha1",
-  author: "Mike",
-  repoName: "test-repo",
-  labels: new Set<string>(),
-  milestone: "",
-  body: "no magic body for this matter",
-  assignees: [],
-  requestedReviewers: []
-}, {
-  number: 3,
-  title: "[Issue][Feature][AB-1234321] - this is a PR 3 title message",
-  htmlURL: "",
-  baseBranch: "",
-  mergedAt: moment(),
-  mergeCommitSha: "sha1",
-  author: "Mike",
-  repoName: "test-repo",
-  labels: new Set<string>(),
-  milestone: "",
-  body: "no magic body for this matter",
-  assignees: [],
-  requestedReviewers: []
-}, {
-  number: 4,
-  title: "[AB-404] - not found label",
-  htmlURL: "",
-  baseBranch: "",
-  mergedAt: moment(),
-  mergeCommitSha: "sha1",
-  author: "Mike",
-  repoName: "test-repo",
-  labels: new Set<string>(),
-  milestone: "",
-  body: "no magic body for this matter",
-  assignees: [],
-  requestedReviewers: []
-})
+// list of PRs without labels assigned (extract from title)
+const mergedPullRequests: PullRequestInfo[] = []
+mergedPullRequests.push(
+  {
+    number: 1,
+    title: '[Feature][AB-1234] - this is a PR 1 title message',
+    htmlURL: '',
+    baseBranch: '',
+    mergedAt: moment(),
+    mergeCommitSha: 'sha1',
+    author: 'Mike',
+    repoName: 'test-repo',
+    labels: new Set<string>(),
+    milestone: '',
+    body: 'no magic body for this matter',
+    assignees: [],
+    requestedReviewers: []
+  },
+  {
+    number: 2,
+    title: '[Issue][AB-4321] - this is a PR 2 title message',
+    htmlURL: '',
+    baseBranch: '',
+    mergedAt: moment(),
+    mergeCommitSha: 'sha1',
+    author: 'Mike',
+    repoName: 'test-repo',
+    labels: new Set<string>(),
+    milestone: '',
+    body: 'no magic body for this matter',
+    assignees: [],
+    requestedReviewers: []
+  },
+  {
+    number: 3,
+    title: '[Issue][Feature][AB-1234321] - this is a PR 3 title message',
+    htmlURL: '',
+    baseBranch: '',
+    mergedAt: moment(),
+    mergeCommitSha: 'sha1',
+    author: 'Mike',
+    repoName: 'test-repo',
+    labels: new Set<string>(),
+    milestone: '',
+    body: 'no magic body for this matter',
+    assignees: [],
+    requestedReviewers: []
+  },
+  {
+    number: 4,
+    title: '[AB-404] - not found label',
+    htmlURL: '',
+    baseBranch: '',
+    mergedAt: moment(),
+    mergeCommitSha: 'sha1',
+    author: 'Mike',
+    repoName: 'test-repo',
+    labels: new Set<string>(),
+    milestone: '',
+    body: 'no magic body for this matter',
+    assignees: [],
+    requestedReviewers: []
+  }
+)
 
 it('Extract label from title, combined regex', async () => {
   configuration.label_extractor = [
     {
-      "pattern": ".*(\\[Feature\\]|\\[Issue\\]).*",
-      "target": "$1",
-      "on_property": "title"
+      pattern: '.*(\\[Feature\\]|\\[Issue\\]).*',
+      target: '$1',
+      on_property: 'title'
     }
   ]
 
-  const resultChangelog = buildChangelog(
-    mergedPullRequests,
-    {
-      owner: "mikepenz",
-      repo: "test-repo",
-      fromTag: "1.0.0",
-      toTag: "2.0.0",
-      failOnError: false,
-      commitMode: false,
-      configuration: configuration
-    } 
-  )
+  const resultChangelog = buildChangelog(mergedPullRequests, {
+    owner: 'mikepenz',
+    repo: 'test-repo',
+    fromTag: '1.0.0',
+    toTag: '2.0.0',
+    failOnError: false,
+    commitMode: false,
+    configuration
+  })
 
-  expect(resultChangelog).toStrictEqual(`## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n\n`)
+  expect(resultChangelog).toStrictEqual(
+    `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n\n`
+  )
 })
 
 it('Extract label from title, split regex', async () => {
   configuration.label_extractor = [
     {
-      "pattern": ".*(\\[Feature\\]).*",
-      "target": "$1",
-      "on_property": "title"
+      pattern: '.*(\\[Feature\\]).*',
+      target: '$1',
+      on_property: 'title'
     },
     {
-      "pattern": ".*(\\[Issue\\]).*",
-      "target": "$1",
-      "on_property": "title"
+      pattern: '.*(\\[Issue\\]).*',
+      target: '$1',
+      on_property: 'title'
     }
   ]
 
-  const resultChangelog = buildChangelog(
-    mergedPullRequests,
-    {
-      owner: "mikepenz",
-      repo: "test-repo",
-      fromTag: "1.0.0",
-      toTag: "2.0.0",
-      failOnError: false,
-      commitMode: false,
-      configuration: configuration
-    } 
-  )
+  const resultChangelog = buildChangelog(mergedPullRequests, {
+    owner: 'mikepenz',
+    repo: 'test-repo',
+    fromTag: '1.0.0',
+    toTag: '2.0.0',
+    failOnError: false,
+    commitMode: false,
+    configuration
+  })
 
-  expect(resultChangelog).toStrictEqual(`## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n`)
+  expect(resultChangelog).toStrictEqual(
+    `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n`
+  )
 })
 
 it('Extract label from title, match', async () => {
   configuration.label_extractor = [
     {
-      "pattern": "\\[Feature\\]",
-      "on_property": "title",
-      "method": "match"
+      pattern: '\\[Feature\\]',
+      on_property: 'title',
+      method: 'match'
     },
     {
-      "pattern": "\\[Issue\\]",
-      "on_property": "title",
-      "method": "match"
+      pattern: '\\[Issue\\]',
+      on_property: 'title',
+      method: 'match'
     }
   ]
 
-  const resultChangelog = buildChangelog(
-    mergedPullRequests,
-    {
-      owner: "mikepenz",
-      repo: "test-repo",
-      fromTag: "1.0.0",
-      toTag: "2.0.0",
-      failOnError: false,
-      commitMode: false,
-      configuration: configuration
-    } 
-  )
+  const resultChangelog = buildChangelog(mergedPullRequests, {
+    owner: 'mikepenz',
+    repo: 'test-repo',
+    fromTag: '1.0.0',
+    toTag: '2.0.0',
+    failOnError: false,
+    commitMode: false,
+    configuration
+  })
 
-  expect(resultChangelog).toStrictEqual(`## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n`)
+  expect(resultChangelog).toStrictEqual(
+    `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n`
+  )
 })
 
 it('Extract label from title, match multiple', async () => {
   configuration.label_extractor = [
     {
-      "pattern": "\\[Feature\\]|\\[Issue\\]",
-      "on_property": "title",
-      "method": "match"
+      pattern: '\\[Feature\\]|\\[Issue\\]',
+      on_property: 'title',
+      method: 'match'
     }
   ]
 
-  const resultChangelog = buildChangelog(
-    mergedPullRequests,
-    {
-      owner: "mikepenz",
-      repo: "test-repo",
-      fromTag: "1.0.0",
-      toTag: "2.0.0",
-      failOnError: false,
-      commitMode: false,
-      configuration: configuration
-    } 
-  )
+  const resultChangelog = buildChangelog(mergedPullRequests, {
+    owner: 'mikepenz',
+    repo: 'test-repo',
+    fromTag: '1.0.0',
+    toTag: '2.0.0',
+    failOnError: false,
+    commitMode: false,
+    configuration
+  })
 
-  expect(resultChangelog).toStrictEqual(`## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n`)
+  expect(resultChangelog).toStrictEqual(
+    `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n`
+  )
 })
 
-it('Extract label from title, match multiple exhaustive', async () => {
-  let customConfig = configuration
+// test set of PRs with lables predefined
+const pullRequestsWithLabels: PullRequestInfo[] = []
+pullRequestsWithLabels.push(
+  {
+    number: 1,
+    title: '[AB-1234] - this is a PR 1 title message',
+    htmlURL: '',
+    baseBranch: '',
+    mergedAt: moment(),
+    mergeCommitSha: 'sha1',
+    author: 'Mike',
+    repoName: 'test-repo',
+    labels: new Set<string>().add('Feature'),
+    milestone: '',
+    body: 'no magic body for this matter',
+    assignees: [],
+    requestedReviewers: []
+  },
+  {
+    number: 2,
+    title: '[AB-4321] - this is a PR 2 title message',
+    htmlURL: '',
+    baseBranch: '',
+    mergedAt: moment(),
+    mergeCommitSha: 'sha1',
+    author: 'Mike',
+    repoName: 'test-repo',
+    labels: new Set<string>().add('Issue'),
+    milestone: '',
+    body: 'no magic body for this matter',
+    assignees: [],
+    requestedReviewers: []
+  },
+  {
+    number: 3,
+    title: '[AB-1234321] - this is a PR 3 title message',
+    htmlURL: '',
+    baseBranch: '',
+    mergedAt: moment(),
+    mergeCommitSha: 'sha1',
+    author: 'Mike',
+    repoName: 'test-repo',
+    labels: new Set<string>().add('Issue').add('Feature'),
+    milestone: '',
+    body: 'no magic body for this matter',
+    assignees: [],
+    requestedReviewers: []
+  },
+  {
+    number: 4,
+    title: '[AB-404] - not found label',
+    htmlURL: '',
+    baseBranch: '',
+    mergedAt: moment(),
+    mergeCommitSha: 'sha1',
+    author: 'Mike',
+    repoName: 'test-repo',
+    labels: new Set<string>().add(''),
+    milestone: '',
+    body: 'no magic body for this matter',
+    assignees: [],
+    requestedReviewers: []
+  }
+)
+
+it('Match multiple labels exhaustive for category', async () => {
+  const customConfig = DefaultConfiguration
   customConfig.categories = [
     {
-      "title": "## 🚀 Features and 🐛 Issues",
-      "labels": ["[Feature]", "[Issue]"],
-      "exhaustive": true
+      title: '## 🚀 Features and 🐛 Issues',
+      labels: ['[Feature]', '[Issue]'],
+      exhaustive: true
     },
     {
-      "title": "## 🚀 Features",
-      "labels": ["[Feature]", "[Feature2]"],
-      "exhaustive": true
+      title: '## 🚀 Features',
+      labels: ['[Feature]', '[Feature2]'],
+      exhaustive: true
     },
     {
-      "title": "## 🐛 Fixes",
-      "labels": ["[Issue]", "[Issue2]"],
-      "exhaustive": true
-    }
-  ]
-  
-  customConfig.label_extractor = [
-    {
-      "pattern": "\\[Feature\\]",
-      "on_property": "title",
-      "method": "match"
-    },
-    {
-      "pattern": "\\[Issue\\]",
-      "on_property": "title",
-      "method": "match"
+      title: '## 🐛 Fixes',
+      labels: ['[Issue]', '[Issue2]'],
+      exhaustive: true
     }
   ]
 
-  const resultChangelog = buildChangelog(
-    mergedPullRequests,
-    {
-      owner: "mikepenz",
-      repo: "test-repo",
-      fromTag: "1.0.0",
-      toTag: "2.0.0",
-      failOnError: false,
-      commitMode: false,
-      configuration: customConfig
-    } 
+  const resultChangelog = buildChangelog(mergedPullRequests, {
+    owner: 'mikepenz',
+    repo: 'test-repo',
+    fromTag: '1.0.0',
+    toTag: '2.0.0',
+    failOnError: false,
+    commitMode: false,
+    configuration: customConfig
+  })
+
+  expect(resultChangelog).toStrictEqual(
+    `## 🚀 Features and 🐛 Issues\n\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
-
-  expect(resultChangelog).toStrictEqual(`## 🚀 Features and 🐛 Issues\n\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n`)
 })
