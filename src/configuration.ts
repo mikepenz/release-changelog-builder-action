@@ -3,32 +3,34 @@ export interface Configuration {
   max_pull_requests: number
   max_back_track_time_days: number
   exclude_merge_branches: string[]
-  sort: string
+  sort: string // "ASC" or "DESC"
   template: string
   pr_template: string
   empty_template: string
   categories: Category[]
   ignore_labels: string[]
   label_extractor: Extractor[]
+  duplicate_filter?: Extractor // extract an identifier from a PR used to detect duplicates, will keep the last match (depends on `sort`)
   transformers: Transformer[]
   tag_resolver: TagResolver
   base_branches: string[]
 }
 
 export interface Category {
-  title: string
-  labels: string[]
+  title: string // the title of this category
+  labels: string[] // labels to associate PRs to this category
+  exhaustive?: boolean // requires all labels to be present in the PR
 }
 
 export interface Transformer {
-  pattern: string
-  target?: string
+  pattern: string // the regex pattern to match
+  target?: string // the target string to transform the source string using the regex to
   flags?: string // the regex flag to use for RegExp
 }
 
 export interface Extractor extends Transformer {
   on_property?: 'title' | 'author' | 'milestone' | 'body' | undefined // retrieve the property to extract the value from
-  method?: 'replace' | 'match' | undefined // the method to use to extract the value
+  method?: 'replace' | 'match' | undefined // the method to use to extract the value, `match` will not use the `target` property
 }
 
 export interface TagResolver {
@@ -60,6 +62,7 @@ export const DefaultConfiguration: Configuration = {
   ], // the categories to support for the ordering
   ignore_labels: ['ignore'], // list of lables being ignored from the changelog
   label_extractor: [], // extracts additional labels from the commit message given a regex
+  duplicate_filter: undefined, // extract an identifier from a PR used to detect duplicates, will keep the last match (depends on `sort`)
   transformers: [], // transformers to apply on the PR description according to the `pr_template`
   tag_resolver: {
     // defines the logic on how to resolve the previous tag, only relevant if `fromTag` is not specified

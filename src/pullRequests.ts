@@ -40,7 +40,7 @@ export class PullRequests {
       })
 
       return mapPullRequest(data)
-    } catch (e) {
+    } catch (e: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
       core.warning(
         `⚠️ Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`
       )

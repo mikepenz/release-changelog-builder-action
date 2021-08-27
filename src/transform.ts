@@ -19,37 +19,42 @@ export function buildChangelog(
   prs = sortPullRequests(prs, sortAsc)
   core.info(`ℹ️ Sorted all pull requests ascending: ${sort}`)
 
+  // drop duplicate pull requests
+  if (config.duplicate_filter !== undefined) {
+    const extractor = validateTransformer(config.duplicate_filter)
+    if (extractor != null) {
+      core.info(`ℹ️ Remove duplicated pull requests using \`duplicate_filter\``)
+
+      const deduplicatedMap = new Map<string, PullRequestInfo>()
+      for (const pr of prs) {
+        const extracted = extractValues(pr, extractor, 'dupliate_filter')
+        if (extracted !== null && extracted.length > 0) {
+          deduplicatedMap.set(extracted[0], pr)
+        } else {
+          core.debug(
+            `ℹ️ PR (${pr.number}) did not resolve a ID using the \`duplicate_filter\``
+          )
+        }
+      }
+      const deduplicatedPRs = Array.from(deduplicatedMap.values())
+      const removedElements = prs.length - deduplicatedPRs.length
+      core.info(
+        `ℹ️ Removed ${removedElements} pull requests during deduplication`
+      )
+      prs = deduplicatedPRs
+    } else {
+      core.warning(`⚠️ Configured \`duplicate_filter\` invalid.`)
+    }
+  }
+
   // extract additional labels from the commit message
   const labelExtractors = validateTransformers(config.label_extractor)
   for (const extractor of labelExtractors) {
-    if (extractor.pattern != null) {
-      for (const pr of prs) {
-        let onValue
-        if (extractor.onProperty !== undefined) {
-          let value: string = pr[extractor.onProperty]
-          if (value === undefined) {
-            core.warning(
-              `⚠️ the provided property '${extractor.onProperty}' for \`label_extractor\` is not valid`
-            )
-            value = pr['body']
-          }
-          onValue = value
-        } else {
-          onValue = pr.body
-        }
-
-        if (extractor.method === 'match') {
-          const lables = onValue.match(extractor.pattern)
-          if (lables !== null) {
-            for (const label of lables) {
-              pr.labels.add(label.toLocaleLowerCase())
-            }
-          }
-        } else {
-          const label = onValue.replace(extractor.pattern, extractor.target)
-          if (label !== '') {
-            pr.labels.add(label.toLocaleLowerCase())
-          }
+    for (const pr of prs) {
+      const extracted = extractValues(pr, extractor, 'label_extractor')
+      if (extracted !== null) {
+        for (const label of extracted) {
+          pr.labels.add(label)
         }
       }
     }
@@ -103,14 +108,26 @@ export function buildChangelog(
 
     let matched = false
     for (const [category, pullRequests] of categorized) {
-      if (
-        haveCommonElements(
-          category.labels.map(lbl => lbl.toLocaleLowerCase()),
-          pr.labels
-        )
-      ) {
-        pullRequests.push(body)
-        matched = true
+      if (category.exhaustive === true) {
+        if (
+          haveEveryElements(
+            category.labels.map(lbl => lbl.toLocaleLowerCase()),
+            pr.labels
+          )
+        ) {
+          pullRequests.push(body)
+          matched = true
+        }
+      } else {
+        if (
+          haveCommonElements(
+            category.labels.map(lbl => lbl.toLocaleLowerCase()),
+            pr.labels
+          )
+        ) {
+          pullRequests.push(body)
+          matched = true
+        }
       }
     }
 
@@ -213,6 +230,10 @@ function haveCommonElements(arr1: string[], arr2: Set<string>): Boolean {
   return arr1.some(item => arr2.has(item))
 }
 
+function haveEveryElements(arr1: string[], arr2: Set<string>): Boolean {
+  return arr1.every(item => arr2.has(item))
+}
+
 function fillTemplate(pr: PullRequestInfo, template: string): string {
   let transformed = template
   transformed = transformed.replace(/\${{NUMBER}}/g, pr.number.toString())
@@ -260,32 +281,78 @@ function validateTransformers(
     specifiedTransformers || DefaultConfiguration.transformers
   return transformers
     .map(transformer => {
-      try {
-        let onProperty = undefined
-        let method = undefined
-        if (transformer.hasOwnProperty('on_property')) {
-          onProperty = (transformer as Extractor).on_property
-          method = (transformer as Extractor).method
-        }
-
-        return {
-          pattern: new RegExp(
-            transformer.pattern.replace('\\\\', '\\'),
-            transformer.flags ?? 'gu'
-          ),
-          target: transformer.target || '',
-          onProperty,
-          method
-        }
-      } catch (e) {
-        core.warning(`⚠️ Bad replacer regex: ${transformer.pattern}`)
-        return {
-          pattern: null,
-          target: ''
-        }
-      }
+      return validateTransformer(transformer)
     })
-    .filter(transformer => transformer.pattern != null)
+    .filter(transformer => transformer?.pattern != null)
+    .map(transformer => {
+      return transformer as RegexTransformer
+    })
+}
+
+function validateTransformer(
+  transformer?: Transformer
+): RegexTransformer | null {
+  if (transformer === undefined) {
+    return null
+  }
+  try {
+    let onProperty = undefined
+    let method = undefined
+    if (transformer.hasOwnProperty('on_property')) {
+      onProperty = (transformer as Extractor).on_property
+      method = (transformer as Extractor).method
+    }
+
+    return {
+      pattern: new RegExp(
+        transformer.pattern.replace('\\\\', '\\'),
+        transformer.flags ?? 'gu'
+      ),
+      target: transformer.target || '',
+      onProperty,
+      method
+    }
+  } catch (e) {
+    core.warning(`⚠️ Bad replacer regex: ${transformer.pattern}`)
+    return null
+  }
+}
+
+function extractValues(
+  pr: PullRequestInfo,
+  extractor: RegexTransformer,
+  extractor_usecase: string
+): string[] | null {
+  if (extractor.pattern == null) {
+    return null
+  }
+
+  let onValue
+  if (extractor.onProperty !== undefined) {
+    let value: string = pr[extractor.onProperty]
+    if (value === undefined) {
+      core.warning(
+        `⚠️ the provided property '${extractor.onProperty}' for \`${extractor_usecase}\` is not valid`
+      )
+      value = pr['body']
+    }
+    onValue = value
+  } else {
+    onValue = pr.body
+  }
+
+  if (extractor.method === 'match') {
+    const lables = onValue.match(extractor.pattern)
+    if (lables !== null) {
+      return lables.map(label => label.toLocaleLowerCase())
+    }
+  } else {
+    const label = onValue.replace(extractor.pattern, extractor.target)
+    if (label !== '') {
+      return [label.toLocaleLowerCase()]
+    }
+  }
+  return null
 }
 
 interface RegexTransformer {

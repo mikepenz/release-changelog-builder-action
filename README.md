@@ -175,11 +175,16 @@ This configuration is a `.json` file in the following format.
         "flags": "gu"
       },
       {
-        "pattern": "(.) (.+)",
-        "target": "$1",
-        "on_property": "title"
+        "pattern": "\\[Issue\\]",
+        "on_property": "title",
+        "method": "match"
       }
     ],
+    "duplicate_filter": {
+      "pattern": "\\[ABC-....\\]",
+      "on_property": "title",
+      "method": "match"
+    },
     "transformers": [
       {
         "pattern": "[\\-\\*] (\\[(...|TEST|CI|SKIP)\\])( )?(.+?)\n(.+?[\\-\\*] )(.+)",
@@ -290,17 +295,19 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | categories                  | An array of `category` specifications, offering a flexible way to group changes into categories                                                                                                                                    |
 | category.title              | The display name of a category in the changelog                                                                                                                                                                                    |
 | category.labels             | An array of labels, to match pull request labels against. If any PR label matches any category label, the pull request will show up under this category                                                                            |
+| category.exhaustive         | Will require all labels defined within this category to be present on the matching PR.                                                                                                                                             |
 | ignore_labels               | An array of labels, to match pull request labels against. If any PR label overlaps, the pull request will be ignored from the changelog. This takes precedence over category labels                                                |
 | sort                        | The sort order of pull requests. [ASC, DESC]                                                                                                                                                                                       |
 | template                    | Specifies the global template to pick for creating the changelog. See [Template placeholders](#template-placeholders) for possible values                                                                                          |
 | pr_template                 | Defines the per pull request template. See [PR Template placeholders](#pr-template-placeholders) for possible values                                                                                                               |
 | empty_template              | Template to pick if no changes are detected. See [Template placeholders](#template-placeholders) for possible values                                                                                                               |
-| label_extractor             | An array of `transform` specifications, offering a flexible API to extract additinal labels from a PR (Default: `body`, Default in commit mode: `commit message`).                                                                 |
+| label_extractor             | An array of `Extractor` specifications, offering a flexible API to extract additinal labels from a PR (Default: `body`, Default in commit mode: `commit message`).                                                                 |
 | label_extractor.pattern     | A `regex` pattern, extracting values of the change message.                                                                                                                                                                        |
 | label_extractor.target      | The result pattern. The result text will be used as label. If empty, no label is created. (Unused for `match` method)                                                                                                              |
 | label_extractor.on_property | The property to retrieve the text from. This is optional. Defaults to: `body`. Alternative values: `title`, `author`, `milestone`.                                                                                                 |
 | label_extractor.method      | The extraction method used. Defaults to: `replace`. Alternative value: `match`. The method specified references the JavaScript String method.                                                                                      |
 | label_extractor.flags       | Defines the regex flags specified for the pattern. Default: `gu`                                                                                                                                                                   |
+| duplicate_filter            | Defines the `Extractor` to use for retrieving the identifier for a PR. In case of duplicates will keep the last matching pull request (depends on `sort`). See `label_extractor` for details on `Extractor` properties.            |
 | transformers                | An array of `transform` specifications, offering a flexible API to modify the text per pull request. This is applied on the change text created with `pr_template`. `transformers` are executed per change, in the order specified |
 | transformer.pattern         | A `regex` pattern, extracting values of the change message.                                                                                                                                                                        |
 | transformer.target          | The result pattern, the regex groups will be filled into. Allows for full transformation of a pull request message. Including potentially specified texts                                                                          |
