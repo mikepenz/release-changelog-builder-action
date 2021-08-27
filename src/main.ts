@@ -56,7 +56,7 @@ async function run(): Promise<void> {
       core.debug(`Enabled writing the changelog to disk`)
       writeOutput(repositoryPath, outputFile, result)
     }
-  } catch (error) {
+  } catch (error: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
     core.setFailed(error.message)
   }
 }

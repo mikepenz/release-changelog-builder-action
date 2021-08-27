@@ -103,14 +103,26 @@ export function buildChangelog(
 
     let matched = false
     for (const [category, pullRequests] of categorized) {
-      if (
-        haveCommonElements(
-          category.labels.map(lbl => lbl.toLocaleLowerCase()),
-          pr.labels
-        )
-      ) {
-        pullRequests.push(body)
-        matched = true
+      if (category.exhaustive === true) {
+        if (
+          haveEveryElements(
+            category.labels.map(lbl => lbl.toLocaleLowerCase()),
+            pr.labels
+          )
+        ) {
+          pullRequests.push(body)
+          matched = true
+        }
+      } else {
+        if (
+          haveCommonElements(
+            category.labels.map(lbl => lbl.toLocaleLowerCase()),
+            pr.labels
+          )
+        ) {
+          pullRequests.push(body)
+          matched = true
+        }
       }
     }
 
@@ -211,6 +223,10 @@ export function fillAdditionalPlaceholders(
 
 function haveCommonElements(arr1: string[], arr2: Set<string>): Boolean {
   return arr1.some(item => arr2.has(item))
+}
+
+function haveEveryElements(arr1: string[], arr2: Set<string>): Boolean {
+  return arr1.every(item => arr2.has(item))
 }
 
 function fillTemplate(pr: PullRequestInfo, template: string): string {

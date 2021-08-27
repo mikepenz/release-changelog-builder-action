@@ -6,79 +6,79 @@ import { DefaultConfiguration } from '../src/configuration';
 jest.setTimeout(180000)
 
 let configuration = DefaultConfiguration
-  configuration.categories = [
-    {
-      "title": "## 🚀 Features",
-      "labels": ["[Feature]"]
-    },
-    {
-      "title": "## 🐛 Fixes",
-      "labels": ["[Bug]", "[Issue]"]
-    },
-    {
-      "title": "## 🧪 Tests",
-      "labels": ["[Test]"]
-    }
-  ]
+configuration.categories = [
+  {
+    "title": "## 🚀 Features",
+    "labels": ["[Feature]"]
+  },
+  {
+    "title": "## 🐛 Fixes",
+    "labels": ["[Bug]", "[Issue]"]
+  },
+  {
+    "title": "## 🧪 Tests",
+    "labels": ["[Test]"]
+  }
+]
 
-  let mergedPullRequests: PullRequestInfo[] = []
-  mergedPullRequests.push({
-    number: 1,
-    title: "[Feature][AB-1234] - this is a PR 1 title message",
-    htmlURL: "",
-    baseBranch: "",
-    mergedAt: moment(),
-    mergeCommitSha: "sha1",
-    author: "Mike",
-    repoName: "test-repo",
-    labels: new Set<string>(),
-    milestone: "",
-    body: "no magic body for this matter",
-    assignees: [],
-    requestedReviewers: []
-  }, {
-    number: 2,
-    title: "[Issue][AB-4321] - this is a PR 2 title message",
-    htmlURL: "",
-    baseBranch: "",
-    mergedAt: moment(),
-    mergeCommitSha: "sha1",
-    author: "Mike",
-    repoName: "test-repo",
-    labels: new Set<string>(),
-    milestone: "",
-    body: "no magic body for this matter",
-    assignees: [],
-    requestedReviewers: []
-  }, {
-    number: 3,
-    title: "[Issue][Feature][AB-1234321] - this is a PR 3 title message",
-    htmlURL: "",
-    baseBranch: "",
-    mergedAt: moment(),
-    mergeCommitSha: "sha1",
-    author: "Mike",
-    repoName: "test-repo",
-    labels: new Set<string>(),
-    milestone: "",
-    body: "no magic body for this matter",
-    assignees: [],
-    requestedReviewers: []
-  }, {
-    number: 4,
-    title: "[AB-404] - not found label",
-    htmlURL: "",
-    baseBranch: "",
-    mergedAt: moment(),
-    mergeCommitSha: "sha1",
-    author: "Mike",
-    repoName: "test-repo",
-    labels: new Set<string>(),
-    milestone: "",
-    body: "no magic body for this matter",
-    assignees: [],
-    requestedReviewers: []
-  })
+let mergedPullRequests: PullRequestInfo[] = []
+mergedPullRequests.push({
+  number: 1,
+  title: "[Feature][AB-1234] - this is a PR 1 title message",
+  htmlURL: "",
+  baseBranch: "",
+  mergedAt: moment(),
+  mergeCommitSha: "sha1",
+  author: "Mike",
+  repoName: "test-repo",
+  labels: new Set<string>(),
+  milestone: "",
+  body: "no magic body for this matter",
+  assignees: [],
+  requestedReviewers: []
+}, {
+  number: 2,
+  title: "[Issue][AB-4321] - this is a PR 2 title message",
+  htmlURL: "",
+  baseBranch: "",
+  mergedAt: moment(),
+  mergeCommitSha: "sha1",
+  author: "Mike",
+  repoName: "test-repo",
+  labels: new Set<string>(),
+  milestone: "",
+  body: "no magic body for this matter",
+  assignees: [],
+  requestedReviewers: []
+}, {
+  number: 3,
+  title: "[Issue][Feature][AB-1234321] - this is a PR 3 title message",
+  htmlURL: "",
+  baseBranch: "",
+  mergedAt: moment(),
+  mergeCommitSha: "sha1",
+  author: "Mike",
+  repoName: "test-repo",
+  labels: new Set<string>(),
+  milestone: "",
+  body: "no magic body for this matter",
+  assignees: [],
+  requestedReviewers: []
+}, {
+  number: 4,
+  title: "[AB-404] - not found label",
+  htmlURL: "",
+  baseBranch: "",
+  mergedAt: moment(),
+  mergeCommitSha: "sha1",
+  author: "Mike",
+  repoName: "test-repo",
+  labels: new Set<string>(),
+  milestone: "",
+  body: "no magic body for this matter",
+  assignees: [],
+  requestedReviewers: []
+})
 
 it('Extract label from title, combined regex', async () => {
   configuration.label_extractor = [
@@ -188,4 +188,53 @@ it('Extract label from title, match multiple', async () => {
   )
 
   expect(resultChangelog).toStrictEqual(`## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n`)
+})
+
+it('Extract label from title, match multiple exhaustive', async () => {
+  let customConfig = configuration
+  customConfig.categories = [
+    {
+      "title": "## 🚀 Features and 🐛 Issues",
+      "labels": ["[Feature]", "[Issue]"],
+      "exhaustive": true
+    },
+    {
+      "title": "## 🚀 Features",
+      "labels": ["[Feature]", "[Feature2]"],
+      "exhaustive": true
+    },
+    {
+      "title": "## 🐛 Fixes",
+      "labels": ["[Issue]", "[Issue2]"],
+      "exhaustive": true
+    }
+  ]
+  
+  customConfig.label_extractor = [
+    {
+      "pattern": "\\[Feature\\]",
+      "on_property": "title",
+      "method": "match"
+    },
+    {
+      "pattern": "\\[Issue\\]",
+      "on_property": "title",
+      "method": "match"
+    }
+  ]
+
+  const resultChangelog = buildChangelog(
+    mergedPullRequests,
+    {
+      owner: "mikepenz",
+      repo: "test-repo",
+      fromTag: "1.0.0",
+      toTag: "2.0.0",
+      failOnError: false,
+      commitMode: false,
+      configuration: customConfig
+    } 
+  )
+
+  expect(resultChangelog).toStrictEqual(`## 🚀 Features and 🐛 Issues\n\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n`)
 })
