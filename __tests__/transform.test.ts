@@ -1,11 +1,11 @@
 import {buildChangelog} from '../src/transform'
 import {PullRequestInfo} from '../src/pullRequests'
 import moment from 'moment'
-import {DefaultConfiguration} from '../src/configuration'
+import { DefaultConfiguration, Configuration } from '../src/configuration';
 
 jest.setTimeout(180000)
 
-const configuration = DefaultConfiguration
+const configuration = Object.assign({}, DefaultConfiguration)
 configuration.categories = [
   {
     title: '## 🚀 Features',
@@ -197,14 +197,14 @@ const pullRequestsWithLabels: PullRequestInfo[] = []
 pullRequestsWithLabels.push(
   {
     number: 1,
-    title: '[AB-1234] - this is a PR 1 title message',
+    title: '[ABC-1234] - this is a PR 1 title message',
     htmlURL: '',
     baseBranch: '',
     mergedAt: moment(),
     mergeCommitSha: 'sha1',
     author: 'Mike',
     repoName: 'test-repo',
-    labels: new Set<string>().add('Feature'),
+    labels: new Set<string>().add('feature'),
     milestone: '',
     body: 'no magic body for this matter',
     assignees: [],
@@ -212,14 +212,14 @@ pullRequestsWithLabels.push(
   },
   {
     number: 2,
-    title: '[AB-4321] - this is a PR 2 title message',
+    title: '[ABC-4321] - this is a PR 2 title message',
     htmlURL: '',
     baseBranch: '',
     mergedAt: moment(),
     mergeCommitSha: 'sha1',
     author: 'Mike',
     repoName: 'test-repo',
-    labels: new Set<string>().add('Issue'),
+    labels: new Set<string>().add('issue').add('fix'),
     milestone: '',
     body: 'no magic body for this matter',
     assignees: [],
@@ -227,14 +227,14 @@ pullRequestsWithLabels.push(
   },
   {
     number: 3,
-    title: '[AB-1234321] - this is a PR 3 title message',
+    title: '[ABC-1234] - this is a PR 3 title message',
     htmlURL: '',
     baseBranch: '',
-    mergedAt: moment(),
+    mergedAt: moment().add(1, 'days'),
     mergeCommitSha: 'sha1',
     author: 'Mike',
     repoName: 'test-repo',
-    labels: new Set<string>().add('Issue').add('Feature'),
+    labels: new Set<string>().add('issue').add('feature').add('fix'),
     milestone: '',
     body: 'no magic body for this matter',
     assignees: [],
@@ -258,26 +258,26 @@ pullRequestsWithLabels.push(
 )
 
 it('Match multiple labels exhaustive for category', async () => {
-  const customConfig = DefaultConfiguration
+  const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.categories = [
     {
       title: '## 🚀 Features and 🐛 Issues',
-      labels: ['[Feature]', '[Issue]'],
+      labels: ['Feature', 'Issue'],
       exhaustive: true
     },
     {
       title: '## 🚀 Features',
-      labels: ['[Feature]', '[Feature2]'],
+      labels: ['Feature', 'Feature2'],
       exhaustive: true
     },
     {
       title: '## 🐛 Fixes',
-      labels: ['[Issue]', '[Issue2]'],
+      labels: ['Issue', 'Issue2'],
       exhaustive: true
     }
   ]
 
-  const resultChangelog = buildChangelog(mergedPullRequests, {
+  const resultChangelog = buildChangelog(pullRequestsWithLabels, {
     owner: 'mikepenz',
     repo: 'test-repo',
     fromTag: '1.0.0',
@@ -288,6 +288,53 @@ it('Match multiple labels exhaustive for category', async () => {
   })
 
   expect(resultChangelog).toStrictEqual(
-    `## 🚀 Features and 🐛 Issues\n\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n`
+    `## 🚀 Features and 🐛 Issues\n\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n`
+  )
+})
+
+it('Deduplicate duplicated PRs', async () => {
+  const customConfig = Object.assign({}, DefaultConfiguration)
+  customConfig.duplicate_filter = {
+    pattern: '\\[ABC-....\\]',
+    on_property: 'title',
+    method: 'match'
+  }
+
+  const resultChangelog = buildChangelog(pullRequestsWithLabels, {
+    owner: 'mikepenz',
+    repo: 'test-repo',
+    fromTag: '1.0.0',
+    toTag: '2.0.0',
+    failOnError: false,
+    commitMode: false,
+    configuration: customConfig
+  })
+
+  expect(resultChangelog).toStrictEqual(
+    `## 🚀 Features\n\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n- [ABC-4321] - this is a PR 2 title message\n   - PR: #2\n\n`
+  )
+})
+
+it('Deduplicate duplicated PRs DESC', async () => {
+  const customConfig = Object.assign({}, DefaultConfiguration)
+  customConfig.sort = "DESC"
+  customConfig.duplicate_filter = {
+    pattern: '\\[ABC-....\\]',
+    on_property: 'title',
+    method: 'match'
+  }
+
+  const resultChangelog = buildChangelog(pullRequestsWithLabels, {
+    owner: 'mikepenz',
+    repo: 'test-repo',
+    fromTag: '1.0.0',
+    toTag: '2.0.0',
+    failOnError: false,
+    commitMode: false,
+    configuration: customConfig
+  })
+
+  expect(resultChangelog).toStrictEqual(
+    `## 🚀 Features\n\n- [ABC-1234] - this is a PR 1 title message\n   - PR: #1\n\n## 🐛 Fixes\n\n- [ABC-4321] - this is a PR 2 title message\n   - PR: #2\n\n`
   )
 })

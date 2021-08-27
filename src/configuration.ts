@@ -3,13 +3,14 @@ export interface Configuration {
   max_pull_requests: number
   max_back_track_time_days: number
   exclude_merge_branches: string[]
-  sort: string
+  sort: string // "ASC" or "DESC"
   template: string
   pr_template: string
   empty_template: string
   categories: Category[]
   ignore_labels: string[]
   label_extractor: Extractor[]
+  duplicate_filter?: Extractor // extract an identifier from a PR used to detect duplicates, will keep the last match (depends on `sort`)
   transformers: Transformer[]
   tag_resolver: TagResolver
   base_branches: string[]
@@ -61,6 +62,7 @@ export const DefaultConfiguration: Configuration = {
   ], // the categories to support for the ordering
   ignore_labels: ['ignore'], // list of lables being ignored from the changelog
   label_extractor: [], // extracts additional labels from the commit message given a regex
+  duplicate_filter: undefined, // extract an identifier from a PR used to detect duplicates, will keep the last match (depends on `sort`)
   transformers: [], // transformers to apply on the PR description according to the `pr_template`
   tag_resolver: {
     // defines the logic on how to resolve the previous tag, only relevant if `fromTag` is not specified

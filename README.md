@@ -326,7 +326,7 @@ $ npm run build && npm run package
 $ npm test
 
 # Verify lint is happy
-$ npm run lint -- --fixnpm run lint -- --fix
+$ npm run lint -- --fix
 ```
 
 It's suggested to export the token to your path before running the tests so that API calls can be done to GitHub.
