@@ -169,6 +169,7 @@ exports.DefaultConfiguration = {
     ],
     ignore_labels: ['ignore'],
     label_extractor: [],
+    duplicate_filter: undefined,
     transformers: [],
     tag_resolver: {
         // defines the logic on how to resolve the previous tag, only relevant if `fromTag` is not specified
@@ -1135,36 +1136,38 @@ function buildChangelog(prs, options) {
     const sortAsc = sort.toUpperCase() === 'ASC';
     prs = (0, pullRequests_1.sortPullRequests)(prs, sortAsc);
     core.info(`ℹ️ Sorted all pull requests ascending: ${sort}`);
+    // drop duplicate pull requests
+    if (config.duplicate_filter !== undefined) {
+        const extractor = validateTransformer(config.duplicate_filter);
+        if (extractor != null) {
+            core.info(`ℹ️ Remove duplicated pull requests using \`duplicate_filter\``);
+            const deduplicatedMap = new Map();
+            for (const pr of prs) {
+                const extracted = extractValues(pr, extractor, 'dupliate_filter');
+                if (extracted !== null && extracted.length > 0) {
+                    deduplicatedMap.set(extracted[0], pr);
+                }
+                else {
+                    core.debug(`ℹ️ PR (${pr.number}) did not resolve a ID using the \`duplicate_filter\``);
+                }
+            }
+            const deduplicatedPRs = Array.from(deduplicatedMap.values());
+            const removedElements = prs.length - deduplicatedPRs.length;
+            core.info(`ℹ️ Removed ${removedElements} pull requests during deduplication`);
+            prs = deduplicatedPRs;
+        }
+        else {
+            core.warning(`⚠️ Configured \`duplicate_filter\` invalid.`);
+        }
+    }
     // extract additional labels from the commit message
     const labelExtractors = validateTransformers(config.label_extractor);
     for (const extractor of labelExtractors) {
-        if (extractor.pattern != null) {
-            for (const pr of prs) {
-                let onValue;
-                if (extractor.onProperty !== undefined) {
-                    let value = pr[extractor.onProperty];
-                    if (value === undefined) {
-                        core.warning(`⚠️ the provided property '${extractor.onProperty}' for \`label_extractor\` is not valid`);
-                        value = pr['body'];
-                    }
-                    onValue = value;
-                }
-                else {
-                    onValue = pr.body;
-                }
-                if (extractor.method === 'match') {
-                    const lables = onValue.match(extractor.pattern);
-                    if (lables !== null) {
-                        for (const label of lables) {
-                            pr.labels.add(label.toLocaleLowerCase());
-                        }
-                    }
-                }
-                else {
-                    const label = onValue.replace(extractor.pattern, extractor.target);
-                    if (label !== '') {
-                        pr.labels.add(label.toLocaleLowerCase());
-                    }
+        for (const pr of prs) {
+            const extracted = extractValues(pr, extractor, 'label_extractor');
+            if (extracted !== null) {
+                for (const label of extracted) {
+                    pr.labels.add(label);
                 }
             }
         }
@@ -1306,30 +1309,66 @@ function validateTransformers(specifiedTransformers) {
     const transformers = specifiedTransformers || configuration_1.DefaultConfiguration.transformers;
     return transformers
         .map(transformer => {
-        var _a;
-        try {
-            let onProperty = undefined;
-            let method = undefined;
-            if (transformer.hasOwnProperty('on_property')) {
-                onProperty = transformer.on_property;
-                method = transformer.method;
-            }
-            return {
-                pattern: new RegExp(transformer.pattern.replace('\\\\', '\\'), (_a = transformer.flags) !== null && _a !== void 0 ? _a : 'gu'),
-                target: transformer.target || '',
-                onProperty,
-                method
-            };
-        }
-        catch (e) {
-            core.warning(`⚠️ Bad replacer regex: ${transformer.pattern}`);
-            return {
-                pattern: null,
-                target: ''
-            };
-        }
+        return validateTransformer(transformer);
     })
-        .filter(transformer => transformer.pattern != null);
+        .filter(transformer => (transformer === null || transformer === void 0 ? void 0 : transformer.pattern) != null)
+        .map(transformer => {
+        return transformer;
+    });
+}
+function validateTransformer(transformer) {
+    var _a;
+    if (transformer === undefined) {
+        return null;
+    }
+    try {
+        let onProperty = undefined;
+        let method = undefined;
+        if (transformer.hasOwnProperty('on_property')) {
+            onProperty = transformer.on_property;
+            method = transformer.method;
+        }
+        return {
+            pattern: new RegExp(transformer.pattern.replace('\\\\', '\\'), (_a = transformer.flags) !== null && _a !== void 0 ? _a : 'gu'),
+            target: transformer.target || '',
+            onProperty,
+            method
+        };
+    }
+    catch (e) {
+        core.warning(`⚠️ Bad replacer regex: ${transformer.pattern}`);
+        return null;
+    }
+}
+function extractValues(pr, extractor, extractor_usecase) {
+    if (extractor.pattern == null) {
+        return null;
+    }
+    let onValue;
+    if (extractor.onProperty !== undefined) {
+        let value = pr[extractor.onProperty];
+        if (value === undefined) {
+            core.warning(`⚠️ the provided property '${extractor.onProperty}' for \`${extractor_usecase}\` is not valid`);
+            value = pr['body'];
+        }
+        onValue = value;
+    }
+    else {
+        onValue = pr.body;
+    }
+    if (extractor.method === 'match') {
+        const lables = onValue.match(extractor.pattern);
+        if (lables !== null) {
+            return lables.map(label => label.toLocaleLowerCase());
+        }
+    }
+    else {
+        const label = onValue.replace(extractor.pattern, extractor.target);
+        if (label !== '') {
+            return [label.toLocaleLowerCase()];
+        }
+    }
+    return null;
 }
 
 
