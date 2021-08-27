@@ -80,7 +80,7 @@ class Commits {
                     sha: commit.sha || '',
                     summary: commit.commit.message.split('\n')[0],
                     message: commit.commit.message,
-                    date: moment_1.default((_a = commit.commit.committer) === null || _a === void 0 ? void 0 : _a.date),
+                    date: (0, moment_1.default)((_a = commit.commit.committer) === null || _a === void 0 ? void 0 : _a.date),
                     author: ((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.name) || '',
                     prNumber: undefined
                 });
@@ -269,7 +269,7 @@ class GitCommandManager {
     }
     execGit(args, allowAllExitCodes = false, silent = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            utils_1.directoryExistsSync(this.workingDirectory, true);
+            (0, utils_1.directoryExistsSync)(this.workingDirectory, true);
             const result = new GitOutput();
             const stdout = [];
             const options = {
@@ -349,10 +349,10 @@ function run() {
         try {
             // read in path specification, resolve github workspace, and repo path
             const inputPath = core.getInput('path');
-            const repositoryPath = utils_1.retrieveRepositoryPath(inputPath);
+            const repositoryPath = (0, utils_1.retrieveRepositoryPath)(inputPath);
             // read in configuration file if possible
             const configurationFile = core.getInput('configuration');
-            const configuration = utils_1.resolveConfiguration(repositoryPath, configurationFile);
+            const configuration = (0, utils_1.resolveConfiguration)(repositoryPath, configurationFile);
             // read in repository inputs
             const token = core.getInput('token');
             const owner = core.getInput('owner') || github.context.repo.owner;
@@ -370,10 +370,10 @@ function run() {
             const outputFile = core.getInput('outputFile');
             if (outputFile !== '') {
                 core.debug(`Enabled writing the changelog to disk`);
-                utils_1.writeOutput(repositoryPath, outputFile, result);
+                (0, utils_1.writeOutput)(repositoryPath, outputFile, result);
             }
         }
-        catch (error) {
+        catch (error /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
             core.setFailed(error.message);
         }
     });
@@ -444,7 +444,7 @@ class PullRequests {
                 });
                 return mapPullRequest(data);
             }
-            catch (e) {
+            catch (e /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
                 core.warning(`⚠️ Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`);
                 return null;
             }
@@ -471,7 +471,7 @@ class PullRequests {
                     }
                     const firstPR = prs[0];
                     if (firstPR === undefined ||
-                        (firstPR.merged_at && fromDate.isAfter(moment_1.default(firstPR.merged_at))) ||
+                        (firstPR.merged_at && fromDate.isAfter((0, moment_1.default)(firstPR.merged_at))) ||
                         mergedPRs.length >= maxPullRequests) {
                         if (mergedPRs.length >= maxPullRequests) {
                             core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
@@ -526,7 +526,7 @@ const mapPullRequest = (pr) => {
         title: pr.title,
         htmlURL: pr.html_url,
         baseBranch: pr.base.ref,
-        mergedAt: moment_1.default(pr.merged_at),
+        mergedAt: (0, moment_1.default)(pr.merged_at),
         mergeCommitSha: pr.merge_commit_sha || '',
         author: ((_a = pr.user) === null || _a === void 0 ? void 0 : _a.login) || '',
         repoName: pr.base.repo.full_name,
@@ -612,7 +612,7 @@ class ReleaseNotes {
                 return null;
             }
             core.startGroup('📦 Build changelog');
-            const resultChangelog = transform_1.buildChangelog(mergedPullRequests, this.options);
+            const resultChangelog = (0, transform_1.buildChangelog)(mergedPullRequests, this.options);
             core.endGroup();
             return resultChangelog;
         });
@@ -627,7 +627,7 @@ class ReleaseNotes {
                 commits = yield commitsApi.getDiff(owner, repo, fromTag, toTag);
             }
             catch (error) {
-                utils_1.failOrError(`💥 Failed to retrieve - Invalid tag? - Because of: ${error}`, failOnError);
+                (0, utils_1.failOrError)(`💥 Failed to retrieve - Invalid tag? - Because of: ${error}`, failOnError);
                 return [];
             }
             if (commits.length === 0) {
@@ -659,7 +659,7 @@ class ReleaseNotes {
             const pullRequestsApi = new pullRequests_1.PullRequests(octokit);
             const pullRequests = yield pullRequestsApi.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests || configuration_1.DefaultConfiguration.max_pull_requests);
             core.info(`ℹ️ Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`);
-            const prCommits = commits_1.filterCommits(commits, configuration.exclude_merge_branches ||
+            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches ||
                 configuration_1.DefaultConfiguration.exclude_merge_branches);
             core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`);
             // create array of commits for this release
@@ -691,7 +691,7 @@ class ReleaseNotes {
             if (commits.length === 0) {
                 return [];
             }
-            const prCommits = commits_1.filterCommits(commits, configuration.exclude_merge_branches ||
+            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches ||
                 configuration_1.DefaultConfiguration.exclude_merge_branches);
             core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`);
             return prCommits.map(function (commit) {
@@ -778,7 +778,7 @@ class ReleaseNotesBuilder {
         var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.owner) {
-                utils_1.failOrError(`💥 Missing or couldn't resolve 'owner'`, this.failOnError);
+                (0, utils_1.failOrError)(`💥 Missing or couldn't resolve 'owner'`, this.failOnError);
                 return null;
             }
             else {
@@ -786,7 +786,7 @@ class ReleaseNotesBuilder {
                 core.debug(`Resolved 'owner' as ${this.owner}`);
             }
             if (!this.repo) {
-                utils_1.failOrError(`💥 Missing or couldn't resolve 'owner'`, this.failOnError);
+                (0, utils_1.failOrError)(`💥 Missing or couldn't resolve 'owner'`, this.failOnError);
                 return null;
             }
             else {
@@ -805,7 +805,7 @@ class ReleaseNotesBuilder {
                 configuration_1.DefaultConfiguration.max_tags_to_fetch, this.configuration.tag_resolver || configuration_1.DefaultConfiguration.tag_resolver);
             const thisTag = (_a = tagRange.to) === null || _a === void 0 ? void 0 : _a.name;
             if (!thisTag) {
-                utils_1.failOrError(`💥 Missing or couldn't resolve 'toTag'`, this.failOnError);
+                (0, utils_1.failOrError)(`💥 Missing or couldn't resolve 'toTag'`, this.failOnError);
                 return null;
             }
             else {
@@ -815,7 +815,7 @@ class ReleaseNotesBuilder {
             }
             const previousTag = (_b = tagRange.from) === null || _b === void 0 ? void 0 : _b.name;
             if (previousTag == null) {
-                utils_1.failOrError(`💥 Unable to retrieve previous tag given ${this.toTag}`, this.failOnError);
+                (0, utils_1.failOrError)(`💥 Unable to retrieve previous tag given ${this.toTag}`, this.failOnError);
                 return null;
             }
             this.fromTag = previousTag;
@@ -832,7 +832,7 @@ class ReleaseNotesBuilder {
             };
             const releaseNotes = new releaseNotes_1.ReleaseNotes(octokit, options);
             return ((yield releaseNotes.pull()) ||
-                transform_1.fillAdditionalPlaceholders(this.configuration.empty_template ||
+                (0, transform_1.fillAdditionalPlaceholders)(this.configuration.empty_template ||
                     configuration_1.DefaultConfiguration.empty_template, options));
         });
     }
@@ -953,7 +953,7 @@ class Tags {
                 else {
                     core.info(`ℹ️ Only one tag found for the given repository. Usually this is the case for the initial release.`);
                     // if not specified try to retrieve tag from git
-                    const gitHelper = yield gitHelper_1.createCommandManager(repositoryPath);
+                    const gitHelper = yield (0, gitHelper_1.createCommandManager)(repositoryPath);
                     const initialCommit = yield gitHelper.initialCommit();
                     core.info(`🔖 Resolved initial commit (${initialCommit}) from 'git rev-list --max-parents=0 HEAD'`);
                     return { name: initialCommit, commit: initialCommit };
@@ -991,7 +991,7 @@ class Tags {
                 }
                 else {
                     // if not specified try to retrieve tag from git
-                    const gitHelper = yield gitHelper_1.createCommandManager(repositoryPath);
+                    const gitHelper = yield (0, gitHelper_1.createCommandManager)(repositoryPath);
                     const latestTag = yield gitHelper.latestTag();
                     core.info(`🔖 Resolved current tag (${latestTag}) from 'git rev-list --tags --skip=0 --max-count=1'`);
                     resultToTag = {
@@ -1133,7 +1133,7 @@ function buildChangelog(prs, options) {
     const config = options.configuration;
     const sort = config.sort || configuration_1.DefaultConfiguration.sort;
     const sortAsc = sort.toUpperCase() === 'ASC';
-    prs = pullRequests_1.sortPullRequests(prs, sortAsc);
+    prs = (0, pullRequests_1.sortPullRequests)(prs, sortAsc);
     core.info(`ℹ️ Sorted all pull requests ascending: ${sort}`);
     // extract additional labels from the commit message
     const labelExtractors = validateTransformers(config.label_extractor);
@@ -1195,9 +1195,17 @@ function buildChangelog(prs, options) {
         }
         let matched = false;
         for (const [category, pullRequests] of categorized) {
-            if (haveCommonElements(category.labels.map(lbl => lbl.toLocaleLowerCase()), pr.labels)) {
-                pullRequests.push(body);
-                matched = true;
+            if (category.exhaustive === true) {
+                if (haveEveryElements(category.labels.map(lbl => lbl.toLocaleLowerCase()), pr.labels)) {
+                    pullRequests.push(body);
+                    matched = true;
+                }
+            }
+            else {
+                if (haveCommonElements(category.labels.map(lbl => lbl.toLocaleLowerCase()), pr.labels)) {
+                    pullRequests.push(body);
+                    matched = true;
+                }
             }
         }
         if (!matched) {
@@ -1263,6 +1271,9 @@ function fillAdditionalPlaceholders(text, options) {
 exports.fillAdditionalPlaceholders = fillAdditionalPlaceholders;
 function haveCommonElements(arr1, arr2) {
     return arr1.some(item => arr2.has(item));
+}
+function haveEveryElements(arr1, arr2) {
+    return arr1.every(item => arr2.has(item));
 }
 function fillTemplate(pr, template) {
     var _a, _b, _c;
@@ -1432,7 +1443,7 @@ function directoryExistsSync(inputPath, required) {
     try {
         stats = fs.statSync(inputPath);
     }
-    catch (error) {
+    catch (error /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
         if (error.code === 'ENOENT') {
             if (!required) {
                 return false;
@@ -1460,7 +1471,7 @@ function writeOutput(githubWorkspacePath, outputFile, changelog) {
         try {
             fs.writeFileSync(outputPath, changelog);
         }
-        catch (error) {
+        catch (error /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
             core.warning(`⚠️ Could not write the file to disk - ${error.message}`);
         }
     }

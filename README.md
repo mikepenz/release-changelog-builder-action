@@ -290,6 +290,7 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | categories                  | An array of `category` specifications, offering a flexible way to group changes into categories                                                                                                                                    |
 | category.title              | The display name of a category in the changelog                                                                                                                                                                                    |
 | category.labels             | An array of labels, to match pull request labels against. If any PR label matches any category label, the pull request will show up under this category                                                                            |
+| category.exhaustive         | Will require all labels defined within this category to be present on the matching PR.                                                                                                                                             |
 | ignore_labels               | An array of labels, to match pull request labels against. If any PR label overlaps, the pull request will be ignored from the changelog. This takes precedence over category labels                                                |
 | sort                        | The sort order of pull requests. [ASC, DESC]                                                                                                                                                                                       |
 | template                    | Specifies the global template to pick for creating the changelog. See [Template placeholders](#template-placeholders) for possible values                                                                                          |
@@ -325,7 +326,7 @@ $ npm run build && npm run package
 $ npm test
 
 # Verify lint is happy
-$ npm run lint -- --fix
+$ npm run lint -- --fixnpm run lint -- --fix
 ```
 
 It's suggested to export the token to your path before running the tests so that API calls can be done to GitHub.

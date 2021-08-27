@@ -16,19 +16,20 @@ export interface Configuration {
 }
 
 export interface Category {
-  title: string
-  labels: string[]
+  title: string // the title of this category
+  labels: string[] // labels to associate PRs to this category
+  exhaustive?: boolean // requires all labels to be present in the PR
 }
 
 export interface Transformer {
-  pattern: string
-  target?: string
+  pattern: string // the regex pattern to match
+  target?: string // the target string to transform the source string using the regex to
   flags?: string // the regex flag to use for RegExp
 }
 
 export interface Extractor extends Transformer {
   on_property?: 'title' | 'author' | 'milestone' | 'body' | undefined // retrieve the property to extract the value from
-  method?: 'replace' | 'match' | undefined // the method to use to extract the value
+  method?: 'replace' | 'match' | undefined // the method to use to extract the value, `match` will not use the `target` property
 }
 
 export interface TagResolver {

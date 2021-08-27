@@ -96,7 +96,7 @@ export function directoryExistsSync(
   let stats: fs.Stats
   try {
     stats = fs.statSync(inputPath)
-  } catch (error) {
+  } catch (error: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
     if (error.code === 'ENOENT') {
       if (!required) {
         return false
@@ -132,7 +132,7 @@ export function writeOutput(
     core.debug(`outputPath = '${outputPath}'`)
     try {
       fs.writeFileSync(outputPath, changelog)
-    } catch (error) {
+    } catch (error: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
       core.warning(`⚠️ Could not write the file to disk - ${error.message}`)
     }
   }
