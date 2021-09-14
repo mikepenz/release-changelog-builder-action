@@ -98,7 +98,7 @@ export function buildChangelog(
   for (const [pr, body] of transformedMap) {
     if (
       haveCommonElements(
-        ignoredLabels.map(lbl => lbl.toLocaleLowerCase()),
+        ignoredLabels.map(lbl => lbl.toLocaleLowerCase('en')),
         pr.labels
       )
     ) {
@@ -111,7 +111,7 @@ export function buildChangelog(
       if (category.exhaustive === true) {
         if (
           haveEveryElements(
-            category.labels.map(lbl => lbl.toLocaleLowerCase()),
+            category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
             pr.labels
           )
         ) {
@@ -121,7 +121,7 @@ export function buildChangelog(
       } else {
         if (
           haveCommonElements(
-            category.labels.map(lbl => lbl.toLocaleLowerCase()),
+            category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
             pr.labels
           )
         ) {
@@ -344,12 +344,12 @@ function extractValues(
   if (extractor.method === 'match') {
     const lables = onValue.match(extractor.pattern)
     if (lables !== null) {
-      return lables.map(label => label.toLocaleLowerCase())
+      return lables.map(label => label.toLocaleLowerCase('en'))
     }
   } else {
     const label = onValue.replace(extractor.pattern, extractor.target)
     if (label !== '') {
-      return [label.toLocaleLowerCase()]
+      return [label.toLocaleLowerCase('en')]
     }
   }
   return null
