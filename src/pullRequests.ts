@@ -129,7 +129,7 @@ const mapPullRequest = (
   author: pr.user?.login || '',
   repoName: pr.base.repo.full_name,
   labels: new Set(
-    pr.labels?.map(lbl => lbl.name?.toLocaleLowerCase() || '') || []
+    pr.labels?.map(lbl => lbl.name?.toLocaleLowerCase('en') || '') || []
   ),
   milestone: pr.milestone?.title || '',
   body: pr.body || '',

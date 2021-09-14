@@ -26,22 +26,25 @@ export function buildChangelog(
       core.info(`ℹ️ Remove duplicated pull requests using \`duplicate_filter\``)
 
       const deduplicatedMap = new Map<string, PullRequestInfo>()
+      const unmatched: PullRequestInfo[] = []
       for (const pr of prs) {
         const extracted = extractValues(pr, extractor, 'dupliate_filter')
         if (extracted !== null && extracted.length > 0) {
           deduplicatedMap.set(extracted[0], pr)
         } else {
-          core.debug(
-            `ℹ️ PR (${pr.number}) did not resolve a ID using the \`duplicate_filter\``
+          core.info(
+            `  PR (${pr.number}) did not resolve an ID using the \`duplicate_filter\``
           )
+          unmatched.push(pr)
         }
       }
       const deduplicatedPRs = Array.from(deduplicatedMap.values())
+      deduplicatedPRs.push(...unmatched) // add all unmatched PRs to map
       const removedElements = prs.length - deduplicatedPRs.length
       core.info(
         `ℹ️ Removed ${removedElements} pull requests during deduplication`
       )
-      prs = deduplicatedPRs
+      prs = sortPullRequests(deduplicatedPRs, sortAsc) // resort deduplicatedPRs
     } else {
       core.warning(`⚠️ Configured \`duplicate_filter\` invalid.`)
     }
@@ -98,7 +101,7 @@ export function buildChangelog(
   for (const [pr, body] of transformedMap) {
     if (
       haveCommonElements(
-        ignoredLabels.map(lbl => lbl.toLocaleLowerCase()),
+        ignoredLabels.map(lbl => lbl.toLocaleLowerCase('en')),
         pr.labels
       )
     ) {
@@ -111,7 +114,7 @@ export function buildChangelog(
       if (category.exhaustive === true) {
         if (
           haveEveryElements(
-            category.labels.map(lbl => lbl.toLocaleLowerCase()),
+            category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
             pr.labels
           )
         ) {
@@ -121,7 +124,7 @@ export function buildChangelog(
       } else {
         if (
           haveCommonElements(
-            category.labels.map(lbl => lbl.toLocaleLowerCase()),
+            category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
             pr.labels
           )
         ) {
@@ -344,12 +347,12 @@ function extractValues(
   if (extractor.method === 'match') {
     const lables = onValue.match(extractor.pattern)
     if (lables !== null) {
-      return lables.map(label => label.toLocaleLowerCase())
+      return lables.map(label => label.toLocaleLowerCase('en'))
     }
   } else {
     const label = onValue.replace(extractor.pattern, extractor.target)
     if (label !== '') {
-      return [label.toLocaleLowerCase()]
+      return [label.toLocaleLowerCase('en')]
     }
   }
   return null
