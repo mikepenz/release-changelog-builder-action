@@ -53,7 +53,13 @@ export function resolveConfiguration(
     const providedConfiguration = readConfiguration(configurationPath)
     if (providedConfiguration) {
       configuration = providedConfiguration
+      core.info(`ℹ️ Configuration successfully loaded.`)
+      if (core.isDebug()) {
+        core.debug(`configuration = ${JSON.stringify(configuration)}`)
+      }
     }
+  } else {
+    core.info(`ℹ️ Configuration not provided. Using Defaults.`)
   }
   return configuration
 }
