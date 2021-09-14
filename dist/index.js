@@ -1142,19 +1142,22 @@ function buildChangelog(prs, options) {
         if (extractor != null) {
             core.info(`ℹ️ Remove duplicated pull requests using \`duplicate_filter\``);
             const deduplicatedMap = new Map();
+            const unmatched = [];
             for (const pr of prs) {
                 const extracted = extractValues(pr, extractor, 'dupliate_filter');
                 if (extracted !== null && extracted.length > 0) {
                     deduplicatedMap.set(extracted[0], pr);
                 }
                 else {
-                    core.debug(`ℹ️ PR (${pr.number}) did not resolve a ID using the \`duplicate_filter\``);
+                    core.info(`  PR (${pr.number}) did not resolve an ID using the \`duplicate_filter\``);
+                    unmatched.push(pr);
                 }
             }
             const deduplicatedPRs = Array.from(deduplicatedMap.values());
+            deduplicatedPRs.push(...unmatched); // add all unmatched PRs to map
             const removedElements = prs.length - deduplicatedPRs.length;
             core.info(`ℹ️ Removed ${removedElements} pull requests during deduplication`);
-            prs = deduplicatedPRs;
+            prs = (0, pullRequests_1.sortPullRequests)(deduplicatedPRs, sortAsc); // resort deduplicatedPRs
         }
         else {
             core.warning(`⚠️ Configured \`duplicate_filter\` invalid.`);
@@ -1445,7 +1448,14 @@ function resolveConfiguration(githubWorkspacePath, configurationFile) {
         const providedConfiguration = readConfiguration(configurationPath);
         if (providedConfiguration) {
             configuration = providedConfiguration;
+            core.info(`ℹ️ Configuration successfully loaded.`);
+            if (core.isDebug()) {
+                core.debug(`configuration = ${JSON.stringify(configuration)}`);
+            }
         }
+    }
+    else {
+        core.info(`ℹ️ Configuration not provided. Using Defaults.`);
     }
     return configuration;
 }

@@ -26,22 +26,25 @@ export function buildChangelog(
       core.info(`ℹ️ Remove duplicated pull requests using \`duplicate_filter\``)
 
       const deduplicatedMap = new Map<string, PullRequestInfo>()
+      const unmatched: PullRequestInfo[] = []
       for (const pr of prs) {
         const extracted = extractValues(pr, extractor, 'dupliate_filter')
         if (extracted !== null && extracted.length > 0) {
           deduplicatedMap.set(extracted[0], pr)
         } else {
-          core.debug(
-            `ℹ️ PR (${pr.number}) did not resolve a ID using the \`duplicate_filter\``
+          core.info(
+            `  PR (${pr.number}) did not resolve an ID using the \`duplicate_filter\``
           )
+          unmatched.push(pr)
         }
       }
       const deduplicatedPRs = Array.from(deduplicatedMap.values())
+      deduplicatedPRs.push(...unmatched) // add all unmatched PRs to map
       const removedElements = prs.length - deduplicatedPRs.length
       core.info(
         `ℹ️ Removed ${removedElements} pull requests during deduplication`
       )
-      prs = deduplicatedPRs
+      prs = sortPullRequests(deduplicatedPRs, sortAsc) // resort deduplicatedPRs
     } else {
       core.warning(`⚠️ Configured \`duplicate_filter\` invalid.`)
     }

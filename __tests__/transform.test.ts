@@ -311,7 +311,7 @@ it('Deduplicate duplicated PRs', async () => {
   })
 
   expect(resultChangelog).toStrictEqual(
-    `## 🚀 Features\n\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n- [ABC-4321] - this is a PR 2 title message\n   - PR: #2\n\n`
+    `## 🚀 Features\n\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [ABC-4321] - this is a PR 2 title message\n   - PR: #2\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
 
