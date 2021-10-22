@@ -702,7 +702,7 @@ class ReleaseNotes {
                     htmlURL: '',
                     baseBranch: '',
                     mergedAt: commit.date,
-                    mergeCommitSha: '',
+                    mergeCommitSha: commit.sha,
                     author: commit.author || '',
                     repoName: '',
                     labels: new Set(),
@@ -1288,6 +1288,7 @@ function fillTemplate(pr, template) {
     transformed = transformed.replace(/\${{TITLE}}/g, pr.title);
     transformed = transformed.replace(/\${{URL}}/g, pr.htmlURL);
     transformed = transformed.replace(/\${{MERGED_AT}}/g, pr.mergedAt.toISOString());
+    transformed = transformed.replace(/\${{MERGE_SHA}}/g, pr.mergeCommitSha);
     transformed = transformed.replace(/\${{AUTHOR}}/g, pr.author);
     transformed = transformed.replace(/\${{LABELS}}/g, ((_a = [...pr.labels]) === null || _a === void 0 ? void 0 : _a.join(', ')) || '');
     transformed = transformed.replace(/\${{MILESTONE}}/g, pr.milestone || '');
