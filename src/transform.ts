@@ -246,6 +246,7 @@ function fillTemplate(pr: PullRequestInfo, template: string): string {
     /\${{MERGED_AT}}/g,
     pr.mergedAt.toISOString()
   )
+  transformed = transformed.replace(/\${{MERGE_SHA}}/g, pr.mergeCommitSha)
   transformed = transformed.replace(/\${{AUTHOR}}/g, pr.author)
   transformed = transformed.replace(
     /\${{LABELS}}/g,

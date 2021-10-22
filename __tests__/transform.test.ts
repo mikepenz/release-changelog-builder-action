@@ -201,7 +201,7 @@ pullRequestsWithLabels.push(
     htmlURL: '',
     baseBranch: '',
     mergedAt: moment(),
-    mergeCommitSha: 'sha1',
+    mergeCommitSha: 'sha1-1',
     author: 'Mike',
     repoName: 'test-repo',
     labels: new Set<string>().add('feature'),
@@ -216,7 +216,7 @@ pullRequestsWithLabels.push(
     htmlURL: '',
     baseBranch: '',
     mergedAt: moment(),
-    mergeCommitSha: 'sha1',
+    mergeCommitSha: 'sha1-2',
     author: 'Mike',
     repoName: 'test-repo',
     labels: new Set<string>().add('issue').add('fix'),
@@ -231,7 +231,7 @@ pullRequestsWithLabels.push(
     htmlURL: '',
     baseBranch: '',
     mergedAt: moment().add(1, 'days'),
-    mergeCommitSha: 'sha1',
+    mergeCommitSha: 'sha1-3',
     author: 'Mike',
     repoName: 'test-repo',
     labels: new Set<string>().add('issue').add('feature').add('fix'),
@@ -246,7 +246,7 @@ pullRequestsWithLabels.push(
     htmlURL: '',
     baseBranch: '',
     mergedAt: moment(),
-    mergeCommitSha: 'sha1',
+    mergeCommitSha: 'sha1-4',
     author: 'Mike',
     repoName: 'test-repo',
     labels: new Set<string>().add(''),
@@ -336,5 +336,25 @@ it('Deduplicate duplicated PRs DESC', async () => {
 
   expect(resultChangelog).toStrictEqual(
     `## 🚀 Features\n\n- [ABC-1234] - this is a PR 1 title message\n   - PR: #1\n\n## 🐛 Fixes\n\n- [ABC-4321] - this is a PR 2 title message\n   - PR: #2\n\n`
+  )
+})
+
+it('Commit SHA-1 in commitMode', async () => {
+  const customConfig = Object.assign({}, DefaultConfiguration)
+  customConfig.sort = "DESC"
+  customConfig.pr_template = "${{MERGE_SHA}}"
+
+  const resultChangelog = buildChangelog(pullRequestsWithLabels, {
+    owner: 'mikepenz',
+    repo: 'test-repo',
+    fromTag: '1.0.0',
+    toTag: '2.0.0',
+    failOnError: false,
+    commitMode: true,
+    configuration: customConfig
+  })
+
+  expect(resultChangelog).toStrictEqual(
+    `## 🚀 Features\n\nsha1-3\nsha1-1\n\n## 🐛 Fixes\n\nsha1-3\nsha1-2\n\n`
   )
 })

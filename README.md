@@ -261,6 +261,7 @@ Table of supported placeholders allowed to be used in the `pr_template` configur
 | `${{TITLE}}`     | Specified title of the merged pull request                  |
 | `${{URL}}`       | Url linking to the pull request on GitHub                   |
 | `${{MERGED_AT}}` | The ISO time, the pull request was merged at                |
+| `${{MERGE_SHA}}` | The commit SHA, the pull request was merged with            |
 | `${{AUTHOR}}`    | Author creating and opening the pull request                |
 | `${{LABELS}}`    | The labels associated with this pull request, joined by `,` |
 | `${{MILESTONE}}` | Milestone this PR was part of, as assigned on GitHub        |
