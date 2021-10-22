@@ -178,7 +178,7 @@ export class ReleaseNotes {
         htmlURL: '',
         baseBranch: '',
         mergedAt: commit.date,
-        mergeCommitSha: '',
+        mergeCommitSha: commit.sha,
         author: commit.author || '',
         repoName: '',
         labels: new Set(),
