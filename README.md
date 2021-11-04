@@ -143,6 +143,11 @@ The action supports flexible configuration options to modify vast areas of its b
 
 💡 By default not specifying `fromTag` or `toTag` will resolve `toTag` from either the `ref` or alternatively fallback to the latest tag from the git API. `fromTag` is resolved by sorting tags using [semver](https://semver.org/). Check the [configuration](#configuration-specification) for alternatives.
 
+⚠️ The first release tag is a special case since there is no previous release where a changelog can be built.
+For this case, you generally have 2 options:
+1. Create a temporary tag on the commit you want to begin a changelog (for example `v0.0.1`).
+2. If you are checking out the source with `git` CLI (for example with `actions/checkout`), this action will identify the first commit and build a changelog from there.
+
 This configuration is a `.json` file in the following format.
 
 ```json
