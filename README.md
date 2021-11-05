@@ -204,7 +204,11 @@ This configuration is a `.json` file in the following format.
       "Owner/qa"
     ],
     "tag_resolver": {
-      "method": "semver"
+      "method": "semver",
+      "filter": {
+        "pattern": "api-(.+)",
+        "flags": "gu"
+      }
     },
     "base_branches": [
       "dev"
@@ -324,7 +328,8 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | exclude_merge_branches      | An array of branches to be ignored from processing as merge commits                                                                                                                                                                |
 | tag_resolver                | Section to provide configuration for the tag resolving logic. Used if no `fromTag` is provided                                                                                                                                     |
 | tag_resolver.method         | Defines the method to use. Current options are: `semver`, `sort`. Default: `semver`                                                                                                                                                |
-| base_branches         | The target branches for the merged PR, ingnores PRs with different target branch. Values can be a `regex`. Default: allow all base branches
+| tag_resolver.filter         | Defines a regex which is used to filter out tags not matching.                                                                                                                                                                     |
+| base_branches               | The target branches for the merged PR, ingnores PRs with different target branch. Values can be a `regex`. Default: allow all base branches                                                                                        |
 
 ## Contribute 🧬
 

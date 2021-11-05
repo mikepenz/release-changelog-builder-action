@@ -22,10 +22,13 @@ export interface Category {
   exhaustive?: boolean // requires all labels to be present in the PR
 }
 
-export interface Transformer {
+export interface Regex {
   pattern: string // the regex pattern to match
-  target?: string // the target string to transform the source string using the regex to
   flags?: string // the regex flag to use for RegExp
+}
+
+export interface Transformer extends Regex {
+  target?: string // the target string to transform the source string using the regex to
 }
 
 export interface Extractor extends Transformer {
@@ -35,6 +38,7 @@ export interface Extractor extends Transformer {
 
 export interface TagResolver {
   method: string // semver, sort
+  filter?: Regex // the regex to filter the tags
 }
 
 export const DefaultConfiguration: Configuration = {
@@ -66,7 +70,8 @@ export const DefaultConfiguration: Configuration = {
   transformers: [], // transformers to apply on the PR description according to the `pr_template`
   tag_resolver: {
     // defines the logic on how to resolve the previous tag, only relevant if `fromTag` is not specified
-    method: 'semver' // defines which method to use, by default it will use `semver` (dropping all non matching tags). Alternative `sort` is also available.
+    method: 'semver', // defines which method to use, by default it will use `semver` (dropping all non matching tags). Alternative `sort` is also available.
+    filter: undefined // filter out all tags not matching the regex
   },
   base_branches: [] // target branches for the merged PR ignoring PRs with different target branch, by default it will get all PRs
 }

@@ -192,6 +192,26 @@ export class Tags {
 }
 
 /*
+ * Uses the provided filter (if available) to filter out any tags not currently relevant.
+ * https://github.com/mikepenz/release-changelog-builder-action/issues/566
+ */
+export function filterTags(
+  tags: TagInfo[],
+  tagResolver: TagResolver
+): TagInfo[] {
+  const filter = tagResolver.filter
+  if (filter !== undefined) {
+    const regex = new RegExp(
+      filter.pattern.replace('\\\\', '\\'),
+      filter.flags ?? 'gu'
+    )
+    return tags.filter(tag => tag.name.match(regex) !== null)
+  } else {
+    return tags
+  }
+}
+
+/*
   Sorts an array of tags as shown below:
   
   2020.4.0
