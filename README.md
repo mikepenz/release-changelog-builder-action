@@ -124,6 +124,16 @@ jobs:
 
 ## Customization 🖍️
 
+### Note
+
+⚠️ When running this action for non tags trigger the `toTag` will be automatically resolved using the latest tag as retrieved by the git API.
+
+⚠️ The first release tag is a special case since there is no previous release the action can reference to. For this case, there are 2 options:
+1. When checking out the source via `git` (E.g.: `actions/checkout`), the action will use the first commit.
+2. Create a initial tag on the commit you want to begin a changelog from (for example `v0.0.1`).
+
+💡 By default not specifying `fromTag` or `toTag` will resolve `toTag` from either the `ref` or alternatively fallback to the latest tag from the git API. `fromTag` is resolved by sorting tags using [semver](https://semver.org/). Check the [configuration](#configuration-specification) for alternatives.
+
 ### Configuration
 
 The action supports flexible configuration options to modify vast areas of its behavior. To do so, provide the configuration file to the workflow using the `configuration` setting.
@@ -138,10 +148,6 @@ The action supports flexible configuration options to modify vast areas of its b
 ```
 
 ⚠️ Please note: It is required to have a `checkout` step prior to the changelog step, to allow the action to discover the configuration file.
-
-⚠️ When running this action for a non tags trigger the `toTag` will be automatically resolved using the latest tag as retrieved by the git API.
-
-💡 By default not specifying `fromTag` or `toTag` will resolve `toTag` from either the `ref` or alternatively fallback to the latest tag from the git API. `fromTag` is resolved by sorting tags using [semver](https://semver.org/). Check the [configuration](#configuration-specification) for alternatives.
 
 This configuration is a `.json` file in the following format.
 
