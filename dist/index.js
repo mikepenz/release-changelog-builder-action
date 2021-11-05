@@ -173,7 +173,8 @@ exports.DefaultConfiguration = {
     transformers: [],
     tag_resolver: {
         // defines the logic on how to resolve the previous tag, only relevant if `fromTag` is not specified
-        method: 'semver' // defines which method to use, by default it will use `semver` (dropping all non matching tags). Alternative `sort` is also available.
+        method: 'semver',
+        filter: undefined // filter out all tags not matching the regex
     },
     base_branches: [] // target branches for the merged PR ignoring PRs with different target branch, by default it will get all PRs
 };
@@ -884,7 +885,7 @@ var __asyncValues = (this && this.__asyncValues) || function (o) {
     function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.sortTags = exports.Tags = void 0;
+exports.sortTags = exports.filterTags = exports.Tags = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const semver = __importStar(__nccwpck_require__(1383));
@@ -1031,6 +1032,22 @@ class Tags {
     }
 }
 exports.Tags = Tags;
+/*
+ * Uses the provided filter (if available) to filter out any tags not currently relevant.
+ * https://github.com/mikepenz/release-changelog-builder-action/issues/566
+ */
+function filterTags(tags, tagResolver) {
+    var _a;
+    const filter = tagResolver.filter;
+    if (filter !== undefined) {
+        const regex = new RegExp(filter.pattern.replace('\\\\', '\\'), (_a = filter.flags) !== null && _a !== void 0 ? _a : 'gu');
+        return tags.filter(tag => tag.name.match(regex) !== null);
+    }
+    else {
+        return tags;
+    }
+}
+exports.filterTags = filterTags;
 /*
   Sorts an array of tags as shown below:
   
