@@ -131,6 +131,7 @@ export class Tags {
 
     let transformedTags: TagInfo[]
     if (tagTransformer != null) {
+      core.debug(`ℹ️ Using configured tagTransformer`)
       transformedTags = transformTags(filteredTags, tagTransformer)
     } else {
       transformedTags = filteredTags
@@ -235,7 +236,11 @@ export function filterTags(
       filter.pattern.replace('\\\\', '\\'),
       filter.flags ?? 'gu'
     )
-    return tags.filter(tag => tag.name.match(regex) !== null)
+    const filteredTags = tags.filter(tag => tag.name.match(regex) !== null)
+    core.debug(
+      `ℹ️ Filtered tags count: ${filteredTags.length}, original count: ${tags.length}`
+    )
+    return filteredTags
   } else {
     return tags
   }
@@ -250,9 +255,14 @@ function transformTags(
 ): TagInfo[] {
   return tags.map(function (tag) {
     if (transformer.pattern) {
+      const transformedName = tag.name.replace(
+        transformer.pattern,
+        transformer.target
+      )
+      core.debug(`ℹ️ Transformed ${tag.name} to ${transformedName}`)
       return {
         tmp: tag.name, // remember the original name
-        name: tag.name.replace(transformer.pattern, transformer.target),
+        name: transformedName,
         commit: tag.commit
       }
     } else {
