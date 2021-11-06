@@ -114,10 +114,8 @@ export class Tags {
     maxTagsToFetch: number,
     tagResolver: TagResolver
   ): Promise<TagResult> {
-    const tags = sortTags(
-      await this.getTags(owner, repo, maxTagsToFetch),
-      tagResolver
-    )
+    const filteredTags = filterTags(await this.getTags(owner, repo, maxTagsToFetch), tagResolver)
+    const tags = sortTags(filteredTags, tagResolver)
 
     let resultToTag: TagInfo | null
     let resultFromTag: TagInfo | null
