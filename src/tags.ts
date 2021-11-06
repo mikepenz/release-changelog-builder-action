@@ -5,6 +5,7 @@ import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import {SemVer} from 'semver'
 import {TagResolver} from './configuration'
 import {createCommandManager} from './gitHelper'
+import {RegexTransformer, validateTransformer} from './transform'
 
 export interface TagResult {
   from: TagInfo | null
@@ -14,6 +15,10 @@ export interface TagResult {
 export interface TagInfo {
   name: string
   commit: string
+}
+
+export interface SortableTagInfo extends TagInfo {
+  tmp: string
 }
 
 export class Tags {
@@ -114,8 +119,35 @@ export class Tags {
     maxTagsToFetch: number,
     tagResolver: TagResolver
   ): Promise<TagResult> {
-    const filteredTags = filterTags(await this.getTags(owner, repo, maxTagsToFetch), tagResolver)
-    const tags = sortTags(filteredTags, tagResolver)
+    // filter out tags not matching the specified filter
+    const filteredTags = filterTags(
+      // retrieve the tags from the API
+      await this.getTags(owner, repo, maxTagsToFetch),
+      tagResolver
+    )
+
+    // check if a transformer was defined
+    const tagTransformer = validateTransformer(tagResolver.transformer)
+
+    let transformedTags: TagInfo[]
+    if (tagTransformer != null) {
+      transformedTags = transformTags(filteredTags, tagTransformer)
+    } else {
+      transformedTags = filteredTags
+    }
+
+    let tags = sortTags(transformedTags, tagResolver)
+
+    if (tagTransformer != null) {
+      // restore the original name, after sorting
+      tags = filteredTags.map(function (tag) {
+        if (tag.hasOwnProperty('tmp')) {
+          return {name: (tag as SortableTagInfo).tmp, commit: tag.commit}
+        } else {
+          return tag
+        }
+      })
+    }
 
     let resultToTag: TagInfo | null
     let resultFromTag: TagInfo | null
@@ -207,6 +239,26 @@ export function filterTags(
   } else {
     return tags
   }
+}
+
+/**
+ * Helper function to transform the tag name given the transformer
+ */
+function transformTags(
+  tags: TagInfo[],
+  transformer: RegexTransformer
+): TagInfo[] {
+  return tags.map(function (tag) {
+    if (transformer.pattern) {
+      return {
+        tmp: tag.name, // remember the original name
+        name: tag.name.replace(transformer.pattern, transformer.target),
+        commit: tag.commit
+      }
+    } else {
+      return tag
+    }
+  })
 }
 
 /*
