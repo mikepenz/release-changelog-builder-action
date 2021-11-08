@@ -293,7 +293,7 @@ function validateTransformers(
     })
 }
 
-function validateTransformer(
+export function validateTransformer(
   transformer?: Transformer
 ): RegexTransformer | null {
   if (transformer === undefined) {
@@ -359,7 +359,7 @@ function extractValues(
   return null
 }
 
-interface RegexTransformer {
+export interface RegexTransformer {
   pattern: RegExp | null
   target: string
   onProperty?: 'title' | 'author' | 'milestone' | 'body' | undefined
