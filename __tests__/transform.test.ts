@@ -18,6 +18,10 @@ configuration.categories = [
   {
     title: '## 🧪 Tests',
     labels: ['[Test]']
+  },
+  {
+    title: '## 🧪 Others',
+    labels: ['[Other]']
   }
 ]
 
@@ -189,6 +193,31 @@ it('Extract label from title, match multiple', async () => {
 
   expect(resultChangelog).toStrictEqual(
     `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n`
+  )
+})
+
+it('Extract label from title, match multiple, custon non matching label', async () => {
+  configuration.label_extractor = [
+    {
+      pattern: '\\[Feature\\]|\\[Issue\\]',
+      on_property: 'title',
+      method: 'match',
+      on_empty: '[Other]'
+    }
+  ]
+
+  const resultChangelog = buildChangelog(mergedPullRequests, {
+    owner: 'mikepenz',
+    repo: 'test-repo',
+    fromTag: '1.0.0',
+    toTag: '2.0.0',
+    failOnError: false,
+    commitMode: false,
+    configuration
+  })
+
+  expect(resultChangelog).toStrictEqual(
+    `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🧪 Others\n\n- [AB-404] - not found label\n   - PR: #4\n\n`
   )
 })
 

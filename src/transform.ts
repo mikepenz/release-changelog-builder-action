@@ -302,9 +302,11 @@ export function validateTransformer(
   try {
     let onProperty = undefined
     let method = undefined
+    let onEmpty = undefined
     if (transformer.hasOwnProperty('on_property')) {
       onProperty = (transformer as Extractor).on_property
       method = (transformer as Extractor).method
+      onEmpty = (transformer as Extractor).on_empty
     }
 
     return {
@@ -314,7 +316,8 @@ export function validateTransformer(
       ),
       target: transformer.target || '',
       onProperty,
-      method
+      method,
+      onEmpty
     }
   } catch (e) {
     core.warning(`⚠️ Bad replacer regex: ${transformer.pattern}`)
@@ -347,7 +350,7 @@ function extractValues(
 
   if (extractor.method === 'match') {
     const lables = onValue.match(extractor.pattern)
-    if (lables !== null) {
+    if (lables !== null && lables.length > 0) {
       return lables.map(label => label.toLocaleLowerCase('en'))
     }
   } else {
@@ -355,6 +358,9 @@ function extractValues(
     if (label !== '') {
       return [label.toLocaleLowerCase('en')]
     }
+  }
+  if (extractor.onEmpty !== undefined) {
+    return [extractor.onEmpty.toLocaleLowerCase('en')]
   }
   return null
 }
@@ -364,4 +370,5 @@ export interface RegexTransformer {
   target: string
   onProperty?: 'title' | 'author' | 'milestone' | 'body' | undefined
   method?: 'replace' | 'match' | undefined
+  onEmpty?: string | undefined
 }
