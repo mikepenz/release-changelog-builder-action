@@ -1393,15 +1393,18 @@ function validateTransformer(transformer) {
     try {
         let onProperty = undefined;
         let method = undefined;
+        let onEmpty = undefined;
         if (transformer.hasOwnProperty('on_property')) {
             onProperty = transformer.on_property;
             method = transformer.method;
+            onEmpty = transformer.on_empty;
         }
         return {
             pattern: new RegExp(transformer.pattern.replace('\\\\', '\\'), (_a = transformer.flags) !== null && _a !== void 0 ? _a : 'gu'),
             target: transformer.target || '',
             onProperty,
-            method
+            method,
+            onEmpty
         };
     }
     catch (e) {
@@ -1428,7 +1431,7 @@ function extractValues(pr, extractor, extractor_usecase) {
     }
     if (extractor.method === 'match') {
         const lables = onValue.match(extractor.pattern);
-        if (lables !== null) {
+        if (lables !== null && lables.length > 0) {
             return lables.map(label => label.toLocaleLowerCase('en'));
         }
     }
@@ -1437,6 +1440,9 @@ function extractValues(pr, extractor, extractor_usecase) {
         if (label !== '') {
             return [label.toLocaleLowerCase('en')];
         }
+    }
+    if (extractor.onEmpty !== undefined) {
+        return [extractor.onEmpty.toLocaleLowerCase('en')];
     }
     return null;
 }
