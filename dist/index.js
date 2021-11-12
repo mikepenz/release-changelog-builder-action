@@ -174,7 +174,8 @@ exports.DefaultConfiguration = {
     tag_resolver: {
         // defines the logic on how to resolve the previous tag, only relevant if `fromTag` is not specified
         method: 'semver',
-        filter: undefined // filter out all tags not matching the regex
+        filter: undefined,
+        transformer: undefined // transforms the tag name using the regex, run after the filter
     },
     base_branches: [] // target branches for the merged PR ignoring PRs with different target branch, by default it will get all PRs
 };
@@ -891,6 +892,7 @@ const github = __importStar(__nccwpck_require__(5438));
 const semver = __importStar(__nccwpck_require__(1383));
 const semver_1 = __nccwpck_require__(1383);
 const gitHelper_1 = __nccwpck_require__(353);
+const transform_1 = __nccwpck_require__(1644);
 class Tags {
     constructor(octokit) {
         this.octokit = octokit;
@@ -973,7 +975,32 @@ class Tags {
     retrieveRange(repositoryPath, owner, repo, fromTag, toTag, ignorePreReleases, maxTagsToFetch, tagResolver) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            const tags = sortTags(yield this.getTags(owner, repo, maxTagsToFetch), tagResolver);
+            // filter out tags not matching the specified filter
+            const filteredTags = filterTags(
+            // retrieve the tags from the API
+            yield this.getTags(owner, repo, maxTagsToFetch), tagResolver);
+            // check if a transformer was defined
+            const tagTransformer = (0, transform_1.validateTransformer)(tagResolver.transformer);
+            let transformedTags;
+            if (tagTransformer != null) {
+                core.debug(`ℹ️ Using configured tagTransformer`);
+                transformedTags = transformTags(filteredTags, tagTransformer);
+            }
+            else {
+                transformedTags = filteredTags;
+            }
+            let tags = sortTags(transformedTags, tagResolver);
+            if (tagTransformer != null) {
+                // restore the original name, after sorting
+                tags = filteredTags.map(function (tag) {
+                    if (tag.hasOwnProperty('tmp')) {
+                        return { name: tag.tmp, commit: tag.commit };
+                    }
+                    else {
+                        return tag;
+                    }
+                });
+            }
             let resultToTag;
             let resultFromTag;
             // ensure to resolve the toTag if it was not provided
@@ -1041,13 +1068,34 @@ function filterTags(tags, tagResolver) {
     const filter = tagResolver.filter;
     if (filter !== undefined) {
         const regex = new RegExp(filter.pattern.replace('\\\\', '\\'), (_a = filter.flags) !== null && _a !== void 0 ? _a : 'gu');
-        return tags.filter(tag => tag.name.match(regex) !== null);
+        const filteredTags = tags.filter(tag => tag.name.match(regex) !== null);
+        core.debug(`ℹ️ Filtered tags count: ${filteredTags.length}, original count: ${tags.length}`);
+        return filteredTags;
     }
     else {
         return tags;
     }
 }
 exports.filterTags = filterTags;
+/**
+ * Helper function to transform the tag name given the transformer
+ */
+function transformTags(tags, transformer) {
+    return tags.map(function (tag) {
+        if (transformer.pattern) {
+            const transformedName = tag.name.replace(transformer.pattern, transformer.target);
+            core.debug(`ℹ️ Transformed ${tag.name} to ${transformedName}`);
+            return {
+                tmp: tag.name,
+                name: transformedName,
+                commit: tag.commit
+            };
+        }
+        else {
+            return tag;
+        }
+    });
+}
 /*
   Sorts an array of tags as shown below:
   
@@ -1142,7 +1190,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.fillAdditionalPlaceholders = exports.buildChangelog = void 0;
+exports.validateTransformer = exports.fillAdditionalPlaceholders = exports.buildChangelog = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const configuration_1 = __nccwpck_require__(5527);
 const pullRequests_1 = __nccwpck_require__(4217);
@@ -1345,15 +1393,18 @@ function validateTransformer(transformer) {
     try {
         let onProperty = undefined;
         let method = undefined;
+        let onEmpty = undefined;
         if (transformer.hasOwnProperty('on_property')) {
             onProperty = transformer.on_property;
             method = transformer.method;
+            onEmpty = transformer.on_empty;
         }
         return {
             pattern: new RegExp(transformer.pattern.replace('\\\\', '\\'), (_a = transformer.flags) !== null && _a !== void 0 ? _a : 'gu'),
             target: transformer.target || '',
             onProperty,
-            method
+            method,
+            onEmpty
         };
     }
     catch (e) {
@@ -1361,6 +1412,7 @@ function validateTransformer(transformer) {
         return null;
     }
 }
+exports.validateTransformer = validateTransformer;
 function extractValues(pr, extractor, extractor_usecase) {
     if (extractor.pattern == null) {
         return null;
@@ -1379,7 +1431,7 @@ function extractValues(pr, extractor, extractor_usecase) {
     }
     if (extractor.method === 'match') {
         const lables = onValue.match(extractor.pattern);
-        if (lables !== null) {
+        if (lables !== null && lables.length > 0) {
             return lables.map(label => label.toLocaleLowerCase('en'));
         }
     }
@@ -1388,6 +1440,9 @@ function extractValues(pr, extractor, extractor_usecase) {
         if (label !== '') {
             return [label.toLocaleLowerCase('en')];
         }
+    }
+    if (extractor.onEmpty !== undefined) {
+        return [extractor.onEmpty.toLocaleLowerCase('en')];
     }
     return null;
 }

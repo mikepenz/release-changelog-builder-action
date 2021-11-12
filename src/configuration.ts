@@ -34,11 +34,13 @@ export interface Transformer extends Regex {
 export interface Extractor extends Transformer {
   on_property?: 'title' | 'author' | 'milestone' | 'body' | undefined // retrieve the property to extract the value from
   method?: 'replace' | 'match' | undefined // the method to use to extract the value, `match` will not use the `target` property
+  on_empty?: string | undefined // in case the regex results in an empty string, this value is gonna be used instead (only for label_extractor currently)
 }
 
 export interface TagResolver {
   method: string // semver, sort
-  filter?: Regex // the regex to filter the tags
+  filter?: Regex // the regex to filter the tags, prior to sorting
+  transformer?: Transformer // transforms the tag name using the regex, run after the filter
 }
 
 export const DefaultConfiguration: Configuration = {
@@ -71,7 +73,8 @@ export const DefaultConfiguration: Configuration = {
   tag_resolver: {
     // defines the logic on how to resolve the previous tag, only relevant if `fromTag` is not specified
     method: 'semver', // defines which method to use, by default it will use `semver` (dropping all non matching tags). Alternative `sort` is also available.
-    filter: undefined // filter out all tags not matching the regex
+    filter: undefined, // filter out all tags not matching the regex
+    transformer: undefined // transforms the tag name using the regex, run after the filter
   },
   base_branches: [] // target branches for the merged PR ignoring PRs with different target branch, by default it will get all PRs
 }
