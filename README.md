@@ -329,6 +329,7 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | tag_resolver                | Section to provide configuration for the tag resolving logic. Used if no `fromTag` is provided                                                                                                                                     |
 | tag_resolver.method         | Defines the method to use. Current options are: `semver`, `sort`. Default: `semver`                                                                                                                                                |
 | tag_resolver.filter         | Defines a regex which is used to filter out tags not matching.                                                                                                                                                                     |
+| tag_resolver.transformer    | Defines a regex transformer used to optionally transform the tag after the filter was applied. Allows to adjust the format to e.g. semver.                                                                                         |
 | base_branches               | The target branches for the merged PR, ingnores PRs with different target branch. Values can be a `regex`. Default: allow all base branches                                                                                        |
 
 ## Contribute 🧬
