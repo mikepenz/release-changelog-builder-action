@@ -42,7 +42,7 @@
     "webpack": "^5.61.0"
   },
   "devDependencies": {
-    "@types/jest": "^27.0.2",
+    "@types/jest": "^27.0.3",
     "@typescript-eslint/parser": "^5.3.0",
     "@types/node": "^16.11.6",
     "@vercel/ncc": "^0.31.1",
