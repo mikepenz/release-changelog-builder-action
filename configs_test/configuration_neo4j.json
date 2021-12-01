@@ -1,0 +1,22 @@
+{
+    "categories": [
+        {
+            "title": "## 🚀 Features",
+            "labels": ["feature", "graphql"],
+            "exhaustive": true
+        },
+        {
+            "title": "## 🐛 Fixes",
+            "labels": ["fix", "graphql"],
+            "exhaustive": true
+        },
+        {
+            "title": "## 🧪 Tests",
+            "labels": ["test", "graphql"],
+            "exhaustive": true
+        }
+    ],
+    "tag_resolver": {
+        "method": "sort"
+    }
+}
