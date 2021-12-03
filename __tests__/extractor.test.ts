@@ -74,13 +74,11 @@ it('Extract label from title', async () => {
   configuration.label_extractor = [
     {
       "pattern": "^feat",
-      "target": "feat",
       "on_property": "title",
       "method": "match"
     },
     {
       "pattern": "^fix",
-      "target": "fix",
       "on_property": "title",
       "method": "match"
     },
@@ -97,6 +95,6 @@ it('Extract label from title', async () => {
   })
 
   expect(resultChangelog).toStrictEqual(
-    ``
+    `## 🚀 New Features\n\n- feat: Add new button to menu\n   - PR: #1\n\n## 🐛 Fixes\n\n- fix: Remove line causing bug\n   - PR: #2\n\n`
   )
 })
