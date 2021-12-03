@@ -255,6 +255,7 @@ For advanced use cases additional settings can be provided to the action
 | `toTag`             | Defines until which tag the changelog will consider merged pull requests                                                                                                    |
 | `path`              | Allows to specify an alternative sub directory, to use as base                                                                                                              |
 | `token`             | Alternative config to specify token. You should prefer `env.GITHUB_TOKEN` instead though                                                                                    |
+| `baseUrl`           | Alternative config to specify base url for GitHub Enterprise authentication. Default value set to `https://api.github.com`                                                                           |
 | `ignorePreReleases` | Allows to ignore pre-releases for changelog generation (E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick). Only used if `fromTag` was not specified. Default: false    |
 | `failOnError`       | Defines if the action will result in a build failure if problems occurred. Default: false                                                                                   |
 | `commitMode`        | Special configuration for projects which work without PRs. Uses commit messages as changelog. This mode looses access to information only available for PRs. Default: false |

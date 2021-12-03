@@ -357,6 +357,7 @@ function run() {
             const configurationFile = core.getInput('configuration');
             const configuration = (0, utils_1.resolveConfiguration)(repositoryPath, configurationFile);
             // read in repository inputs
+            const baseUrl = core.getInput('baseUrl');
             const token = core.getInput('token');
             const owner = core.getInput('owner') || github.context.repo.owner;
             const repo = core.getInput('repo') || github.context.repo.repo;
@@ -367,7 +368,7 @@ function run() {
             const ignorePreReleases = core.getInput('ignorePreReleases') === 'true';
             const failOnError = core.getInput('failOnError') === 'true';
             const commitMode = core.getInput('commitMode') === 'true';
-            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(token, repositoryPath, owner, repo, fromTag, toTag, failOnError, ignorePreReleases, commitMode, configuration).build();
+            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, failOnError, ignorePreReleases, commitMode, configuration).build();
             core.setOutput('changelog', result);
             // write the result in changelog to file if possible
             const outputFile = core.getInput('outputFile');
@@ -765,7 +766,8 @@ const tags_1 = __nccwpck_require__(7532);
 const utils_1 = __nccwpck_require__(918);
 const transform_1 = __nccwpck_require__(1644);
 class ReleaseNotesBuilder {
-    constructor(token, repositoryPath, owner, repo, fromTag, toTag, failOnError, ignorePreReleases, commitMode, configuration) {
+    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, failOnError, ignorePreReleases, commitMode, configuration) {
+        this.baseUrl = baseUrl;
         this.token = token;
         this.repositoryPath = repositoryPath;
         this.owner = owner;
@@ -799,7 +801,8 @@ class ReleaseNotesBuilder {
             core.endGroup();
             // load octokit instance
             const octokit = new rest_1.Octokit({
-                auth: `token ${this.token || process.env.GITHUB_TOKEN}`
+                auth: `token ${this.token || process.env.GITHUB_TOKEN}`,
+                baseUrl: `${this.baseUrl || "https://api.github.com"}`
             });
             // ensure proper from <-> to tag range
             core.startGroup(`🔖 Resolve tags`);

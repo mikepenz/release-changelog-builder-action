@@ -72,10 +72,28 @@ jobs:
           fromTag: "v0.0.1"
           toTag: "v0.0.3"
           token: ${{ secrets.GITHUB_TOKEN }}
-
+      
       - name: Echo Complex Configuration Changelog
         env:
           CHANGELOG: ${{ steps.complex_release.outputs.changelog }}
+        run: echo "CHANGELOG"
+
+        # Showcases a more complex configuration, providing a configuration, and specifically referencing owner, repo, from, to tag and base URL
+      - name: "Complex Configuration with base URL"
+        id: complex_release_baseurl
+        uses: ./
+        with:
+          configuration: "configs/configuration_complex.json"
+          owner: "mikepenz"
+          repo: "release-changelog-builder-action"
+          fromTag: "v0.0.1"
+          toTag: "v0.0.3"
+          baseUrl: "https://corp.globant.com/api/v3"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Echo Complex Configuration With baseUrl Changelog
+        env:
+          CHANGELOG: ${{ steps.complex_release_baseurl.outputs.changelog }}
         run: echo "CHANGELOG"
 
         # Showcases the capability to generate the changelog for an external repository provided
