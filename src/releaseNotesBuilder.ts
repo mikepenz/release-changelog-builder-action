@@ -8,6 +8,7 @@ import {fillAdditionalPlaceholders} from './transform'
 
 export class ReleaseNotesBuilder {
   constructor(
+    private baseUrl: string | null,
     private token: string | null,
     private repositoryPath: string,
     private owner: string | null,
@@ -40,7 +41,8 @@ export class ReleaseNotesBuilder {
 
     // load octokit instance
     const octokit = new Octokit({
-      auth: `token ${this.token || process.env.GITHUB_TOKEN}`
+      auth: `token ${this.token || process.env.GITHUB_TOKEN}`,
+      baseUrl: `${this.baseUrl || "https://api.github.com"}`
     })
 
     // ensure proper from <-> to tag range
