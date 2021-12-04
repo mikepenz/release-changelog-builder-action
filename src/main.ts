@@ -24,6 +24,7 @@ async function run(): Promise<void> {
     )
 
     // read in repository inputs
+    const baseUrl = core.getInput('baseUrl')
     const token = core.getInput('token')
     const owner = core.getInput('owner') || github.context.repo.owner
     const repo = core.getInput('repo') || github.context.repo.repo
@@ -36,6 +37,7 @@ async function run(): Promise<void> {
     const commitMode = core.getInput('commitMode') === 'true'
 
     const result = await new ReleaseNotesBuilder(
+      baseUrl,
       token,
       repositoryPath,
       owner,

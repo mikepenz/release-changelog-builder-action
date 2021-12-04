@@ -7,6 +7,7 @@ it('Should match generated changelog (unspecified fromTag)', async () => {
   const configuration = resolveConfiguration('', 'configs/configuration.json')
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
+    null,
     '.',
     'mikepenz',
     'release-changelog-builder-action',
@@ -32,6 +33,7 @@ it('Should match generated changelog (unspecified tags)', async () => {
   const configuration = resolveConfiguration('', 'configs/configuration.json')
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
+    null,
     '.',
     'mikepenz',
     'action-junit-report-legacy',
@@ -53,6 +55,7 @@ it('Should match generated changelog (unspecified tags)', async () => {
 it('Should use empty placeholder', async () => {
   const configuration = resolveConfiguration('', 'configs/configuration.json')
   const releaseNotesBuilder = new ReleaseNotesBuilder(
+    null,
     null,
     '.',
     'mikepenz',
@@ -76,6 +79,7 @@ it('Should fill empty placeholders', async () => {
     'configs_test/configuration_empty_all_placeholders.json'
   )
   const releaseNotesBuilder = new ReleaseNotesBuilder(
+    null,
     null,
     '.',
     'mikepenz',
@@ -102,6 +106,7 @@ it('Should fill `template` placeholders', async () => {
   )
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
+    null,
     '.',
     'mikepenz',
     'release-changelog-builder-action',
@@ -126,6 +131,7 @@ it('Should fill `template` placeholders, ignore', async () => {
     'configs_test/configuration_empty_all_placeholders.json'
   )
   const releaseNotesBuilder = new ReleaseNotesBuilder(
+    null,
     null,
     '.',
     'mikepenz',
@@ -152,6 +158,7 @@ it('Uncategorized category', async () => {
   )
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
+    null,
     '.',
     'mikepenz',
     'release-changelog-builder-action',
@@ -177,6 +184,7 @@ it('Verify commit based changelog', async () => {
   )
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
+    null,
     '.',
     'mikepenz',
     'release-changelog-builder-action',
@@ -201,6 +209,7 @@ it('Verify commit based changelog, with emoji categorisation', async () => {
     'configs_test/configuration_commits_emoji.json'
   )
   const releaseNotesBuilder = new ReleaseNotesBuilder(
+    null,
     null,
     '.',
     'theapache64',
