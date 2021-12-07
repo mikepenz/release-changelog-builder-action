@@ -39,7 +39,7 @@
     "@types/semver": "^7.3.9",
     "moment": "^2.29.1",
     "semver": "^7.3.5",
-    "webpack": "^5.64.4"
+    "webpack": "^5.65.0"
   },
   "devDependencies": {
     "@types/jest": "^27.0.3",
