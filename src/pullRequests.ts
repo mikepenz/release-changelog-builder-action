@@ -60,7 +60,7 @@ export class PullRequests {
       owner,
       repo,
       state: 'closed',
-      sort: 'updated',
+      sort: 'merged',
       per_page: '100',
       direction: 'desc'
     })
