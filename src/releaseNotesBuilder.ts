@@ -42,7 +42,7 @@ export class ReleaseNotesBuilder {
     // load octokit instance
     const octokit = new Octokit({
       auth: `token ${this.token || process.env.GITHUB_TOKEN}`,
-      baseUrl: `${this.baseUrl || "https://api.github.com"}`
+      baseUrl: `${this.baseUrl || 'https://api.github.com'}`
     })
 
     // ensure proper from <-> to tag range
