@@ -462,7 +462,7 @@ class PullRequests {
                 owner,
                 repo,
                 state: 'closed',
-                sort: 'updated',
+                sort: 'merged',
                 per_page: '100',
                 direction: 'desc'
             });
@@ -802,7 +802,7 @@ class ReleaseNotesBuilder {
             // load octokit instance
             const octokit = new rest_1.Octokit({
                 auth: `token ${this.token || process.env.GITHUB_TOKEN}`,
-                baseUrl: `${this.baseUrl || "https://api.github.com"}`
+                baseUrl: `${this.baseUrl || 'https://api.github.com'}`
             });
             // ensure proper from <-> to tag range
             core.startGroup(`🔖 Resolve tags`);
