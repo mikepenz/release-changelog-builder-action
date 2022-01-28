@@ -90,6 +90,22 @@ mergedPullRequests.push(
   }
 )
 
+const pullRequestWithLabelInBody: PullRequestInfo = {
+  number: 5,
+  title: 'label in body',
+  htmlURL: '',
+  baseBranch: '',
+  mergedAt: moment(),
+  mergeCommitSha: 'sha1',
+  author: 'Mike',
+  repoName: 'test-repo',
+  labels: new Set<string>(),
+  milestone: '',
+  body: '[Issue][Feature][AB-1234321] - no magic body for this matter',
+  assignees: [],
+  requestedReviewers: []
+}
+
 it('Extract label from title, combined regex', async () => {
   configuration.label_extractor = [
     {
@@ -111,6 +127,33 @@ it('Extract label from title, combined regex', async () => {
 
   expect(resultChangelog).toStrictEqual(
     `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n\n`
+  )
+})
+
+
+it('Extract label from title and body, combined regex', async () => {
+  configuration.label_extractor = [
+    {
+      pattern: '.*(\\[Feature\\]|\\[Issue\\]).*',
+      target: '$1',
+      on_property: ['title', 'body']
+    }
+  ]
+  
+  let prs = Array.from(mergedPullRequests)
+  prs.push(pullRequestWithLabelInBody)
+  const resultChangelog = buildChangelog(prs, {
+    owner: 'mikepenz',
+    repo: 'test-repo',
+    fromTag: '1.0.0',
+    toTag: '2.0.0',
+    failOnError: false,
+    commitMode: false,
+    configuration
+  })
+
+  expect(resultChangelog).toStrictEqual(
+    `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n- label in body\n   - PR: #5\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n\n`
   )
 })
 
