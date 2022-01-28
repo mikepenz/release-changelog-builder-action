@@ -1402,6 +1402,12 @@ function validateTransformer(transformer) {
             method = transformer.method;
             onEmpty = transformer.on_empty;
         }
+        // legacy handling, transform single value input to array
+        if (!Array.isArray(onProperty)) {
+            if (onProperty !== undefined) {
+                onProperty = [onProperty];
+            }
+        }
         return {
             pattern: new RegExp(transformer.pattern.replace('\\\\', '\\'), (_a = transformer.flags) !== null && _a !== void 0 ? _a : 'gu'),
             target: transformer.target || '',
@@ -1420,26 +1426,40 @@ function extractValues(pr, extractor, extractor_usecase) {
     if (extractor.pattern == null) {
         return null;
     }
-    let onValue;
     if (extractor.onProperty !== undefined) {
-        let value = pr[extractor.onProperty];
-        if (value === undefined) {
-            core.warning(`⚠️ the provided property '${extractor.onProperty}' for \`${extractor_usecase}\` is not valid`);
-            value = pr['body'];
+        let results = [];
+        const list = extractor.onProperty;
+        // eslint-disable-next-line @typescript-eslint/prefer-for-of
+        for (let i = 0; i < list.length; i++) {
+            const prop = list[i];
+            let value = pr[prop];
+            if (value === undefined) {
+                core.warning(`⚠️ the provided property '${extractor.onProperty}' for \`${extractor_usecase}\` is not valid`);
+                value = pr['body'];
+            }
+            const values = extractValuesFromString(value, extractor);
+            if (values !== null) {
+                results = results.concat(values);
+            }
         }
-        onValue = value;
+        return results;
     }
     else {
-        onValue = pr.body;
+        return extractValuesFromString(pr.body, extractor);
+    }
+}
+function extractValuesFromString(value, extractor) {
+    if (extractor.pattern == null) {
+        return null;
     }
     if (extractor.method === 'match') {
-        const lables = onValue.match(extractor.pattern);
+        const lables = value.match(extractor.pattern);
         if (lables !== null && lables.length > 0) {
             return lables.map(label => label.toLocaleLowerCase('en'));
         }
     }
     else {
-        const label = onValue.replace(extractor.pattern, extractor.target);
+        const label = value.replace(extractor.pattern, extractor.target);
         if (label !== '') {
             return [label.toLocaleLowerCase('en')];
         }

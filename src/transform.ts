@@ -309,6 +309,13 @@ export function validateTransformer(
       onEmpty = (transformer as Extractor).on_empty
     }
 
+    // legacy handling, transform single value input to array
+    if (!Array.isArray(onProperty)) {
+      if (onProperty !== undefined) {
+        onProperty = [onProperty]
+      }
+    }
+
     return {
       pattern: new RegExp(
         transformer.pattern.replace('\\\\', '\\'),
@@ -334,27 +341,47 @@ function extractValues(
     return null
   }
 
-  let onValue
   if (extractor.onProperty !== undefined) {
-    let value: string = pr[extractor.onProperty]
-    if (value === undefined) {
-      core.warning(
-        `⚠️ the provided property '${extractor.onProperty}' for \`${extractor_usecase}\` is not valid`
-      )
-      value = pr['body']
+    let results: string[] = []
+    const list: ('title' | 'author' | 'milestone' | 'body')[] =
+      extractor.onProperty
+    // eslint-disable-next-line @typescript-eslint/prefer-for-of
+    for (let i = 0; i < list.length; i++) {
+      const prop = list[i]
+      let value: string = pr[prop]
+      if (value === undefined) {
+        core.warning(
+          `⚠️ the provided property '${extractor.onProperty}' for \`${extractor_usecase}\` is not valid`
+        )
+        value = pr['body']
+      }
+
+      const values = extractValuesFromString(value, extractor)
+      if (values !== null) {
+        results = results.concat(values)
+      }
     }
-    onValue = value
+    return results
   } else {
-    onValue = pr.body
+    return extractValuesFromString(pr.body, extractor)
+  }
+}
+
+function extractValuesFromString(
+  value: string,
+  extractor: RegexTransformer
+): string[] | null {
+  if (extractor.pattern == null) {
+    return null
   }
 
   if (extractor.method === 'match') {
-    const lables = onValue.match(extractor.pattern)
+    const lables = value.match(extractor.pattern)
     if (lables !== null && lables.length > 0) {
       return lables.map(label => label.toLocaleLowerCase('en'))
     }
   } else {
-    const label = onValue.replace(extractor.pattern, extractor.target)
+    const label = value.replace(extractor.pattern, extractor.target)
     if (label !== '') {
       return [label.toLocaleLowerCase('en')]
     }
@@ -368,7 +395,7 @@ function extractValues(
 export interface RegexTransformer {
   pattern: RegExp | null
   target: string
-  onProperty?: 'title' | 'author' | 'milestone' | 'body' | undefined
+  onProperty?: ('title' | 'author' | 'milestone' | 'body')[] | undefined
   method?: 'replace' | 'match' | undefined
   onEmpty?: string | undefined
 }
