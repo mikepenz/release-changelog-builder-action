@@ -32,7 +32,13 @@ export interface Transformer extends Regex {
 }
 
 export interface Extractor extends Transformer {
-  on_property?: 'title' | 'author' | 'milestone' | 'body' | undefined // retrieve the property to extract the value from
+  on_property?:
+    | ('title' | 'author' | 'milestone' | 'body')[]
+    | 'title'
+    | 'author'
+    | 'milestone'
+    | 'body'
+    | undefined // retrieve the property to extract the value from
   method?: 'replace' | 'match' | undefined // the method to use to extract the value, `match` will not use the `target` property
   on_empty?: string | undefined // in case the regex results in an empty string, this value is gonna be used instead (only for label_extractor currently)
 }

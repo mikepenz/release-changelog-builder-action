@@ -340,14 +340,14 @@ Table of descriptions for the `configuration.json` options to configure the resu
 # Install the dependencies
 $ npm install
 
+# Verify lint is happy
+$ npm run lint -- --fix
+
 # Build the typescript and package it for distribution
 $ npm run build && npm run package
 
 # Run the tests, use to debug, and test it out
 $ npm test
-
-# Verify lint is happy
-$ npm run lint -- --fix
 ```
 
 It's suggested to export the token to your path before running the tests so that API calls can be done to GitHub.
