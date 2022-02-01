@@ -165,6 +165,7 @@ export function buildChangelog(
     }
   }
   core.info(`✒️ Wrote ${categorizedPrs.length} categorized pull requests down`)
+  core.setOutput('categorized_prs', categorizedPrs.length)
 
   let changelogUncategorized = ''
   for (const pr of uncategorizedPrs) {
@@ -173,6 +174,7 @@ export function buildChangelog(
   core.info(
     `✒️ Wrote ${uncategorizedPrs.length} non categorized pull requests down`
   )
+  core.setOutput('uncategorized_prs', uncategorizedPrs.length)
 
   let changelogIgnored = ''
   for (const pr of ignoredPrs) {

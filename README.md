@@ -74,15 +74,17 @@ ${{steps.build_changelog.outputs.changelog}}
 
 A full set list of possible output values for this action.
 
-| **Output**          | **Description**                                                                                                           |
-|---------------------|---------------------------------------------------------------------------------------------------------------------------|
-| `outputs.changelog`       | The built release changelog built from the merged pull requests                                                           |
-| `outputs.owner`           | Specifies the owner of the repository processed                                                                           |
-| `outputs.repo`            | Describes the repository name, which was processed                                                                        |
-| `outputs.fromTag`         | Defines the `fromTag` which describes the lower bound to process pull requests for                                        |
-| `outputs.toTag`           | Defines the `toTag` which describes the upper bound to process pull request for                                           |
-| `outputs.failed`          | Defines if there was an issue with the action run, and the changelog may not have been generated correctly. [true, false] |
-| `outputs.pull_requests`   | Defines a `,` joined array with all PR IDs associated with the generated changelog.                                       |
+| **Output**            | **Description**                                                                                                           |
+|-----------------------|---------------------------------------------------------------------------------------------------------------------------|
+| `outputs.changelog`         | The built release changelog built from the merged pull requests                                                           |
+| `outputs.owner`             | Specifies the owner of the repository processed                                                                           |
+| `outputs.repo`              | Describes the repository name, which was processed                                                                        |
+| `outputs.fromTag`           | Defines the `fromTag` which describes the lower bound to process pull requests for                                        |
+| `outputs.toTag`             | Defines the `toTag` which describes the upper bound to process pull request for                                           |
+| `outputs.failed`            | Defines if there was an issue with the action run, and the changelog may not have been generated correctly. [true, false] |
+| `outputs.pull_requests`     | Defines a `,` joined array with all PR IDs associated with the generated changelog.                                       |
+| `outputs.categorized_prs`   | Count of PRs which were successfully categorized as part of the action.                                       |
+| `outputs.uncategorized_prs` | Count of PRs which were not categorized as part of the action.                                       |
 
 
 ## Full Sample 🖥️
