@@ -79,6 +79,7 @@ export class ReleaseNotesBuilder {
       return null
     }
     this.fromTag = previousTag
+    core.setOutput('fromTag', previousTag)
     core.debug(`fromTag resolved via previousTag as: ${previousTag}`)
     core.endGroup()
 
