@@ -430,3 +430,22 @@ it('Commit SHA-1 in commitMode', async () => {
     `## 🚀 Features\n\nsha1-3\nsha1-1\n\n## 🐛 Fixes\n\nsha1-3\nsha1-2\n\n`
   )
 })
+
+it('Release Diff', async () => {
+  const customConfig = Object.assign({}, DefaultConfiguration)
+  customConfig.template = "${{RELEASE_DIFF}}"
+
+  const resultChangelog = buildChangelog(pullRequestsWithLabels, {
+    owner: 'mikepenz',
+    repo: 'release-changelog-builder-action',
+    fromTag: 'v2.8.0',
+    toTag: 'v2.8.1',
+    failOnError: false,
+    commitMode: true,
+    configuration: customConfig
+  })
+
+  expect(resultChangelog).toStrictEqual(
+    `https://github.com/mikepenz/release-changelog-builder-action/compare/v2.8.0...v2.8.1`
+  )
+})

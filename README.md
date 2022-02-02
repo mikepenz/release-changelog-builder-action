@@ -295,6 +295,7 @@ Table of supported placeholders allowed to be used in the `template` and `empty_
 | `${{REPO}}`                | The repository name of the repo the changelog was generated for                                    | x         |
 | `${{FROM_TAG}}`            | Defines the 'start' from where the changelog did consider merged pull requests                     | x         |
 | `${{TO_TAG}}`              | Defines until which tag the changelog did consider merged pull requests                            | x         |
+| `${{RELEASE_DIFF}}`        | Introduces a link to the full diff between from tag and to tag releases                            | x         |
 | `${{CATEGORIZED_COUNT}}`   | The count of PRs which were categorized                                                            |           |
 | `${{UNCATEGORIZED_COUNT}}` | The count of PRs and changes which were not categorized. No label overlapping with category labels |           |
 | `${{IGNORED_COUNT}}`       | The count of PRs and changes which were specifically ignored from the changelog.                   |           |
