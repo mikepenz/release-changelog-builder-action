@@ -228,6 +228,10 @@ export function fillAdditionalPlaceholders(
   transformed = transformed.replace(/\${{REPO}}/g, options.repo)
   transformed = transformed.replace(/\${{FROM_TAG}}/g, options.fromTag)
   transformed = transformed.replace(/\${{TO_TAG}}/g, options.toTag)
+  transformed = transformed.replace(
+    /\${{RELEASE_DIFF}}/g,
+    `https://github.com/${options.owner}/${options.repo}/compare/${options.fromTag}...${options.toTag}`
+  )
   return transformed
 }
 
