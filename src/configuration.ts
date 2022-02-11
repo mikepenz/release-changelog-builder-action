@@ -19,6 +19,7 @@ export interface Configuration {
 export interface Category {
   title: string // the title of this category
   labels: string[] // labels to associate PRs to this category
+  exclude_labels?: string[] // if an exclude label is detected, the PR will be excluded from this category
   exhaustive?: boolean // requires all labels to be present in the PR
 }
 

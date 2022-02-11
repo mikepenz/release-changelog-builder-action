@@ -449,3 +449,40 @@ it('Release Diff', async () => {
     `https://github.com/mikepenz/release-changelog-builder-action/compare/v2.8.0...v2.8.1`
   )
 })
+
+
+it('Use exclude labels to not include a PR within a category.', async () => {
+  const customConfig = Object.assign({}, DefaultConfiguration)
+  customConfig.categories = [
+    {
+      title: '## 🚀 Features and 🐛 Issues',
+      labels: ['Feature', 'Issue'],
+      exhaustive: true
+    },
+    {
+      title: '## 🚀 Features and 🐛 Issues But No 🐛 Fixes',
+      labels: ['Feature', 'Issue'],
+      exclude_labels: ['Fix'],
+      exhaustive: true
+    },
+    {
+      title: '## 🚀 Features and/or 🐛 Issues But No 🐛 Fixes',
+      labels: ['Feature', 'Issue'],
+      exclude_labels: ['Fix']
+    }
+  ]
+
+  const resultChangelog = buildChangelog(pullRequestsWithLabels, {
+    owner: 'mikepenz',
+    repo: 'test-repo',
+    fromTag: '1.0.0',
+    toTag: '2.0.0',
+    failOnError: false,
+    commitMode: false,
+    configuration: customConfig
+  })
+
+  expect(resultChangelog).toStrictEqual(
+    `## 🚀 Features and 🐛 Issues\n\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n## 🚀 Features and/or 🐛 Issues But No 🐛 Fixes\n\n- [ABC-1234] - this is a PR 1 title message\n   - PR: #1\n\n`
+  )
+})
