@@ -1270,6 +1270,18 @@ function buildChangelog(prs, options) {
         }
         let matched = false;
         for (const [category, pullRequests] of categorized) {
+            // check if any exclude label matches
+            if (category.exclude_labels !== undefined) {
+                if (haveCommonElements(category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
+                    if (core.isDebug()) {
+                        const prNum = pr.number;
+                        const prLabels = pr.labels;
+                        const excludeLabels = JSON.stringify(category.exclude_labels);
+                        core.debug(`PR ${prNum} with labels: ${prLabels} excluded from category via exclude label: ${excludeLabels}`);
+                    }
+                    continue; // one of the exclude labels matched, skip the PR for this category
+                }
+            }
             if (category.exhaustive === true) {
                 if (haveEveryElements(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
                     pullRequests.push(body);
