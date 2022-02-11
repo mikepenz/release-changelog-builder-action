@@ -166,7 +166,13 @@ This configuration is a `.json` file in the following format.
       },
       {
         "title": "## 🧪 Tests",
-        "labels": ["test"]
+        "labels": ["test"],
+      },
+      {
+        "title": "## 🧪 Tests and some 🪄 Magic",
+        "labels": ["test", "magic"],
+        "exclude_labels": ["no-magic"],
+        "exhaustive": true,
       }
     ],
     "ignore_labels": [
