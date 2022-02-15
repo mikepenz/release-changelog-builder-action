@@ -5,6 +5,7 @@ on:
       - '*'
   pull_request:
 
+
 jobs:
   build:
     if: github.event_name  == 'pull_request'
@@ -23,7 +24,7 @@ jobs:
           npm run all
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
+
   test:
     if: github.event_name  == 'pull_request'
     runs-on: ubuntu-latest
@@ -38,7 +39,7 @@ jobs:
           toTag: "v0.0.3"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Echo Configuration without Checkout Changelog
         env:
           CHANGELOG: ${{ steps.without_checkout.outputs.changelog }}
@@ -55,7 +56,7 @@ jobs:
         uses: ./
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Echo Minimal Configuration Changelog
         env:
           CHANGELOG: ${{ steps.minimal_release.outputs.changelog }}
