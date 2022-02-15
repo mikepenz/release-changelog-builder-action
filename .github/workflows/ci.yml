@@ -5,7 +5,6 @@ on:
       - '*'
   pull_request:
 
-
 jobs:
   build:
     if: github.event_name  == 'pull_request'
