@@ -1323,16 +1323,31 @@ function buildChangelog(prs, options) {
         }
     }
     core.info(`✒️ Wrote ${categorizedPrs.length} categorized pull requests down`);
+    if (core.isDebug()) {
+        for (const pr of categorizedPrs) {
+            core.debug(`    ${pr}`);
+        }
+    }
     core.setOutput('categorized_prs', categorizedPrs.length);
     let changelogUncategorized = '';
     for (const pr of uncategorizedPrs) {
         changelogUncategorized = `${changelogUncategorized + pr}\n`;
     }
     core.info(`✒️ Wrote ${uncategorizedPrs.length} non categorized pull requests down`);
+    if (core.isDebug()) {
+        for (const pr of uncategorizedPrs) {
+            core.debug(`    ${pr}`);
+        }
+    }
     core.setOutput('uncategorized_prs', uncategorizedPrs.length);
     let changelogIgnored = '';
     for (const pr of ignoredPrs) {
         changelogIgnored = `${changelogIgnored + pr}\n`;
+    }
+    if (core.isDebug()) {
+        for (const pr of ignoredPrs) {
+            core.debug(`    ${pr}`);
+        }
     }
     core.info(`✒️ Wrote ${ignoredPrs.length} ignored pull requests down`);
     // fill template
