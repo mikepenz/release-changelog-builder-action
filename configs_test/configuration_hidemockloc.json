@@ -1,0 +1,30 @@
+{
+    "categories": [
+        {
+            "title": "## 🚀 Features",
+            "labels": ["feature", "enhancement"]
+        },
+        {
+            "title": "## 🐛 Fixes",
+            "labels": ["fix", "bug"]
+        },
+        {
+            "title": "## 🧪 Tests",
+            "labels": ["test"]
+        },
+		{
+            "title": "## 💬 Other",
+            "labels": ["other", "documentation"]
+        },
+        {
+            "title": "## 📦 Dependencies",
+            "labels": ["dependencies"]
+        }
+    ],
+    "sort": "ASC",
+    "template": "${{CHANGELOG}}",
+    "pr_template": "- ${{TITLE}}\n   - PR: #${{NUMBER}}",
+    "empty_template": "- no changes",
+    "max_pull_requests": 1000,
+    "max_back_track_time_days": 1000
+}
