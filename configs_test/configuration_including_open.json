@@ -6,5 +6,5 @@
         }
     ],
     "template": "${{CHANGELOG}}\n\n\nUncategorized\n${{UNCATEGORIZED}}\n\n\nOpen\n${{OPEN}}",
-    "pr_template": "- ${{TITLE}} (#${{NUMBER}}) ${{STATUS}}"
+    "pr_template": "- ${{TITLE}} (#${{NUMBER}}) ${{STATUS}}${{APPROVERS}}"
 }

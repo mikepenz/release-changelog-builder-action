@@ -335,6 +335,10 @@ function fillTemplate(pr: PullRequestInfo, template: string): string {
     /\${{REVIEWERS}}/g,
     pr.requestedReviewers?.join(', ') || ''
   )
+  transformed = transformed.replace(
+    /\${{APPROVERS}}/g,
+    pr.approvedReviewers?.join(', ') || ''
+  )
   return transformed
 }
 

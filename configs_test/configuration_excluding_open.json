@@ -12,5 +12,5 @@
         }
     ],
     "template": "${{CHANGELOG}}",
-    "pr_template": "- ${{TITLE}} -- (#${{NUMBER}}) [${{STATUS}}] {${{LABELS}}}"
+    "pr_template": "- ${{TITLE}} -- (#${{NUMBER}}) [${{STATUS}}] {${{LABELS}}}${{APPROVERS}}"
 }

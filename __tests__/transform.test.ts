@@ -43,6 +43,7 @@ mergedPullRequests.push(
     body: 'no magic body for this matter',
     assignees: [],
     requestedReviewers: [],
+    approvedReviewers: [],
     status: "merged"
   },
   {
@@ -60,6 +61,7 @@ mergedPullRequests.push(
     body: 'no magic body for this matter',
     assignees: [],
     requestedReviewers: [],
+    approvedReviewers: [],
     status: "merged"
   },
   {
@@ -77,6 +79,7 @@ mergedPullRequests.push(
     body: 'no magic body for this matter',
     assignees: [],
     requestedReviewers: [],
+    approvedReviewers: [],
     status: "merged"
   },
   {
@@ -94,6 +97,7 @@ mergedPullRequests.push(
     body: 'no magic body for this matter',
     assignees: [],
     requestedReviewers: [],
+    approvedReviewers: [],
     status: "merged"
   }
 )
@@ -113,6 +117,7 @@ const pullRequestWithLabelInBody: PullRequestInfo = {
   body: '[Issue][Feature][AB-1234321] - no magic body for this matter',
   assignees: [],
   requestedReviewers: [],
+  approvedReviewers: [],
   status: "merged"
 }
 
@@ -132,6 +137,7 @@ it('Extract label from title, combined regex', async () => {
     toTag: '2.0.0',
     includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration
   })
@@ -160,6 +166,7 @@ it('Extract label from title and body, combined regex', async () => {
     toTag: '2.0.0',
     includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration
   })
@@ -190,6 +197,7 @@ it('Extract label from title, split regex', async () => {
     toTag: '2.0.0',
     includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration
   })
@@ -220,6 +228,7 @@ it('Extract label from title, match', async () => {
     toTag: '2.0.0',
     includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration
   })
@@ -245,6 +254,7 @@ it('Extract label from title, match multiple', async () => {
     toTag: '2.0.0',
     includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration
   })
@@ -271,6 +281,7 @@ it('Extract label from title, match multiple, custon non matching label', async 
     toTag: '2.0.0',
     includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration
   })
@@ -298,6 +309,7 @@ pullRequestsWithLabels.push(
     body: 'no magic body for this matter',
     assignees: [],
     requestedReviewers: [],
+    approvedReviewers: [],
     status: "merged"
   },
   {
@@ -315,6 +327,7 @@ pullRequestsWithLabels.push(
     body: 'no magic body for this matter',
     assignees: [],
     requestedReviewers: [],
+    approvedReviewers: [],
     status: "merged"
   },
   {
@@ -332,6 +345,7 @@ pullRequestsWithLabels.push(
     body: 'no magic body for this matter',
     assignees: [],
     requestedReviewers: [],
+    approvedReviewers: [],
     status: "merged"
   },
   {
@@ -349,6 +363,7 @@ pullRequestsWithLabels.push(
     body: 'no magic body for this matter',
     assignees: [],
     requestedReviewers: [],
+    approvedReviewers: [],
     status: "merged"
   }
 )
@@ -380,6 +395,7 @@ it('Match multiple labels exhaustive for category', async () => {
     toTag: '2.0.0',
     includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration: customConfig
   })
@@ -404,6 +420,7 @@ it('Deduplicate duplicated PRs', async () => {
     toTag: '2.0.0',
     includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration: customConfig
   })
@@ -429,6 +446,7 @@ it('Deduplicate duplicated PRs DESC', async () => {
     toTag: '2.0.0',
     includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration: customConfig
   })
@@ -450,6 +468,7 @@ it('Commit SHA-1 in commitMode', async () => {
     toTag: '2.0.0',
     includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: true,
     configuration: customConfig
   })
@@ -470,6 +489,7 @@ it('Release Diff', async () => {
     toTag: 'v2.8.1',
     includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: true,
     configuration: customConfig
   })
@@ -508,6 +528,7 @@ it('Use exclude labels to not include a PR within a category.', async () => {
     toTag: '2.0.0',
     includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration: customConfig
   })

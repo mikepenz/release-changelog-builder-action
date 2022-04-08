@@ -13,6 +13,7 @@ export interface ReleaseNotesOptions {
   toTag: string // the tag/ref up to
   includeOpen: boolean // defines if we should also fetch open pull requests
   failOnError: boolean // defines if we should fail the action in case of an error
+  fetchReviewers: boolean // defines if the action should fetch the reviewers for PRs - approved reviewers are not included in the default PR listing
   commitMode: boolean // defines if we use the alternative commit based mode. note: this is only partially supported
   configuration: Configuration // the configuration as defined in `configuration.ts`
 }
@@ -81,7 +82,8 @@ export class ReleaseNotes {
   private async getMergedPullRequests(
     octokit: Octokit
   ): Promise<PullRequestInfo[]> {
-    const {owner, repo, includeOpen, configuration} = this.options
+    const {owner, repo, includeOpen, fetchReviewers, configuration} =
+      this.options
 
     const commits = await this.getCommitHistory(octokit)
     if (commits.length === 0) {
@@ -169,7 +171,7 @@ export class ReleaseNotes {
     })
 
     // return only prs if the baseBranch is matching the configuration
-    return allPullRequests.filter(pr => {
+    const finalPrs = allPullRequests.filter(pr => {
       if (baseBranches.length !== 0) {
         return baseBranchPatterns.some(pattern => {
           return pr.baseBranch.match(pattern) !== null
@@ -177,6 +179,21 @@ export class ReleaseNotes {
       }
       return true
     })
+
+    if (fetchReviewers) {
+      core.info(`ℹ️ Fetching reviewers was enabled`)
+      // update PR information with reviewers who approved
+      for (const pr of finalPrs) {
+        await pullRequestsApi.getReviewers(owner, repo, pr)
+        if (pr.approvedReviewers.length > 0) {
+          core.info(
+            `ℹ️ Retrieved ${pr.approvedReviewers.length} reviewer(s) for PR ${owner}/${repo}/#${pr.number}`
+          )
+        }
+      }
+    }
+
+    return finalPrs
   }
 
   private async generateCommitPRs(
@@ -213,6 +230,7 @@ export class ReleaseNotes {
         body: commit.message || '',
         assignees: [],
         requestedReviewers: [],
+        approvedReviewers: [],
         status: 'merged'
       }
     })

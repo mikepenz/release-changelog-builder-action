@@ -380,8 +380,9 @@ function run() {
             const includeOpen = core.getInput('includeOpen') === 'true';
             const ignorePreReleases = core.getInput('ignorePreReleases') === 'true';
             const failOnError = core.getInput('failOnError') === 'true';
+            const fetchReviewers = core.getInput('fetchReviewers') === 'true';
             const commitMode = core.getInput('commitMode') === 'true';
-            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, commitMode, configuration).build();
+            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchReviewers, commitMode, configuration).build();
             core.setOutput('changelog', result);
             // write the result in changelog to file if possible
             const outputFile = core.getInput('outputFile');
@@ -551,6 +552,34 @@ class PullRequests {
             return sortPullRequests(openPrs, true);
         });
     }
+    getReviewers(owner, repo, pr) {
+        var e_3, _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            const options = this.octokit.pulls.listReviews.endpoint.merge({
+                owner,
+                repo,
+                pull_number: pr.number
+            });
+            try {
+                for (var _b = __asyncValues(this.octokit.paginate.iterator(options)), _c; _c = yield _b.next(), !_c.done;) {
+                    const response = _c.value;
+                    const reviews = response.data;
+                    pr.approvedReviewers = reviews
+                        .filter(r => r.state === 'APPROVED')
+                        .map(r => { var _a; return (_a = r.user) === null || _a === void 0 ? void 0 : _a.login; })
+                        .filter(r => !!r);
+                }
+            }
+            catch (e_3_1) { e_3 = { error: e_3_1 }; }
+            finally {
+                try {
+                    if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                }
+                finally { if (e_3) throw e_3.error; }
+            }
+            return [];
+        });
+    }
 }
 exports.PullRequests = PullRequests;
 function sortPullRequests(pullRequests, ascending) {
@@ -605,6 +634,7 @@ const mapPullRequest = (pr, status = 'open') => {
         body: pr.body || '',
         assignees: ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.map(asignee => (asignee === null || asignee === void 0 ? void 0 : asignee.login) || '')) || [],
         requestedReviewers: ((_e = pr.requested_reviewers) === null || _e === void 0 ? void 0 : _e.map(reviewer => (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '')) || [],
+        approvedReviewers: [],
         status
     });
 };
@@ -714,7 +744,7 @@ class ReleaseNotes {
     }
     getMergedPullRequests(octokit) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { owner, repo, includeOpen, configuration } = this.options;
+            const { owner, repo, includeOpen, fetchReviewers, configuration } = this.options;
             const commits = yield this.getCommitHistory(octokit);
             if (commits.length === 0) {
                 return [];
@@ -761,7 +791,7 @@ class ReleaseNotes {
                 return new RegExp(baseBranch.replace('\\\\', '\\'), 'gu');
             });
             // return only prs if the baseBranch is matching the configuration
-            return allPullRequests.filter(pr => {
+            const finalPrs = allPullRequests.filter(pr => {
                 if (baseBranches.length !== 0) {
                     return baseBranchPatterns.some(pattern => {
                         return pr.baseBranch.match(pattern) !== null;
@@ -769,6 +799,17 @@ class ReleaseNotes {
                 }
                 return true;
             });
+            if (fetchReviewers) {
+                core.info(`ℹ️ Fetching reviewers was enabled`);
+                // update PR information with reviewers who approved
+                for (const pr of finalPrs) {
+                    yield pullRequestsApi.getReviewers(owner, repo, pr);
+                    if (pr.approvedReviewers.length > 0) {
+                        core.info(`ℹ️ Retrieved ${pr.approvedReviewers.length} reviewer(s) for PR ${owner}/${repo}/#${pr.number}`);
+                    }
+                }
+            }
+            return finalPrs;
         });
     }
     generateCommitPRs(octokit) {
@@ -797,6 +838,7 @@ class ReleaseNotes {
                     body: commit.message || '',
                     assignees: [],
                     requestedReviewers: [],
+                    approvedReviewers: [],
                     status: 'merged'
                 };
             });
@@ -855,7 +897,7 @@ const tags_1 = __nccwpck_require__(7532);
 const utils_1 = __nccwpck_require__(918);
 const transform_1 = __nccwpck_require__(1644);
 class ReleaseNotesBuilder {
-    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, commitMode, configuration) {
+    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchReviewers = false, commitMode, configuration) {
         this.baseUrl = baseUrl;
         this.token = token;
         this.repositoryPath = repositoryPath;
@@ -866,6 +908,7 @@ class ReleaseNotesBuilder {
         this.includeOpen = includeOpen;
         this.failOnError = failOnError;
         this.ignorePreReleases = ignorePreReleases;
+        this.fetchReviewers = fetchReviewers;
         this.commitMode = commitMode;
         this.configuration = configuration;
     }
@@ -925,6 +968,7 @@ class ReleaseNotesBuilder {
                 toTag: this.toTag,
                 includeOpen: this.includeOpen,
                 failOnError: this.failOnError,
+                fetchReviewers: this.fetchReviewers,
                 commitMode: this.commitMode,
                 configuration: this.configuration
             };
@@ -1499,7 +1543,7 @@ function haveEveryElements(arr1, arr2) {
     return arr1.every(item => arr2.has(item));
 }
 function fillTemplate(pr, template) {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f;
     let transformed = template;
     transformed = transformed.replace(/\${{NUMBER}}/g, pr.number.toString());
     transformed = transformed.replace(/\${{TITLE}}/g, pr.title);
@@ -1514,6 +1558,7 @@ function fillTemplate(pr, template) {
     transformed = transformed.replace(/\${{BODY}}/g, pr.body);
     transformed = transformed.replace(/\${{ASSIGNEES}}/g, ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.join(', ')) || '');
     transformed = transformed.replace(/\${{REVIEWERS}}/g, ((_e = pr.requestedReviewers) === null || _e === void 0 ? void 0 : _e.join(', ')) || '');
+    transformed = transformed.replace(/\${{APPROVERS}}/g, ((_f = pr.approvedReviewers) === null || _f === void 0 ? void 0 : _f.join(', ')) || '');
     return transformed;
 }
 function transform(filled, transformers) {
