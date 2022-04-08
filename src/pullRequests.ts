@@ -97,7 +97,7 @@ export class PullRequests {
     repo: string,
     maxPullRequests: number
   ): Promise<PullRequestInfo[]> {
-    const mergedPRs: PullRequestInfo[] = []
+    const openPrs: PullRequestInfo[] = []
     const options = this.octokit.pulls.list.endpoint.merge({
       owner,
       repo,
@@ -111,21 +111,21 @@ export class PullRequests {
       const prs: PullsListData = response.data as PullsListData
 
       for (const pr of prs) {
-        mergedPRs.push(mapPullRequest(pr, 'open'))
+        openPrs.push(mapPullRequest(pr, 'open'))
       }
 
       const firstPR = prs[0]
-      if (firstPR === undefined || mergedPRs.length >= maxPullRequests) {
-        if (mergedPRs.length >= maxPullRequests) {
+      if (firstPR === undefined || openPrs.length >= maxPullRequests) {
+        if (openPrs.length >= maxPullRequests) {
           core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`)
         }
 
         // bail out early to not keep iterating on PRs super old
-        return sortPullRequests(mergedPRs, true)
+        return sortPullRequests(openPrs, true)
       }
     }
 
-    return sortPullRequests(mergedPRs, true)
+    return sortPullRequests(openPrs, true)
   }
 }
 

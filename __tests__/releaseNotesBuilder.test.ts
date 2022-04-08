@@ -238,11 +238,10 @@ it('Verify commit based changelog, with emoji categorisation', async () => {
   )
 })
 
-
-it('Verify inclusion of open PRs', async () => {
+it('Verify default inclusion of open PRs', async () => {
   const configuration = resolveConfiguration(
     '',
-    'configs_test/configuration_commits_emoji.json'
+    'configs_test/configuration_including_open.json'
   )
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null, // baseUrl
@@ -255,13 +254,13 @@ it('Verify inclusion of open PRs', async () => {
     true,  // includeOpen
     false, // failOnError
     false, // ignorePrePrelease
-    true,  // commitMode
+    false, // commitMode
     configuration  // configuration
   )
 
   const changeLog = await releaseNotesBuilder.build()
   console.log(changeLog)
   expect(changeLog).toStrictEqual(
-    ``
+    `## 🚀 Features\n\n- A feature to be going to v2 (nr3) (#3) merged\n- New feature to keep open (nr5) (#7) open\n\n\n\n\nUncategorized\n\n\n\nOpen\n- New feature to keep open (nr5) (#7) open\n`
   )
 })

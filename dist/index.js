@@ -515,7 +515,7 @@ class PullRequests {
     getOpen(owner, repo, maxPullRequests) {
         var e_2, _a;
         return __awaiter(this, void 0, void 0, function* () {
-            const mergedPRs = [];
+            const openPrs = [];
             const options = this.octokit.pulls.list.endpoint.merge({
                 owner,
                 repo,
@@ -529,15 +529,15 @@ class PullRequests {
                     const response = _c.value;
                     const prs = response.data;
                     for (const pr of prs) {
-                        mergedPRs.push(mapPullRequest(pr, 'open'));
+                        openPrs.push(mapPullRequest(pr, 'open'));
                     }
                     const firstPR = prs[0];
-                    if (firstPR === undefined || mergedPRs.length >= maxPullRequests) {
-                        if (mergedPRs.length >= maxPullRequests) {
+                    if (firstPR === undefined || openPrs.length >= maxPullRequests) {
+                        if (openPrs.length >= maxPullRequests) {
                             core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
                         }
                         // bail out early to not keep iterating on PRs super old
-                        return sortPullRequests(mergedPRs, true);
+                        return sortPullRequests(openPrs, true);
                     }
                 }
             }
@@ -548,7 +548,7 @@ class PullRequests {
                 }
                 finally { if (e_2) throw e_2.error; }
             }
-            return sortPullRequests(mergedPRs, true);
+            return sortPullRequests(openPrs, true);
         });
     }
 }
@@ -750,9 +750,10 @@ class ReleaseNotes {
                 // retrieve all open pull requests
                 const openPullRequests = yield pullRequestsApi.getOpen(owner, repo, configuration.max_pull_requests ||
                     configuration_1.DefaultConfiguration.max_pull_requests);
-                core.info(`ℹ️ Retrieved ${pullRequests.length} open PRs for ${owner}/${repo}`);
+                core.info(`ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`);
                 // all pull requests
                 allPullRequests = allPullRequests.concat(openPullRequests);
+                core.info(`ℹ️ Retrieved ${allPullRequests.length} total PRs for ${owner}/${repo}`);
             }
             // retrieve base branches we allow
             const baseBranches = configuration.base_branches || configuration_1.DefaultConfiguration.base_branches;

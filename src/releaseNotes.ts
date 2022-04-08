@@ -150,11 +150,15 @@ export class ReleaseNotes {
       )
 
       core.info(
-        `ℹ️ Retrieved ${pullRequests.length} open PRs for ${owner}/${repo}`
+        `ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`
       )
 
       // all pull requests
       allPullRequests = allPullRequests.concat(openPullRequests)
+
+      core.info(
+        `ℹ️ Retrieved ${allPullRequests.length} total PRs for ${owner}/${repo}`
+      )
     }
 
     // retrieve base branches we allow
