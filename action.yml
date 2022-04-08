@@ -54,7 +54,7 @@ outputs:
   uncategorized_prs:
     description: Count of uncategorized pull requests
   open_prs:
-    description: Count of open pull requests
+    description: Count of open pull requests. Only fetched if `includeOpen` is enabled.
 runs:
   using: 'node16'
   main: 'dist/index.js'
