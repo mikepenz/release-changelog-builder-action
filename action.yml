@@ -19,6 +19,7 @@ inputs:
     description: 'Defines the newly tag created'
   includeOpen:
     description: 'Defines if the changelog should include open PRs'
+    default: "false"
   ignorePreReleases:
     description: 'Defines if the action will only use full releases to compare against (Only used if fromTag is not defined). E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick'
     default: "false"
