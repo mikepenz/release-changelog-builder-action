@@ -268,6 +268,7 @@ For advanced use cases additional settings can be provided to the action
 | `includeOpen`       | Enables to also fetch currently open PRs. Default: false                                                                                                                    |
 | `ignorePreReleases` | Allows to ignore pre-releases for changelog generation (E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick). Only used if `fromTag` was not specified. Default: false    |
 | `failOnError`       | Defines if the action will result in a build failure if problems occurred. Default: false                                                                                   |
+| `fetchReviewers`    | Will enable fetching the users/reviewers who approved the PR. Default: false                                                                                                |
 | `commitMode`        | Special configuration for projects which work without PRs. Uses commit messages as changelog. This mode looses access to information only available for PRs. Default: false |
 
 💡 `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repositories please use a PAT (Personal Access Token).
@@ -276,21 +277,22 @@ For advanced use cases additional settings can be provided to the action
 
 Table of supported placeholders allowed to be used in the `pr_template` configuration, which will be included in the release notes / changelog.
 
-| **Placeholder**   | **Description**                                             |
-|-------------------|-------------------------------------------------------------|
-| `${{NUMBER}}`     | The number referencing this pull request. E.g. 13           |
-| `${{TITLE}}`      | Specified title of the merged pull request                  |
-| `${{URL}}`        | Url linking to the pull request on GitHub                   |
+| **Placeholder**   | **Description**                                                   |
+|-------------------|-------------------------------------------------------------------|
+| `${{NUMBER}}`     | The number referencing this pull request. E.g. 13                 |
+| `${{TITLE}}`      | Specified title of the merged pull request                        |
+| `${{URL}}`        | Url linking to the pull request on GitHub                         |
 | `${{STATUS}}`     | Status of the PR. Usually always `merged`. Possibly `Open` if `includeOpen` is configured. |
-| `${{CREATED_AT}}` | The ISO time, the pull request was created at               |
-| `${{MERGED_AT}}`  | The ISO time, the pull request was merged at                |
-| `${{MERGE_SHA}}`  | The commit SHA, the pull request was merged with            |
-| `${{AUTHOR}}`     | Author creating and opening the pull request                |
-| `${{LABELS}}`     | The labels associated with this pull request, joined by `,` |
-| `${{MILESTONE}}`  | Milestone this PR was part of, as assigned on GitHub        |
-| `${{BODY}}`       | Description/Body of the pull request as specified on GitHub |
-| `${{ASSIGNEES}}`  | Login names of assigned GitHub users, joined by `,`         |
-| `${{REVIEWERS}}`  | GitHub Login names of specified reviewers, joined by `,`    |
+| `${{CREATED_AT}}` | The ISO time, the pull request was created at                     |
+| `${{MERGED_AT}}`  | The ISO time, the pull request was merged at                      |
+| `${{MERGE_SHA}}`  | The commit SHA, the pull request was merged with                  |
+| `${{AUTHOR}}`     | Author creating and opening the pull request                      |
+| `${{LABELS}}`     | The labels associated with this pull request, joined by `,`       |
+| `${{MILESTONE}}`  | Milestone this PR was part of, as assigned on GitHub              |
+| `${{BODY}}`       | Description/Body of the pull request as specified on GitHub       |
+| `${{ASSIGNEES}}`  | Login names of assigned GitHub users, joined by `,`               |
+| `${{REVIEWERS}}`  | GitHub Login names of specified reviewers, joined by `,`          |
+| `${{APPROVERS}}`  | GitHub Login names of users who approved the PR, joined by `,`    |
 
 ### Template placeholders
 

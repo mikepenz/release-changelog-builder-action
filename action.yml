@@ -26,6 +26,9 @@ inputs:
   failOnError:
     description: 'Defines if the action should result in a build failure, if an error was discovered'
     default: "false"
+  fetchReviewers:
+    description: 'Will enable fetching the users/reviewers who approved the PR'
+    default: "false"
   commitMode:
     description: 'Enables a `light` commit based mode. This mode generates changelogs based on the commits. Please note that this is not officially supported, and lacks a lot of features only possible with PRs.'
     default: "false"
