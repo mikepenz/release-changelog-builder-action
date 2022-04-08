@@ -32,6 +32,7 @@ async function run(): Promise<void> {
     const fromTag = core.getInput('fromTag')
     const toTag = core.getInput('toTag')
     // read in flags
+    const includeOpen = core.getInput('includeOpen') === 'true'
     const ignorePreReleases = core.getInput('ignorePreReleases') === 'true'
     const failOnError = core.getInput('failOnError') === 'true'
     const commitMode = core.getInput('commitMode') === 'true'
@@ -44,6 +45,7 @@ async function run(): Promise<void> {
       repo,
       fromTag,
       toTag,
+      includeOpen,
       failOnError,
       ignorePreReleases,
       commitMode,
