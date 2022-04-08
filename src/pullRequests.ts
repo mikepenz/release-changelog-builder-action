@@ -160,8 +160,11 @@ export function sortPullRequests(
 }
 
 // helper function to add a special open label to prs not merged.
-function addOpenLabel(labels: Set<string>): Set<string> {
-  labels.add('##rcba-open')
+function attachSpeciaLabels(
+  status: 'open' | 'merged',
+  labels: Set<string>
+): Set<string> {
+  labels.add(`--rcba-${status}`)
   return labels
 }
 
@@ -178,7 +181,8 @@ const mapPullRequest = (
   mergeCommitSha: pr.merge_commit_sha || '',
   author: pr.user?.login || '',
   repoName: pr.base.repo.full_name,
-  labels: addOpenLabel(
+  labels: attachSpeciaLabels(
+    status,
     new Set(
       pr.labels?.map(lbl => lbl.name?.toLocaleLowerCase('en') || '') || []
     )

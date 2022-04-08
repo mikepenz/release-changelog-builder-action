@@ -323,7 +323,7 @@ function fillTemplate(pr: PullRequestInfo, template: string): string {
   transformed = transformed.replace(/\${{AUTHOR}}/g, pr.author)
   transformed = transformed.replace(
     /\${{LABELS}}/g,
-    [...pr.labels]?.filter(l => !l.startsWith('##rcba-'))?.join(', ') || ''
+    [...pr.labels]?.filter(l => !l.startsWith('--rcba-'))?.join(', ') || ''
   )
   transformed = transformed.replace(/\${{MILESTONE}}/g, pr.milestone || '')
   transformed = transformed.replace(/\${{BODY}}/g, pr.body)

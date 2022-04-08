@@ -584,8 +584,8 @@ function sortPullRequests(pullRequests, ascending) {
 }
 exports.sortPullRequests = sortPullRequests;
 // helper function to add a special open label to prs not merged.
-function addOpenLabel(labels) {
-    labels.add('##rcba-open');
+function attachSpeciaLabels(status, labels) {
+    labels.add(`--rcba-${status}`);
     return labels;
 }
 const mapPullRequest = (pr, status = 'open') => {
@@ -600,7 +600,7 @@ const mapPullRequest = (pr, status = 'open') => {
         mergeCommitSha: pr.merge_commit_sha || '',
         author: ((_a = pr.user) === null || _a === void 0 ? void 0 : _a.login) || '',
         repoName: pr.base.repo.full_name,
-        labels: addOpenLabel(new Set(((_b = pr.labels) === null || _b === void 0 ? void 0 : _b.map(lbl => { var _a; return ((_a = lbl.name) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase('en')) || ''; })) || [])),
+        labels: attachSpeciaLabels(status, new Set(((_b = pr.labels) === null || _b === void 0 ? void 0 : _b.map(lbl => { var _a; return ((_a = lbl.name) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase('en')) || ''; })) || [])),
         milestone: ((_c = pr.milestone) === null || _c === void 0 ? void 0 : _c.title) || '',
         body: pr.body || '',
         assignees: ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.map(asignee => (asignee === null || asignee === void 0 ? void 0 : asignee.login) || '')) || [],
@@ -1509,7 +1509,7 @@ function fillTemplate(pr, template) {
     transformed = transformed.replace(/\${{MERGED_AT}}/g, ((_a = pr.mergedAt) === null || _a === void 0 ? void 0 : _a.toISOString()) || '');
     transformed = transformed.replace(/\${{MERGE_SHA}}/g, pr.mergeCommitSha);
     transformed = transformed.replace(/\${{AUTHOR}}/g, pr.author);
-    transformed = transformed.replace(/\${{LABELS}}/g, ((_c = (_b = [...pr.labels]) === null || _b === void 0 ? void 0 : _b.filter(l => !l.startsWith('##rcba-'))) === null || _c === void 0 ? void 0 : _c.join(', ')) || '');
+    transformed = transformed.replace(/\${{LABELS}}/g, ((_c = (_b = [...pr.labels]) === null || _b === void 0 ? void 0 : _b.filter(l => !l.startsWith('--rcba-'))) === null || _c === void 0 ? void 0 : _c.join(', ')) || '');
     transformed = transformed.replace(/\${{MILESTONE}}/g, pr.milestone || '');
     transformed = transformed.replace(/\${{BODY}}/g, pr.body);
     transformed = transformed.replace(/\${{ASSIGNEES}}/g, ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.join(', ')) || '');
