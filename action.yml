@@ -17,6 +17,8 @@ inputs:
     description: 'Defines the previous tag to compare against'
   toTag:
     description: 'Defines the newly tag created'
+  includeOpen:
+    description: 'Defines if the changelog should include open PRs'
   ignorePreReleases:
     description: 'Defines if the action will only use full releases to compare against (Only used if fromTag is not defined). E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick'
     default: "false"
@@ -35,6 +37,8 @@ inputs:
 outputs:
   changelog:
     description: The built release changelog built from the merged pull requests
+  pull_requests:
+    description: A comma seperated list of PR numbers that were merged
   owner:
     description: Specifies the owner of the repository processed
   repo:
@@ -45,6 +49,12 @@ outputs:
     description: Defines the `toTag` which describes the upper bound to process pull request for
   failed:
     description: Defines if there was an issue with the action run, and the changelog may not have been generated correctly. [true, false]
+  categorized_prs:
+    description: Count of categorized pull requests
+  uncategorized_prs:
+    description: Count of uncategorized pull requests
+  open_prs:
+    description: Count of open pull requests
 runs:
   using: 'node16'
   main: 'dist/index.js'
