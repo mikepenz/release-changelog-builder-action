@@ -18,6 +18,7 @@ export interface PullRequestInfo {
   body: string
   assignees: string[]
   requestedReviewers: string[]
+  approvedReviewers: string[]
   status: 'open' | 'merged'
 }
 
@@ -25,6 +26,9 @@ type PullData = RestEndpointMethodTypes['pulls']['get']['response']['data']
 
 type PullsListData =
   RestEndpointMethodTypes['pulls']['list']['response']['data']
+
+type PullReviewData =
+  RestEndpointMethodTypes['pulls']['listReviews']['response']['data']
 
 export class PullRequests {
   constructor(private octokit: Octokit) {}
@@ -127,6 +131,28 @@ export class PullRequests {
 
     return sortPullRequests(openPrs, true)
   }
+
+  async getReviewers(
+    owner: string,
+    repo: string,
+    pr: PullRequestInfo
+  ): Promise<PullReviewData[]> {
+    const options = this.octokit.pulls.listReviews.endpoint.merge({
+      owner,
+      repo,
+      pull_number: pr.number
+    })
+
+    for await (const response of this.octokit.paginate.iterator(options)) {
+      const reviews: PullReviewData = response.data as PullReviewData
+      pr.approvedReviewers = reviews
+        .filter(r => r.state === 'APPROVED')
+        .map(r => r.user?.login)
+        .filter(r => !!r) as string[]
+    }
+
+    return []
+  }
 }
 
 export function sortPullRequests(
@@ -192,5 +218,6 @@ const mapPullRequest = (
   assignees: pr.assignees?.map(asignee => asignee?.login || '') || [],
   requestedReviewers:
     pr.requested_reviewers?.map(reviewer => reviewer?.login || '') || [],
+  approvedReviewers: [],
   status
 })

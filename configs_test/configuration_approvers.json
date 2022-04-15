@@ -1,0 +1,4 @@
+{
+    "template": "${{CHANGELOG}}",
+    "pr_template": "- ${{TITLE}} -- (#${{NUMBER}}) [${{STATUS}}] ${{REVIEWERS}} --- ${{APPROVERS}}"
+}
