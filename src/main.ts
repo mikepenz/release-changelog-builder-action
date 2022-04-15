@@ -35,7 +35,7 @@ async function run(): Promise<void> {
     const includeOpen = core.getInput('includeOpen') === 'true'
     const ignorePreReleases = core.getInput('ignorePreReleases') === 'true'
     const failOnError = core.getInput('failOnError') === 'true'
-    const fetchReviewers =  core.getInput('fetchReviewers') === 'true'
+    const fetchReviewers = core.getInput('fetchReviewers') === 'true'
     const commitMode = core.getInput('commitMode') === 'true'
 
     const result = await new ReleaseNotesBuilder(
