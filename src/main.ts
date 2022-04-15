@@ -32,8 +32,10 @@ async function run(): Promise<void> {
     const fromTag = core.getInput('fromTag')
     const toTag = core.getInput('toTag')
     // read in flags
+    const includeOpen = core.getInput('includeOpen') === 'true'
     const ignorePreReleases = core.getInput('ignorePreReleases') === 'true'
     const failOnError = core.getInput('failOnError') === 'true'
+    const fetchReviewers = core.getInput('fetchReviewers') === 'true'
     const commitMode = core.getInput('commitMode') === 'true'
 
     const result = await new ReleaseNotesBuilder(
@@ -44,8 +46,10 @@ async function run(): Promise<void> {
       repo,
       fromTag,
       toTag,
+      includeOpen,
       failOnError,
       ignorePreReleases,
+      fetchReviewers,
       commitMode,
       configuration
     ).build()

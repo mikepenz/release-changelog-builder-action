@@ -1,0 +1,16 @@
+{
+    "categories": [
+        {
+            "title": "## 🚀 Features Merged",
+            "labels": ["feature"],
+            "exclude_labels": ["--rcba-open"]
+        },
+        {
+            "title": "## 🚀 Features Open",
+            "labels": ["feature", "--rcba-open"],
+            "exhaustive": true
+        }
+    ],
+    "template": "${{CHANGELOG}}",
+    "pr_template": "- ${{TITLE}} -- (#${{NUMBER}}) [${{STATUS}}] {${{LABELS}}}${{APPROVERS}}"
+}

@@ -16,7 +16,9 @@ it('Should have empty changelog (tags)', async () => {
     repo: 'release-changelog-builder-action',
     fromTag: 'v0.0.1',
     toTag: 'v0.0.2',
+    includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration
   })
@@ -33,7 +35,9 @@ it('Should match generated changelog (tags)', async () => {
     repo: 'release-changelog-builder-action',
     fromTag: 'v0.0.1',
     toTag: 'v0.0.3',
+    includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration
   })
@@ -58,7 +62,9 @@ it('Should match generated changelog (refs)', async () => {
     repo: 'release-changelog-builder-action',
     fromTag: '5ec7a2d86fe9f43fdd38d5e254a1117c8a51b4c3',
     toTag: 'fa3788c8c4b3373ef8424ce3eb008a5cd07cc5aa',
+    includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration
   })
@@ -91,7 +97,9 @@ it('Should match generated changelog and replace all occurrences (refs)', async 
     repo: 'release-changelog-builder-action',
     fromTag: '5ec7a2d86fe9f43fdd38d5e254a1117c8a51b4c3',
     toTag: 'fa3788c8c4b3373ef8424ce3eb008a5cd07cc5aa',
+    includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration
   })
@@ -126,7 +134,9 @@ it('Should match ordered ASC', async () => {
     repo: 'release-changelog-builder-action',
     fromTag: 'v0.3.0',
     toTag: 'v0.5.0',
+    includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration
   })
@@ -148,7 +158,9 @@ it('Should match ordered DESC', async () => {
     repo: 'release-changelog-builder-action',
     fromTag: 'v0.3.0',
     toTag: 'v0.5.0',
+    includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration
   })
@@ -170,7 +182,9 @@ it('Should ignore PRs not merged into develop branch', async () => {
     repo: 'release-changelog-builder-action',
     fromTag: 'v1.3.1',
     toTag: 'v1.4.0',
+    includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration
   })
@@ -190,7 +204,9 @@ it('Should ignore PRs not merged into main branch', async () => {
     repo: 'release-changelog-builder-action',
     fromTag: 'v1.3.1',
     toTag: 'v1.4.0',
+    includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration
   })

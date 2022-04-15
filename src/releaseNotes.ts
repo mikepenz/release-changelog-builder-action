@@ -11,7 +11,9 @@ export interface ReleaseNotesOptions {
   repo: string // the repository
   fromTag: string // the tag/ref to start from
   toTag: string // the tag/ref up to
+  includeOpen: boolean // defines if we should also fetch open pull requests
   failOnError: boolean // defines if we should fail the action in case of an error
+  fetchReviewers: boolean // defines if the action should fetch the reviewers for PRs - approved reviewers are not included in the default PR listing
   commitMode: boolean // defines if we use the alternative commit based mode. note: this is only partially supported
   configuration: Configuration // the configuration as defined in `configuration.ts`
 }
@@ -80,7 +82,8 @@ export class ReleaseNotes {
   private async getMergedPullRequests(
     octokit: Octokit
   ): Promise<PullRequestInfo[]> {
-    const {owner, repo, configuration} = this.options
+    const {owner, repo, includeOpen, fetchReviewers, configuration} =
+      this.options
 
     const commits = await this.getCommitHistory(octokit)
     if (commits.length === 0) {
@@ -133,6 +136,33 @@ export class ReleaseNotes {
       return commmit.sha
     })
 
+    // filter out pull requests not associated with this release
+    const mergedPullRequests = pullRequests.filter(pr => {
+      return releaseCommitHashes.includes(pr.mergeCommitSha)
+    })
+
+    let allPullRequests = mergedPullRequests
+    if (includeOpen) {
+      // retrieve all open pull requests
+      const openPullRequests = await pullRequestsApi.getOpen(
+        owner,
+        repo,
+        configuration.max_pull_requests ||
+          DefaultConfiguration.max_pull_requests
+      )
+
+      core.info(
+        `ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`
+      )
+
+      // all pull requests
+      allPullRequests = allPullRequests.concat(openPullRequests)
+
+      core.info(
+        `ℹ️ Retrieved ${allPullRequests.length} total PRs for ${owner}/${repo}`
+      )
+    }
+
     // retrieve base branches we allow
     const baseBranches =
       configuration.base_branches || DefaultConfiguration.base_branches
@@ -140,17 +170,30 @@ export class ReleaseNotes {
       return new RegExp(baseBranch.replace('\\\\', '\\'), 'gu')
     })
 
-    // return only the pull requests associated with this release
-    // and if the baseBranch is matching the configuration
-    return pullRequests.filter(pr => {
-      let keep = releaseCommitHashes.includes(pr.mergeCommitSha)
-      if (keep && baseBranches.length !== 0) {
-        keep = baseBranchPatterns.some(pattern => {
+    // return only prs if the baseBranch is matching the configuration
+    const finalPrs = allPullRequests.filter(pr => {
+      if (baseBranches.length !== 0) {
+        return baseBranchPatterns.some(pattern => {
           return pr.baseBranch.match(pattern) !== null
         })
       }
-      return keep
+      return true
     })
+
+    if (fetchReviewers) {
+      core.info(`ℹ️ Fetching reviewers was enabled`)
+      // update PR information with reviewers who approved
+      for (const pr of finalPrs) {
+        await pullRequestsApi.getReviewers(owner, repo, pr)
+        if (pr.approvedReviewers.length > 0) {
+          core.info(
+            `ℹ️ Retrieved ${pr.approvedReviewers.length} reviewer(s) for PR ${owner}/${repo}/#${pr.number}`
+          )
+        }
+      }
+    }
+
+    return finalPrs
   }
 
   private async generateCommitPRs(
@@ -177,6 +220,7 @@ export class ReleaseNotes {
         title: commit.summary,
         htmlURL: '',
         baseBranch: '',
+        createdAt: commit.date,
         mergedAt: commit.date,
         mergeCommitSha: commit.sha,
         author: commit.author || '',
@@ -185,7 +229,9 @@ export class ReleaseNotes {
         milestone: '',
         body: commit.message || '',
         assignees: [],
-        requestedReviewers: []
+        requestedReviewers: [],
+        approvedReviewers: [],
+        status: 'merged'
       }
     })
   }

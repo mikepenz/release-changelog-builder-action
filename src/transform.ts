@@ -95,6 +95,7 @@ export function buildChangelog(
 
   const categorizedPrs: string[] = []
   const ignoredPrs: string[] = []
+  const openPrs: string[] = []
   const uncategorizedPrs: string[] = []
 
   // bring elements in order
@@ -107,6 +108,10 @@ export function buildChangelog(
     ) {
       ignoredPrs.push(body)
       continue
+    }
+
+    if (pr.status === 'open') {
+      openPrs.push(body)
     }
 
     let matched = false
@@ -185,6 +190,11 @@ export function buildChangelog(
     }
   }
   core.info(`✒️ Wrote ${categorizedPrs.length} categorized pull requests down`)
+  if (core.isDebug()) {
+    for (const pr of categorizedPrs) {
+      core.debug(`    ${pr}`)
+    }
+  }
   core.setOutput('categorized_prs', categorizedPrs.length)
 
   let changelogUncategorized = ''
@@ -194,11 +204,35 @@ export function buildChangelog(
   core.info(
     `✒️ Wrote ${uncategorizedPrs.length} non categorized pull requests down`
   )
+  if (core.isDebug()) {
+    for (const pr of uncategorizedPrs) {
+      core.debug(`    ${pr}`)
+    }
+  }
   core.setOutput('uncategorized_prs', uncategorizedPrs.length)
+
+  let changelogOpen = ''
+  if (openPrs.length > 0) {
+    for (const pr of openPrs) {
+      changelogOpen = `${changelogOpen + pr}\n`
+    }
+    core.info(`✒️ Wrote ${openPrs.length} open pull requests down`)
+    if (core.isDebug()) {
+      for (const pr of openPrs) {
+        core.debug(`    ${pr}`)
+      }
+    }
+    core.setOutput('open_prs', openPrs.length)
+  }
 
   let changelogIgnored = ''
   for (const pr of ignoredPrs) {
     changelogIgnored = `${changelogIgnored + pr}\n`
+  }
+  if (core.isDebug()) {
+    for (const pr of ignoredPrs) {
+      core.debug(`    ${pr}`)
+    }
   }
   core.info(`✒️ Wrote ${ignoredPrs.length} ignored pull requests down`)
 
@@ -213,6 +247,10 @@ export function buildChangelog(
     changelogUncategorized
   )
   transformedChangelog = transformedChangelog.replace(
+    /\${{OPEN}}/g,
+    changelogOpen
+  )
+  transformedChangelog = transformedChangelog.replace(
     /\${{IGNORED}}/g,
     changelogIgnored
   )
@@ -225,6 +263,10 @@ export function buildChangelog(
   transformedChangelog = transformedChangelog.replace(
     /\${{UNCATEGORIZED_COUNT}}/g,
     uncategorizedPrs.length.toString()
+  )
+  transformedChangelog = transformedChangelog.replace(
+    /\${{OPEN_COUNT}}/g,
+    openPrs.length.toString()
   )
   transformedChangelog = transformedChangelog.replace(
     /\${{IGNORED_COUNT}}/g,
@@ -268,15 +310,20 @@ function fillTemplate(pr: PullRequestInfo, template: string): string {
   transformed = transformed.replace(/\${{NUMBER}}/g, pr.number.toString())
   transformed = transformed.replace(/\${{TITLE}}/g, pr.title)
   transformed = transformed.replace(/\${{URL}}/g, pr.htmlURL)
+  transformed = transformed.replace(/\${{STATUS}}/g, pr.status)
+  transformed = transformed.replace(
+    /\${{CREATED_AT}}/g,
+    pr.createdAt.toISOString()
+  )
   transformed = transformed.replace(
     /\${{MERGED_AT}}/g,
-    pr.mergedAt.toISOString()
+    pr.mergedAt?.toISOString() || ''
   )
   transformed = transformed.replace(/\${{MERGE_SHA}}/g, pr.mergeCommitSha)
   transformed = transformed.replace(/\${{AUTHOR}}/g, pr.author)
   transformed = transformed.replace(
     /\${{LABELS}}/g,
-    [...pr.labels]?.join(', ') || ''
+    [...pr.labels]?.filter(l => !l.startsWith('--rcba-'))?.join(', ') || ''
   )
   transformed = transformed.replace(/\${{MILESTONE}}/g, pr.milestone || '')
   transformed = transformed.replace(/\${{BODY}}/g, pr.body)
@@ -287,6 +334,10 @@ function fillTemplate(pr: PullRequestInfo, template: string): string {
   transformed = transformed.replace(
     /\${{REVIEWERS}}/g,
     pr.requestedReviewers?.join(', ') || ''
+  )
+  transformed = transformed.replace(
+    /\${{APPROVERS}}/g,
+    pr.approvedReviewers?.join(', ') || ''
   )
   return transformed
 }
@@ -369,7 +420,7 @@ function extractValues(
 
   if (extractor.onProperty !== undefined) {
     let results: string[] = []
-    const list: ('title' | 'author' | 'milestone' | 'body')[] =
+    const list: ('title' | 'author' | 'milestone' | 'body' | 'status')[] =
       extractor.onProperty
     // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < list.length; i++) {

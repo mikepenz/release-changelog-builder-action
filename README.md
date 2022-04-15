@@ -83,8 +83,9 @@ A full set list of possible output values for this action.
 | `outputs.toTag`             | Defines the `toTag` which describes the upper bound to process pull request for                                           |
 | `outputs.failed`            | Defines if there was an issue with the action run, and the changelog may not have been generated correctly. [true, false] |
 | `outputs.pull_requests`     | Defines a `,` joined array with all PR IDs associated with the generated changelog.                                       |
-| `outputs.categorized_prs`   | Count of PRs which were successfully categorized as part of the action.                                       |
-| `outputs.uncategorized_prs` | Count of PRs which were not categorized as part of the action.                                       |
+| `outputs.categorized_prs`   | Count of PRs which were successfully categorized as part of the action.                                                   |
+| `outputs.open_prs` | Count of open PRs. Only fetched if `includeOpen` is enabled.                                                                       |
+| `outputs.uncategorized_prs` | Count of PRs which were not categorized as part of the action.                                                            |
 
 
 ## Full Sample 🖥️
@@ -263,9 +264,11 @@ For advanced use cases additional settings can be provided to the action
 | `toTag`             | Defines until which tag the changelog will consider merged pull requests                                                                                                    |
 | `path`              | Allows to specify an alternative sub directory, to use as base                                                                                                              |
 | `token`             | Alternative config to specify token. You should prefer `env.GITHUB_TOKEN` instead though                                                                                    |
-| `baseUrl`           | Alternative config to specify base url for GitHub Enterprise authentication. Default value set to `https://api.github.com`                                                                           |
+| `baseUrl`           | Alternative config to specify base url for GitHub Enterprise authentication. Default value set to `https://api.github.com`                                                  |
+| `includeOpen`       | Enables to also fetch currently open PRs. Default: false                                                                                                                    |
 | `ignorePreReleases` | Allows to ignore pre-releases for changelog generation (E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick). Only used if `fromTag` was not specified. Default: false    |
 | `failOnError`       | Defines if the action will result in a build failure if problems occurred. Default: false                                                                                   |
+| `fetchReviewers`    | Will enable fetching the users/reviewers who approved the PR. Default: false                                                                                                |
 | `commitMode`        | Special configuration for projects which work without PRs. Uses commit messages as changelog. This mode looses access to information only available for PRs. Default: false |
 
 💡 `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repositories please use a PAT (Personal Access Token).
@@ -274,19 +277,22 @@ For advanced use cases additional settings can be provided to the action
 
 Table of supported placeholders allowed to be used in the `pr_template` configuration, which will be included in the release notes / changelog.
 
-| **Placeholder**  | **Description**                                             |
-|------------------|-------------------------------------------------------------|
-| `${{NUMBER}}`    | The number referencing this pull request. E.g. 13           |
-| `${{TITLE}}`     | Specified title of the merged pull request                  |
-| `${{URL}}`       | Url linking to the pull request on GitHub                   |
-| `${{MERGED_AT}}` | The ISO time, the pull request was merged at                |
-| `${{MERGE_SHA}}` | The commit SHA, the pull request was merged with            |
-| `${{AUTHOR}}`    | Author creating and opening the pull request                |
-| `${{LABELS}}`    | The labels associated with this pull request, joined by `,` |
-| `${{MILESTONE}}` | Milestone this PR was part of, as assigned on GitHub        |
-| `${{BODY}}`      | Description/Body of the pull request as specified on GitHub |
-| `${{ASSIGNEES}}` | Login names of assigned GitHub users, joined by `,`         |
-| `${{REVIEWERS}}` | GitHub Login names of specified reviewers, joined by `,`    |
+| **Placeholder**   | **Description**                                                   |
+|-------------------|-------------------------------------------------------------------|
+| `${{NUMBER}}`     | The number referencing this pull request. E.g. 13                 |
+| `${{TITLE}}`      | Specified title of the merged pull request                        |
+| `${{URL}}`        | Url linking to the pull request on GitHub                         |
+| `${{STATUS}}`     | Status of the PR. Usually always `merged`. Possibly `Open` if `includeOpen` is configured. |
+| `${{CREATED_AT}}` | The ISO time, the pull request was created at                     |
+| `${{MERGED_AT}}`  | The ISO time, the pull request was merged at                      |
+| `${{MERGE_SHA}}`  | The commit SHA, the pull request was merged with                  |
+| `${{AUTHOR}}`     | Author creating and opening the pull request                      |
+| `${{LABELS}}`     | The labels associated with this pull request, joined by `,`       |
+| `${{MILESTONE}}`  | Milestone this PR was part of, as assigned on GitHub              |
+| `${{BODY}}`       | Description/Body of the pull request as specified on GitHub       |
+| `${{ASSIGNEES}}`  | Login names of assigned GitHub users, joined by `,`               |
+| `${{REVIEWERS}}`  | GitHub Login names of specified reviewers, joined by `,`          |
+| `${{APPROVERS}}`  | GitHub Login names of users who approved the PR, joined by `,`    |
 
 ### Template placeholders
 
@@ -296,6 +302,7 @@ Table of supported placeholders allowed to be used in the `template` and `empty_
 |----------------------------|----------------------------------------------------------------------------------------------------|:---------:|
 | `${{CHANGELOG}}`           | The contents of the changelog, matching the labels as specified in the categories configuration    |           |
 | `${{UNCATEGORIZED}}`       | All pull requests not matching a specified label in categories                                     |           |
+| `${{OPEN}}`                | All open pull requests. Will only be fetched if `includeOpen` is enabled.                          |           |
 | `${{IGNORED}}`             | All pull requests defining labels matching the `ignore_labels` configuration                       |           |
 | `${{OWNER}}`               | Describes the owner of the repository the changelog was generated for                              | x         |
 | `${{REPO}}`                | The repository name of the repo the changelog was generated for                                    | x         |
@@ -304,6 +311,7 @@ Table of supported placeholders allowed to be used in the `template` and `empty_
 | `${{RELEASE_DIFF}}`        | Introduces a link to the full diff between from tag and to tag releases                            | x         |
 | `${{CATEGORIZED_COUNT}}`   | The count of PRs which were categorized                                                            |           |
 | `${{UNCATEGORIZED_COUNT}}` | The count of PRs and changes which were not categorized. No label overlapping with category labels |           |
+| `${{OPEN_COUNT}}` | The count of open PRs. Will only be fetched if `includeOpen` is configured.                                 |           |
 | `${{IGNORED_COUNT}}`       | The count of PRs and changes which were specifically ignored from the changelog.                   |           |
 
 

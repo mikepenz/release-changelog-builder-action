@@ -15,8 +15,10 @@ export class ReleaseNotesBuilder {
     private repo: string | null,
     private fromTag: string | null,
     private toTag: string | null,
+    private includeOpen: boolean = false,
     private failOnError: boolean,
     private ignorePreReleases: boolean,
+    private fetchReviewers: boolean = false,
     private commitMode: boolean,
     private configuration: Configuration
   ) {}
@@ -88,7 +90,9 @@ export class ReleaseNotesBuilder {
       repo: this.repo,
       fromTag: this.fromTag,
       toTag: this.toTag,
+      includeOpen: this.includeOpen,
       failOnError: this.failOnError,
+      fetchReviewers: this.fetchReviewers,
       commitMode: this.commitMode,
       configuration: this.configuration
     }

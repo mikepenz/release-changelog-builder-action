@@ -33,6 +33,7 @@ mergedPullRequests.push(
     title: '[Feature][AB-1234] - this is a PR 1 title message',
     htmlURL: '',
     baseBranch: '',
+    createdAt: moment(),
     mergedAt: moment(),
     mergeCommitSha: 'sha1',
     author: 'Mike',
@@ -41,13 +42,16 @@ mergedPullRequests.push(
     milestone: '',
     body: 'no magic body for this matter',
     assignees: [],
-    requestedReviewers: []
+    requestedReviewers: [],
+    approvedReviewers: [],
+    status: "merged"
   },
   {
     number: 2,
     title: '[Issue][AB-4321] - this is a PR 2 title message',
     htmlURL: '',
     baseBranch: '',
+    createdAt: moment(),
     mergedAt: moment(),
     mergeCommitSha: 'sha1',
     author: 'Mike',
@@ -56,13 +60,16 @@ mergedPullRequests.push(
     milestone: '',
     body: 'no magic body for this matter',
     assignees: [],
-    requestedReviewers: []
+    requestedReviewers: [],
+    approvedReviewers: [],
+    status: "merged"
   },
   {
     number: 3,
     title: '[Issue][Feature][AB-1234321] - this is a PR 3 title message',
     htmlURL: '',
     baseBranch: '',
+    createdAt: moment(),
     mergedAt: moment(),
     mergeCommitSha: 'sha1',
     author: 'Mike',
@@ -71,13 +78,16 @@ mergedPullRequests.push(
     milestone: '',
     body: 'no magic body for this matter',
     assignees: [],
-    requestedReviewers: []
+    requestedReviewers: [],
+    approvedReviewers: [],
+    status: "merged"
   },
   {
     number: 4,
     title: '[AB-404] - not found label',
     htmlURL: '',
     baseBranch: '',
+    createdAt: moment(),
     mergedAt: moment(),
     mergeCommitSha: 'sha1',
     author: 'Mike',
@@ -86,7 +96,9 @@ mergedPullRequests.push(
     milestone: '',
     body: 'no magic body for this matter',
     assignees: [],
-    requestedReviewers: []
+    requestedReviewers: [],
+    approvedReviewers: [],
+    status: "merged"
   }
 )
 
@@ -95,6 +107,7 @@ const pullRequestWithLabelInBody: PullRequestInfo = {
   title: 'label in body',
   htmlURL: '',
   baseBranch: '',
+  createdAt: moment(),
   mergedAt: moment(),
   mergeCommitSha: 'sha1',
   author: 'Mike',
@@ -103,7 +116,9 @@ const pullRequestWithLabelInBody: PullRequestInfo = {
   milestone: '',
   body: '[Issue][Feature][AB-1234321] - no magic body for this matter',
   assignees: [],
-  requestedReviewers: []
+  requestedReviewers: [],
+  approvedReviewers: [],
+  status: "merged"
 }
 
 it('Extract label from title, combined regex', async () => {
@@ -120,7 +135,9 @@ it('Extract label from title, combined regex', async () => {
     repo: 'test-repo',
     fromTag: '1.0.0',
     toTag: '2.0.0',
+    includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration
   })
@@ -147,7 +164,9 @@ it('Extract label from title and body, combined regex', async () => {
     repo: 'test-repo',
     fromTag: '1.0.0',
     toTag: '2.0.0',
+    includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration
   })
@@ -176,7 +195,9 @@ it('Extract label from title, split regex', async () => {
     repo: 'test-repo',
     fromTag: '1.0.0',
     toTag: '2.0.0',
+    includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration
   })
@@ -205,7 +226,9 @@ it('Extract label from title, match', async () => {
     repo: 'test-repo',
     fromTag: '1.0.0',
     toTag: '2.0.0',
+    includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration
   })
@@ -229,7 +252,9 @@ it('Extract label from title, match multiple', async () => {
     repo: 'test-repo',
     fromTag: '1.0.0',
     toTag: '2.0.0',
+    includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration
   })
@@ -254,7 +279,9 @@ it('Extract label from title, match multiple, custon non matching label', async 
     repo: 'test-repo',
     fromTag: '1.0.0',
     toTag: '2.0.0',
+    includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration
   })
@@ -272,6 +299,7 @@ pullRequestsWithLabels.push(
     title: '[ABC-1234] - this is a PR 1 title message',
     htmlURL: '',
     baseBranch: '',
+    createdAt: moment(),
     mergedAt: moment(),
     mergeCommitSha: 'sha1-1',
     author: 'Mike',
@@ -280,13 +308,16 @@ pullRequestsWithLabels.push(
     milestone: '',
     body: 'no magic body for this matter',
     assignees: [],
-    requestedReviewers: []
+    requestedReviewers: [],
+    approvedReviewers: [],
+    status: "merged"
   },
   {
     number: 2,
     title: '[ABC-4321] - this is a PR 2 title message',
     htmlURL: '',
     baseBranch: '',
+    createdAt: moment(),
     mergedAt: moment(),
     mergeCommitSha: 'sha1-2',
     author: 'Mike',
@@ -295,13 +326,16 @@ pullRequestsWithLabels.push(
     milestone: '',
     body: 'no magic body for this matter',
     assignees: [],
-    requestedReviewers: []
+    requestedReviewers: [],
+    approvedReviewers: [],
+    status: "merged"
   },
   {
     number: 3,
     title: '[ABC-1234] - this is a PR 3 title message',
     htmlURL: '',
     baseBranch: '',
+    createdAt: moment(),
     mergedAt: moment().add(1, 'days'),
     mergeCommitSha: 'sha1-3',
     author: 'Mike',
@@ -310,13 +344,16 @@ pullRequestsWithLabels.push(
     milestone: '',
     body: 'no magic body for this matter',
     assignees: [],
-    requestedReviewers: []
+    requestedReviewers: [],
+    approvedReviewers: [],
+    status: "merged"
   },
   {
     number: 4,
     title: '[AB-404] - not found label',
     htmlURL: '',
     baseBranch: '',
+    createdAt: moment(),
     mergedAt: moment(),
     mergeCommitSha: 'sha1-4',
     author: 'Mike',
@@ -325,7 +362,9 @@ pullRequestsWithLabels.push(
     milestone: '',
     body: 'no magic body for this matter',
     assignees: [],
-    requestedReviewers: []
+    requestedReviewers: [],
+    approvedReviewers: [],
+    status: "merged"
   }
 )
 
@@ -354,7 +393,9 @@ it('Match multiple labels exhaustive for category', async () => {
     repo: 'test-repo',
     fromTag: '1.0.0',
     toTag: '2.0.0',
+    includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration: customConfig
   })
@@ -377,7 +418,9 @@ it('Deduplicate duplicated PRs', async () => {
     repo: 'test-repo',
     fromTag: '1.0.0',
     toTag: '2.0.0',
+    includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration: customConfig
   })
@@ -401,7 +444,9 @@ it('Deduplicate duplicated PRs DESC', async () => {
     repo: 'test-repo',
     fromTag: '1.0.0',
     toTag: '2.0.0',
+    includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration: customConfig
   })
@@ -421,7 +466,9 @@ it('Commit SHA-1 in commitMode', async () => {
     repo: 'test-repo',
     fromTag: '1.0.0',
     toTag: '2.0.0',
+    includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: true,
     configuration: customConfig
   })
@@ -440,7 +487,9 @@ it('Release Diff', async () => {
     repo: 'release-changelog-builder-action',
     fromTag: 'v2.8.0',
     toTag: 'v2.8.1',
+    includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: true,
     configuration: customConfig
   })
@@ -477,7 +526,9 @@ it('Use exclude labels to not include a PR within a category.', async () => {
     repo: 'test-repo',
     fromTag: '1.0.0',
     toTag: '2.0.0',
+    includeOpen: false,
     failOnError: false,
+    fetchReviewers: false,
     commitMode: false,
     configuration: customConfig
   })

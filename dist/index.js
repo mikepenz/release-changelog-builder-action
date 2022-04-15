@@ -8,7 +8,11 @@ require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -190,7 +194,11 @@ exports.DefaultConfiguration = {
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -314,7 +322,11 @@ class GitOutput {
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -365,10 +377,12 @@ function run() {
             const fromTag = core.getInput('fromTag');
             const toTag = core.getInput('toTag');
             // read in flags
+            const includeOpen = core.getInput('includeOpen') === 'true';
             const ignorePreReleases = core.getInput('ignorePreReleases') === 'true';
             const failOnError = core.getInput('failOnError') === 'true';
+            const fetchReviewers = core.getInput('fetchReviewers') === 'true';
             const commitMode = core.getInput('commitMode') === 'true';
-            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, failOnError, ignorePreReleases, commitMode, configuration).build();
+            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchReviewers, commitMode, configuration).build();
             core.setOutput('changelog', result);
             // write the result in changelog to file if possible
             const outputFile = core.getInput('outputFile');
@@ -394,7 +408,11 @@ run();
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -471,7 +489,7 @@ class PullRequests {
                     const response = _c.value;
                     const prs = response.data;
                     for (const pr of prs.filter(p => !!p.merged_at)) {
-                        mergedPRs.push(mapPullRequest(pr));
+                        mergedPRs.push(mapPullRequest(pr, 'merged'));
                     }
                     const firstPR = prs[0];
                     if (firstPR === undefined ||
@@ -495,15 +513,84 @@ class PullRequests {
             return sortPullRequests(mergedPRs, true);
         });
     }
+    getOpen(owner, repo, maxPullRequests) {
+        var e_2, _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            const openPrs = [];
+            const options = this.octokit.pulls.list.endpoint.merge({
+                owner,
+                repo,
+                state: 'open',
+                sort: 'created',
+                per_page: '100',
+                direction: 'desc'
+            });
+            try {
+                for (var _b = __asyncValues(this.octokit.paginate.iterator(options)), _c; _c = yield _b.next(), !_c.done;) {
+                    const response = _c.value;
+                    const prs = response.data;
+                    for (const pr of prs) {
+                        openPrs.push(mapPullRequest(pr, 'open'));
+                    }
+                    const firstPR = prs[0];
+                    if (firstPR === undefined || openPrs.length >= maxPullRequests) {
+                        if (openPrs.length >= maxPullRequests) {
+                            core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
+                        }
+                        // bail out early to not keep iterating on PRs super old
+                        return sortPullRequests(openPrs, true);
+                    }
+                }
+            }
+            catch (e_2_1) { e_2 = { error: e_2_1 }; }
+            finally {
+                try {
+                    if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                }
+                finally { if (e_2) throw e_2.error; }
+            }
+            return sortPullRequests(openPrs, true);
+        });
+    }
+    getReviewers(owner, repo, pr) {
+        var e_3, _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            const options = this.octokit.pulls.listReviews.endpoint.merge({
+                owner,
+                repo,
+                pull_number: pr.number
+            });
+            try {
+                for (var _b = __asyncValues(this.octokit.paginate.iterator(options)), _c; _c = yield _b.next(), !_c.done;) {
+                    const response = _c.value;
+                    const reviews = response.data;
+                    pr.approvedReviewers = reviews
+                        .filter(r => r.state === 'APPROVED')
+                        .map(r => { var _a; return (_a = r.user) === null || _a === void 0 ? void 0 : _a.login; })
+                        .filter(r => !!r);
+                }
+            }
+            catch (e_3_1) { e_3 = { error: e_3_1 }; }
+            finally {
+                try {
+                    if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                }
+                finally { if (e_3) throw e_3.error; }
+            }
+            return [];
+        });
+    }
 }
 exports.PullRequests = PullRequests;
 function sortPullRequests(pullRequests, ascending) {
     if (ascending) {
         pullRequests.sort((a, b) => {
-            if (a.mergedAt.isBefore(b.mergedAt)) {
+            const aa = a.mergedAt || a.createdAt;
+            const bb = b.mergedAt || b.createdAt;
+            if (aa.isBefore(bb)) {
                 return -1;
             }
-            else if (b.mergedAt.isBefore(a.mergedAt)) {
+            else if (bb.isBefore(aa)) {
                 return 1;
             }
             return 0;
@@ -511,10 +598,12 @@ function sortPullRequests(pullRequests, ascending) {
     }
     else {
         pullRequests.sort((b, a) => {
-            if (a.mergedAt.isBefore(b.mergedAt)) {
+            const aa = a.mergedAt || a.createdAt;
+            const bb = b.mergedAt || b.createdAt;
+            if (aa.isBefore(bb)) {
                 return -1;
             }
-            else if (b.mergedAt.isBefore(a.mergedAt)) {
+            else if (bb.isBefore(aa)) {
                 return 1;
             }
             return 0;
@@ -523,22 +612,30 @@ function sortPullRequests(pullRequests, ascending) {
     return pullRequests;
 }
 exports.sortPullRequests = sortPullRequests;
-const mapPullRequest = (pr) => {
+// helper function to add a special open label to prs not merged.
+function attachSpeciaLabels(status, labels) {
+    labels.add(`--rcba-${status}`);
+    return labels;
+}
+const mapPullRequest = (pr, status = 'open') => {
     var _a, _b, _c, _d, _e;
     return ({
         number: pr.number,
         title: pr.title,
         htmlURL: pr.html_url,
         baseBranch: pr.base.ref,
-        mergedAt: (0, moment_1.default)(pr.merged_at),
+        createdAt: (0, moment_1.default)(pr.created_at),
+        mergedAt: pr.merged_at ? (0, moment_1.default)(pr.merged_at) : null,
         mergeCommitSha: pr.merge_commit_sha || '',
         author: ((_a = pr.user) === null || _a === void 0 ? void 0 : _a.login) || '',
         repoName: pr.base.repo.full_name,
-        labels: new Set(((_b = pr.labels) === null || _b === void 0 ? void 0 : _b.map(lbl => { var _a; return ((_a = lbl.name) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase('en')) || ''; })) || []),
+        labels: attachSpeciaLabels(status, new Set(((_b = pr.labels) === null || _b === void 0 ? void 0 : _b.map(lbl => { var _a; return ((_a = lbl.name) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase('en')) || ''; })) || [])),
         milestone: ((_c = pr.milestone) === null || _c === void 0 ? void 0 : _c.title) || '',
         body: pr.body || '',
         assignees: ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.map(asignee => (asignee === null || asignee === void 0 ? void 0 : asignee.login) || '')) || [],
-        requestedReviewers: ((_e = pr.requested_reviewers) === null || _e === void 0 ? void 0 : _e.map(reviewer => (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '')) || []
+        requestedReviewers: ((_e = pr.requested_reviewers) === null || _e === void 0 ? void 0 : _e.map(reviewer => (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '')) || [],
+        approvedReviewers: [],
+        status
     });
 };
 
@@ -552,7 +649,11 @@ const mapPullRequest = (pr) => {
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -643,7 +744,7 @@ class ReleaseNotes {
     }
     getMergedPullRequests(octokit) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { owner, repo, configuration } = this.options;
+            const { owner, repo, includeOpen, fetchReviewers, configuration } = this.options;
             const commits = yield this.getCommitHistory(octokit);
             if (commits.length === 0) {
                 return [];
@@ -670,22 +771,45 @@ class ReleaseNotes {
             const releaseCommitHashes = prCommits.map(commmit => {
                 return commmit.sha;
             });
+            // filter out pull requests not associated with this release
+            const mergedPullRequests = pullRequests.filter(pr => {
+                return releaseCommitHashes.includes(pr.mergeCommitSha);
+            });
+            let allPullRequests = mergedPullRequests;
+            if (includeOpen) {
+                // retrieve all open pull requests
+                const openPullRequests = yield pullRequestsApi.getOpen(owner, repo, configuration.max_pull_requests ||
+                    configuration_1.DefaultConfiguration.max_pull_requests);
+                core.info(`ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`);
+                // all pull requests
+                allPullRequests = allPullRequests.concat(openPullRequests);
+                core.info(`ℹ️ Retrieved ${allPullRequests.length} total PRs for ${owner}/${repo}`);
+            }
             // retrieve base branches we allow
             const baseBranches = configuration.base_branches || configuration_1.DefaultConfiguration.base_branches;
             const baseBranchPatterns = baseBranches.map(baseBranch => {
                 return new RegExp(baseBranch.replace('\\\\', '\\'), 'gu');
             });
-            // return only the pull requests associated with this release
-            // and if the baseBranch is matching the configuration
-            return pullRequests.filter(pr => {
-                let keep = releaseCommitHashes.includes(pr.mergeCommitSha);
-                if (keep && baseBranches.length !== 0) {
-                    keep = baseBranchPatterns.some(pattern => {
+            // return only prs if the baseBranch is matching the configuration
+            const finalPrs = allPullRequests.filter(pr => {
+                if (baseBranches.length !== 0) {
+                    return baseBranchPatterns.some(pattern => {
                         return pr.baseBranch.match(pattern) !== null;
                     });
                 }
-                return keep;
+                return true;
             });
+            if (fetchReviewers) {
+                core.info(`ℹ️ Fetching reviewers was enabled`);
+                // update PR information with reviewers who approved
+                for (const pr of finalPrs) {
+                    yield pullRequestsApi.getReviewers(owner, repo, pr);
+                    if (pr.approvedReviewers.length > 0) {
+                        core.info(`ℹ️ Retrieved ${pr.approvedReviewers.length} reviewer(s) for PR ${owner}/${repo}/#${pr.number}`);
+                    }
+                }
+            }
+            return finalPrs;
         });
     }
     generateCommitPRs(octokit) {
@@ -704,6 +828,7 @@ class ReleaseNotes {
                     title: commit.summary,
                     htmlURL: '',
                     baseBranch: '',
+                    createdAt: commit.date,
                     mergedAt: commit.date,
                     mergeCommitSha: commit.sha,
                     author: commit.author || '',
@@ -712,7 +837,9 @@ class ReleaseNotes {
                     milestone: '',
                     body: commit.message || '',
                     assignees: [],
-                    requestedReviewers: []
+                    requestedReviewers: [],
+                    approvedReviewers: [],
+                    status: 'merged'
                 };
             });
         });
@@ -730,7 +857,11 @@ exports.ReleaseNotes = ReleaseNotes;
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -766,7 +897,7 @@ const tags_1 = __nccwpck_require__(7532);
 const utils_1 = __nccwpck_require__(918);
 const transform_1 = __nccwpck_require__(1644);
 class ReleaseNotesBuilder {
-    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, failOnError, ignorePreReleases, commitMode, configuration) {
+    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchReviewers = false, commitMode, configuration) {
         this.baseUrl = baseUrl;
         this.token = token;
         this.repositoryPath = repositoryPath;
@@ -774,8 +905,10 @@ class ReleaseNotesBuilder {
         this.repo = repo;
         this.fromTag = fromTag;
         this.toTag = toTag;
+        this.includeOpen = includeOpen;
         this.failOnError = failOnError;
         this.ignorePreReleases = ignorePreReleases;
+        this.fetchReviewers = fetchReviewers;
         this.commitMode = commitMode;
         this.configuration = configuration;
     }
@@ -833,7 +966,9 @@ class ReleaseNotesBuilder {
                 repo: this.repo,
                 fromTag: this.fromTag,
                 toTag: this.toTag,
+                includeOpen: this.includeOpen,
                 failOnError: this.failOnError,
+                fetchReviewers: this.fetchReviewers,
                 commitMode: this.commitMode,
                 configuration: this.configuration
             };
@@ -856,7 +991,11 @@ exports.ReleaseNotesBuilder = ReleaseNotesBuilder;
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -1176,7 +1315,11 @@ function stringSorting(tags) {
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -1261,12 +1404,16 @@ function buildChangelog(prs, options) {
     }
     const categorizedPrs = [];
     const ignoredPrs = [];
+    const openPrs = [];
     const uncategorizedPrs = [];
     // bring elements in order
     for (const [pr, body] of transformedMap) {
         if (haveCommonElements(ignoredLabels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
             ignoredPrs.push(body);
             continue;
+        }
+        if (pr.status === 'open') {
+            openPrs.push(body);
         }
         let matched = false;
         for (const [category, pullRequests] of categorized) {
@@ -1323,26 +1470,56 @@ function buildChangelog(prs, options) {
         }
     }
     core.info(`✒️ Wrote ${categorizedPrs.length} categorized pull requests down`);
+    if (core.isDebug()) {
+        for (const pr of categorizedPrs) {
+            core.debug(`    ${pr}`);
+        }
+    }
     core.setOutput('categorized_prs', categorizedPrs.length);
     let changelogUncategorized = '';
     for (const pr of uncategorizedPrs) {
         changelogUncategorized = `${changelogUncategorized + pr}\n`;
     }
     core.info(`✒️ Wrote ${uncategorizedPrs.length} non categorized pull requests down`);
+    if (core.isDebug()) {
+        for (const pr of uncategorizedPrs) {
+            core.debug(`    ${pr}`);
+        }
+    }
     core.setOutput('uncategorized_prs', uncategorizedPrs.length);
+    let changelogOpen = '';
+    if (openPrs.length > 0) {
+        for (const pr of openPrs) {
+            changelogOpen = `${changelogOpen + pr}\n`;
+        }
+        core.info(`✒️ Wrote ${openPrs.length} open pull requests down`);
+        if (core.isDebug()) {
+            for (const pr of openPrs) {
+                core.debug(`    ${pr}`);
+            }
+        }
+        core.setOutput('open_prs', openPrs.length);
+    }
     let changelogIgnored = '';
     for (const pr of ignoredPrs) {
         changelogIgnored = `${changelogIgnored + pr}\n`;
+    }
+    if (core.isDebug()) {
+        for (const pr of ignoredPrs) {
+            core.debug(`    ${pr}`);
+        }
     }
     core.info(`✒️ Wrote ${ignoredPrs.length} ignored pull requests down`);
     // fill template
     let transformedChangelog = config.template || configuration_1.DefaultConfiguration.template;
     transformedChangelog = transformedChangelog.replace(/\${{CHANGELOG}}/g, changelog);
     transformedChangelog = transformedChangelog.replace(/\${{UNCATEGORIZED}}/g, changelogUncategorized);
+    transformedChangelog = transformedChangelog.replace(/\${{OPEN}}/g, changelogOpen);
     transformedChangelog = transformedChangelog.replace(/\${{IGNORED}}/g, changelogIgnored);
     // fill other placeholders
     transformedChangelog = transformedChangelog.replace(/\${{CATEGORIZED_COUNT}}/g, categorizedPrs.length.toString());
     transformedChangelog = transformedChangelog.replace(/\${{UNCATEGORIZED_COUNT}}/g, uncategorizedPrs.length.toString());
+    transformedChangelog = transformedChangelog.replace(/\${{OPEN_COUNT}}/g, openPrs.length.toString());
     transformedChangelog = transformedChangelog.replace(/\${{IGNORED_COUNT}}/g, ignoredPrs.length.toString());
     transformedChangelog = fillAdditionalPlaceholders(transformedChangelog, options);
     core.info(`ℹ️ Filled template`);
@@ -1366,19 +1543,22 @@ function haveEveryElements(arr1, arr2) {
     return arr1.every(item => arr2.has(item));
 }
 function fillTemplate(pr, template) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e, _f;
     let transformed = template;
     transformed = transformed.replace(/\${{NUMBER}}/g, pr.number.toString());
     transformed = transformed.replace(/\${{TITLE}}/g, pr.title);
     transformed = transformed.replace(/\${{URL}}/g, pr.htmlURL);
-    transformed = transformed.replace(/\${{MERGED_AT}}/g, pr.mergedAt.toISOString());
+    transformed = transformed.replace(/\${{STATUS}}/g, pr.status);
+    transformed = transformed.replace(/\${{CREATED_AT}}/g, pr.createdAt.toISOString());
+    transformed = transformed.replace(/\${{MERGED_AT}}/g, ((_a = pr.mergedAt) === null || _a === void 0 ? void 0 : _a.toISOString()) || '');
     transformed = transformed.replace(/\${{MERGE_SHA}}/g, pr.mergeCommitSha);
     transformed = transformed.replace(/\${{AUTHOR}}/g, pr.author);
-    transformed = transformed.replace(/\${{LABELS}}/g, ((_a = [...pr.labels]) === null || _a === void 0 ? void 0 : _a.join(', ')) || '');
+    transformed = transformed.replace(/\${{LABELS}}/g, ((_c = (_b = [...pr.labels]) === null || _b === void 0 ? void 0 : _b.filter(l => !l.startsWith('--rcba-'))) === null || _c === void 0 ? void 0 : _c.join(', ')) || '');
     transformed = transformed.replace(/\${{MILESTONE}}/g, pr.milestone || '');
     transformed = transformed.replace(/\${{BODY}}/g, pr.body);
-    transformed = transformed.replace(/\${{ASSIGNEES}}/g, ((_b = pr.assignees) === null || _b === void 0 ? void 0 : _b.join(', ')) || '');
-    transformed = transformed.replace(/\${{REVIEWERS}}/g, ((_c = pr.requestedReviewers) === null || _c === void 0 ? void 0 : _c.join(', ')) || '');
+    transformed = transformed.replace(/\${{ASSIGNEES}}/g, ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.join(', ')) || '');
+    transformed = transformed.replace(/\${{REVIEWERS}}/g, ((_e = pr.requestedReviewers) === null || _e === void 0 ? void 0 : _e.join(', ')) || '');
+    transformed = transformed.replace(/\${{APPROVERS}}/g, ((_f = pr.approvedReviewers) === null || _f === void 0 ? void 0 : _f.join(', ')) || '');
     return transformed;
 }
 function transform(filled, transformers) {
@@ -1496,7 +1676,11 @@ function extractValuesFromString(value, extractor) {
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -4511,7 +4695,7 @@ function _objectWithoutProperties(source, excluded) {
   return target;
 }
 
-const VERSION = "3.5.1";
+const VERSION = "3.6.0";
 
 const _excluded = ["authStrategy"];
 class Octokit {
@@ -6563,7 +6747,7 @@ var isPlainObject = __nccwpck_require__(3287);
 var nodeFetch = _interopDefault(__nccwpck_require__(467));
 var requestError = __nccwpck_require__(537);
 
-const VERSION = "5.6.2";
+const VERSION = "5.6.3";
 
 function getBufferResponse(response) {
   return response.arrayBuffer();
@@ -7355,7 +7539,7 @@ module.exports = LRUCache
 
 /* module decorator */ module = __nccwpck_require__.nmd(module);
 //! moment.js
-//! version : 2.29.1
+//! version : 2.29.2
 //! authors : Tim Wood, Iskren Chernev, Moment.js contributors
 //! license : MIT
 //! momentjs.com
@@ -7431,8 +7615,9 @@ module.exports = LRUCache
 
     function map(arr, fn) {
         var res = [],
-            i;
-        for (i = 0; i < arr.length; ++i) {
+            i,
+            arrLen = arr.length;
+        for (i = 0; i < arrLen; ++i) {
             res.push(fn(arr[i], i));
         }
         return res;
@@ -7561,7 +7746,10 @@ module.exports = LRUCache
         updateInProgress = false;
 
     function copyConfig(to, from) {
-        var i, prop, val;
+        var i,
+            prop,
+            val,
+            momentPropertiesLen = momentProperties.length;
 
         if (!isUndefined(from._isAMomentObject)) {
             to._isAMomentObject = from._isAMomentObject;
@@ -7594,8 +7782,8 @@ module.exports = LRUCache
             to._locale = from._locale;
         }
 
-        if (momentProperties.length > 0) {
-            for (i = 0; i < momentProperties.length; i++) {
+        if (momentPropertiesLen > 0) {
+            for (i = 0; i < momentPropertiesLen; i++) {
                 prop = momentProperties[i];
                 val = from[prop];
                 if (!isUndefined(val)) {
@@ -7650,8 +7838,9 @@ module.exports = LRUCache
                 var args = [],
                     arg,
                     i,
-                    key;
-                for (i = 0; i < arguments.length; i++) {
+                    key,
+                    argLen = arguments.length;
+                for (i = 0; i < argLen; i++) {
                     arg = '';
                     if (typeof arguments[i] === 'object') {
                         arg += '\n[' + i + '] ';
@@ -7801,7 +7990,8 @@ module.exports = LRUCache
         );
     }
 
-    var formattingTokens = /(\[[^\[]*\])|(\\)?([Hh]mm(ss)?|Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|W[o|W]?|Qo?|N{1,5}|YYYYYY|YYYYY|YYYY|YY|y{2,4}|yo?|gg(ggg?)?|GG(GGG?)?|e|E|a|A|hh?|HH?|kk?|mm?|ss?|S{1,9}|x|X|zz?|ZZ?|.)/g,
+    var formattingTokens =
+            /(\[[^\[]*\])|(\\)?([Hh]mm(ss)?|Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|W[o|W]?|Qo?|N{1,5}|YYYYYY|YYYYY|YYYY|YY|y{2,4}|yo?|gg(ggg?)?|GG(GGG?)?|e|E|a|A|hh?|HH?|kk?|mm?|ss?|S{1,9}|x|X|zz?|ZZ?|.)/g,
         localFormattingTokens = /(\[[^\[]*\])|(\\)?(LTS|LT|LL?L?L?|l{1,4})/g,
         formatFunctions = {},
         formatTokenFunctions = {};
@@ -8105,8 +8295,9 @@ module.exports = LRUCache
         if (typeof units === 'object') {
             units = normalizeObjectUnits(units);
             var prioritized = getPrioritizedUnits(units),
-                i;
-            for (i = 0; i < prioritized.length; i++) {
+                i,
+                prioritizedLen = prioritized.length;
+            for (i = 0; i < prioritizedLen; i++) {
                 this[prioritized[i].unit](units[prioritized[i].unit]);
             }
         } else {
@@ -8136,7 +8327,8 @@ module.exports = LRUCache
         matchTimestamp = /[+-]?\d+(\.\d{1,3})?/, // 123456789 123456789.123
         // any word (or two) characters or numbers including two/three word month in arabic.
         // includes scottish gaelic two word and hyphenated months
-        matchWord = /[0-9]{0,256}['a-z\u00A0-\u05FF\u0700-\uD7FF\uF900-\uFDCF\uFDF0-\uFF07\uFF10-\uFFEF]{1,256}|[\u0600-\u06FF\/]{1,256}(\s*?[\u0600-\u06FF]{1,256}){1,2}/i,
+        matchWord =
+            /[0-9]{0,256}['a-z\u00A0-\u05FF\u0700-\uD7FF\uF900-\uFDCF\uFDF0-\uFF07\uFF10-\uFFEF]{1,256}|[\u0600-\u06FF\/]{1,256}(\s*?[\u0600-\u06FF]{1,256}){1,2}/i,
         regexes;
 
     regexes = {};
@@ -8162,15 +8354,12 @@ module.exports = LRUCache
         return regexEscape(
             s
                 .replace('\\', '')
-                .replace(/\\(\[)|\\(\])|\[([^\]\[]*)\]|\\(.)/g, function (
-                    matched,
-                    p1,
-                    p2,
-                    p3,
-                    p4
-                ) {
-                    return p1 || p2 || p3 || p4;
-                })
+                .replace(
+                    /\\(\[)|\\(\])|\[([^\]\[]*)\]|\\(.)/g,
+                    function (matched, p1, p2, p3, p4) {
+                        return p1 || p2 || p3 || p4;
+                    }
+                )
         );
     }
 
@@ -8182,7 +8371,8 @@ module.exports = LRUCache
 
     function addParseToken(token, callback) {
         var i,
-            func = callback;
+            func = callback,
+            tokenLen;
         if (typeof token === 'string') {
             token = [token];
         }
@@ -8191,7 +8381,8 @@ module.exports = LRUCache
                 array[callback] = toInt(input);
             };
         }
-        for (i = 0; i < token.length; i++) {
+        tokenLen = token.length;
+        for (i = 0; i < tokenLen; i++) {
             tokens[token[i]] = func;
         }
     }
@@ -8302,12 +8493,12 @@ module.exports = LRUCache
 
     // LOCALES
 
-    var defaultLocaleMonths = 'January_February_March_April_May_June_July_August_September_October_November_December'.split(
-            '_'
-        ),
-        defaultLocaleMonthsShort = 'Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec'.split(
-            '_'
-        ),
+    var defaultLocaleMonths =
+            'January_February_March_April_May_June_July_August_September_October_November_December'.split(
+                '_'
+            ),
+        defaultLocaleMonthsShort =
+            'Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec'.split('_'),
         MONTHS_IN_FORMAT = /D[oD]?(\[[^\[\]]*\]|\s)+MMMM?/,
         defaultMonthsShortRegex = matchWord,
         defaultMonthsRegex = matchWord;
@@ -8749,14 +8940,12 @@ module.exports = LRUCache
     addRegexToken('W', match1to2);
     addRegexToken('WW', match1to2, match2);
 
-    addWeekParseToken(['w', 'ww', 'W', 'WW'], function (
-        input,
-        week,
-        config,
-        token
-    ) {
-        week[token.substr(0, 1)] = toInt(input);
-    });
+    addWeekParseToken(
+        ['w', 'ww', 'W', 'WW'],
+        function (input, week, config, token) {
+            week[token.substr(0, 1)] = toInt(input);
+        }
+    );
 
     // HELPERS
 
@@ -8881,9 +9070,8 @@ module.exports = LRUCache
         return ws.slice(n, 7).concat(ws.slice(0, n));
     }
 
-    var defaultLocaleWeekdays = 'Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday'.split(
-            '_'
-        ),
+    var defaultLocaleWeekdays =
+            'Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday'.split('_'),
         defaultLocaleWeekdaysShort = 'Sun_Mon_Tue_Wed_Thu_Fri_Sat'.split('_'),
         defaultLocaleWeekdaysMin = 'Su_Mo_Tu_We_Th_Fr_Sa'.split('_'),
         defaultWeekdaysRegex = matchWord,
@@ -9431,6 +9619,11 @@ module.exports = LRUCache
         return globalLocale;
     }
 
+    function isLocaleNameSane(name) {
+        // Prevent names that look like filesystem paths, i.e contain '/' or '\'
+        return name.match('^[^/\\\\]*$') != null;
+    }
+
     function loadLocale(name) {
         var oldLocale = null,
             aliasedRequire;
@@ -9439,7 +9632,8 @@ module.exports = LRUCache
             locales[name] === undefined &&
             "object" !== 'undefined' &&
             module &&
-            module.exports
+            module.exports &&
+            isLocaleNameSane(name)
         ) {
             try {
                 oldLocale = globalLocale._abbr;
@@ -9656,8 +9850,10 @@ module.exports = LRUCache
 
     // iso 8601 regex
     // 0000-00-00 0000-W00 or 0000-W00-0 + T + 00 or 00:00 or 00:00:00 or 00:00:00.000 + +00:00 or +0000 or +00)
-    var extendedIsoRegex = /^\s*((?:[+-]\d{6}|\d{4})-(?:\d\d-\d\d|W\d\d-\d|W\d\d|\d\d\d|\d\d))(?:(T| )(\d\d(?::\d\d(?::\d\d(?:[.,]\d+)?)?)?)([+-]\d\d(?::?\d\d)?|\s*Z)?)?$/,
-        basicIsoRegex = /^\s*((?:[+-]\d{6}|\d{4})(?:\d\d\d\d|W\d\d\d|W\d\d|\d\d\d|\d\d|))(?:(T| )(\d\d(?:\d\d(?:\d\d(?:[.,]\d+)?)?)?)([+-]\d\d(?::?\d\d)?|\s*Z)?)?$/,
+    var extendedIsoRegex =
+            /^\s*((?:[+-]\d{6}|\d{4})-(?:\d\d-\d\d|W\d\d-\d|W\d\d|\d\d\d|\d\d))(?:(T| )(\d\d(?::\d\d(?::\d\d(?:[.,]\d+)?)?)?)([+-]\d\d(?::?\d\d)?|\s*Z)?)?$/,
+        basicIsoRegex =
+            /^\s*((?:[+-]\d{6}|\d{4})(?:\d\d\d\d|W\d\d\d|W\d\d|\d\d\d|\d\d|))(?:(T| )(\d\d(?:\d\d(?:\d\d(?:[.,]\d+)?)?)?)([+-]\d\d(?::?\d\d)?|\s*Z)?)?$/,
         tzRegex = /Z|[+-]\d\d(?::?\d\d)?/,
         isoDates = [
             ['YYYYYY-MM-DD', /[+-]\d{6}-\d\d-\d\d/],
@@ -9688,7 +9884,8 @@ module.exports = LRUCache
         ],
         aspNetJsonRegex = /^\/?Date\((-?\d+)/i,
         // RFC 2822 regex: For details see https://tools.ietf.org/html/rfc2822#section-3.3
-        rfc2822 = /^(?:(Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s)?(\d{1,2})\s(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s(\d{2,4})\s(\d\d):(\d\d)(?::(\d\d))?\s(?:(UT|GMT|[ECMP][SD]T)|([Zz])|([+-]\d{4}))$/,
+        rfc2822 =
+            /^(?:(Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s)?(\d{1,2})\s(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s(\d{2,4})\s(\d\d):(\d\d)(?::(\d\d))?\s(?:(UT|GMT|[ECMP][SD]T)|([Zz])|([+-]\d{4}))$/,
         obsOffsets = {
             UT: 0,
             GMT: 0,
@@ -9711,12 +9908,13 @@ module.exports = LRUCache
             allowTime,
             dateFormat,
             timeFormat,
-            tzFormat;
+            tzFormat,
+            isoDatesLen = isoDates.length,
+            isoTimesLen = isoTimes.length;
 
         if (match) {
             getParsingFlags(config).iso = true;
-
-            for (i = 0, l = isoDates.length; i < l; i++) {
+            for (i = 0, l = isoDatesLen; i < l; i++) {
                 if (isoDates[i][1].exec(match[1])) {
                     dateFormat = isoDates[i][0];
                     allowTime = isoDates[i][2] !== false;
@@ -9728,7 +9926,7 @@ module.exports = LRUCache
                 return;
             }
             if (match[3]) {
-                for (i = 0, l = isoTimes.length; i < l; i++) {
+                for (i = 0, l = isoTimesLen; i < l; i++) {
                     if (isoTimes[i][1].exec(match[3])) {
                         // match[2] should be 'T' or space
                         timeFormat = (match[2] || ' ') + isoTimes[i][0];
@@ -10108,12 +10306,13 @@ module.exports = LRUCache
             skipped,
             stringLength = string.length,
             totalParsedInputLength = 0,
-            era;
+            era,
+            tokenLen;
 
         tokens =
             expandFormat(config._f, config._locale).match(formattingTokens) || [];
-
-        for (i = 0; i < tokens.length; i++) {
+        tokenLen = tokens.length;
+        for (i = 0; i < tokenLen; i++) {
             token = tokens[i];
             parsedInput = (string.match(getParseRegexForToken(token, config)) ||
                 [])[0];
@@ -10208,15 +10407,16 @@ module.exports = LRUCache
             i,
             currentScore,
             validFormatFound,
-            bestFormatIsValid = false;
+            bestFormatIsValid = false,
+            configfLen = config._f.length;
 
-        if (config._f.length === 0) {
+        if (configfLen === 0) {
             getParsingFlags(config).invalidFormat = true;
             config._d = new Date(NaN);
             return;
         }
 
-        for (i = 0; i < config._f.length; i++) {
+        for (i = 0; i < configfLen; i++) {
             currentScore = 0;
             validFormatFound = false;
             tempConfig = copyConfig({}, config);
@@ -10457,7 +10657,8 @@ module.exports = LRUCache
     function isDurationValid(m) {
         var key,
             unitHasDecimal = false,
-            i;
+            i,
+            orderLen = ordering.length;
         for (key in m) {
             if (
                 hasOwnProp(m, key) &&
@@ -10470,7 +10671,7 @@ module.exports = LRUCache
             }
         }
 
-        for (i = 0; i < ordering.length; ++i) {
+        for (i = 0; i < orderLen; ++i) {
             if (m[ordering[i]]) {
                 if (unitHasDecimal) {
                     return false; // only allow non-integers for smallest unit
@@ -10795,7 +10996,8 @@ module.exports = LRUCache
         // from http://docs.closure-library.googlecode.com/git/closure_goog_date_date.js.source.html
         // somewhat more in line with 4.4.3.2 2004 spec, but allows decimal anywhere
         // and further modified to allow for strings containing both week and day
-        isoRegex = /^(-|\+)?P(?:([-+]?[0-9,.]*)Y)?(?:([-+]?[0-9,.]*)M)?(?:([-+]?[0-9,.]*)W)?(?:([-+]?[0-9,.]*)D)?(?:T(?:([-+]?[0-9,.]*)H)?(?:([-+]?[0-9,.]*)M)?(?:([-+]?[0-9,.]*)S)?)?$/;
+        isoRegex =
+            /^(-|\+)?P(?:([-+]?[0-9,.]*)Y)?(?:([-+]?[0-9,.]*)M)?(?:([-+]?[0-9,.]*)W)?(?:([-+]?[0-9,.]*)D)?(?:T(?:([-+]?[0-9,.]*)H)?(?:([-+]?[0-9,.]*)M)?(?:([-+]?[0-9,.]*)S)?)?$/;
 
     function createDuration(input, key) {
         var duration = input,
@@ -11016,9 +11218,10 @@ module.exports = LRUCache
                 'ms',
             ],
             i,
-            property;
+            property,
+            propertyLen = properties.length;
 
-        for (i = 0; i < properties.length; i += 1) {
+        for (i = 0; i < propertyLen; i += 1) {
             property = properties[i];
             propertyTest = propertyTest || hasOwnProp(input, property);
         }
@@ -11641,19 +11844,17 @@ module.exports = LRUCache
     addRegexToken('NNNN', matchEraName);
     addRegexToken('NNNNN', matchEraNarrow);
 
-    addParseToken(['N', 'NN', 'NNN', 'NNNN', 'NNNNN'], function (
-        input,
-        array,
-        config,
-        token
-    ) {
-        var era = config._locale.erasParse(input, token, config._strict);
-        if (era) {
-            getParsingFlags(config).era = era;
-        } else {
-            getParsingFlags(config).invalidEra = input;
+    addParseToken(
+        ['N', 'NN', 'NNN', 'NNNN', 'NNNNN'],
+        function (input, array, config, token) {
+            var era = config._locale.erasParse(input, token, config._strict);
+            if (era) {
+                getParsingFlags(config).era = era;
+            } else {
+                getParsingFlags(config).invalidEra = input;
+            }
         }
-    });
+    );
 
     addRegexToken('y', matchUnsigned);
     addRegexToken('yy', matchUnsigned);
@@ -11945,14 +12146,12 @@ module.exports = LRUCache
     addRegexToken('GGGGG', match1to6, match6);
     addRegexToken('ggggg', match1to6, match6);
 
-    addWeekParseToken(['gggg', 'ggggg', 'GGGG', 'GGGGG'], function (
-        input,
-        week,
-        config,
-        token
-    ) {
-        week[token.substr(0, 2)] = toInt(input);
-    });
+    addWeekParseToken(
+        ['gggg', 'ggggg', 'GGGG', 'GGGGG'],
+        function (input, week, config, token) {
+            week[token.substr(0, 2)] = toInt(input);
+        }
+    );
 
     addWeekParseToken(['gg', 'GG'], function (input, week, config, token) {
         week[token] = hooks.parseTwoDigitYear(input);
@@ -12975,7 +13174,7 @@ module.exports = LRUCache
 
     //! moment.js
 
-    hooks.version = '2.29.1';
+    hooks.version = '2.29.2';
 
     setHookCallback(createLocal);
 
@@ -16952,6 +17151,7 @@ class Comparator {
   static get ANY () {
     return ANY
   }
+
   constructor (comp, options) {
     options = parseOptions(options)
 
@@ -17028,7 +17228,7 @@ class Comparator {
     if (!options || typeof options !== 'object') {
       options = {
         loose: !!options,
-        includePrerelease: false
+        includePrerelease: false,
       }
     }
 
@@ -17076,7 +17276,7 @@ class Comparator {
 module.exports = Comparator
 
 const parseOptions = __nccwpck_require__(785)
-const {re, t} = __nccwpck_require__(9523)
+const { re, t } = __nccwpck_require__(9523)
 const cmp = __nccwpck_require__(5098)
 const debug = __nccwpck_require__(427)
 const SemVer = __nccwpck_require__(8088)
@@ -17119,9 +17319,9 @@ class Range {
     // First, split based on boolean or ||
     this.raw = range
     this.set = range
-      .split(/\s*\|\|\s*/)
+      .split('||')
       // map the range to a 2d array of comparators
-      .map(range => this.parseRange(range.trim()))
+      .map(r => this.parseRange(r.trim()))
       // throw out any comparator lists that are empty
       // this generally means that it was not a valid range, which is allowed
       // in loose mode, but will still throw if the WHOLE range is invalid.
@@ -17136,9 +17336,9 @@ class Range {
       // keep the first one, in case they're all null sets
       const first = this.set[0]
       this.set = this.set.filter(c => !isNullSet(c[0]))
-      if (this.set.length === 0)
+      if (this.set.length === 0) {
         this.set = [first]
-      else if (this.set.length > 1) {
+      } else if (this.set.length > 1) {
         // if we have any that are *, then the range is just *
         for (const c of this.set) {
           if (c.length === 1 && isAny(c[0])) {
@@ -17174,8 +17374,9 @@ class Range {
     const memoOpts = Object.keys(this.options).join(',')
     const memoKey = `parseRange:${memoOpts}:${range}`
     const cached = cache.get(memoKey)
-    if (cached)
+    if (cached) {
       return cached
+    }
 
     const loose = this.options.loose
     // `1.2.3 - 1.2.4` => `>=1.2.3 <=1.2.4`
@@ -17184,7 +17385,7 @@ class Range {
     debug('hyphen replace', range)
     // `> 1.2.3 < 1.2.5` => `>1.2.3 <1.2.5`
     range = range.replace(re[t.COMPARATORTRIM], comparatorTrimReplace)
-    debug('comparator trim', range, re[t.COMPARATORTRIM])
+    debug('comparator trim', range)
 
     // `~ 1.2.3` => `~1.2.3`
     range = range.replace(re[t.TILDETRIM], tildeTrimReplace)
@@ -17198,30 +17399,37 @@ class Range {
     // At this point, the range is completely trimmed and
     // ready to be split into comparators.
 
-    const compRe = loose ? re[t.COMPARATORLOOSE] : re[t.COMPARATOR]
-    const rangeList = range
+    let rangeList = range
       .split(' ')
       .map(comp => parseComparator(comp, this.options))
       .join(' ')
       .split(/\s+/)
       // >=0.0.0 is equivalent to *
       .map(comp => replaceGTE0(comp, this.options))
+
+    if (loose) {
       // in loose mode, throw out any that are not valid comparators
-      .filter(this.options.loose ? comp => !!comp.match(compRe) : () => true)
-      .map(comp => new Comparator(comp, this.options))
+      rangeList = rangeList.filter(comp => {
+        debug('loose invalid filter', comp, this.options)
+        return !!comp.match(re[t.COMPARATORLOOSE])
+      })
+    }
+    debug('range list', rangeList)
 
     // if any comparators are the null set, then replace with JUST null set
     // if more than one comparator, remove any * comparators
     // also, don't include the same comparator more than once
-    const l = rangeList.length
     const rangeMap = new Map()
-    for (const comp of rangeList) {
-      if (isNullSet(comp))
+    const comparators = rangeList.map(comp => new Comparator(comp, this.options))
+    for (const comp of comparators) {
+      if (isNullSet(comp)) {
         return [comp]
+      }
       rangeMap.set(comp.value, comp)
     }
-    if (rangeMap.size > 1 && rangeMap.has(''))
+    if (rangeMap.size > 1 && rangeMap.has('')) {
       rangeMap.delete('')
+    }
 
     const result = [...rangeMap.values()]
     cache.set(memoKey, result)
@@ -17286,7 +17494,7 @@ const {
   t,
   comparatorTrimReplace,
   tildeTrimReplace,
-  caretTrimReplace
+  caretTrimReplace,
 } = __nccwpck_require__(9523)
 
 const isNullSet = c => c.value === '<0.0.0-0'
@@ -17335,8 +17543,8 @@ const isX = id => !id || id.toLowerCase() === 'x' || id === '*'
 // ~1.2.3, ~>1.2.3 --> >=1.2.3 <1.3.0-0
 // ~1.2.0, ~>1.2.0 --> >=1.2.0 <1.3.0-0
 const replaceTildes = (comp, options) =>
-  comp.trim().split(/\s+/).map((comp) => {
-    return replaceTilde(comp, options)
+  comp.trim().split(/\s+/).map((c) => {
+    return replaceTilde(c, options)
   }).join(' ')
 
 const replaceTilde = (comp, options) => {
@@ -17374,8 +17582,8 @@ const replaceTilde = (comp, options) => {
 // ^1.2.3 --> >=1.2.3 <2.0.0-0
 // ^1.2.0 --> >=1.2.0 <2.0.0-0
 const replaceCarets = (comp, options) =>
-  comp.trim().split(/\s+/).map((comp) => {
-    return replaceCaret(comp, options)
+  comp.trim().split(/\s+/).map((c) => {
+    return replaceCaret(c, options)
   }).join(' ')
 
 const replaceCaret = (comp, options) => {
@@ -17433,8 +17641,8 @@ const replaceCaret = (comp, options) => {
 
 const replaceXRanges = (comp, options) => {
   debug('replaceXRanges', comp, options)
-  return comp.split(/\s+/).map((comp) => {
-    return replaceXRange(comp, options)
+  return comp.split(/\s+/).map((c) => {
+    return replaceXRange(c, options)
   }).join(' ')
 }
 
@@ -17495,8 +17703,9 @@ const replaceXRange = (comp, options) => {
         }
       }
 
-      if (gtlt === '<')
+      if (gtlt === '<') {
         pr = '-0'
+      }
 
       ret = `${gtlt + M}.${m}.${p}${pr}`
     } else if (xm) {
@@ -17872,7 +18081,7 @@ class SemVer {
         if (identifier) {
           // 1.2.0-beta.1 bumps to 1.2.0-beta.2,
           // 1.2.0-beta.fooblz or 1.2.0-beta bumps to 1.2.0-beta.0
-          if (this.prerelease[0] === identifier) {
+          if (compareIdentifiers(this.prerelease[0], identifier) === 0) {
             if (isNaN(this.prerelease[1])) {
               this.prerelease = [identifier, 0]
             }
@@ -17922,17 +18131,21 @@ const lte = __nccwpck_require__(7520)
 const cmp = (a, op, b, loose) => {
   switch (op) {
     case '===':
-      if (typeof a === 'object')
+      if (typeof a === 'object') {
         a = a.version
-      if (typeof b === 'object')
+      }
+      if (typeof b === 'object') {
         b = b.version
+      }
       return a === b
 
     case '!==':
-      if (typeof a === 'object')
+      if (typeof a === 'object') {
         a = a.version
-      if (typeof b === 'object')
+      }
+      if (typeof b === 'object') {
         b = b.version
+      }
       return a !== b
 
     case '':
@@ -17969,7 +18182,7 @@ module.exports = cmp
 
 const SemVer = __nccwpck_require__(8088)
 const parse = __nccwpck_require__(5925)
-const {re, t} = __nccwpck_require__(9523)
+const { re, t } = __nccwpck_require__(9523)
 
 const coerce = (version, options) => {
   if (version instanceof SemVer) {
@@ -18012,8 +18225,9 @@ const coerce = (version, options) => {
     re[t.COERCERTL].lastIndex = -1
   }
 
-  if (match === null)
+  if (match === null) {
     return null
+  }
 
   return parse(`${match[2]}.${match[3] || '0'}.${match[4] || '0'}`, options)
 }
@@ -18130,7 +18344,10 @@ const inc = (version, release, options, identifier) => {
   }
 
   try {
-    return new SemVer(version, options).inc(release, identifier).version
+    return new SemVer(
+      version instanceof SemVer ? version.version : version,
+      options
+    ).inc(release, identifier).version
   } catch (er) {
     return null
   }
@@ -18193,7 +18410,7 @@ module.exports = neq
 /***/ 5925:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const {MAX_LENGTH} = __nccwpck_require__(2293)
+const { MAX_LENGTH } = __nccwpck_require__(2293)
 const { re, t } = __nccwpck_require__(9523)
 const SemVer = __nccwpck_require__(8088)
 
@@ -18377,7 +18594,7 @@ const SEMVER_SPEC_VERSION = '2.0.0'
 
 const MAX_LENGTH = 256
 const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER ||
-  /* istanbul ignore next */ 9007199254740991
+/* istanbul ignore next */ 9007199254740991
 
 // Max safe segment length for coercion.
 const MAX_SAFE_COMPONENT_LENGTH = 16
@@ -18386,7 +18603,7 @@ module.exports = {
   SEMVER_SPEC_VERSION,
   MAX_LENGTH,
   MAX_SAFE_INTEGER,
-  MAX_SAFE_COMPONENT_LENGTH
+  MAX_SAFE_COMPONENT_LENGTH,
 }
 
 
@@ -18432,7 +18649,7 @@ const rcompareIdentifiers = (a, b) => compareIdentifiers(b, a)
 
 module.exports = {
   compareIdentifiers,
-  rcompareIdentifiers
+  rcompareIdentifiers,
 }
 
 
@@ -18447,9 +18664,9 @@ const opts = ['includePrerelease', 'loose', 'rtl']
 const parseOptions = options =>
   !options ? {}
   : typeof options !== 'object' ? { loose: true }
-  : opts.filter(k => options[k]).reduce((options, k) => {
-    options[k] = true
-    return options
+  : opts.filter(k => options[k]).reduce((o, k) => {
+    o[k] = true
+    return o
   }, {})
 module.exports = parseOptions
 
@@ -18471,7 +18688,7 @@ let R = 0
 
 const createToken = (name, value, isGlobal) => {
   const index = R++
-  debug(index, value)
+  debug(name, index, value)
   t[name] = index
   src[index] = value
   re[index] = new RegExp(value, isGlobal ? 'g' : undefined)
@@ -18639,8 +18856,8 @@ createToken('HYPHENRANGELOOSE', `^\\s*(${src[t.XRANGEPLAINLOOSE]})` +
 // Star ranges basically just allow anything at all.
 createToken('STAR', '(<|>)?=?\\s*\\*')
 // >=0.0.0 is like a star
-createToken('GTE0', '^\\s*>=\\s*0\.0\.0\\s*$')
-createToken('GTE0PRE', '^\\s*>=\\s*0\.0\.0-0\\s*$')
+createToken('GTE0', '^\\s*>=\\s*0\\.0\\.0\\s*$')
+createToken('GTE0PRE', '^\\s*>=\\s*0\\.0\\.0-0\\s*$')
 
 
 /***/ }),
@@ -18796,8 +19013,9 @@ const minVersion = (range, loose) => {
           throw new Error(`Unexpected operation: ${comparator.operator}`)
       }
     })
-    if (setMin && (!minver || gt(minver, setMin)))
+    if (setMin && (!minver || gt(minver, setMin))) {
       minver = setMin
+    }
   }
 
   if (minver && range.test(minver)) {
@@ -18816,7 +19034,7 @@ module.exports = minVersion
 
 const SemVer = __nccwpck_require__(8088)
 const Comparator = __nccwpck_require__(1532)
-const {ANY} = Comparator
+const { ANY } = Comparator
 const Range = __nccwpck_require__(9828)
 const satisfies = __nccwpck_require__(6055)
 const gt = __nccwpck_require__(4123)
@@ -18908,38 +19126,41 @@ const satisfies = __nccwpck_require__(6055)
 const compare = __nccwpck_require__(4309)
 module.exports = (versions, range, options) => {
   const set = []
-  let min = null
+  let first = null
   let prev = null
   const v = versions.sort((a, b) => compare(a, b, options))
   for (const version of v) {
     const included = satisfies(version, range, options)
     if (included) {
       prev = version
-      if (!min)
-        min = version
+      if (!first) {
+        first = version
+      }
     } else {
       if (prev) {
-        set.push([min, prev])
+        set.push([first, prev])
       }
       prev = null
-      min = null
+      first = null
     }
   }
-  if (min)
-    set.push([min, null])
+  if (first) {
+    set.push([first, null])
+  }
 
   const ranges = []
   for (const [min, max] of set) {
-    if (min === max)
+    if (min === max) {
       ranges.push(min)
-    else if (!max && min === v[0])
+    } else if (!max && min === v[0]) {
       ranges.push('*')
-    else if (!max)
+    } else if (!max) {
       ranges.push(`>=${min}`)
-    else if (min === v[0])
+    } else if (min === v[0]) {
       ranges.push(`<=${max}`)
-    else
+    } else {
       ranges.push(`${min} - ${max}`)
+    }
   }
   const simplified = ranges.join(' || ')
   const original = typeof range.raw === 'string' ? range.raw : String(range)
@@ -18995,8 +19216,9 @@ const compare = __nccwpck_require__(4309)
 // - Else return true
 
 const subset = (sub, dom, options = {}) => {
-  if (sub === dom)
+  if (sub === dom) {
     return true
+  }
 
   sub = new Range(sub, options)
   dom = new Range(dom, options)
@@ -19006,73 +19228,84 @@ const subset = (sub, dom, options = {}) => {
     for (const simpleDom of dom.set) {
       const isSub = simpleSubset(simpleSub, simpleDom, options)
       sawNonNull = sawNonNull || isSub !== null
-      if (isSub)
+      if (isSub) {
         continue OUTER
+      }
     }
     // the null set is a subset of everything, but null simple ranges in
     // a complex range should be ignored.  so if we saw a non-null range,
     // then we know this isn't a subset, but if EVERY simple range was null,
     // then it is a subset.
-    if (sawNonNull)
+    if (sawNonNull) {
       return false
+    }
   }
   return true
 }
 
 const simpleSubset = (sub, dom, options) => {
-  if (sub === dom)
+  if (sub === dom) {
     return true
+  }
 
   if (sub.length === 1 && sub[0].semver === ANY) {
-    if (dom.length === 1 && dom[0].semver === ANY)
+    if (dom.length === 1 && dom[0].semver === ANY) {
       return true
-    else if (options.includePrerelease)
-      sub = [ new Comparator('>=0.0.0-0') ]
-    else
-      sub = [ new Comparator('>=0.0.0') ]
+    } else if (options.includePrerelease) {
+      sub = [new Comparator('>=0.0.0-0')]
+    } else {
+      sub = [new Comparator('>=0.0.0')]
+    }
   }
 
   if (dom.length === 1 && dom[0].semver === ANY) {
-    if (options.includePrerelease)
+    if (options.includePrerelease) {
       return true
-    else
-      dom = [ new Comparator('>=0.0.0') ]
+    } else {
+      dom = [new Comparator('>=0.0.0')]
+    }
   }
 
   const eqSet = new Set()
   let gt, lt
   for (const c of sub) {
-    if (c.operator === '>' || c.operator === '>=')
+    if (c.operator === '>' || c.operator === '>=') {
       gt = higherGT(gt, c, options)
-    else if (c.operator === '<' || c.operator === '<=')
+    } else if (c.operator === '<' || c.operator === '<=') {
       lt = lowerLT(lt, c, options)
-    else
+    } else {
       eqSet.add(c.semver)
+    }
   }
 
-  if (eqSet.size > 1)
+  if (eqSet.size > 1) {
     return null
+  }
 
   let gtltComp
   if (gt && lt) {
     gtltComp = compare(gt.semver, lt.semver, options)
-    if (gtltComp > 0)
+    if (gtltComp > 0) {
       return null
-    else if (gtltComp === 0 && (gt.operator !== '>=' || lt.operator !== '<='))
+    } else if (gtltComp === 0 && (gt.operator !== '>=' || lt.operator !== '<=')) {
       return null
+    }
   }
 
   // will iterate one or zero times
   for (const eq of eqSet) {
-    if (gt && !satisfies(eq, String(gt), options))
+    if (gt && !satisfies(eq, String(gt), options)) {
       return null
+    }
 
-    if (lt && !satisfies(eq, String(lt), options))
+    if (lt && !satisfies(eq, String(lt), options)) {
       return null
+    }
 
     for (const c of dom) {
-      if (!satisfies(eq, String(c), options))
+      if (!satisfies(eq, String(c), options)) {
         return false
+      }
     }
 
     return true
@@ -19108,10 +19341,12 @@ const simpleSubset = (sub, dom, options) => {
       }
       if (c.operator === '>' || c.operator === '>=') {
         higher = higherGT(gt, c, options)
-        if (higher === c && higher !== gt)
+        if (higher === c && higher !== gt) {
           return false
-      } else if (gt.operator === '>=' && !satisfies(gt.semver, String(c), options))
+        }
+      } else if (gt.operator === '>=' && !satisfies(gt.semver, String(c), options)) {
         return false
+      }
     }
     if (lt) {
       if (needDomLTPre) {
@@ -19124,37 +19359,44 @@ const simpleSubset = (sub, dom, options) => {
       }
       if (c.operator === '<' || c.operator === '<=') {
         lower = lowerLT(lt, c, options)
-        if (lower === c && lower !== lt)
+        if (lower === c && lower !== lt) {
           return false
-      } else if (lt.operator === '<=' && !satisfies(lt.semver, String(c), options))
+        }
+      } else if (lt.operator === '<=' && !satisfies(lt.semver, String(c), options)) {
         return false
+      }
     }
-    if (!c.operator && (lt || gt) && gtltComp !== 0)
+    if (!c.operator && (lt || gt) && gtltComp !== 0) {
       return false
+    }
   }
 
   // if there was a < or >, and nothing in the dom, then must be false
   // UNLESS it was limited by another range in the other direction.
   // Eg, >1.0.0 <1.0.1 is still a subset of <2.0.0
-  if (gt && hasDomLT && !lt && gtltComp !== 0)
+  if (gt && hasDomLT && !lt && gtltComp !== 0) {
     return false
+  }
 
-  if (lt && hasDomGT && !gt && gtltComp !== 0)
+  if (lt && hasDomGT && !gt && gtltComp !== 0) {
     return false
+  }
 
   // we needed a prerelease range in a specific tuple, but didn't get one
   // then this isn't a subset.  eg >=1.2.3-pre is not a subset of >=1.0.0,
   // because it includes prereleases in the 1.2.3 tuple
-  if (needDomGTPre || needDomLTPre)
+  if (needDomGTPre || needDomLTPre) {
     return false
+  }
 
   return true
 }
 
 // >=1.2.3 is lower than >1.2.3
 const higherGT = (a, b, options) => {
-  if (!a)
+  if (!a) {
     return b
+  }
   const comp = compare(a.semver, b.semver, options)
   return comp > 0 ? a
     : comp < 0 ? b
@@ -19164,8 +19406,9 @@ const higherGT = (a, b, options) => {
 
 // <=1.2.3 is higher than <1.2.3
 const lowerLT = (a, b, options) => {
-  if (!a)
+  if (!a) {
     return b
+  }
   const comp = compare(a.semver, b.semver, options)
   return comp < 0 ? a
     : comp > 0 ? b
