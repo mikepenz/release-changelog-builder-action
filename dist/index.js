@@ -377,10 +377,11 @@ function run() {
             const fromTag = core.getInput('fromTag');
             const toTag = core.getInput('toTag');
             // read in flags
+            const includeOpen = core.getInput('includeOpen') === 'true';
             const ignorePreReleases = core.getInput('ignorePreReleases') === 'true';
             const failOnError = core.getInput('failOnError') === 'true';
             const commitMode = core.getInput('commitMode') === 'true';
-            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, failOnError, ignorePreReleases, commitMode, configuration).build();
+            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, commitMode, configuration).build();
             core.setOutput('changelog', result);
             // write the result in changelog to file if possible
             const outputFile = core.getInput('outputFile');
@@ -487,7 +488,7 @@ class PullRequests {
                     const response = _c.value;
                     const prs = response.data;
                     for (const pr of prs.filter(p => !!p.merged_at)) {
-                        mergedPRs.push(mapPullRequest(pr));
+                        mergedPRs.push(mapPullRequest(pr, 'merged'));
                     }
                     const firstPR = prs[0];
                     if (firstPR === undefined ||
@@ -511,15 +512,56 @@ class PullRequests {
             return sortPullRequests(mergedPRs, true);
         });
     }
+    getOpen(owner, repo, maxPullRequests) {
+        var e_2, _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            const openPrs = [];
+            const options = this.octokit.pulls.list.endpoint.merge({
+                owner,
+                repo,
+                state: 'open',
+                sort: 'created',
+                per_page: '100',
+                direction: 'desc'
+            });
+            try {
+                for (var _b = __asyncValues(this.octokit.paginate.iterator(options)), _c; _c = yield _b.next(), !_c.done;) {
+                    const response = _c.value;
+                    const prs = response.data;
+                    for (const pr of prs) {
+                        openPrs.push(mapPullRequest(pr, 'open'));
+                    }
+                    const firstPR = prs[0];
+                    if (firstPR === undefined || openPrs.length >= maxPullRequests) {
+                        if (openPrs.length >= maxPullRequests) {
+                            core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
+                        }
+                        // bail out early to not keep iterating on PRs super old
+                        return sortPullRequests(openPrs, true);
+                    }
+                }
+            }
+            catch (e_2_1) { e_2 = { error: e_2_1 }; }
+            finally {
+                try {
+                    if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                }
+                finally { if (e_2) throw e_2.error; }
+            }
+            return sortPullRequests(openPrs, true);
+        });
+    }
 }
 exports.PullRequests = PullRequests;
 function sortPullRequests(pullRequests, ascending) {
     if (ascending) {
         pullRequests.sort((a, b) => {
-            if (a.mergedAt.isBefore(b.mergedAt)) {
+            const aa = a.mergedAt || a.createdAt;
+            const bb = b.mergedAt || b.createdAt;
+            if (aa.isBefore(bb)) {
                 return -1;
             }
-            else if (b.mergedAt.isBefore(a.mergedAt)) {
+            else if (bb.isBefore(aa)) {
                 return 1;
             }
             return 0;
@@ -527,10 +569,12 @@ function sortPullRequests(pullRequests, ascending) {
     }
     else {
         pullRequests.sort((b, a) => {
-            if (a.mergedAt.isBefore(b.mergedAt)) {
+            const aa = a.mergedAt || a.createdAt;
+            const bb = b.mergedAt || b.createdAt;
+            if (aa.isBefore(bb)) {
                 return -1;
             }
-            else if (b.mergedAt.isBefore(a.mergedAt)) {
+            else if (bb.isBefore(aa)) {
                 return 1;
             }
             return 0;
@@ -539,22 +583,29 @@ function sortPullRequests(pullRequests, ascending) {
     return pullRequests;
 }
 exports.sortPullRequests = sortPullRequests;
-const mapPullRequest = (pr) => {
+// helper function to add a special open label to prs not merged.
+function attachSpeciaLabels(status, labels) {
+    labels.add(`--rcba-${status}`);
+    return labels;
+}
+const mapPullRequest = (pr, status = 'open') => {
     var _a, _b, _c, _d, _e;
     return ({
         number: pr.number,
         title: pr.title,
         htmlURL: pr.html_url,
         baseBranch: pr.base.ref,
-        mergedAt: (0, moment_1.default)(pr.merged_at),
+        createdAt: (0, moment_1.default)(pr.created_at),
+        mergedAt: pr.merged_at ? (0, moment_1.default)(pr.merged_at) : null,
         mergeCommitSha: pr.merge_commit_sha || '',
         author: ((_a = pr.user) === null || _a === void 0 ? void 0 : _a.login) || '',
         repoName: pr.base.repo.full_name,
-        labels: new Set(((_b = pr.labels) === null || _b === void 0 ? void 0 : _b.map(lbl => { var _a; return ((_a = lbl.name) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase('en')) || ''; })) || []),
+        labels: attachSpeciaLabels(status, new Set(((_b = pr.labels) === null || _b === void 0 ? void 0 : _b.map(lbl => { var _a; return ((_a = lbl.name) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase('en')) || ''; })) || [])),
         milestone: ((_c = pr.milestone) === null || _c === void 0 ? void 0 : _c.title) || '',
         body: pr.body || '',
         assignees: ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.map(asignee => (asignee === null || asignee === void 0 ? void 0 : asignee.login) || '')) || [],
-        requestedReviewers: ((_e = pr.requested_reviewers) === null || _e === void 0 ? void 0 : _e.map(reviewer => (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '')) || []
+        requestedReviewers: ((_e = pr.requested_reviewers) === null || _e === void 0 ? void 0 : _e.map(reviewer => (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '')) || [],
+        status
     });
 };
 
@@ -663,7 +714,7 @@ class ReleaseNotes {
     }
     getMergedPullRequests(octokit) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { owner, repo, configuration } = this.options;
+            const { owner, repo, includeOpen, configuration } = this.options;
             const commits = yield this.getCommitHistory(octokit);
             if (commits.length === 0) {
                 return [];
@@ -690,21 +741,33 @@ class ReleaseNotes {
             const releaseCommitHashes = prCommits.map(commmit => {
                 return commmit.sha;
             });
+            // filter out pull requests not associated with this release
+            const mergedPullRequests = pullRequests.filter(pr => {
+                return releaseCommitHashes.includes(pr.mergeCommitSha);
+            });
+            let allPullRequests = mergedPullRequests;
+            if (includeOpen) {
+                // retrieve all open pull requests
+                const openPullRequests = yield pullRequestsApi.getOpen(owner, repo, configuration.max_pull_requests ||
+                    configuration_1.DefaultConfiguration.max_pull_requests);
+                core.info(`ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`);
+                // all pull requests
+                allPullRequests = allPullRequests.concat(openPullRequests);
+                core.info(`ℹ️ Retrieved ${allPullRequests.length} total PRs for ${owner}/${repo}`);
+            }
             // retrieve base branches we allow
             const baseBranches = configuration.base_branches || configuration_1.DefaultConfiguration.base_branches;
             const baseBranchPatterns = baseBranches.map(baseBranch => {
                 return new RegExp(baseBranch.replace('\\\\', '\\'), 'gu');
             });
-            // return only the pull requests associated with this release
-            // and if the baseBranch is matching the configuration
-            return pullRequests.filter(pr => {
-                let keep = releaseCommitHashes.includes(pr.mergeCommitSha);
-                if (keep && baseBranches.length !== 0) {
-                    keep = baseBranchPatterns.some(pattern => {
+            // return only prs if the baseBranch is matching the configuration
+            return allPullRequests.filter(pr => {
+                if (baseBranches.length !== 0) {
+                    return baseBranchPatterns.some(pattern => {
                         return pr.baseBranch.match(pattern) !== null;
                     });
                 }
-                return keep;
+                return true;
             });
         });
     }
@@ -724,6 +787,7 @@ class ReleaseNotes {
                     title: commit.summary,
                     htmlURL: '',
                     baseBranch: '',
+                    createdAt: commit.date,
                     mergedAt: commit.date,
                     mergeCommitSha: commit.sha,
                     author: commit.author || '',
@@ -732,7 +796,8 @@ class ReleaseNotes {
                     milestone: '',
                     body: commit.message || '',
                     assignees: [],
-                    requestedReviewers: []
+                    requestedReviewers: [],
+                    status: 'merged'
                 };
             });
         });
@@ -790,7 +855,7 @@ const tags_1 = __nccwpck_require__(7532);
 const utils_1 = __nccwpck_require__(918);
 const transform_1 = __nccwpck_require__(1644);
 class ReleaseNotesBuilder {
-    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, failOnError, ignorePreReleases, commitMode, configuration) {
+    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, commitMode, configuration) {
         this.baseUrl = baseUrl;
         this.token = token;
         this.repositoryPath = repositoryPath;
@@ -798,6 +863,7 @@ class ReleaseNotesBuilder {
         this.repo = repo;
         this.fromTag = fromTag;
         this.toTag = toTag;
+        this.includeOpen = includeOpen;
         this.failOnError = failOnError;
         this.ignorePreReleases = ignorePreReleases;
         this.commitMode = commitMode;
@@ -857,6 +923,7 @@ class ReleaseNotesBuilder {
                 repo: this.repo,
                 fromTag: this.fromTag,
                 toTag: this.toTag,
+                includeOpen: this.includeOpen,
                 failOnError: this.failOnError,
                 commitMode: this.commitMode,
                 configuration: this.configuration
@@ -1293,12 +1360,16 @@ function buildChangelog(prs, options) {
     }
     const categorizedPrs = [];
     const ignoredPrs = [];
+    const openPrs = [];
     const uncategorizedPrs = [];
     // bring elements in order
     for (const [pr, body] of transformedMap) {
         if (haveCommonElements(ignoredLabels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
             ignoredPrs.push(body);
             continue;
+        }
+        if (pr.status === 'open') {
+            openPrs.push(body);
         }
         let matched = false;
         for (const [category, pullRequests] of categorized) {
@@ -1372,6 +1443,19 @@ function buildChangelog(prs, options) {
         }
     }
     core.setOutput('uncategorized_prs', uncategorizedPrs.length);
+    let changelogOpen = '';
+    if (openPrs.length > 0) {
+        for (const pr of openPrs) {
+            changelogOpen = `${changelogOpen + pr}\n`;
+        }
+        core.info(`✒️ Wrote ${openPrs.length} open pull requests down`);
+        if (core.isDebug()) {
+            for (const pr of openPrs) {
+                core.debug(`    ${pr}`);
+            }
+        }
+        core.setOutput('open_prs', openPrs.length);
+    }
     let changelogIgnored = '';
     for (const pr of ignoredPrs) {
         changelogIgnored = `${changelogIgnored + pr}\n`;
@@ -1386,10 +1470,12 @@ function buildChangelog(prs, options) {
     let transformedChangelog = config.template || configuration_1.DefaultConfiguration.template;
     transformedChangelog = transformedChangelog.replace(/\${{CHANGELOG}}/g, changelog);
     transformedChangelog = transformedChangelog.replace(/\${{UNCATEGORIZED}}/g, changelogUncategorized);
+    transformedChangelog = transformedChangelog.replace(/\${{OPEN}}/g, changelogOpen);
     transformedChangelog = transformedChangelog.replace(/\${{IGNORED}}/g, changelogIgnored);
     // fill other placeholders
     transformedChangelog = transformedChangelog.replace(/\${{CATEGORIZED_COUNT}}/g, categorizedPrs.length.toString());
     transformedChangelog = transformedChangelog.replace(/\${{UNCATEGORIZED_COUNT}}/g, uncategorizedPrs.length.toString());
+    transformedChangelog = transformedChangelog.replace(/\${{OPEN_COUNT}}/g, openPrs.length.toString());
     transformedChangelog = transformedChangelog.replace(/\${{IGNORED_COUNT}}/g, ignoredPrs.length.toString());
     transformedChangelog = fillAdditionalPlaceholders(transformedChangelog, options);
     core.info(`ℹ️ Filled template`);
@@ -1413,19 +1499,21 @@ function haveEveryElements(arr1, arr2) {
     return arr1.every(item => arr2.has(item));
 }
 function fillTemplate(pr, template) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e;
     let transformed = template;
     transformed = transformed.replace(/\${{NUMBER}}/g, pr.number.toString());
     transformed = transformed.replace(/\${{TITLE}}/g, pr.title);
     transformed = transformed.replace(/\${{URL}}/g, pr.htmlURL);
-    transformed = transformed.replace(/\${{MERGED_AT}}/g, pr.mergedAt.toISOString());
+    transformed = transformed.replace(/\${{STATUS}}/g, pr.status);
+    transformed = transformed.replace(/\${{CREATED_AT}}/g, pr.createdAt.toISOString());
+    transformed = transformed.replace(/\${{MERGED_AT}}/g, ((_a = pr.mergedAt) === null || _a === void 0 ? void 0 : _a.toISOString()) || '');
     transformed = transformed.replace(/\${{MERGE_SHA}}/g, pr.mergeCommitSha);
     transformed = transformed.replace(/\${{AUTHOR}}/g, pr.author);
-    transformed = transformed.replace(/\${{LABELS}}/g, ((_a = [...pr.labels]) === null || _a === void 0 ? void 0 : _a.join(', ')) || '');
+    transformed = transformed.replace(/\${{LABELS}}/g, ((_c = (_b = [...pr.labels]) === null || _b === void 0 ? void 0 : _b.filter(l => !l.startsWith('--rcba-'))) === null || _c === void 0 ? void 0 : _c.join(', ')) || '');
     transformed = transformed.replace(/\${{MILESTONE}}/g, pr.milestone || '');
     transformed = transformed.replace(/\${{BODY}}/g, pr.body);
-    transformed = transformed.replace(/\${{ASSIGNEES}}/g, ((_b = pr.assignees) === null || _b === void 0 ? void 0 : _b.join(', ')) || '');
-    transformed = transformed.replace(/\${{REVIEWERS}}/g, ((_c = pr.requestedReviewers) === null || _c === void 0 ? void 0 : _c.join(', ')) || '');
+    transformed = transformed.replace(/\${{ASSIGNEES}}/g, ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.join(', ')) || '');
+    transformed = transformed.replace(/\${{REVIEWERS}}/g, ((_e = pr.requestedReviewers) === null || _e === void 0 ? void 0 : _e.join(', ')) || '');
     return transformed;
 }
 function transform(filled, transformers) {

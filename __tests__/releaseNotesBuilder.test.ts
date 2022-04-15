@@ -16,6 +16,7 @@ it('Should match generated changelog (unspecified fromTag)', async () => {
     false,
     false,
     false,
+    false,
     configuration
   )
 
@@ -42,6 +43,7 @@ it('Should match generated changelog (unspecified tags)', async () => {
     false,
     false,
     false,
+    false,
     configuration
   )
 
@@ -62,6 +64,7 @@ it('Should use empty placeholder', async () => {
     'release-changelog-builder-action',
     'v0.0.2',
     'v0.0.3',
+    false,
     false,
     false,
     false,
@@ -86,6 +89,7 @@ it('Should fill empty placeholders', async () => {
     'release-changelog-builder-action',
     'v0.0.2',
     'v0.0.3',
+    false,
     false,
     false,
     false,
@@ -115,6 +119,7 @@ it('Should fill `template` placeholders', async () => {
     false,
     false,
     false,
+    false,
     configuration
   )
 
@@ -138,6 +143,7 @@ it('Should fill `template` placeholders, ignore', async () => {
     'release-changelog-builder-action',
     'v0.9.1',
     'v0.9.5',
+    false,
     false,
     false,
     false,
@@ -167,6 +173,7 @@ it('Uncategorized category', async () => {
     false,
     false,
     false,
+    false,
     configuration
   )
 
@@ -190,6 +197,7 @@ it('Verify commit based changelog', async () => {
     'release-changelog-builder-action',
     'v0.0.1',
     'v0.0.3',
+    false,
     false,
     false,
     true,
@@ -218,6 +226,7 @@ it('Verify commit based changelog, with emoji categorisation', async () => {
     '17a9e4dfaedcabe6a6eff2754bebb715e1c58ec4',
     false,
     false,
+    false,
     true,
     configuration
   )
@@ -226,5 +235,59 @@ it('Verify commit based changelog, with emoji categorisation', async () => {
   console.log(changeLog)
   expect(changeLog).toStrictEqual(
     `## 🚀 Features\n\n- add dynamic merging\n- add auto-cleaning\n- add built-in adb support\n- add adb fallback (thanks to @mikepenz ;))\n- add install note\n- add @mikepenz to credits\n\n## 🐛 Fixes\n\n- fix dynamic lib replacement\n- fix apostrophe issue with app name\n- fix java.util.logger error\n\n## 💬 Other\n\n- update screenshot with truecaller stack\n\n`
+  )
+})
+
+it('Verify default inclusion of open PRs', async () => {
+  const configuration = resolveConfiguration(
+    '',
+    'configs_test/configuration_including_open.json'
+  )
+  const releaseNotesBuilder = new ReleaseNotesBuilder(
+    null, // baseUrl
+    null, // token
+    '.',  // repoPath
+    'mikepenz',                                         // user
+    'release-changelog-builder-action-playground',      // repo
+    '1.5.0',         // fromTag
+    '2.0.0',         // toTag
+    true,  // includeOpen
+    false, // failOnError
+    false, // ignorePrePrelease
+    false, // commitMode
+    configuration  // configuration
+  )
+
+  const changeLog = await releaseNotesBuilder.build()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(
+    `## 🚀 Features\n\n- A feature to be going to v2 (nr3) (#3) merged\n- New feature to keep open (nr5) (#7) open\n\n\n\n\nUncategorized\n\n\n\nOpen\n- New feature to keep open (nr5) (#7) open\n`
+  )
+})
+
+it('Verify custom categorisation of open PRs', async () => {
+  const configuration = resolveConfiguration(
+    '',
+    'configs_test/configuration_excluding_open.json'
+  )
+  const releaseNotesBuilder = new ReleaseNotesBuilder(
+    null, // baseUrl
+    null, // token
+    '.',  // repoPath
+    'mikepenz',                                         // user
+    'release-changelog-builder-action-playground',      // repo
+    '1.5.0',         // fromTag
+    '2.0.0',         // toTag
+    true,  // includeOpen
+    false, // failOnError
+    false, // ignorePrePrelease
+    false, // commitMode
+    configuration  // configuration
+  )
+
+  const changeLog = await releaseNotesBuilder.build()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(
+    `## 🚀 Features Merged\n\n- A feature to be going to v2 (nr3) -- (#3) [merged] {feature}\n\n## 🚀 Features Open\n\n- New feature to keep open (nr5) -- (#7) [open] {feature}\n\n`
   )
 })

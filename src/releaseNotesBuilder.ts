@@ -15,6 +15,7 @@ export class ReleaseNotesBuilder {
     private repo: string | null,
     private fromTag: string | null,
     private toTag: string | null,
+    private includeOpen: boolean,
     private failOnError: boolean,
     private ignorePreReleases: boolean,
     private commitMode: boolean,
@@ -88,6 +89,7 @@ export class ReleaseNotesBuilder {
       repo: this.repo,
       fromTag: this.fromTag,
       toTag: this.toTag,
+      includeOpen: this.includeOpen,
       failOnError: this.failOnError,
       commitMode: this.commitMode,
       configuration: this.configuration

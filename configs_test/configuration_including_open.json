@@ -1,0 +1,10 @@
+{
+    "categories": [
+        {
+            "title": "## 🚀 Features",
+            "labels": ["feature"]
+        }
+    ],
+    "template": "${{CHANGELOG}}\n\n\nUncategorized\n${{UNCATEGORIZED}}\n\n\nOpen\n${{OPEN}}",
+    "pr_template": "- ${{TITLE}} (#${{NUMBER}}) ${{STATUS}}"
+}

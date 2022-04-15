@@ -8,7 +8,8 @@ export interface PullRequestInfo {
   title: string
   htmlURL: string
   baseBranch: string
-  mergedAt: moment.Moment
+  createdAt: moment.Moment
+  mergedAt: moment.Moment | null
   mergeCommitSha: string
   author: string
   repoName: string
@@ -17,6 +18,7 @@ export interface PullRequestInfo {
   body: string
   assignees: string[]
   requestedReviewers: string[]
+  status: 'open' | 'merged'
 }
 
 type PullData = RestEndpointMethodTypes['pulls']['get']['response']['data']
@@ -69,7 +71,7 @@ export class PullRequests {
       const prs: PullsListData = response.data as PullsListData
 
       for (const pr of prs.filter(p => !!p.merged_at)) {
-        mergedPRs.push(mapPullRequest(pr))
+        mergedPRs.push(mapPullRequest(pr, 'merged'))
       }
 
       const firstPR = prs[0]
@@ -89,6 +91,42 @@ export class PullRequests {
 
     return sortPullRequests(mergedPRs, true)
   }
+
+  async getOpen(
+    owner: string,
+    repo: string,
+    maxPullRequests: number
+  ): Promise<PullRequestInfo[]> {
+    const openPrs: PullRequestInfo[] = []
+    const options = this.octokit.pulls.list.endpoint.merge({
+      owner,
+      repo,
+      state: 'open',
+      sort: 'created',
+      per_page: '100',
+      direction: 'desc'
+    })
+
+    for await (const response of this.octokit.paginate.iterator(options)) {
+      const prs: PullsListData = response.data as PullsListData
+
+      for (const pr of prs) {
+        openPrs.push(mapPullRequest(pr, 'open'))
+      }
+
+      const firstPR = prs[0]
+      if (firstPR === undefined || openPrs.length >= maxPullRequests) {
+        if (openPrs.length >= maxPullRequests) {
+          core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`)
+        }
+
+        // bail out early to not keep iterating on PRs super old
+        return sortPullRequests(openPrs, true)
+      }
+    }
+
+    return sortPullRequests(openPrs, true)
+  }
 }
 
 export function sortPullRequests(
@@ -97,18 +135,22 @@ export function sortPullRequests(
 ): PullRequestInfo[] {
   if (ascending) {
     pullRequests.sort((a, b) => {
-      if (a.mergedAt.isBefore(b.mergedAt)) {
+      const aa = a.mergedAt || a.createdAt
+      const bb = b.mergedAt || b.createdAt
+      if (aa.isBefore(bb)) {
         return -1
-      } else if (b.mergedAt.isBefore(a.mergedAt)) {
+      } else if (bb.isBefore(aa)) {
         return 1
       }
       return 0
     })
   } else {
     pullRequests.sort((b, a) => {
-      if (a.mergedAt.isBefore(b.mergedAt)) {
+      const aa = a.mergedAt || a.createdAt
+      const bb = b.mergedAt || b.createdAt
+      if (aa.isBefore(bb)) {
         return -1
-      } else if (b.mergedAt.isBefore(a.mergedAt)) {
+      } else if (bb.isBefore(aa)) {
         return 1
       }
       return 0
@@ -117,23 +159,38 @@ export function sortPullRequests(
   return pullRequests
 }
 
+// helper function to add a special open label to prs not merged.
+function attachSpeciaLabels(
+  status: 'open' | 'merged',
+  labels: Set<string>
+): Set<string> {
+  labels.add(`--rcba-${status}`)
+  return labels
+}
+
 const mapPullRequest = (
-  pr: PullData | Unpacked<PullsListData>
+  pr: PullData | Unpacked<PullsListData>,
+  status: 'open' | 'merged' = 'open'
 ): PullRequestInfo => ({
   number: pr.number,
   title: pr.title,
   htmlURL: pr.html_url,
   baseBranch: pr.base.ref,
-  mergedAt: moment(pr.merged_at),
+  createdAt: moment(pr.created_at),
+  mergedAt: pr.merged_at ? moment(pr.merged_at) : null,
   mergeCommitSha: pr.merge_commit_sha || '',
   author: pr.user?.login || '',
   repoName: pr.base.repo.full_name,
-  labels: new Set(
-    pr.labels?.map(lbl => lbl.name?.toLocaleLowerCase('en') || '') || []
+  labels: attachSpeciaLabels(
+    status,
+    new Set(
+      pr.labels?.map(lbl => lbl.name?.toLocaleLowerCase('en') || '') || []
+    )
   ),
   milestone: pr.milestone?.title || '',
   body: pr.body || '',
   assignees: pr.assignees?.map(asignee => asignee?.login || '') || [],
   requestedReviewers:
-    pr.requested_reviewers?.map(reviewer => reviewer?.login || '') || []
+    pr.requested_reviewers?.map(reviewer => reviewer?.login || '') || [],
+  status
 })
