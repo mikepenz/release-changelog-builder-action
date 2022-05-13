@@ -2,6 +2,7 @@ import * as core from '@actions/core'
 import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import {Unpacked} from './utils'
 import moment from 'moment'
+import {Sort} from './configuration'
 
 export interface PullRequestInfo {
   number: number
@@ -89,11 +90,11 @@ export class PullRequests {
         }
 
         // bail out early to not keep iterating on PRs super old
-        return sortPullRequests(mergedPRs, true)
+        return sortPrs(mergedPRs)
       }
     }
 
-    return sortPullRequests(mergedPRs, true)
+    return sortPrs(mergedPRs)
   }
 
   async getOpen(
@@ -125,11 +126,11 @@ export class PullRequests {
         }
 
         // bail out early to not keep iterating on PRs super old
-        return sortPullRequests(openPrs, true)
+        return sortPrs(openPrs)
       }
     }
 
-    return sortPullRequests(openPrs, true)
+    return sortPrs(openPrs)
   }
 
   async getReviewers(
@@ -155,34 +156,58 @@ export class PullRequests {
   }
 }
 
+function sortPrs(pullRequests: PullRequestInfo[]): PullRequestInfo[] {
+  return sortPullRequests(pullRequests, {
+    order: 'ASC',
+    on_property: 'mergedAt'
+  })
+}
+
 export function sortPullRequests(
   pullRequests: PullRequestInfo[],
-  ascending: Boolean
+  sort: Sort | string
 ): PullRequestInfo[] {
-  if (ascending) {
+  let sortConfig: Sort
+
+  // legacy handling to support string sort config
+  if (typeof sort === 'string') {
+    let order: 'ASC' | 'DESC' = 'ASC'
+    if (sort.toUpperCase() === 'DESC') order = 'DESC'
+    sortConfig = {order, on_property: 'mergedAt'}
+  } else {
+    sortConfig = sort
+  }
+
+  if (sortConfig.order === 'ASC') {
     pullRequests.sort((a, b) => {
-      const aa = a.mergedAt || a.createdAt
-      const bb = b.mergedAt || b.createdAt
-      if (aa.isBefore(bb)) {
-        return -1
-      } else if (bb.isBefore(aa)) {
-        return 1
-      }
-      return 0
+      return compare(a, b, sortConfig)
     })
   } else {
     pullRequests.sort((b, a) => {
-      const aa = a.mergedAt || a.createdAt
-      const bb = b.mergedAt || b.createdAt
-      if (aa.isBefore(bb)) {
-        return -1
-      } else if (bb.isBefore(aa)) {
-        return 1
-      }
-      return 0
+      return compare(a, b, sortConfig)
     })
   }
   return pullRequests
+}
+
+export function compare(
+  a: PullRequestInfo,
+  b: PullRequestInfo,
+  sort: Sort
+): number {
+  if (sort.on_property === 'mergedAt') {
+    const aa = a.mergedAt || a.createdAt
+    const bb = b.mergedAt || b.createdAt
+    if (aa.isBefore(bb)) {
+      return -1
+    } else if (bb.isBefore(aa)) {
+      return 1
+    }
+    return 0
+  } else {
+    // only else for now `label`
+    return a.title.localeCompare(b.title)
+  }
 }
 
 // helper function to add a special open label to prs not merged.

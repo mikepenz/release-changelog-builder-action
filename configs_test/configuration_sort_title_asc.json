@@ -1,0 +1,9 @@
+{
+    "sort": {
+        "order": "ASC",
+        "on_property": "title"
+    },
+    "pr_template": "${{TITLE}}",
+    "max_pull_requests": 1000,
+    "max_back_track_time_days": 1000
+}
