@@ -153,7 +153,11 @@ exports.DefaultConfiguration = {
     max_pull_requests: 200,
     max_back_track_time_days: 365,
     exclude_merge_branches: [],
-    sort: 'ASC',
+    sort: {
+        // defines the sorting logic for PRs
+        order: 'ASC',
+        on_property: 'mergedAt' // the property to sort on. (mergedAt falls back to createdAt)
+    },
     template: '${{CHANGELOG}}',
     pr_template: '- ${{TITLE}}\n   - PR: #${{NUMBER}}',
     empty_template: '- no changes',
@@ -449,7 +453,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.sortPullRequests = exports.PullRequests = void 0;
+exports.compare = exports.sortPullRequests = exports.PullRequests = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const moment_1 = __importDefault(__nccwpck_require__(9623));
 class PullRequests {
@@ -499,7 +503,7 @@ class PullRequests {
                             core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
                         }
                         // bail out early to not keep iterating on PRs super old
-                        return sortPullRequests(mergedPRs, true);
+                        return sortPrs(mergedPRs);
                     }
                 }
             }
@@ -510,7 +514,7 @@ class PullRequests {
                 }
                 finally { if (e_1) throw e_1.error; }
             }
-            return sortPullRequests(mergedPRs, true);
+            return sortPrs(mergedPRs);
         });
     }
     getOpen(owner, repo, maxPullRequests) {
@@ -538,7 +542,7 @@ class PullRequests {
                             core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
                         }
                         // bail out early to not keep iterating on PRs super old
-                        return sortPullRequests(openPrs, true);
+                        return sortPrs(openPrs);
                     }
                 }
             }
@@ -549,7 +553,7 @@ class PullRequests {
                 }
                 finally { if (e_2) throw e_2.error; }
             }
-            return sortPullRequests(openPrs, true);
+            return sortPrs(openPrs);
         });
     }
     getReviewers(owner, repo, pr) {
@@ -582,36 +586,55 @@ class PullRequests {
     }
 }
 exports.PullRequests = PullRequests;
-function sortPullRequests(pullRequests, ascending) {
-    if (ascending) {
+function sortPrs(pullRequests) {
+    return sortPullRequests(pullRequests, {
+        order: 'ASC',
+        on_property: 'mergedAt'
+    });
+}
+function sortPullRequests(pullRequests, sort) {
+    let sortConfig;
+    // legacy handling to support string sort config
+    if (typeof sort === 'string') {
+        let order = 'ASC';
+        if (sort.toUpperCase() === 'DESC')
+            order = 'DESC';
+        sortConfig = { order, on_property: 'mergedAt' };
+    }
+    else {
+        sortConfig = sort;
+    }
+    if (sortConfig.order === 'ASC') {
         pullRequests.sort((a, b) => {
-            const aa = a.mergedAt || a.createdAt;
-            const bb = b.mergedAt || b.createdAt;
-            if (aa.isBefore(bb)) {
-                return -1;
-            }
-            else if (bb.isBefore(aa)) {
-                return 1;
-            }
-            return 0;
+            return compare(a, b, sortConfig);
         });
     }
     else {
         pullRequests.sort((b, a) => {
-            const aa = a.mergedAt || a.createdAt;
-            const bb = b.mergedAt || b.createdAt;
-            if (aa.isBefore(bb)) {
-                return -1;
-            }
-            else if (bb.isBefore(aa)) {
-                return 1;
-            }
-            return 0;
+            return compare(a, b, sortConfig);
         });
     }
     return pullRequests;
 }
 exports.sortPullRequests = sortPullRequests;
+function compare(a, b, sort) {
+    if (sort.on_property === 'mergedAt') {
+        const aa = a.mergedAt || a.createdAt;
+        const bb = b.mergedAt || b.createdAt;
+        if (aa.isBefore(bb)) {
+            return -1;
+        }
+        else if (bb.isBefore(aa)) {
+            return 1;
+        }
+        return 0;
+    }
+    else {
+        // only else for now `label`
+        return a.title.localeCompare(b.title);
+    }
+}
+exports.compare = compare;
 // helper function to add a special open label to prs not merged.
 function attachSpeciaLabels(status, labels) {
     labels.add(`--rcba-${status}`);
@@ -1345,8 +1368,7 @@ function buildChangelog(prs, options) {
     // sort to target order
     const config = options.configuration;
     const sort = config.sort || configuration_1.DefaultConfiguration.sort;
-    const sortAsc = sort.toUpperCase() === 'ASC';
-    prs = (0, pullRequests_1.sortPullRequests)(prs, sortAsc);
+    prs = (0, pullRequests_1.sortPullRequests)(prs, sort);
     core.info(`ℹ️ Sorted all pull requests ascending: ${sort}`);
     // drop duplicate pull requests
     if (config.duplicate_filter !== undefined) {
@@ -1369,7 +1391,7 @@ function buildChangelog(prs, options) {
             deduplicatedPRs.push(...unmatched); // add all unmatched PRs to map
             const removedElements = prs.length - deduplicatedPRs.length;
             core.info(`ℹ️ Removed ${removedElements} pull requests during deduplication`);
-            prs = (0, pullRequests_1.sortPullRequests)(deduplicatedPRs, sortAsc); // resort deduplicatedPRs
+            prs = (0, pullRequests_1.sortPullRequests)(deduplicatedPRs, sort); // resort deduplicatedPRs
         }
         else {
             core.warning(`⚠️ Configured \`duplicate_filter\` invalid.`);

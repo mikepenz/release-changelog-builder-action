@@ -172,6 +172,54 @@ it('Should match ordered DESC', async () => {
   )
 })
 
+it('Should match ordered by title ASC', async () => {
+  const configuration = resolveConfiguration(
+    '',
+    'configs_test/configuration_sort_title_asc.json'
+  )
+  const releaseNotes = new ReleaseNotes(octokit, {
+    owner: 'mikepenz',
+    repo: 'release-changelog-builder-action',
+    fromTag: 'v0.3.0',
+    toTag: 'v0.5.0',
+    includeOpen: false,
+    failOnError: false,
+    fetchReviewers: false,
+    commitMode: false,
+    configuration
+  })
+
+  const changeLog = await releaseNotes.pull()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(
+    `## 🚀 Features\n\nEnhanced action logs\nImprove README\nImproved configuration failure handling\nImproved defaults if no configuration is provided\nIntroduce additional placeholders [milestone, labels, assignees, reviewers]\n\n## 🐛 Fixes\n\nImproved handling for non existing tags\n\n`
+  )
+})
+
+it('Should match ordered by title DESC', async () => {
+  const configuration = resolveConfiguration(
+    '',
+    'configs_test/configuration_sort_title_desc.json'
+  )
+  const releaseNotes = new ReleaseNotes(octokit, {
+    owner: 'mikepenz',
+    repo: 'release-changelog-builder-action',
+    fromTag: 'v0.3.0',
+    toTag: 'v0.5.0',
+    includeOpen: false,
+    failOnError: false,
+    fetchReviewers: false,
+    commitMode: false,
+    configuration
+  })
+
+  const changeLog = await releaseNotes.pull()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(
+    `## 🚀 Features\n\nIntroduce additional placeholders [milestone, labels, assignees, reviewers]\nImproved defaults if no configuration is provided\nImproved configuration failure handling\nImprove README\nEnhanced action logs\n\n## 🐛 Fixes\n\nImproved handling for non existing tags\n\n`
+  )
+})
+
 it('Should ignore PRs not merged into develop branch', async () => {
   const configuration = resolveConfiguration(
     '',

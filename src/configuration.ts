@@ -3,7 +3,7 @@ export interface Configuration {
   max_pull_requests: number
   max_back_track_time_days: number
   exclude_merge_branches: string[]
-  sort: string // "ASC" or "DESC"
+  sort: Sort | string // "ASC" or "DESC"
   template: string
   pr_template: string
   empty_template: string
@@ -21,6 +21,11 @@ export interface Category {
   labels: string[] // labels to associate PRs to this category
   exclude_labels?: string[] // if an exclude label is detected, the PR will be excluded from this category
   exhaustive?: boolean // requires all labels to be present in the PR
+}
+
+export interface Sort {
+  order: 'ASC' | 'DESC' // the sorting order
+  on_property: 'mergedAt' | 'title' // the property to sort on. (mergedAt falls back to createdAt)
 }
 
 export interface Regex {
@@ -55,7 +60,11 @@ export const DefaultConfiguration: Configuration = {
   max_pull_requests: 200, // the amount of pull requests to process
   max_back_track_time_days: 365, // allow max of 365 days back to check up on pull requests
   exclude_merge_branches: [], // branches to exclude from counting as PRs (e.g. YourOrg/qa, YourOrg/main)
-  sort: 'ASC', // sorting order for filling the changelog (ASC or DESC) supported
+  sort: {
+    // defines the sorting logic for PRs
+    order: 'ASC', // the sorting order
+    on_property: 'mergedAt' // the property to sort on. (mergedAt falls back to createdAt)
+  },
   template: '${{CHANGELOG}}', // the global template to host the changelog
   pr_template: '- ${{TITLE}}\n   - PR: #${{NUMBER}}', // the per PR template to pick
   empty_template: '- no changes', // the template to use if no pull requests are found
