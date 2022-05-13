@@ -93,7 +93,11 @@ pullRequestsWithLabels.push(
 
 it('Deduplicate duplicated PRs', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
-
+  customConfig.duplicate_filter = {
+    pattern: '(?:(?:ABC|Abc))[-](?:\\b\\d{3,4}\\b)',
+    on_property: 'title',
+    method: 'match'
+  }
 
   const resultChangelog = buildChangelog(pullRequestsWithLabels, {
     owner: 'mikepenz',
