@@ -15,8 +15,7 @@ export function buildChangelog(
   // sort to target order
   const config = options.configuration
   const sort = config.sort || DefaultConfiguration.sort
-  const sortAsc = sort.toUpperCase() === 'ASC'
-  prs = sortPullRequests(prs, sortAsc)
+  prs = sortPullRequests(prs, sort)
   core.info(`ℹ️ Sorted all pull requests ascending: ${sort}`)
 
   // drop duplicate pull requests
@@ -44,7 +43,7 @@ export function buildChangelog(
       core.info(
         `ℹ️ Removed ${removedElements} pull requests during deduplication`
       )
-      prs = sortPullRequests(deduplicatedPRs, sortAsc) // resort deduplicatedPRs
+      prs = sortPullRequests(deduplicatedPRs, sort) // resort deduplicatedPRs
     } else {
       core.warning(`⚠️ Configured \`duplicate_filter\` invalid.`)
     }

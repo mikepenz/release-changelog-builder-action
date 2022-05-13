@@ -111,12 +111,12 @@ jobs:
     steps:
       - name: Build Changelog
         id: github_release
-        uses: mikepenz/release-changelog-builder-action@v1
+        uses: mikepenz/release-changelog-builder-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
-        uses: actions/create-release@v1
+        uses: actions/create-release@v3
         with:
           tag_name: ${{ github.ref }}
           release_name: ${{ github.ref }}
@@ -179,7 +179,10 @@ This configuration is a `.json` file in the following format.
     "ignore_labels": [
       "ignore"
     ],
-    "sort": "ASC",
+    "sort": {
+      "order": "ASC",
+      "on_property": "mergedAt"
+    },
     "template": "${{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n${{UNCATEGORIZED}}\n</details>",
     "pr_template": "- ${{TITLE}}\n   - PR: #${{NUMBER}}",
     "empty_template": "- no changes",
@@ -327,7 +330,9 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | category.exclude_labels     | Similar to `labels`, an array of labels to match PRs against, but if a match occurs the PR is excluded from this category.                                                                                                         |
 | category.exhaustive         | Will require all labels defined within this category to be present on the matching PR.                                                                                                                                             |
 | ignore_labels               | An array of labels, to match pull request labels against. If any PR label overlaps, the pull request will be ignored from the changelog. This takes precedence over category labels                                                |
-| sort                        | The sort order of pull requests. [ASC, DESC]                                                                                                                                                                                       |
+| sort                        | A `sort` specification, offering the ability to define sort order and property.                                                                                                                                                    |
+| sort.order                  | The sort order. Allowed values: `ASC`, `DESC`                                                                                                                                                                                      |
+| sort.on_property            | The property to sort on. Allowed values: `mergedAt`, `title`                                                                                                                                                                       |
 | template                    | Specifies the global template to pick for creating the changelog. See [Template placeholders](#template-placeholders) for possible values                                                                                          |
 | pr_template                 | Defines the per pull request template. See [PR Template placeholders](#pr-template-placeholders) for possible values                                                                                                               |
 | empty_template              | Template to pick if no changes are detected. See [Template placeholders](#template-placeholders) for possible values                                                                                                               |
