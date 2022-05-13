@@ -26,7 +26,7 @@ pullRequestsWithLabels.push(
     mergeCommitSha: 'sha1-1',
     author: 'Mike',
     repoName: 'test-repo',
-    labels: new Set<string>().add('feature'),
+    labels: new Set<string>(),
     milestone: '',
     body: 'no magic body for this matter',
     assignees: [],
@@ -44,7 +44,7 @@ pullRequestsWithLabels.push(
     mergeCommitSha: 'sha1-2',
     author: 'Mike',
     repoName: 'test-repo',
-    labels: new Set<string>().add('issue').add('fix'),
+    labels: new Set<string>(),
     milestone: '',
     body: 'no magic body for this matter',
     assignees: [],
@@ -62,7 +62,7 @@ pullRequestsWithLabels.push(
     mergeCommitSha: 'sha1-3',
     author: 'Mike',
     repoName: 'test-repo',
-    labels: new Set<string>().add('issue').add('feature').add('fix'),
+    labels: new Set<string>(),
     milestone: '',
     body: 'no magic body for this matter',
     assignees: [],
@@ -80,7 +80,7 @@ pullRequestsWithLabels.push(
     mergeCommitSha: 'sha1-4',
     author: 'Mike',
     repoName: 'test-repo',
-    labels: new Set<string>().add(''),
+    labels: new Set<string>(),
     milestone: '',
     body: 'no magic body for this matter',
     assignees: [],
@@ -93,6 +93,9 @@ pullRequestsWithLabels.push(
 
 it('Deduplicate duplicated PRs', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
+  customConfig.template = "# Overview  🚀\n# Release notes\n${{UNCATEGORIZED}}"
+  customConfig.sort = "ASC"
+  customConfig.pr_template = "${{TITLE}}"
   customConfig.duplicate_filter = {
     pattern: '(?:(?:ABC|Abc))[-](?:\\b\\d{3,4}\\b)',
     on_property: 'title',
