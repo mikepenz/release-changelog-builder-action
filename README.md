@@ -179,7 +179,10 @@ This configuration is a `.json` file in the following format.
     "ignore_labels": [
       "ignore"
     ],
-    "sort": "ASC",
+    "sort": {
+      "order": "ASC",
+      "on_property": "mergedAt"
+    },
     "template": "${{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n${{UNCATEGORIZED}}\n</details>",
     "pr_template": "- ${{TITLE}}\n   - PR: #${{NUMBER}}",
     "empty_template": "- no changes",
