@@ -137,8 +137,6 @@ jobs:
 
 💡 By default not specifying `fromTag` or `toTag` will resolve `toTag` from either the `ref` or alternatively fallback to the latest tag from the git API. `fromTag` is resolved by sorting tags using [semver](https://semver.org/). Check the [configuration](#configuration-specification) for alternatives.
 
-💡 `fromTag` and `toTag` not just `tag`, they can be any legal git's `ref`
-
 ### Configuration
 
 The action supports flexible configuration options to modify vast areas of its behavior. To do so, provide the configuration file to the workflow using the `configuration` setting.
@@ -265,8 +263,8 @@ For advanced use cases additional settings can be provided to the action
 | `outputFile`        | Optional relative path to a file to store the resulting changelog in.                                                                                                       |
 | `owner`             | The owner of the repository to generate the changelog for                                                                                                                   |
 | `repo`              | Name of the repository we want to process                                                                                                                                   |
-| `fromTag`           | Defines the 'start' from where the changelog will consider merged pull requests                                                                                             |
-| `toTag`             | Defines until which tag the changelog will consider merged pull requests                                                                                                    |
+| `fromTag`           | Defines the 'start' from where the changelog will consider merged pull requests (can be a tag or a valid git ref)                                                           |
+| `toTag`             | Defines until which tag the changelog will consider merged pull requests  (can be a tag or a valid git ref)                                                                 |
 | `path`              | Allows to specify an alternative sub directory, to use as base                                                                                                              |
 | `token`             | Alternative config to specify token. You should prefer `env.GITHUB_TOKEN` instead though                                                                                    |
 | `baseUrl`           | Alternative config to specify base url for GitHub Enterprise authentication. Default value set to `https://api.github.com`                                                  |
