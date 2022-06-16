@@ -423,9 +423,9 @@ All patches and changes applied to the original source are licensed under the Ap
 ## Sample result release notes / changelog
 
 <div align="center">
-  <a href="https://github.com/mikepenz/release-changelog-builder-action/runs/1270879787"><img src=".github/images/release_changelog_builder_expanded.png"/></a>
+  <a href="https://github.com/mikepenz/release-changelog-builder-action/runs/1270879787"><img src="https://raw.githubusercontent.com/mikepenz/release-changelog-builder-action/develop/.github/images/release_changelog_builder_expanded.png"/></a>
 </div>
 
 <div align="center">
-  <a href="https://github.com/mikepenz/release-changelog-builder-action/releases/tag/v0.9.0"><img src=".github/images/release_changelog_result.png"/></a>
+  <a href="https://github.com/mikepenz/release-changelog-builder-action/releases/tag/v0.9.0"><img src="https://raw.githubusercontent.com/mikepenz/release-changelog-builder-action/develop/.github/images/release_changelog_result.png"/></a>
 </div>
