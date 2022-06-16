@@ -10,7 +10,7 @@
 </p>
 
 <div align="center">
-  <img src=".github/images/release_changelog_builder_collapsed.png"/>
+  <img src="https://raw.githubusercontent.com/mikepenz/release-changelog-builder-action/develop/.github/images/release_changelog_builder_collapsed.png"/>
 </div>
 
 <div align="center">
