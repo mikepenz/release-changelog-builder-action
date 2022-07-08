@@ -21,6 +21,7 @@ export interface Category {
   labels: string[] // labels to associate PRs to this category
   exclude_labels?: string[] // if an exclude label is detected, the PR will be excluded from this category
   exhaustive?: boolean // requires all labels to be present in the PR
+  empty_content ?: string // if the category has no matching PRs, this content will be used. If not set, the category will be skipped in the changelog.
 }
 
 export interface Sort {

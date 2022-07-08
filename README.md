@@ -163,13 +163,14 @@ This configuration is a `.json` file in the following format.
       },
       {
         "title": "## 🧪 Tests",
-        "labels": ["test"],
+        "labels": ["test"]
       },
       {
         "title": "## 🧪 Tests and some 🪄 Magic",
         "labels": ["test", "magic"],
         "exclude_labels": ["no-magic"],
         "exhaustive": true,
+        "empty_content": "- no matching PRs"
       }
     ],
     "ignore_labels": [
@@ -325,6 +326,7 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | category.labels             | An array of labels, to match pull request labels against. If any PR label matches any category label, the pull request will show up under this category.                                                                           |
 | category.exclude_labels     | Similar to `labels`, an array of labels to match PRs against, but if a match occurs the PR is excluded from this category.                                                                                                         |
 | category.exhaustive         | Will require all labels defined within this category to be present on the matching PR.                                                                                                                                             |
+| category.empty_content         |  If the category has no matching PRs, this content will be used. When not set, the category will be skipped in the changelog.                                                                                                   |
 | ignore_labels               | An array of labels, to match pull request labels against. If any PR label overlaps, the pull request will be ignored from the changelog. This takes precedence over category labels                                                |
 | sort                        | A `sort` specification, offering the ability to define sort order and property.                                                                                                                                                    |
 | sort.order                  | The sort order. Allowed values: `ASC`, `DESC`                                                                                                                                                                                      |

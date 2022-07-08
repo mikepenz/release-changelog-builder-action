@@ -183,9 +183,10 @@ export function buildChangelog(
       for (const pr of pullRequests) {
         changelog = `${changelog + pr}\n`
       }
-
-      // add space between
-      changelog = `${changelog}\n`
+      changelog = `${changelog}\n` // add space between sections
+    } else if (category.empty_content !== undefined) {
+      changelog = `${changelog + category.title}\n\n`
+      changelog = `${changelog + category.empty_content}\n\n`
     }
   }
   core.info(`✒️ Wrote ${categorizedPrs.length} categorized pull requests down`)
