@@ -456,6 +456,38 @@ it('Deduplicate duplicated PRs DESC', async () => {
   )
 })
 
+
+it('Use empty_content for empty category', async () => {
+  const customConfig = Object.assign({}, DefaultConfiguration)
+  customConfig.categories = [
+    {
+      title: '## 🚀 Features and 🐛 Issues',
+      labels: ['Never-Matching-Category'],
+      empty_content: "- No PRs in this category"
+    },
+    {
+      title: '## 🚀 Features',
+      labels: ['Feature'],
+    }
+  ]
+
+  const resultChangelog = buildChangelog(pullRequestsWithLabels, {
+    owner: 'mikepenz',
+    repo: 'test-repo',
+    fromTag: '1.0.0',
+    toTag: '2.0.0',
+    includeOpen: false,
+    failOnError: false,
+    fetchReviewers: false,
+    commitMode: false,
+    configuration: customConfig
+  })
+
+  expect(resultChangelog).toStrictEqual(
+    `## 🚀 Features and 🐛 Issues\n\n- No PRs in this category\n\n## 🚀 Features\n\n- [ABC-1234] - this is a PR 1 title message\n   - PR: #1\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n`
+  )
+})
+
 it('Commit SHA-1 in commitMode', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.sort = "DESC"

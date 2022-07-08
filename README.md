@@ -10,7 +10,7 @@
 </p>
 
 <div align="center">
-  <img src=".github/images/release_changelog_builder_collapsed.png"/>
+  <img src="https://raw.githubusercontent.com/mikepenz/release-changelog-builder-action/develop/.github/images/release_changelog_builder_collapsed.png"/>
 </div>
 
 <div align="center">
@@ -116,26 +116,22 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
-        uses: actions/create-release@v3
+        uses: softprops/action-gh-release@v0.1.14
         with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
           body: ${{steps.github_release.outputs.changelog}}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Customization 🖍️
 
 ### Note
 
-⚠️ When running this action for non tags trigger the `toTag` will be automatically resolved using the latest tag as retrieved by the git API.
+> **Warning**: When running this action for non tags trigger the `toTag` will be automatically resolved using the latest tag as retrieved by the git API.
 
-⚠️ The first release tag is a special case since there is no previous release the action can reference to. For this case, there are 2 options:
-1. When checking out the source via `git` (E.g.: `actions/checkout`), the action will use the first commit.
-2. Create a initial tag on the commit you want to begin a changelog from (for example `v0.0.1`).
+> **Note**: The first release tag is a special case since there is no previous release the action can reference to. For this case, there are 2 options:
+> 1. When checking out the source via `git` (E.g.: `actions/checkout`), the action will use the first commit.
+> 2. Create a initial tag on the commit you want to begin a changelog from (for example `v0.0.1`).
 
-💡 By default not specifying `fromTag` or `toTag` will resolve `toTag` from either the `ref` or alternatively fallback to the latest tag from the git API. `fromTag` is resolved by sorting tags using [semver](https://semver.org/). Check the [configuration](#configuration-specification) for alternatives.
+> **Note**: By default not specifying `fromTag` or `toTag` will resolve `toTag` from either the `ref` or alternatively fallback to the latest tag from the git API. `fromTag` is resolved by sorting tags using [semver](https://semver.org/). Check the [configuration](#configuration-specification) for alternatives.
 
 ### Configuration
 
@@ -150,7 +146,7 @@ The action supports flexible configuration options to modify vast areas of its b
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-⚠️ Please note: It is required to have a `checkout` step prior to the changelog step, to allow the action to discover the configuration file.
+> **Warning** It is required to have a `checkout` step prior to the changelog step, to allow the action to discover the configuration file.
 
 This configuration is a `.json` file in the following format.
 
@@ -167,13 +163,14 @@ This configuration is a `.json` file in the following format.
       },
       {
         "title": "## 🧪 Tests",
-        "labels": ["test"],
+        "labels": ["test"]
       },
       {
         "title": "## 🧪 Tests and some 🪄 Magic",
         "labels": ["test", "magic"],
         "exclude_labels": ["no-magic"],
         "exhaustive": true,
+        "empty_content": "- no matching PRs"
       }
     ],
     "ignore_labels": [
@@ -230,7 +227,7 @@ This configuration is a `.json` file in the following format.
 
 Any section of the configuration can be omitted to have defaults apply.
 
-💡 `ignore_labels` take precedence over category labels, allowing to specifically exclude certain PRs.
+> **Warning**: `ignore_labels` take precedence over category labels, allowing to specifically exclude certain PRs.
 
 Defaults for the configuration can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
 
@@ -255,7 +252,7 @@ For advanced use cases additional settings can be provided to the action
     token: ${{ secrets.PAT }}
 ```
 
-💡 All input values are optional. It is only required to provide the `token` either via the input, or as `env` variable.
+> **Note**: All input values are optional. It is only required to provide the `token` either via the input, or as `env` variable.
 
 | **Input**         | **Description**                                                                                                                                                               |
 |-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -274,7 +271,7 @@ For advanced use cases additional settings can be provided to the action
 | `fetchReviewers`    | Will enable fetching the users/reviewers who approved the PR. Default: false                                                                                                |
 | `commitMode`        | Special configuration for projects which work without PRs. Uses commit messages as changelog. This mode looses access to information only available for PRs. Default: false |
 
-💡 `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repositories please use a PAT (Personal Access Token).
+> **Warning**: `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repositories please use a PAT (Personal Access Token).
 
 ### PR Template placeholders
 
@@ -329,6 +326,7 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | category.labels             | An array of labels, to match pull request labels against. If any PR label matches any category label, the pull request will show up under this category.                                                                           |
 | category.exclude_labels     | Similar to `labels`, an array of labels to match PRs against, but if a match occurs the PR is excluded from this category.                                                                                                         |
 | category.exhaustive         | Will require all labels defined within this category to be present on the matching PR.                                                                                                                                             |
+| category.empty_content         |  If the category has no matching PRs, this content will be used. When not set, the category will be skipped in the changelog.                                                                                                   |
 | ignore_labels               | An array of labels, to match pull request labels against. If any PR label overlaps, the pull request will be ignored from the changelog. This takes precedence over category labels                                                |
 | sort                        | A `sort` specification, offering the ability to define sort order and property.                                                                                                                                                    |
 | sort.order                  | The sort order. Allowed values: `ASC`, `DESC`                                                                                                                                                                                      |
@@ -423,9 +421,9 @@ All patches and changes applied to the original source are licensed under the Ap
 ## Sample result release notes / changelog
 
 <div align="center">
-  <a href="https://github.com/mikepenz/release-changelog-builder-action/runs/1270879787"><img src=".github/images/release_changelog_builder_expanded.png"/></a>
+  <a href="https://github.com/mikepenz/release-changelog-builder-action/runs/1270879787"><img src="https://raw.githubusercontent.com/mikepenz/release-changelog-builder-action/develop/.github/images/release_changelog_builder_expanded.png"/></a>
 </div>
 
 <div align="center">
-  <a href="https://github.com/mikepenz/release-changelog-builder-action/releases/tag/v0.9.0"><img src=".github/images/release_changelog_result.png"/></a>
+  <a href="https://github.com/mikepenz/release-changelog-builder-action/releases/tag/v0.9.0"><img src="https://raw.githubusercontent.com/mikepenz/release-changelog-builder-action/develop/.github/images/release_changelog_result.png"/></a>
 </div>
