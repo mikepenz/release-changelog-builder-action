@@ -134,11 +134,12 @@ it('Extract label from title, combined regex', async () => {
   const resultChangelog = buildChangelog(DefaultDiffInfo, mergedPullRequests, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: '1.0.0',
-    toTag: '2.0.0',
+    fromTag: { name: '1.0.0' },
+    toTag: { name: '2.0.0' },
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
+    fetchReleaseInformation: false,
     commitMode: false,
     configuration
   })
@@ -163,11 +164,12 @@ it('Extract label from title and body, combined regex', async () => {
   const resultChangelog = buildChangelog(DefaultDiffInfo, prs, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: '1.0.0',
-    toTag: '2.0.0',
+    fromTag: { name: '1.0.0' },
+    toTag: { name: '2.0.0' },
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
+    fetchReleaseInformation: false,
     commitMode: false,
     configuration
   })
@@ -194,11 +196,12 @@ it('Extract label from title, split regex', async () => {
   const resultChangelog = buildChangelog(DefaultDiffInfo, mergedPullRequests, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: '1.0.0',
-    toTag: '2.0.0',
+    fromTag: { name: '1.0.0' },
+    toTag: { name: '2.0.0' },
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
+    fetchReleaseInformation: false,
     commitMode: false,
     configuration
   })
@@ -225,11 +228,12 @@ it('Extract label from title, match', async () => {
   const resultChangelog = buildChangelog(DefaultDiffInfo, mergedPullRequests, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: '1.0.0',
-    toTag: '2.0.0',
+    fromTag: { name: '1.0.0' },
+    toTag: { name: '2.0.0' },
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
+    fetchReleaseInformation: false,
     commitMode: false,
     configuration
   })
@@ -251,11 +255,12 @@ it('Extract label from title, match multiple', async () => {
   const resultChangelog = buildChangelog(DefaultDiffInfo, mergedPullRequests, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: '1.0.0',
-    toTag: '2.0.0',
+    fromTag: { name: '1.0.0' },
+    toTag: { name: '2.0.0' },
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
+    fetchReleaseInformation: false,
     commitMode: false,
     configuration
   })
@@ -278,11 +283,12 @@ it('Extract label from title, match multiple, custon non matching label', async 
   const resultChangelog = buildChangelog(DefaultDiffInfo, mergedPullRequests, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: '1.0.0',
-    toTag: '2.0.0',
+    fromTag: { name: '1.0.0' },
+    toTag: { name: '2.0.0' },
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
+    fetchReleaseInformation: false,
     commitMode: false,
     configuration
   })
@@ -392,11 +398,12 @@ it('Match multiple labels exhaustive for category', async () => {
   const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: '1.0.0',
-    toTag: '2.0.0',
+    fromTag: { name: '1.0.0' },
+    toTag: { name: '2.0.0' },
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
+    fetchReleaseInformation: false,
     commitMode: false,
     configuration: customConfig
   })
@@ -417,11 +424,12 @@ it('Deduplicate duplicated PRs', async () => {
   const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: '1.0.0',
-    toTag: '2.0.0',
+    fromTag: { name: '1.0.0' },
+    toTag: { name: '2.0.0' },
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
+    fetchReleaseInformation: false,
     commitMode: false,
     configuration: customConfig
   })
@@ -443,11 +451,12 @@ it('Deduplicate duplicated PRs DESC', async () => {
   const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: '1.0.0',
-    toTag: '2.0.0',
+    fromTag: { name: '1.0.0' },
+    toTag: { name: '2.0.0' },
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
+    fetchReleaseInformation: false,
     commitMode: false,
     configuration: customConfig
   })
@@ -475,11 +484,12 @@ it('Use empty_content for empty category', async () => {
   const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: '1.0.0',
-    toTag: '2.0.0',
+    fromTag: { name: '1.0.0' },
+    toTag: { name: '2.0.0' },
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
+    fetchReleaseInformation: false,
     commitMode: false,
     configuration: customConfig
   })
@@ -497,11 +507,12 @@ it('Commit SHA-1 in commitMode', async () => {
   const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: '1.0.0',
-    toTag: '2.0.0',
+    fromTag: { name: '1.0.0' },
+    toTag: { name: '2.0.0' },
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
+    fetchReleaseInformation: false,
     commitMode: true,
     configuration: customConfig
   })
@@ -513,22 +524,23 @@ it('Commit SHA-1 in commitMode', async () => {
 
 it('Release Diff', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
-  customConfig.template = "${{RELEASE_DIFF}}"
+  customConfig.template = "${{RELEASE_DIFF}}\n${{DAYS_SINCE}}"
 
   const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
-    fromTag: 'v2.8.0',
-    toTag: 'v2.8.1',
+    fromTag: { name: 'v2.8.0' },
+    toTag: { name: 'v2.8.1' },
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
+    fetchReleaseInformation: true,
     commitMode: true,
     configuration: customConfig
   })
 
   expect(resultChangelog).toStrictEqual(
-    `https://github.com/mikepenz/release-changelog-builder-action/compare/v2.8.0...v2.8.1`
+    `https://github.com/mikepenz/release-changelog-builder-action/compare/v2.8.0...v2.8.1\n`
   )
 })
 
@@ -557,11 +569,12 @@ it('Use exclude labels to not include a PR within a category.', async () => {
   const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: '1.0.0',
-    toTag: '2.0.0',
+    fromTag: { name: '1.0.0' },
+    toTag: { name: '2.0.0' },
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
+    fetchReleaseInformation: false,
     commitMode: false,
     configuration: customConfig
   })

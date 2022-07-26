@@ -6,6 +6,7 @@ import {SemVer} from 'semver'
 import {TagResolver} from './configuration'
 import {createCommandManager} from './gitHelper'
 import {RegexTransformer, validateTransformer} from './transform'
+import moment from 'moment'
 
 export interface TagResult {
   from: TagInfo | null
@@ -14,7 +15,8 @@ export interface TagResult {
 
 export interface TagInfo {
   name: string
-  commit: string
+  commit?: string
+  date?: moment.Moment
 }
 
 export interface SortableTagInfo extends TagInfo {
@@ -59,6 +61,49 @@ export class Tags {
       `ℹ️ Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`
     )
     return tagsInfo
+  }
+
+  async fillTagInformation(
+    repositoryPath: string,
+    owner: string,
+    repo: string,
+    tagInfo: TagInfo
+  ): Promise<TagInfo> {
+    const options = this.octokit.repos.getReleaseByTag.endpoint.merge({
+      owner,
+      repo,
+      tag: tagInfo.name
+    })
+
+    try {
+      const response = await this.octokit.request(options)
+      type ReleaseInformation =
+        RestEndpointMethodTypes['repos']['getReleaseByTag']['response']['data']
+
+      const release: ReleaseInformation = response.data as ReleaseInformation
+      tagInfo.date = moment(release.created_at)
+      core.info(
+        `ℹ️ Retrieved information about the release associated with ${tagInfo.name} from the GitHub API`
+      )
+    } catch (error) {
+      core.info(
+        `⚠️ No release information found for ${tagInfo.name}, trying to retrieve tag creation time as fallback.`
+      )
+      const gitHelper = await createCommandManager(repositoryPath)
+      const creationTimeString = await gitHelper.tagCreation(tagInfo.name)
+      const creationTime = moment(creationTimeString)
+      if (creationTimeString !== null && creationTime.isValid()) {
+        tagInfo.date = creationTime
+        core.info(
+          `ℹ️ Resolved tag creation time (${creationTimeString}) from 'git for-each-ref --format="%(creatordate:rfc)" "refs/tags/${tagInfo.name}`
+        )
+      } else {
+        core.info(
+          `⚠️ Could not retrieve tag creation time via git cli 'git for-each-ref --format="%(creatordate:rfc)" "refs/tags/${tagInfo.name}'`
+        )
+      }
+    }
+    return tagInfo
   }
 
   async findPredecessorTag(

@@ -312,11 +312,29 @@ export function fillAdditionalPlaceholders(
   // repository placeholders
   transformed = transformed.replace(/\${{OWNER}}/g, options.owner)
   transformed = transformed.replace(/\${{REPO}}/g, options.repo)
-  transformed = transformed.replace(/\${{FROM_TAG}}/g, options.fromTag)
-  transformed = transformed.replace(/\${{TO_TAG}}/g, options.toTag)
+  transformed = transformed.replace(/\${{FROM_TAG}}/g, options.fromTag.name)
+  transformed = transformed.replace(
+    /\${{FROM_TAG_DATE}}/g,
+    options.fromTag.date?.toISOString() || ''
+  )
+  transformed = transformed.replace(/\${{TO_TAG}}/g, options.toTag.name)
+  transformed = transformed.replace(
+    /\${{TO_TAG_DATE}}/g,
+    options.toTag.date?.toISOString() || ''
+  )
+  const fromDate = options.fromTag.date
+  const toDate = options.toTag.date
+  if (fromDate !== undefined && toDate !== undefined) {
+    transformed = transformed.replace(
+      /\${{DAYS_SINCE}}/g,
+      toDate.diff(fromDate, 'days').toString() || ''
+    )
+  } else {
+    transformed = transformed.replace(/\${{DAYS_SINCE}}/g, '')
+  }
   transformed = transformed.replace(
     /\${{RELEASE_DIFF}}/g,
-    `https://github.com/${options.owner}/${options.repo}/compare/${options.fromTag}...${options.toTag}`
+    `https://github.com/${options.owner}/${options.repo}/compare/${options.fromTag.name}...${options.toTag.name}`
   )
   return transformed
 }

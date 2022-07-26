@@ -5,15 +5,17 @@ import {PullRequestInfo, PullRequests} from './pullRequests'
 import {Octokit} from '@octokit/rest'
 import {buildChangelog, fillAdditionalPlaceholders} from './transform'
 import {failOrError} from './utils'
+import {TagInfo} from './tags'
 
 export interface ReleaseNotesOptions {
   owner: string // the owner of the repository
   repo: string // the repository
-  fromTag: string // the tag/ref to start from
-  toTag: string // the tag/ref up to
+  fromTag: TagInfo // the tag/ref to start from
+  toTag: TagInfo // the tag/ref up to
   includeOpen: boolean // defines if we should also fetch open pull requests
   failOnError: boolean // defines if we should fail the action in case of an error
   fetchReviewers: boolean // defines if the action should fetch the reviewers for PRs - approved reviewers are not included in the default PR listing
+  fetchReleaseInformation: boolean // defines if the action should fetch the release information for the from and to tag - e.g. the creation date for the associated release
   commitMode: boolean // defines if we use the alternative commit based mode. note: this is only partially supported
   configuration: Configuration // the configuration as defined in `configuration.ts`
 }
@@ -78,12 +80,14 @@ export class ReleaseNotes {
 
   private async getCommitHistory(octokit: Octokit): Promise<DiffInfo> {
     const {owner, repo, fromTag, toTag, failOnError} = this.options
-    core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag}...${toTag}'`)
+    core.info(
+      `ℹ️ Comparing ${owner}/${repo} - '${fromTag.name}...${toTag.name}'`
+    )
 
     const commitsApi = new Commits(octokit)
     let diffInfo: DiffInfo
     try {
-      diffInfo = await commitsApi.getDiff(owner, repo, fromTag, toTag)
+      diffInfo = await commitsApi.getDiff(owner, repo, fromTag.name, toTag.name)
     } catch (error) {
       failOrError(
         `💥 Failed to retrieve - Invalid tag? - Because of: ${error}`,
@@ -92,7 +96,9 @@ export class ReleaseNotes {
       return DefaultDiffInfo
     }
     if (diffInfo.commitInfo.length === 0) {
-      core.warning(`⚠️ No commits found between - ${fromTag}...${toTag}`)
+      core.warning(
+        `⚠️ No commits found between - ${fromTag.name}...${toTag.name}`
+      )
       return DefaultDiffInfo
     }
 
@@ -212,6 +218,8 @@ export class ReleaseNotes {
           )
         }
       }
+    } else {
+      core.debug(`ℹ️ Fetching reviewers was disabled`)
     }
 
     return [diffInfo, finalPrs]
