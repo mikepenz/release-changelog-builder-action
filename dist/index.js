@@ -307,6 +307,16 @@ class GitCommandManager {
             return revListOutput.stdout.trim();
         });
     }
+    tagCreation(tagName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const creationDate = yield this.execGit([
+                'for-each-ref',
+                '--format="%(creatordate:rfc)"',
+                `refs/tags/${tagName}`
+            ]);
+            return creationDate.stdout.trim().replace(/"/g, '');
+        });
+    }
     static createCommandManager(workingDirectory) {
         return __awaiter(this, void 0, void 0, function* () {
             const result = new GitCommandManager();
@@ -417,8 +427,9 @@ function run() {
             const ignorePreReleases = core.getInput('ignorePreReleases') === 'true';
             const failOnError = core.getInput('failOnError') === 'true';
             const fetchReviewers = core.getInput('fetchReviewers') === 'true';
+            const fetchReleaseInformation = core.getInput('fetchReleaseInformation') === 'true';
             const commitMode = core.getInput('commitMode') === 'true';
-            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchReviewers, commitMode, configuration).build();
+            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchReviewers, fetchReleaseInformation, commitMode, configuration).build();
             core.setOutput('changelog', result);
             // write the result in changelog to file if possible
             const outputFile = core.getInput('outputFile');
@@ -795,7 +806,7 @@ class ReleaseNotes {
             const commitsApi = new commits_1.Commits(octokit);
             let diffInfo;
             try {
-                diffInfo = yield commitsApi.getDiff(owner, repo, fromTag, toTag);
+                diffInfo = yield commitsApi.getDiff(owner, repo, fromTag.name, toTag.name);
             }
             catch (error) {
                 (0, utils_1.failOrError)(`💥 Failed to retrieve - Invalid tag? - Because of: ${error}`, failOnError);
@@ -875,6 +886,9 @@ class ReleaseNotes {
                         core.info(`ℹ️ Retrieved ${pr.approvedReviewers.length} reviewer(s) for PR ${owner}/${repo}/#${pr.number}`);
                     }
                 }
+            }
+            else {
+                core.debug(`ℹ️ Fetching reviewers was disabled`);
             }
             return [diffInfo, finalPrs];
         });
@@ -965,7 +979,7 @@ const releaseNotes_1 = __nccwpck_require__(5882);
 const tags_1 = __nccwpck_require__(7532);
 const utils_1 = __nccwpck_require__(918);
 class ReleaseNotesBuilder {
-    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchReviewers = false, commitMode, configuration) {
+    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchReviewers = false, fetchReleaseInformation = false, commitMode, configuration) {
         this.baseUrl = baseUrl;
         this.token = token;
         this.repositoryPath = repositoryPath;
@@ -977,11 +991,11 @@ class ReleaseNotesBuilder {
         this.failOnError = failOnError;
         this.ignorePreReleases = ignorePreReleases;
         this.fetchReviewers = fetchReviewers;
+        this.fetchReleaseInformation = fetchReleaseInformation;
         this.commitMode = commitMode;
         this.configuration = configuration;
     }
     build() {
-        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.owner) {
                 (0, utils_1.failOrError)(`💥 Missing or couldn't resolve 'owner'`, this.failOnError);
@@ -1010,33 +1024,41 @@ class ReleaseNotesBuilder {
             const tagsApi = new tags_1.Tags(octokit);
             const tagRange = yield tagsApi.retrieveRange(this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.ignorePreReleases, this.configuration.max_tags_to_fetch ||
                 configuration_1.DefaultConfiguration.max_tags_to_fetch, this.configuration.tag_resolver || configuration_1.DefaultConfiguration.tag_resolver);
-            const thisTag = (_a = tagRange.to) === null || _a === void 0 ? void 0 : _a.name;
+            let thisTag = tagRange.to;
             if (!thisTag) {
                 (0, utils_1.failOrError)(`💥 Missing or couldn't resolve 'toTag'`, this.failOnError);
                 return null;
             }
             else {
-                this.toTag = thisTag;
-                core.setOutput('toTag', thisTag);
-                core.debug(`Resolved 'toTag' as ${thisTag}`);
+                core.setOutput('toTag', thisTag.name);
+                core.debug(`Resolved 'toTag' as ${thisTag.name}`);
             }
-            const previousTag = (_b = tagRange.from) === null || _b === void 0 ? void 0 : _b.name;
+            let previousTag = tagRange.from;
             if (previousTag == null) {
                 (0, utils_1.failOrError)(`💥 Unable to retrieve previous tag given ${this.toTag}`, this.failOnError);
                 return null;
             }
-            this.fromTag = previousTag;
-            core.setOutput('fromTag', previousTag);
-            core.debug(`fromTag resolved via previousTag as: ${previousTag}`);
+            core.setOutput('fromTag', previousTag.name);
+            core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`);
+            if (this.fetchReleaseInformation) {
+                // load release information from the GitHub API
+                core.info(`ℹ️ Fetching release information was enabled`);
+                thisTag = yield tagsApi.fillTagInformation(this.repositoryPath, this.owner, this.repo, thisTag);
+                previousTag = yield tagsApi.fillTagInformation(this.repositoryPath, this.owner, this.repo, previousTag);
+            }
+            else {
+                core.debug(`ℹ️ Fetching release information was disabled`);
+            }
             core.endGroup();
             const options = {
                 owner: this.owner,
                 repo: this.repo,
-                fromTag: this.fromTag,
-                toTag: this.toTag,
+                fromTag: previousTag,
+                toTag: thisTag,
                 includeOpen: this.includeOpen,
                 failOnError: this.failOnError,
                 fetchReviewers: this.fetchReviewers,
+                fetchReleaseInformation: this.fetchReleaseInformation,
                 commitMode: this.commitMode,
                 configuration: this.configuration
             };
@@ -1094,6 +1116,9 @@ var __asyncValues = (this && this.__asyncValues) || function (o) {
     function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
     function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.sortTags = exports.filterTags = exports.Tags = void 0;
 const core = __importStar(__nccwpck_require__(2186));
@@ -1102,6 +1127,7 @@ const semver = __importStar(__nccwpck_require__(1383));
 const semver_1 = __nccwpck_require__(1383);
 const gitHelper_1 = __nccwpck_require__(353);
 const transform_1 = __nccwpck_require__(1644);
+const moment_1 = __importDefault(__nccwpck_require__(9623));
 class Tags {
     constructor(octokit) {
         this.octokit = octokit;
@@ -1141,6 +1167,32 @@ class Tags {
             }
             core.info(`ℹ️ Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`);
             return tagsInfo;
+        });
+    }
+    fillTagInformation(repositoryPath, owner, repo, tagInfo) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const options = this.octokit.repos.getReleaseByTag.endpoint.merge({
+                owner,
+                repo,
+                tag: tagInfo.name
+            });
+            try {
+                const response = yield this.octokit.request(options);
+                const release = response.data;
+                tagInfo.date = (0, moment_1.default)(release.created_at);
+                core.info(`ℹ️ Retrieved information about the release associated with ${tagInfo.name} from the GitHub API for ${owner}/${repo}`);
+            }
+            catch (error) {
+                core.info(`⚠️ No release information found for ${tagInfo.name}, trying to retrieve tag creation time as fallback.`);
+                const gitHelper = yield (0, gitHelper_1.createCommandManager)(repositoryPath);
+                const creationTimeString = yield gitHelper.tagCreation(tagInfo.name);
+                const creationTime = (0, moment_1.default)(creationTimeString);
+                if (creationTimeString !== null && creationTime.isValid()) {
+                    tagInfo.date = creationTime;
+                    core.info(`ℹ️ Resolved tag creation time (${creationTimeString}) from 'git for-each-ref --format="%(creatordate:rfc)" "refs/tags/${tagInfo.name}`);
+                }
+            }
+            return tagInfo;
         });
     }
     findPredecessorTag(sortedTags, repositoryPath, tag, ignorePreReleases) {
@@ -1601,13 +1653,26 @@ function buildChangelog(diffInfo, prs, options) {
 }
 exports.buildChangelog = buildChangelog;
 function fillAdditionalPlaceholders(text, options) {
+    var _a, _b;
     let transformed = text;
     // repository placeholders
     transformed = transformed.replace(/\${{OWNER}}/g, options.owner);
     transformed = transformed.replace(/\${{REPO}}/g, options.repo);
-    transformed = transformed.replace(/\${{FROM_TAG}}/g, options.fromTag);
-    transformed = transformed.replace(/\${{TO_TAG}}/g, options.toTag);
-    transformed = transformed.replace(/\${{RELEASE_DIFF}}/g, `https://github.com/${options.owner}/${options.repo}/compare/${options.fromTag}...${options.toTag}`);
+    transformed = transformed.replace(/\${{FROM_TAG}}/g, options.fromTag.name);
+    transformed = transformed.replace(/\${{FROM_TAG_SHA}}/g, options.fromTag.commit || '');
+    transformed = transformed.replace(/\${{FROM_TAG_DATE}}/g, ((_a = options.fromTag.date) === null || _a === void 0 ? void 0 : _a.toISOString()) || '');
+    transformed = transformed.replace(/\${{TO_TAG}}/g, options.toTag.name);
+    transformed = transformed.replace(/\${{TO_TAG_SHA}}/g, options.toTag.commit || '');
+    transformed = transformed.replace(/\${{TO_TAG_DATE}}/g, ((_b = options.toTag.date) === null || _b === void 0 ? void 0 : _b.toISOString()) || '');
+    const fromDate = options.fromTag.date;
+    const toDate = options.toTag.date;
+    if (fromDate !== undefined && toDate !== undefined) {
+        transformed = transformed.replace(/\${{DAYS_SINCE}}/g, toDate.diff(fromDate, 'days').toString() || '');
+    }
+    else {
+        transformed = transformed.replace(/\${{DAYS_SINCE}}/g, '');
+    }
+    transformed = transformed.replace(/\${{RELEASE_DIFF}}/g, `https://github.com/${options.owner}/${options.repo}/compare/${options.fromTag.name}...${options.toTag.name}`);
     return transformed;
 }
 exports.fillAdditionalPlaceholders = fillAdditionalPlaceholders;

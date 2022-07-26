@@ -17,6 +17,7 @@ it('Should match generated changelog (unspecified fromTag)', async () => {
     false,
     false,
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     false,
     configuration
   )
@@ -45,6 +46,7 @@ it('Should match generated changelog (unspecified tags)', async () => {
     false,
     false,
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     false,
     configuration
   )
@@ -70,6 +72,7 @@ it('Should use empty placeholder', async () => {
     false,
     false,
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     false,
     configuration
   )
@@ -96,6 +99,7 @@ it('Should fill empty placeholders', async () => {
     false,
     false,
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     false,
     configuration
   )
@@ -124,6 +128,7 @@ it('Should fill `template` placeholders', async () => {
     false,
     false,
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     false,
     configuration
   )
@@ -152,6 +157,7 @@ it('Should fill `template` placeholders, ignore', async () => {
     false,
     false,
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     false,
     configuration
   )
@@ -180,6 +186,7 @@ it('Uncategorized category', async () => {
     false,
     false,
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     false,
     configuration
   )
@@ -208,6 +215,7 @@ it('Verify commit based changelog', async () => {
     false,
     false,
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     true,
     configuration
   )
@@ -236,6 +244,7 @@ it('Verify commit based changelog, with emoji categorisation', async () => {
     false,
     false,
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     true,
     configuration
   )
@@ -264,6 +273,7 @@ it('Verify default inclusion of open PRs', async () => {
     false, // failOnError
     false, // ignorePrePrelease
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     false, // commitMode
     configuration  // configuration
   )
@@ -292,6 +302,7 @@ it('Verify custom categorisation of open PRs', async () => {
     false, // failOnError
     false, // ignorePrePrelease
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     false, // commitMode
     configuration  // configuration
   )
@@ -320,6 +331,7 @@ it('Verify reviewers who approved are fetched', async () => {
     false, // failOnError
     false, // ignorePrePrelease
     true,  // enable to fetch reviewers
+    false, // enable to fetch tag release information
     false, // commitMode
     configuration  // configuration
   )

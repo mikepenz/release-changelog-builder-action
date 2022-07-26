@@ -44,6 +44,15 @@ class GitCommandManager {
     return revListOutput.stdout.trim()
   }
 
+  async tagCreation(tagName: string): Promise<string> {
+    const creationDate = await this.execGit([
+      'for-each-ref',
+      '--format="%(creatordate:rfc)"',
+      `refs/tags/${tagName}`
+    ])
+    return creationDate.stdout.trim().replace(/"/g, '')
+  }
+
   static async createCommandManager(
     workingDirectory: string
   ): Promise<GitCommandManager> {
