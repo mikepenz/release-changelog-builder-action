@@ -1,4 +1,4 @@
 {
-    "template": "${{CHANGELOG}}",
+    "template": "${{CHANGELOG}}\n\n${{DAYS_SINCE}}",
     "pr_template": "- ${{TITLE}} -- (#${{NUMBER}}) [${{STATUS}}] ${{REVIEWERS}} --- ${{APPROVERS}}"
 }

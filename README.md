@@ -28,6 +28,7 @@
     <a href="#full-sample-%EF%B8%8F">Sample 🖥️</a> &bull;
     <a href="#customization-%EF%B8%8F">Customization 🖍️</a> &bull;
     <a href="#contribute-">Contribute 🧬</a> &bull;
+    <a href="#local-testing-">Local Testing 🧪</a> &bull;
     <a href="#license">License 📓</a>
 </p>
 
@@ -86,6 +87,11 @@ A full set list of possible output values for this action.
 | `outputs.categorized_prs`   | Count of PRs which were successfully categorized as part of the action.                                                   |
 | `outputs.open_prs` | Count of open PRs. Only fetched if `includeOpen` is enabled.                                                                       |
 | `outputs.uncategorized_prs` | Count of PRs which were not categorized as part of the action.                                                            |
+| `outputs.changed_files`     | Count of changed files in this release.                                                                                   |
+| `outputs.additions`         | Count of code additions in this release (lines).                                                                          |
+| `outputs.deletions`         | Count of code deletions in this release (lines).                                                                          |
+| `outputs.changes`           | Total count of changes in this release (lines).                                                                           |
+| `outputs.commits`           | Count of commits which have been added in this release.                                                                   |
 
 
 ## Full Sample 🖥️
@@ -291,8 +297,9 @@ Table of supported placeholders allowed to be used in the `pr_template` configur
 | `${{MILESTONE}}`  | Milestone this PR was part of, as assigned on GitHub              |
 | `${{BODY}}`       | Description/Body of the pull request as specified on GitHub       |
 | `${{ASSIGNEES}}`  | Login names of assigned GitHub users, joined by `,`               |
-| `${{REVIEWERS}}`  | GitHub Login names of specified reviewers, joined by `,`          |
+| `${{REVIEWERS}}`  | GitHub Login names of specified reviewers, joined by `,`. Requires `fetchReviewers` to be enabled. |
 | `${{APPROVERS}}`  | GitHub Login names of users who approved the PR, joined by `,`    |
+| `${{DAYS_SINCE}}`  | Days between the 2 releases. Requires `fetchReleaseInformation` to be enabled. |
 
 ### Template placeholders
 
@@ -307,13 +314,19 @@ Table of supported placeholders allowed to be used in the `template` and `empty_
 | `${{OWNER}}`               | Describes the owner of the repository the changelog was generated for                              | x         |
 | `${{REPO}}`                | The repository name of the repo the changelog was generated for                                    | x         |
 | `${{FROM_TAG}}`            | Defines the 'start' from where the changelog did consider merged pull requests                     | x         |
+| `${{FROM_TAG_DATE}}`       | Defines the date at which the 'start' tag was created                                              | x         |
 | `${{TO_TAG}}`              | Defines until which tag the changelog did consider merged pull requests                            | x         |
+| `${{TO_TAG_DATE}}`         | Defines the date at which the 'until' tag was created                                              | x         |
 | `${{RELEASE_DIFF}}`        | Introduces a link to the full diff between from tag and to tag releases                            | x         |
+| `${{CHANGED_FILES}}`       | The count of changed files.                                                                        |           |
+| `${{ADDITIONS}}`           | The count of code additions (lines).                                                               |           |
+| `${{DELETIONS}}`           | The count of code deletions (lines).                                                               |           |
+| `${{CHANGES}}`             | The count of total changes (lines).                                                                |           |
+| `${{COMMITS}}`             | The count of commits in this release.                                                              |           |
 | `${{CATEGORIZED_COUNT}}`   | The count of PRs which were categorized                                                            |           |
 | `${{UNCATEGORIZED_COUNT}}` | The count of PRs and changes which were not categorized. No label overlapping with category labels |           |
 | `${{OPEN_COUNT}}` | The count of open PRs. Will only be fetched if `includeOpen` is configured.                                 |           |
 | `${{IGNORED_COUNT}}`       | The count of PRs and changes which were specifically ignored from the changelog.                   |           |
-
 
 ### Configuration Specification
 
@@ -377,6 +390,65 @@ It's suggested to export the token to your path before running the tests so that
 export GITHUB_TOKEN=your_personal_github_pat
 ```
 
+## Local Testing 🧪
+
+This GitHub action is fully developed in Typescript and can be run locally via npm. Doing so is a great way to test the action and/or your custom configurations locally, without the need to push and re-run GitHub actions over and over again.
+
+To run this action locally, first make sure you provide a `GITHUB_TOKEN` with enough permissions to access the repository. 
+
+```
+# GitHub token for the action
+export GITHUB_TOKEN=your_read_only_github_token
+```
+
+Afterwards run the testcases with:
+
+```bash
+npm test -- custom.test.ts
+```
+
+<details><summary><b>custom.test.ts</b></summary>
+<p>
+
+```typescript
+import {resolveConfiguration} from '../src/utils'
+import {ReleaseNotesBuilder} from '../src/releaseNotesBuilder'
+
+jest.setTimeout(180000)
+
+it('Test custom changelog builder', async () => {
+  const configuration = resolveConfiguration(
+    '',
+    'configs_test/configuration_approvers.json'
+  )
+  const releaseNotesBuilder = new ReleaseNotesBuilder(
+    null, // baseUrl
+    null, // token
+    '.',  // repoPath
+    'mikepenz',                                         // user
+    'release-changelog-builder-action-playground',      // repo
+    '1.5.0',         // fromTag
+    '2.0.0',         // toTag
+    true,   // includeOpen
+    false, // failOnError
+    false, // ignorePrePrelease
+    true,  // enable to fetch reviewers
+    false, // commitMode
+    configuration  // configuration
+  )
+
+  const changeLog = await releaseNotesBuilder.build()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(``)
+})
+```
+
+</p>
+</details>
+
+Additionally it is possible to do full debugging including the option of breakpoints via (for example) Visual Code. 
+Open the project in Visual code -> open the terminal -> use the `+` and start a new `JavaScript Debug Terminal`. Afterwards run the tests as described above. 
+
 ## Developed By
 
 * Mike Penz
@@ -404,7 +476,7 @@ export GITHUB_TOKEN=your_personal_github_pat
 
 All patches and changes applied to the original source are licensed under the Apache 2.0 license.
 
-    Copyright 2021 Mike Penz
+    Copyright 2022 Mike Penz
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.

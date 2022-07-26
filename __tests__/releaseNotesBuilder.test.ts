@@ -17,6 +17,7 @@ it('Should match generated changelog (unspecified fromTag)', async () => {
     false,
     false,
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     false,
     configuration
   )
@@ -45,6 +46,7 @@ it('Should match generated changelog (unspecified tags)', async () => {
     false,
     false,
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     false,
     configuration
   )
@@ -70,6 +72,7 @@ it('Should use empty placeholder', async () => {
     false,
     false,
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     false,
     configuration
   )
@@ -96,6 +99,7 @@ it('Should fill empty placeholders', async () => {
     false,
     false,
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     false,
     configuration
   )
@@ -103,7 +107,7 @@ it('Should fill empty placeholders', async () => {
   const changeLog = await releaseNotesBuilder.build()
   console.log(changeLog)
   expect(changeLog).toStrictEqual(
-    `mikepenz\nrelease-changelog-builder-action\nv0.0.2\nv0.0.3`
+    `mikepenz\nrelease-changelog-builder-action\nv0.0.2\nv0.0.3\nhttps://github.com/mikepenz/release-changelog-builder-action/compare/v0.0.2...v0.0.3`
   )
 })
 
@@ -124,6 +128,7 @@ it('Should fill `template` placeholders', async () => {
     false,
     false,
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     false,
     configuration
   )
@@ -131,7 +136,7 @@ it('Should fill `template` placeholders', async () => {
   const changeLog = await releaseNotesBuilder.build()
   console.log(changeLog)
   expect(changeLog).toStrictEqual(
-    `## 🧪 Tests\n\n- [CI] Specify Test Case\n   - PR: #10\n\n\n\n\nmikepenz\nrelease-changelog-builder-action\nv0.0.1\nv0.0.3\n1\n0\n0`
+    `## 🧪 Tests\n\n- [CI] Specify Test Case\n   - PR: #10\n\n\n\n\nmikepenz\nrelease-changelog-builder-action\nv0.0.1\nv0.0.3\nhttps://github.com/mikepenz/release-changelog-builder-action/compare/v0.0.1...v0.0.3\n1\n0\n0\n19\n14827\n444\n15271\n3`
   )
 })
 
@@ -152,6 +157,7 @@ it('Should fill `template` placeholders, ignore', async () => {
     false,
     false,
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     false,
     configuration
   )
@@ -159,7 +165,7 @@ it('Should fill `template` placeholders, ignore', async () => {
   const changeLog = await releaseNotesBuilder.build()
   console.log(changeLog)
   expect(changeLog).toStrictEqual(
-    `## 🚀 Features\n\n- Enhance sorting by using proper semver\n   - PR: #51\n\n## 🧪 Tests\n\n- Improve test cases\n   - PR: #49\n\n\n- Bump @types/node from 14.11.8 to 14.11.10\n   - PR: #47\n- Adjust code to move fromTag resolving to main.ts\n   - PR: #48\n- dev -> main\n   - PR: #52\n- Update package.json to updated description\n   - PR: #53\n- dev -> main\n   - PR: #54\n\n- New additional placeholders for \`template\` and \`empty_template\`\n   - PR: #50\n\nmikepenz\nrelease-changelog-builder-action\nv0.9.1\nv0.9.5\n2\n5\n1`
+    `## 🚀 Features\n\n- Enhance sorting by using proper semver\n   - PR: #51\n\n## 🧪 Tests\n\n- Improve test cases\n   - PR: #49\n\n\n- Bump @types/node from 14.11.8 to 14.11.10\n   - PR: #47\n- Adjust code to move fromTag resolving to main.ts\n   - PR: #48\n- dev -> main\n   - PR: #52\n- Update package.json to updated description\n   - PR: #53\n- dev -> main\n   - PR: #54\n\n- New additional placeholders for \`template\` and \`empty_template\`\n   - PR: #50\n\nmikepenz\nrelease-changelog-builder-action\nv0.9.1\nv0.9.5\nhttps://github.com/mikepenz/release-changelog-builder-action/compare/v0.9.1...v0.9.5\n2\n5\n1\n16\n2931\n450\n3381\n26`
   )
 })
 
@@ -180,6 +186,7 @@ it('Uncategorized category', async () => {
     false,
     false,
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     false,
     configuration
   )
@@ -208,6 +215,7 @@ it('Verify commit based changelog', async () => {
     false,
     false,
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     true,
     configuration
   )
@@ -236,6 +244,7 @@ it('Verify commit based changelog, with emoji categorisation', async () => {
     false,
     false,
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     true,
     configuration
   )
@@ -264,6 +273,7 @@ it('Verify default inclusion of open PRs', async () => {
     false, // failOnError
     false, // ignorePrePrelease
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     false, // commitMode
     configuration  // configuration
   )
@@ -292,6 +302,7 @@ it('Verify custom categorisation of open PRs', async () => {
     false, // failOnError
     false, // ignorePrePrelease
     false, // enable to fetch reviewers
+    false, // enable to fetch tag release information
     false, // commitMode
     configuration  // configuration
   )
@@ -303,7 +314,7 @@ it('Verify custom categorisation of open PRs', async () => {
   )
 })
 
-it('Verify reviewers who approved are fetched', async () => {
+it('Verify reviewers who approved are fetched and also release information', async () => {
   const configuration = resolveConfiguration(
     '',
     'configs_test/configuration_approvers.json'
@@ -320,6 +331,7 @@ it('Verify reviewers who approved are fetched', async () => {
     false, // failOnError
     false, // ignorePrePrelease
     true,  // enable to fetch reviewers
+    true, // enable to fetch tag release information
     false, // commitMode
     configuration  // configuration
   )
@@ -327,6 +339,65 @@ it('Verify reviewers who approved are fetched', async () => {
   const changeLog = await releaseNotesBuilder.build()
   console.log(changeLog)
   expect(changeLog).toStrictEqual(
-    `## 🚀 Features\n\n- A feature to be going to v2 (nr3) -- (#3) [merged]  --- \n- New feature to keep open (nr5) -- (#7) [open]  --- gabrielpopa\n\n`
+    `## 🚀 Features\n\n- A feature to be going to v2 (nr3) -- (#3) [merged]  --- \n- New feature to keep open (nr5) -- (#7) [open]  --- gabrielpopa\n\n\n\n0`
   )
+})
+
+
+it('Fetch release information', async () => {
+  const configuration = resolveConfiguration(
+    '',
+    'configs_test/configuration_approvers.json'
+  )
+  configuration.template = "${{FROM_TAG}}-${{FROM_TAG_DATE}}\n${{TO_TAG}}-${{TO_TAG_DATE}}\n${{DAYS_SINCE}}"
+  const releaseNotesBuilder = new ReleaseNotesBuilder(
+    null, // baseUrl
+    null, // token
+    '.',  // repoPath
+    'mikepenz',                                         // user
+    'release-changelog-builder-action-playground',      // repo
+    '2.0.0',         // fromTag
+    '3.0.0-a01',         // toTag
+    true,  // includeOpen
+    false, // failOnError
+    false, // ignorePrePrelease
+    false,  // enable to fetch reviewers
+    true, // enable to fetch tag release information
+    false, // commitMode
+    configuration  // configuration
+  )
+
+  const changeLog = await releaseNotesBuilder.build()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(
+    `2.0.0-2022-04-08T07:52:40.000Z\n3.0.0-a01-2022-07-26T14:28:36.000Z\n109`
+  )
+})
+
+it('Fetch release information for non existing tag / release', async () => {
+  const configuration = resolveConfiguration(
+    '',
+    'configs_test/configuration_approvers.json'
+  )
+  configuration.template = "${{FROM_TAG}}-${{FROM_TAG_DATE}}\n${{TO_TAG}}-${{TO_TAG_DATE}}\n${{DAYS_SINCE}}"
+  const releaseNotesBuilder = new ReleaseNotesBuilder(
+    null, // baseUrl
+    null, // token
+    '.',  // repoPath
+    'mikepenz',                                         // user
+    'release-changelog-builder-action-playground',      // repo
+    '2.0.0',         // fromTag
+    '3.0.1',         // toTag
+    true,  // includeOpen
+    false, // failOnError
+    false, // ignorePrePrelease
+    false,  // enable to fetch reviewers
+    true, // enable to fetch tag release information
+    false, // commitMode
+    configuration  // configuration
+  )
+
+  const changeLog = await releaseNotesBuilder.build()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(`- no changes`)
 })

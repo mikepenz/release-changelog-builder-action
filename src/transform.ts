@@ -7,8 +7,10 @@ import {
 } from './configuration'
 import {PullRequestInfo, sortPullRequests} from './pullRequests'
 import {ReleaseNotesOptions} from './releaseNotes'
+import {DiffInfo} from './commits'
 
 export function buildChangelog(
+  diffInfo: DiffInfo,
   prs: PullRequestInfo[],
   options: ReleaseNotesOptions
 ): string {
@@ -272,6 +274,27 @@ export function buildChangelog(
     /\${{IGNORED_COUNT}}/g,
     ignoredPrs.length.toString()
   )
+  // code change placeholders
+  transformedChangelog = transformedChangelog.replace(
+    /\${{CHANGED_FILES}}/g,
+    diffInfo.changedFiles.toString()
+  )
+  transformedChangelog = transformedChangelog.replace(
+    /\${{ADDITIONS}}/g,
+    diffInfo.additions.toString()
+  )
+  transformedChangelog = transformedChangelog.replace(
+    /\${{DELETIONS}}/g,
+    diffInfo.deletions.toString()
+  )
+  transformedChangelog = transformedChangelog.replace(
+    /\${{CHANGES}}/g,
+    diffInfo.changes.toString()
+  )
+  transformedChangelog = transformedChangelog.replace(
+    /\${{COMMITS}}/g,
+    diffInfo.commits.toString()
+  )
   transformedChangelog = fillAdditionalPlaceholders(
     transformedChangelog,
     options
@@ -286,13 +309,32 @@ export function fillAdditionalPlaceholders(
   options: ReleaseNotesOptions
 ): string {
   let transformed = text
+  // repository placeholders
   transformed = transformed.replace(/\${{OWNER}}/g, options.owner)
   transformed = transformed.replace(/\${{REPO}}/g, options.repo)
-  transformed = transformed.replace(/\${{FROM_TAG}}/g, options.fromTag)
-  transformed = transformed.replace(/\${{TO_TAG}}/g, options.toTag)
+  transformed = transformed.replace(/\${{FROM_TAG}}/g, options.fromTag.name)
+  transformed = transformed.replace(
+    /\${{FROM_TAG_DATE}}/g,
+    options.fromTag.date?.toISOString() || ''
+  )
+  transformed = transformed.replace(/\${{TO_TAG}}/g, options.toTag.name)
+  transformed = transformed.replace(
+    /\${{TO_TAG_DATE}}/g,
+    options.toTag.date?.toISOString() || ''
+  )
+  const fromDate = options.fromTag.date
+  const toDate = options.toTag.date
+  if (fromDate !== undefined && toDate !== undefined) {
+    transformed = transformed.replace(
+      /\${{DAYS_SINCE}}/g,
+      toDate.diff(fromDate, 'days').toString() || ''
+    )
+  } else {
+    transformed = transformed.replace(/\${{DAYS_SINCE}}/g, '')
+  }
   transformed = transformed.replace(
     /\${{RELEASE_DIFF}}/g,
-    `https://github.com/${options.owner}/${options.repo}/compare/${options.fromTag}...${options.toTag}`
+    `https://github.com/${options.owner}/${options.repo}/compare/${options.fromTag.name}...${options.toTag.name}`
   )
   return transformed
 }

@@ -1,19 +1,21 @@
 import * as core from '@actions/core'
-import {CommitInfo, Commits, filterCommits} from './commits'
+import {Commits, filterCommits, DiffInfo, DefaultDiffInfo} from './commits'
 import {Configuration, DefaultConfiguration} from './configuration'
 import {PullRequestInfo, PullRequests} from './pullRequests'
 import {Octokit} from '@octokit/rest'
-import {buildChangelog} from './transform'
+import {buildChangelog, fillAdditionalPlaceholders} from './transform'
 import {failOrError} from './utils'
+import {TagInfo} from './tags'
 
 export interface ReleaseNotesOptions {
   owner: string // the owner of the repository
   repo: string // the repository
-  fromTag: string // the tag/ref to start from
-  toTag: string // the tag/ref up to
+  fromTag: TagInfo // the tag/ref to start from
+  toTag: TagInfo // the tag/ref up to
   includeOpen: boolean // defines if we should also fetch open pull requests
   failOnError: boolean // defines if we should fail the action in case of an error
   fetchReviewers: boolean // defines if the action should fetch the reviewers for PRs - approved reviewers are not included in the default PR listing
+  fetchReleaseInformation: boolean // defines if the action should fetch the release information for the from and to tag - e.g. the creation date for the associated release
   commitMode: boolean // defines if we use the alternative commit based mode. note: this is only partially supported
   configuration: Configuration // the configuration as defined in `configuration.ts`
 }
@@ -21,11 +23,15 @@ export interface ReleaseNotesOptions {
 export class ReleaseNotes {
   constructor(private octokit: Octokit, private options: ReleaseNotesOptions) {}
 
-  async pull(): Promise<string | null> {
+  async pull(): Promise<string> {
     let mergedPullRequests: PullRequestInfo[]
+    let diffInfo: DiffInfo
     if (!this.options.commitMode) {
       core.startGroup(`🚀 Load pull requests`)
-      mergedPullRequests = await this.getMergedPullRequests(this.octokit)
+
+      const [info, prs] = await this.getMergedPullRequests(this.octokit)
+      mergedPullRequests = prs
+      diffInfo = info
 
       // define the included PRs within this release as output
       core.setOutput(
@@ -41,53 +47,74 @@ export class ReleaseNotes {
     } else {
       core.startGroup(`🚀 Load commit history`)
       core.info(`⚠️ Executing experimental commit mode`)
-      mergedPullRequests = await this.generateCommitPRs(this.octokit)
+      const [info, prs] = await this.generateCommitPRs(this.octokit)
+      mergedPullRequests = prs
+      diffInfo = info
       core.endGroup()
     }
 
+    core.setOutput('changed_files', diffInfo.changedFiles)
+    core.setOutput('additions', diffInfo.additions)
+    core.setOutput('deletions', diffInfo.deletions)
+    core.setOutput('changes', diffInfo.changes)
+    core.setOutput('commits', diffInfo.commits)
+
     if (mergedPullRequests.length === 0) {
       core.warning(`⚠️ No pull requests found`)
-      return null
+      return fillAdditionalPlaceholders(
+        this.options.configuration.empty_template ||
+          DefaultConfiguration.empty_template,
+        this.options
+      )
     }
 
     core.startGroup('📦 Build changelog')
-    const resultChangelog = buildChangelog(mergedPullRequests, this.options)
+    const resultChangelog = buildChangelog(
+      diffInfo,
+      mergedPullRequests,
+      this.options
+    )
     core.endGroup()
     return resultChangelog
   }
 
-  private async getCommitHistory(octokit: Octokit): Promise<CommitInfo[]> {
+  private async getCommitHistory(octokit: Octokit): Promise<DiffInfo> {
     const {owner, repo, fromTag, toTag, failOnError} = this.options
-    core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag}...${toTag}'`)
+    core.info(
+      `ℹ️ Comparing ${owner}/${repo} - '${fromTag.name}...${toTag.name}'`
+    )
 
     const commitsApi = new Commits(octokit)
-    let commits: CommitInfo[]
+    let diffInfo: DiffInfo
     try {
-      commits = await commitsApi.getDiff(owner, repo, fromTag, toTag)
+      diffInfo = await commitsApi.getDiff(owner, repo, fromTag.name, toTag.name)
     } catch (error) {
       failOrError(
         `💥 Failed to retrieve - Invalid tag? - Because of: ${error}`,
         failOnError
       )
-      return []
+      return DefaultDiffInfo
     }
-    if (commits.length === 0) {
-      core.warning(`⚠️ No commits found between - ${fromTag}...${toTag}`)
-      return []
+    if (diffInfo.commitInfo.length === 0) {
+      core.warning(
+        `⚠️ No commits found between - ${fromTag.name}...${toTag.name}`
+      )
+      return DefaultDiffInfo
     }
 
-    return commits
+    return diffInfo
   }
 
   private async getMergedPullRequests(
     octokit: Octokit
-  ): Promise<PullRequestInfo[]> {
+  ): Promise<[DiffInfo, PullRequestInfo[]]> {
     const {owner, repo, includeOpen, fetchReviewers, configuration} =
       this.options
 
-    const commits = await this.getCommitHistory(octokit)
+    const diffInfo = await this.getCommitHistory(octokit)
+    const commits = diffInfo.commitInfo
     if (commits.length === 0) {
-      return []
+      return [diffInfo, []]
     }
 
     const firstCommit = commits[0]
@@ -191,19 +218,22 @@ export class ReleaseNotes {
           )
         }
       }
+    } else {
+      core.debug(`ℹ️ Fetching reviewers was disabled`)
     }
 
-    return finalPrs
+    return [diffInfo, finalPrs]
   }
 
   private async generateCommitPRs(
     octokit: Octokit
-  ): Promise<PullRequestInfo[]> {
+  ): Promise<[DiffInfo, PullRequestInfo[]]> {
     const {owner, repo, configuration} = this.options
 
-    const commits = await this.getCommitHistory(octokit)
+    const diffInfo = await this.getCommitHistory(octokit)
+    const commits = diffInfo.commitInfo
     if (commits.length === 0) {
-      return []
+      return [diffInfo, []]
     }
 
     const prCommits = filterCommits(
@@ -214,7 +244,7 @@ export class ReleaseNotes {
 
     core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`)
 
-    return prCommits.map(function (commit): PullRequestInfo {
+    const prs = prCommits.map(function (commit): PullRequestInfo {
       return {
         number: 0,
         title: commit.summary,
@@ -234,5 +264,6 @@ export class ReleaseNotes {
         status: 'merged'
       }
     })
+    return [diffInfo, prs]
   }
 }

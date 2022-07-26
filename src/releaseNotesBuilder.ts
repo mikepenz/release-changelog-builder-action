@@ -4,7 +4,6 @@ import {Octokit} from '@octokit/rest'
 import {ReleaseNotes} from './releaseNotes'
 import {Tags} from './tags'
 import {failOrError} from './utils'
-import {fillAdditionalPlaceholders} from './transform'
 
 export class ReleaseNotesBuilder {
   constructor(
@@ -19,6 +18,7 @@ export class ReleaseNotesBuilder {
     private failOnError: boolean,
     private ignorePreReleases: boolean,
     private fetchReviewers: boolean = false,
+    private fetchReleaseInformation: boolean = false,
     private commitMode: boolean,
     private configuration: Configuration
   ) {}
@@ -62,17 +62,16 @@ export class ReleaseNotesBuilder {
       this.configuration.tag_resolver || DefaultConfiguration.tag_resolver
     )
 
-    const thisTag = tagRange.to?.name
+    let thisTag = tagRange.to
     if (!thisTag) {
       failOrError(`💥 Missing or couldn't resolve 'toTag'`, this.failOnError)
       return null
     } else {
-      this.toTag = thisTag
-      core.setOutput('toTag', thisTag)
-      core.debug(`Resolved 'toTag' as ${thisTag}`)
+      core.setOutput('toTag', thisTag.name)
+      core.debug(`Resolved 'toTag' as ${thisTag.name}`)
     }
 
-    const previousTag = tagRange.from?.name
+    let previousTag = tagRange.from
     if (previousTag == null) {
       failOrError(
         `💥 Unable to retrieve previous tag given ${this.toTag}`,
@@ -80,31 +79,44 @@ export class ReleaseNotesBuilder {
       )
       return null
     }
-    this.fromTag = previousTag
-    core.setOutput('fromTag', previousTag)
-    core.debug(`fromTag resolved via previousTag as: ${previousTag}`)
+    core.setOutput('fromTag', previousTag.name)
+    core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`)
+
+    if (this.fetchReleaseInformation) {
+      // load release information from the GitHub API
+      core.info(`ℹ️ Fetching release information was enabled`)
+      thisTag = await tagsApi.fillTagInformation(
+        this.repositoryPath,
+        this.owner,
+        this.repo,
+        thisTag
+      )
+      previousTag = await tagsApi.fillTagInformation(
+        this.repositoryPath,
+        this.owner,
+        this.repo,
+        previousTag
+      )
+    } else {
+      core.debug(`ℹ️ Fetching release information was disabled`)
+    }
+
     core.endGroup()
 
     const options = {
       owner: this.owner,
       repo: this.repo,
-      fromTag: this.fromTag,
-      toTag: this.toTag,
+      fromTag: previousTag,
+      toTag: thisTag,
       includeOpen: this.includeOpen,
       failOnError: this.failOnError,
       fetchReviewers: this.fetchReviewers,
+      fetchReleaseInformation: this.fetchReleaseInformation,
       commitMode: this.commitMode,
       configuration: this.configuration
     }
     const releaseNotes = new ReleaseNotes(octokit, options)
 
-    return (
-      (await releaseNotes.pull()) ||
-      fillAdditionalPlaceholders(
-        this.configuration.empty_template ||
-          DefaultConfiguration.empty_template,
-        options
-      )
-    )
+    return await releaseNotes.pull()
   }
 }
