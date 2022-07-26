@@ -41,12 +41,6 @@ export class ReleaseNotes {
           .join(',')
       )
 
-      core.setOutput('changed_files', diffInfo.changedFiles)
-      core.setOutput('additions', diffInfo.additions)
-      core.setOutput('deletions', diffInfo.deletions)
-      core.setOutput('changes', diffInfo.changes)
-      core.setOutput('commits', diffInfo.commits)
-
       core.endGroup()
     } else {
       core.startGroup(`🚀 Load commit history`)
@@ -56,6 +50,12 @@ export class ReleaseNotes {
       diffInfo = info
       core.endGroup()
     }
+
+    core.setOutput('changed_files', diffInfo.changedFiles)
+    core.setOutput('additions', diffInfo.additions)
+    core.setOutput('deletions', diffInfo.deletions)
+    core.setOutput('changes', diffInfo.changes)
+    core.setOutput('commits', diffInfo.commits)
 
     if (mergedPullRequests.length === 0) {
       core.warning(`⚠️ No pull requests found`)
