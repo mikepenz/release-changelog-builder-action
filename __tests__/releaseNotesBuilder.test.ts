@@ -103,7 +103,7 @@ it('Should fill empty placeholders', async () => {
   const changeLog = await releaseNotesBuilder.build()
   console.log(changeLog)
   expect(changeLog).toStrictEqual(
-    `mikepenz\nrelease-changelog-builder-action\nv0.0.2\nv0.0.3`
+    `mikepenz\nrelease-changelog-builder-action\nv0.0.2\nv0.0.3\nhttps://github.com/mikepenz/release-changelog-builder-action/compare/v0.0.2...v0.0.3`
   )
 })
 
@@ -131,7 +131,7 @@ it('Should fill `template` placeholders', async () => {
   const changeLog = await releaseNotesBuilder.build()
   console.log(changeLog)
   expect(changeLog).toStrictEqual(
-    `## 🧪 Tests\n\n- [CI] Specify Test Case\n   - PR: #10\n\n\n\n\nmikepenz\nrelease-changelog-builder-action\nv0.0.1\nv0.0.3\n1\n0\n0`
+    `## 🧪 Tests\n\n- [CI] Specify Test Case\n   - PR: #10\n\n\n\n\nmikepenz\nrelease-changelog-builder-action\nv0.0.1\nv0.0.3\nhttps://github.com/mikepenz/release-changelog-builder-action/compare/v0.0.1...v0.0.3\n1\n0\n0\n19\n14827\n444\n15271\n3`
   )
 })
 
@@ -159,7 +159,7 @@ it('Should fill `template` placeholders, ignore', async () => {
   const changeLog = await releaseNotesBuilder.build()
   console.log(changeLog)
   expect(changeLog).toStrictEqual(
-    `## 🚀 Features\n\n- Enhance sorting by using proper semver\n   - PR: #51\n\n## 🧪 Tests\n\n- Improve test cases\n   - PR: #49\n\n\n- Bump @types/node from 14.11.8 to 14.11.10\n   - PR: #47\n- Adjust code to move fromTag resolving to main.ts\n   - PR: #48\n- dev -> main\n   - PR: #52\n- Update package.json to updated description\n   - PR: #53\n- dev -> main\n   - PR: #54\n\n- New additional placeholders for \`template\` and \`empty_template\`\n   - PR: #50\n\nmikepenz\nrelease-changelog-builder-action\nv0.9.1\nv0.9.5\n2\n5\n1`
+    `## 🚀 Features\n\n- Enhance sorting by using proper semver\n   - PR: #51\n\n## 🧪 Tests\n\n- Improve test cases\n   - PR: #49\n\n\n- Bump @types/node from 14.11.8 to 14.11.10\n   - PR: #47\n- Adjust code to move fromTag resolving to main.ts\n   - PR: #48\n- dev -> main\n   - PR: #52\n- Update package.json to updated description\n   - PR: #53\n- dev -> main\n   - PR: #54\n\n- New additional placeholders for \`template\` and \`empty_template\`\n   - PR: #50\n\nmikepenz\nrelease-changelog-builder-action\nv0.9.1\nv0.9.5\nhttps://github.com/mikepenz/release-changelog-builder-action/compare/v0.9.1...v0.9.5\n2\n5\n1\n16\n2931\n450\n3381\n26`
   )
 })
 

@@ -86,6 +86,11 @@ A full set list of possible output values for this action.
 | `outputs.categorized_prs`   | Count of PRs which were successfully categorized as part of the action.                                                   |
 | `outputs.open_prs` | Count of open PRs. Only fetched if `includeOpen` is enabled.                                                                       |
 | `outputs.uncategorized_prs` | Count of PRs which were not categorized as part of the action.                                                            |
+| `outputs.changed_files`     | Count of changed files in this release.                                                                                   |
+| `outputs.additions`         | Count of code additions in this release (lines).                                                                          |
+| `outputs.deletions`         | Count of code deletions in this release (lines).                                                                          |
+| `outputs.changes`           | Total count of changes in this release (lines).                                                                           |
+| `outputs.commits`           | Count of commits which have been added in this release.                                                                   |
 
 
 ## Full Sample 🖥️
@@ -309,6 +314,11 @@ Table of supported placeholders allowed to be used in the `template` and `empty_
 | `${{FROM_TAG}}`            | Defines the 'start' from where the changelog did consider merged pull requests                     | x         |
 | `${{TO_TAG}}`              | Defines until which tag the changelog did consider merged pull requests                            | x         |
 | `${{RELEASE_DIFF}}`        | Introduces a link to the full diff between from tag and to tag releases                            | x         |
+| `${{CHANGED_FILES}}`       | The count of changed files.                                                                        |           |
+| `${{ADDITIONS}}`           | The count of code additions (lines).                                                               |           |
+| `${{DELETIONS}}`           | The count of code deletions (lines).                                                               |           |
+| `${{CHANGES}}`             | The count of total changes (lines).                                                                |           |
+| `${{COMMITS}}`             | The count of commits in this release.                                                              |           |
 | `${{CATEGORIZED_COUNT}}`   | The count of PRs which were categorized                                                            |           |
 | `${{UNCATEGORIZED_COUNT}}` | The count of PRs and changes which were not categorized. No label overlapping with category labels |           |
 | `${{OPEN_COUNT}}` | The count of open PRs. Will only be fetched if `includeOpen` is configured.                                 |           |
@@ -404,7 +414,7 @@ export GITHUB_TOKEN=your_personal_github_pat
 
 All patches and changes applied to the original source are licensed under the Apache 2.0 license.
 
-    Copyright 2021 Mike Penz
+    Copyright 2022 Mike Penz
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.

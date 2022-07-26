@@ -2,6 +2,24 @@ import * as core from '@actions/core'
 import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import moment from 'moment'
 
+export interface DiffInfo {
+  changedFiles: number
+  additions: number
+  deletions: number
+  changes: number
+  commits: number
+  commitInfo: CommitInfo[]
+}
+
+export const DefaultDiffInfo: DiffInfo = {
+  changedFiles: 0,
+  additions: 0,
+  deletions: 0,
+  changes: 0,
+  commits: 0,
+  commitInfo: []
+}
+
 export interface CommitInfo {
   sha: string
   summary: string
@@ -18,14 +36,10 @@ export class Commits {
     repo: string,
     base: string,
     head: string
-  ): Promise<CommitInfo[]> {
-    const commits: CommitInfo[] = await this.getDiffRemote(
-      owner,
-      repo,
-      base,
-      head
-    )
-    return this.sortCommits(commits)
+  ): Promise<DiffInfo> {
+    const diff: DiffInfo = await this.getDiffRemote(owner, repo, base, head)
+    diff.commitInfo = this.sortCommits(diff.commitInfo)
+    return diff
   }
 
   private async getDiffRemote(
@@ -33,7 +47,13 @@ export class Commits {
     repo: string,
     base: string,
     head: string
-  ): Promise<CommitInfo[]> {
+  ): Promise<DiffInfo> {
+    let changedFilesCount = 0
+    let additionCount = 0
+    let deletionCount = 0
+    let changeCount = 0
+    let commitCount = 0
+
     // Fetch comparisons recursively until we don't find any commits
     // This is because the GitHub API limits the number of commits returned in a single response.
     let commits: RestEndpointMethodTypes['repos']['compareCommits']['response']['data']['commits'] =
@@ -50,6 +70,16 @@ export class Commits {
       if (compareResult.data.total_commits === 0) {
         break
       }
+      changedFilesCount += compareResult.data.files?.length ?? 0
+      const files = compareResult.data.files
+      if (files !== undefined) {
+        for (const file of files) {
+          additionCount += file.additions
+          deletionCount += file.deletions
+          changeCount += file.changes
+        }
+      }
+      commitCount += compareResult.data.commits.length
       commits = compareResult.data.commits.concat(commits)
       compareHead = `${commits[0].sha}^`
     }
@@ -58,16 +88,23 @@ export class Commits {
       `ℹ️ Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`
     )
 
-    return commits
-      .filter(commit => commit.sha)
-      .map(commit => ({
-        sha: commit.sha || '',
-        summary: commit.commit.message.split('\n')[0],
-        message: commit.commit.message,
-        date: moment(commit.commit.committer?.date),
-        author: commit.commit.author?.name || '',
-        prNumber: undefined
-      }))
+    return {
+      changedFiles: changedFilesCount,
+      additions: additionCount,
+      deletions: deletionCount,
+      changes: changeCount,
+      commits: commitCount,
+      commitInfo: commits
+        .filter(commit => commit.sha)
+        .map(commit => ({
+          sha: commit.sha || '',
+          summary: commit.commit.message.split('\n')[0],
+          message: commit.commit.message,
+          date: moment(commit.commit.committer?.date),
+          author: commit.commit.author?.name || '',
+          prNumber: undefined
+        }))
+    }
   }
 
   private sortCommits(commits: CommitInfo[]): CommitInfo[] {
