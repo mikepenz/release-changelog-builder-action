@@ -762,11 +762,6 @@ class ReleaseNotes {
                     return pr.number;
                 })
                     .join(','));
-                core.setOutput('changed_files', diffInfo.changedFiles);
-                core.setOutput('additions', diffInfo.additions);
-                core.setOutput('deletions', diffInfo.deletions);
-                core.setOutput('changes', diffInfo.changes);
-                core.setOutput('commits', diffInfo.commits);
                 core.endGroup();
             }
             else {
@@ -777,6 +772,11 @@ class ReleaseNotes {
                 diffInfo = info;
                 core.endGroup();
             }
+            core.setOutput('changed_files', diffInfo.changedFiles);
+            core.setOutput('additions', diffInfo.additions);
+            core.setOutput('deletions', diffInfo.deletions);
+            core.setOutput('changes', diffInfo.changes);
+            core.setOutput('commits', diffInfo.commits);
             if (mergedPullRequests.length === 0) {
                 core.warning(`⚠️ No pull requests found`);
                 return (0, transform_1.fillAdditionalPlaceholders)(this.options.configuration.empty_template ||
