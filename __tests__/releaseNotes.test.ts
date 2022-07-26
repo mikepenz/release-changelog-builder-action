@@ -25,7 +25,7 @@ it('Should have empty changelog (tags)', async () => {
 
   const changeLog = await releaseNotes.pull()
   console.log(changeLog)
-  expect(changeLog).toStrictEqual(null)
+  expect(changeLog).toStrictEqual("- no changes")
 })
 
 it('Should match generated changelog (tags)', async () => {

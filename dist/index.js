@@ -42,21 +42,36 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.filterCommits = exports.Commits = void 0;
+exports.filterCommits = exports.Commits = exports.DefaultDiffInfo = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const moment_1 = __importDefault(__nccwpck_require__(9623));
+exports.DefaultDiffInfo = {
+    changedFiles: 0,
+    additions: 0,
+    deletions: 0,
+    changes: 0,
+    commits: 0,
+    commitInfo: []
+};
 class Commits {
     constructor(octokit) {
         this.octokit = octokit;
     }
     getDiff(owner, repo, base, head) {
         return __awaiter(this, void 0, void 0, function* () {
-            const commits = yield this.getDiffRemote(owner, repo, base, head);
-            return this.sortCommits(commits);
+            const diff = yield this.getDiffRemote(owner, repo, base, head);
+            diff.commitInfo = this.sortCommits(diff.commitInfo);
+            return diff;
         });
     }
     getDiffRemote(owner, repo, base, head) {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
+            let changedFilesCount = 0;
+            let additionCount = 0;
+            let deletionCount = 0;
+            let changeCount = 0;
+            let commitCount = 0;
             // Fetch comparisons recursively until we don't find any commits
             // This is because the GitHub API limits the number of commits returned in a single response.
             let commits = [];
@@ -72,23 +87,40 @@ class Commits {
                 if (compareResult.data.total_commits === 0) {
                     break;
                 }
+                changedFilesCount += (_b = (_a = compareResult.data.files) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : 0;
+                const files = compareResult.data.files;
+                if (files !== undefined) {
+                    for (const file of files) {
+                        additionCount += file.additions;
+                        deletionCount += file.deletions;
+                        changeCount += file.changes;
+                    }
+                }
+                commitCount += compareResult.data.commits.length;
                 commits = compareResult.data.commits.concat(commits);
                 compareHead = `${commits[0].sha}^`;
             }
             core.info(`ℹ️ Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`);
-            return commits
-                .filter(commit => commit.sha)
-                .map(commit => {
-                var _a, _b;
-                return ({
-                    sha: commit.sha || '',
-                    summary: commit.commit.message.split('\n')[0],
-                    message: commit.commit.message,
-                    date: (0, moment_1.default)((_a = commit.commit.committer) === null || _a === void 0 ? void 0 : _a.date),
-                    author: ((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.name) || '',
-                    prNumber: undefined
-                });
-            });
+            return {
+                changedFiles: changedFilesCount,
+                additions: additionCount,
+                deletions: deletionCount,
+                changes: changeCount,
+                commits: commitCount,
+                commitInfo: commits
+                    .filter(commit => commit.sha)
+                    .map(commit => {
+                    var _a, _b;
+                    return ({
+                        sha: commit.sha || '',
+                        summary: commit.commit.message.split('\n')[0],
+                        message: commit.commit.message,
+                        date: (0, moment_1.default)((_a = commit.commit.committer) === null || _a === void 0 ? void 0 : _a.date),
+                        author: ((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.name) || '',
+                        prNumber: undefined
+                    });
+                })
+            };
         });
     }
     sortCommits(commits) {
@@ -718,29 +750,40 @@ class ReleaseNotes {
     pull() {
         return __awaiter(this, void 0, void 0, function* () {
             let mergedPullRequests;
+            let diffInfo;
             if (!this.options.commitMode) {
                 core.startGroup(`🚀 Load pull requests`);
-                mergedPullRequests = yield this.getMergedPullRequests(this.octokit);
+                const [info, prs] = yield this.getMergedPullRequests(this.octokit);
+                mergedPullRequests = prs;
+                diffInfo = info;
                 // define the included PRs within this release as output
                 core.setOutput('pull_requests', mergedPullRequests
                     .map(pr => {
                     return pr.number;
                 })
                     .join(','));
+                core.setOutput('changed_files', diffInfo.changedFiles);
+                core.setOutput('additions', diffInfo.additions);
+                core.setOutput('deletions', diffInfo.deletions);
+                core.setOutput('changes', diffInfo.changes);
+                core.setOutput('commits', diffInfo.commits);
                 core.endGroup();
             }
             else {
                 core.startGroup(`🚀 Load commit history`);
                 core.info(`⚠️ Executing experimental commit mode`);
-                mergedPullRequests = yield this.generateCommitPRs(this.octokit);
+                const [info, prs] = yield this.generateCommitPRs(this.octokit);
+                mergedPullRequests = prs;
+                diffInfo = info;
                 core.endGroup();
             }
             if (mergedPullRequests.length === 0) {
                 core.warning(`⚠️ No pull requests found`);
-                return null;
+                return (0, transform_1.fillAdditionalPlaceholders)(this.options.configuration.empty_template ||
+                    configuration_1.DefaultConfiguration.empty_template, this.options);
             }
             core.startGroup('📦 Build changelog');
-            const resultChangelog = (0, transform_1.buildChangelog)(mergedPullRequests, this.options);
+            const resultChangelog = (0, transform_1.buildChangelog)(diffInfo, mergedPullRequests, this.options);
             core.endGroup();
             return resultChangelog;
         });
@@ -750,27 +793,28 @@ class ReleaseNotes {
             const { owner, repo, fromTag, toTag, failOnError } = this.options;
             core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag}...${toTag}'`);
             const commitsApi = new commits_1.Commits(octokit);
-            let commits;
+            let diffInfo;
             try {
-                commits = yield commitsApi.getDiff(owner, repo, fromTag, toTag);
+                diffInfo = yield commitsApi.getDiff(owner, repo, fromTag, toTag);
             }
             catch (error) {
                 (0, utils_1.failOrError)(`💥 Failed to retrieve - Invalid tag? - Because of: ${error}`, failOnError);
-                return [];
+                return commits_1.DefaultDiffInfo;
             }
-            if (commits.length === 0) {
+            if (diffInfo.commitInfo.length === 0) {
                 core.warning(`⚠️ No commits found between - ${fromTag}...${toTag}`);
-                return [];
+                return commits_1.DefaultDiffInfo;
             }
-            return commits;
+            return diffInfo;
         });
     }
     getMergedPullRequests(octokit) {
         return __awaiter(this, void 0, void 0, function* () {
             const { owner, repo, includeOpen, fetchReviewers, configuration } = this.options;
-            const commits = yield this.getCommitHistory(octokit);
+            const diffInfo = yield this.getCommitHistory(octokit);
+            const commits = diffInfo.commitInfo;
             if (commits.length === 0) {
-                return [];
+                return [diffInfo, []];
             }
             const firstCommit = commits[0];
             const lastCommit = commits[commits.length - 1];
@@ -832,20 +876,21 @@ class ReleaseNotes {
                     }
                 }
             }
-            return finalPrs;
+            return [diffInfo, finalPrs];
         });
     }
     generateCommitPRs(octokit) {
         return __awaiter(this, void 0, void 0, function* () {
             const { owner, repo, configuration } = this.options;
-            const commits = yield this.getCommitHistory(octokit);
+            const diffInfo = yield this.getCommitHistory(octokit);
+            const commits = diffInfo.commitInfo;
             if (commits.length === 0) {
-                return [];
+                return [diffInfo, []];
             }
             const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches ||
                 configuration_1.DefaultConfiguration.exclude_merge_branches);
             core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`);
-            return prCommits.map(function (commit) {
+            const prs = prCommits.map(function (commit) {
                 return {
                     number: 0,
                     title: commit.summary,
@@ -865,6 +910,7 @@ class ReleaseNotes {
                     status: 'merged'
                 };
             });
+            return [diffInfo, prs];
         });
     }
 }
@@ -918,7 +964,6 @@ const rest_1 = __nccwpck_require__(5375);
 const releaseNotes_1 = __nccwpck_require__(5882);
 const tags_1 = __nccwpck_require__(7532);
 const utils_1 = __nccwpck_require__(918);
-const transform_1 = __nccwpck_require__(1644);
 class ReleaseNotesBuilder {
     constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchReviewers = false, commitMode, configuration) {
         this.baseUrl = baseUrl;
@@ -996,9 +1041,7 @@ class ReleaseNotesBuilder {
                 configuration: this.configuration
             };
             const releaseNotes = new releaseNotes_1.ReleaseNotes(octokit, options);
-            return ((yield releaseNotes.pull()) ||
-                (0, transform_1.fillAdditionalPlaceholders)(this.configuration.empty_template ||
-                    configuration_1.DefaultConfiguration.empty_template, options));
+            return yield releaseNotes.pull();
         });
     }
 }
@@ -1364,7 +1407,7 @@ exports.validateTransformer = exports.fillAdditionalPlaceholders = exports.build
 const core = __importStar(__nccwpck_require__(2186));
 const configuration_1 = __nccwpck_require__(5527);
 const pullRequests_1 = __nccwpck_require__(4217);
-function buildChangelog(prs, options) {
+function buildChangelog(diffInfo, prs, options) {
     // sort to target order
     const config = options.configuration;
     const sort = config.sort || configuration_1.DefaultConfiguration.sort;
@@ -1546,6 +1589,12 @@ function buildChangelog(prs, options) {
     transformedChangelog = transformedChangelog.replace(/\${{UNCATEGORIZED_COUNT}}/g, uncategorizedPrs.length.toString());
     transformedChangelog = transformedChangelog.replace(/\${{OPEN_COUNT}}/g, openPrs.length.toString());
     transformedChangelog = transformedChangelog.replace(/\${{IGNORED_COUNT}}/g, ignoredPrs.length.toString());
+    // code change placeholders
+    transformedChangelog = transformedChangelog.replace(/\${{CHANGED_FILES}}/g, diffInfo.changedFiles.toString());
+    transformedChangelog = transformedChangelog.replace(/\${{ADDITIONS}}/g, diffInfo.additions.toString());
+    transformedChangelog = transformedChangelog.replace(/\${{DELETIONS}}/g, diffInfo.deletions.toString());
+    transformedChangelog = transformedChangelog.replace(/\${{CHANGES}}/g, diffInfo.changes.toString());
+    transformedChangelog = transformedChangelog.replace(/\${{COMMITS}}/g, diffInfo.commits.toString());
     transformedChangelog = fillAdditionalPlaceholders(transformedChangelog, options);
     core.info(`ℹ️ Filled template`);
     return transformedChangelog;
@@ -1553,6 +1602,7 @@ function buildChangelog(prs, options) {
 exports.buildChangelog = buildChangelog;
 function fillAdditionalPlaceholders(text, options) {
     let transformed = text;
+    // repository placeholders
     transformed = transformed.replace(/\${{OWNER}}/g, options.owner);
     transformed = transformed.replace(/\${{REPO}}/g, options.repo);
     transformed = transformed.replace(/\${{FROM_TAG}}/g, options.fromTag);

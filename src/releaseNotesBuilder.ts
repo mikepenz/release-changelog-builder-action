@@ -4,7 +4,6 @@ import {Octokit} from '@octokit/rest'
 import {ReleaseNotes} from './releaseNotes'
 import {Tags} from './tags'
 import {failOrError} from './utils'
-import {fillAdditionalPlaceholders} from './transform'
 
 export class ReleaseNotesBuilder {
   constructor(
@@ -98,13 +97,6 @@ export class ReleaseNotesBuilder {
     }
     const releaseNotes = new ReleaseNotes(octokit, options)
 
-    return (
-      (await releaseNotes.pull()) ||
-      fillAdditionalPlaceholders(
-        this.configuration.empty_template ||
-          DefaultConfiguration.empty_template,
-        options
-      )
-    )
+    return await releaseNotes.pull()
   }
 }
