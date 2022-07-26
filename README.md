@@ -28,6 +28,7 @@
     <a href="#full-sample-%EF%B8%8F">Sample 🖥️</a> &bull;
     <a href="#customization-%EF%B8%8F">Customization 🖍️</a> &bull;
     <a href="#contribute-">Contribute 🧬</a> &bull;
+    <a href="#local-testing-">Local Testing 🧪</a> &bull;
     <a href="#license">License 📓</a>
 </p>
 
@@ -324,7 +325,6 @@ Table of supported placeholders allowed to be used in the `template` and `empty_
 | `${{OPEN_COUNT}}` | The count of open PRs. Will only be fetched if `includeOpen` is configured.                                 |           |
 | `${{IGNORED_COUNT}}`       | The count of PRs and changes which were specifically ignored from the changelog.                   |           |
 
-
 ### Configuration Specification
 
 Table of descriptions for the `configuration.json` options to configure the resulting release notes / changelog.
@@ -386,6 +386,65 @@ It's suggested to export the token to your path before running the tests so that
 ```bash
 export GITHUB_TOKEN=your_personal_github_pat
 ```
+
+## Local Testing 🧪
+
+This GitHub action is fully developed in Typescript and can be run locally via npm. Doing so is a great way to test the action and/or your custom configurations locally, without the need to push and re-run GitHub actions over and over again.
+
+To run this action locally, first make sure you provide a `GITHUB_TOKEN` with enough permissions to access the repository. 
+
+```
+# GitHub token for the action
+export GITHUB_TOKEN=your_read_only_github_token
+```
+
+Afterwards run the testcases with:
+
+```bash
+npm test -- custom.test.ts
+```
+
+<details><summary><b>custom.test.ts</b></summary>
+<p>
+
+```typescript
+import {resolveConfiguration} from '../src/utils'
+import {ReleaseNotesBuilder} from '../src/releaseNotesBuilder'
+
+jest.setTimeout(180000)
+
+it('Test custom changelog builder', async () => {
+  const configuration = resolveConfiguration(
+    '',
+    'configs_test/configuration_approvers.json'
+  )
+  const releaseNotesBuilder = new ReleaseNotesBuilder(
+    null, // baseUrl
+    null, // token
+    '.',  // repoPath
+    'mikepenz',                                         // user
+    'release-changelog-builder-action-playground',      // repo
+    '1.5.0',         // fromTag
+    '2.0.0',         // toTag
+    true,   // includeOpen
+    false, // failOnError
+    false, // ignorePrePrelease
+    true,  // enable to fetch reviewers
+    false, // commitMode
+    configuration  // configuration
+  )
+
+  const changeLog = await releaseNotesBuilder.build()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(``)
+})
+```
+
+</p>
+</details>
+
+Additionally it is possible to do full debugging including the option of breakpoints via (for example) Visual Code. 
+Open the project in Visual code -> open the terminal -> use the `+` and start a new `JavaScript Debug Terminal`. Afterwards run the tests as described above. 
 
 ## Developed By
 
