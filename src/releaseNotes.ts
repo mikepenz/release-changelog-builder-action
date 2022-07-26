@@ -80,7 +80,9 @@ export class ReleaseNotes {
 
   private async getCommitHistory(octokit: Octokit): Promise<DiffInfo> {
     const {owner, repo, fromTag, toTag, failOnError} = this.options
-    core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag}...${toTag}'`)
+    core.info(
+      `ℹ️ Comparing ${owner}/${repo} - '${fromTag.name}...${toTag.name}'`
+    )
 
     const commitsApi = new Commits(octokit)
     let diffInfo: DiffInfo
@@ -94,7 +96,9 @@ export class ReleaseNotes {
       return DefaultDiffInfo
     }
     if (diffInfo.commitInfo.length === 0) {
-      core.warning(`⚠️ No commits found between - ${fromTag}...${toTag}`)
+      core.warning(
+        `⚠️ No commits found between - ${fromTag.name}...${toTag.name}`
+      )
       return DefaultDiffInfo
     }
 

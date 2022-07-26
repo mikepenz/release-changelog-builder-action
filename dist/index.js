@@ -802,7 +802,7 @@ class ReleaseNotes {
     getCommitHistory(octokit) {
         return __awaiter(this, void 0, void 0, function* () {
             const { owner, repo, fromTag, toTag, failOnError } = this.options;
-            core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag}...${toTag}'`);
+            core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag.name}...${toTag.name}'`);
             const commitsApi = new commits_1.Commits(octokit);
             let diffInfo;
             try {
@@ -813,7 +813,7 @@ class ReleaseNotes {
                 return commits_1.DefaultDiffInfo;
             }
             if (diffInfo.commitInfo.length === 0) {
-                core.warning(`⚠️ No commits found between - ${fromTag}...${toTag}`);
+                core.warning(`⚠️ No commits found between - ${fromTag.name}...${toTag.name}`);
                 return commits_1.DefaultDiffInfo;
             }
             return diffInfo;
@@ -1180,7 +1180,7 @@ class Tags {
                 const response = yield this.octokit.request(options);
                 const release = response.data;
                 tagInfo.date = (0, moment_1.default)(release.created_at);
-                core.info(`ℹ️ Retrieved information about the release associated with ${tagInfo.name} from the GitHub API for ${owner}/${repo}`);
+                core.info(`ℹ️ Retrieved information about the release associated with ${tagInfo.name} from the GitHub API`);
             }
             catch (error) {
                 core.info(`⚠️ No release information found for ${tagInfo.name}, trying to retrieve tag creation time as fallback.`);
@@ -1190,6 +1190,9 @@ class Tags {
                 if (creationTimeString !== null && creationTime.isValid()) {
                     tagInfo.date = creationTime;
                     core.info(`ℹ️ Resolved tag creation time (${creationTimeString}) from 'git for-each-ref --format="%(creatordate:rfc)" "refs/tags/${tagInfo.name}`);
+                }
+                else {
+                    core.info(`⚠️ Could not retrieve tag creation time via git cli 'git for-each-ref --format="%(creatordate:rfc)" "refs/tags/${tagInfo.name}'`);
                 }
             }
             return tagInfo;
@@ -1659,10 +1662,8 @@ function fillAdditionalPlaceholders(text, options) {
     transformed = transformed.replace(/\${{OWNER}}/g, options.owner);
     transformed = transformed.replace(/\${{REPO}}/g, options.repo);
     transformed = transformed.replace(/\${{FROM_TAG}}/g, options.fromTag.name);
-    transformed = transformed.replace(/\${{FROM_TAG_SHA}}/g, options.fromTag.commit || '');
     transformed = transformed.replace(/\${{FROM_TAG_DATE}}/g, ((_a = options.fromTag.date) === null || _a === void 0 ? void 0 : _a.toISOString()) || '');
     transformed = transformed.replace(/\${{TO_TAG}}/g, options.toTag.name);
-    transformed = transformed.replace(/\${{TO_TAG_SHA}}/g, options.toTag.commit || '');
     transformed = transformed.replace(/\${{TO_TAG_DATE}}/g, ((_b = options.toTag.date) === null || _b === void 0 ? void 0 : _b.toISOString()) || '');
     const fromDate = options.fromTag.date;
     const toDate = options.toTag.date;

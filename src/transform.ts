@@ -314,18 +314,10 @@ export function fillAdditionalPlaceholders(
   transformed = transformed.replace(/\${{REPO}}/g, options.repo)
   transformed = transformed.replace(/\${{FROM_TAG}}/g, options.fromTag.name)
   transformed = transformed.replace(
-    /\${{FROM_TAG_SHA}}/g,
-    options.fromTag.commit || ''
-  )
-  transformed = transformed.replace(
     /\${{FROM_TAG_DATE}}/g,
     options.fromTag.date?.toISOString() || ''
   )
   transformed = transformed.replace(/\${{TO_TAG}}/g, options.toTag.name)
-  transformed = transformed.replace(
-    /\${{TO_TAG_SHA}}/g,
-    options.toTag.commit || ''
-  )
   transformed = transformed.replace(
     /\${{TO_TAG_DATE}}/g,
     options.toTag.date?.toISOString() || ''

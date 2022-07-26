@@ -314,7 +314,7 @@ it('Verify custom categorisation of open PRs', async () => {
   )
 })
 
-it('Verify reviewers who approved are fetched', async () => {
+it('Verify reviewers who approved are fetched and also release information', async () => {
   const configuration = resolveConfiguration(
     '',
     'configs_test/configuration_approvers.json'
@@ -331,7 +331,7 @@ it('Verify reviewers who approved are fetched', async () => {
     false, // failOnError
     false, // ignorePrePrelease
     true,  // enable to fetch reviewers
-    false, // enable to fetch tag release information
+    true, // enable to fetch tag release information
     false, // commitMode
     configuration  // configuration
   )
@@ -339,6 +339,65 @@ it('Verify reviewers who approved are fetched', async () => {
   const changeLog = await releaseNotesBuilder.build()
   console.log(changeLog)
   expect(changeLog).toStrictEqual(
-    `## 🚀 Features\n\n- A feature to be going to v2 (nr3) -- (#3) [merged]  --- \n- New feature to keep open (nr5) -- (#7) [open]  --- gabrielpopa\n\n`
+    `## 🚀 Features\n\n- A feature to be going to v2 (nr3) -- (#3) [merged]  --- \n- New feature to keep open (nr5) -- (#7) [open]  --- gabrielpopa\n\n\n\n0`
   )
+})
+
+
+it('Fetch release information', async () => {
+  const configuration = resolveConfiguration(
+    '',
+    'configs_test/configuration_approvers.json'
+  )
+  configuration.template = "${{FROM_TAG}}-${{FROM_TAG_DATE}}\n${{TO_TAG}}-${{TO_TAG_DATE}}\n${{DAYS_SINCE}}"
+  const releaseNotesBuilder = new ReleaseNotesBuilder(
+    null, // baseUrl
+    null, // token
+    '.',  // repoPath
+    'mikepenz',                                         // user
+    'release-changelog-builder-action-playground',      // repo
+    '2.0.0',         // fromTag
+    '3.0.0-a01',         // toTag
+    true,  // includeOpen
+    false, // failOnError
+    false, // ignorePrePrelease
+    false,  // enable to fetch reviewers
+    true, // enable to fetch tag release information
+    false, // commitMode
+    configuration  // configuration
+  )
+
+  const changeLog = await releaseNotesBuilder.build()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(
+    `2.0.0-2022-04-08T07:52:40.000Z\n3.0.0-a01-2022-07-26T14:28:36.000Z\n109`
+  )
+})
+
+it('Fetch release information for non existing tag / release', async () => {
+  const configuration = resolveConfiguration(
+    '',
+    'configs_test/configuration_approvers.json'
+  )
+  configuration.template = "${{FROM_TAG}}-${{FROM_TAG_DATE}}\n${{TO_TAG}}-${{TO_TAG_DATE}}\n${{DAYS_SINCE}}"
+  const releaseNotesBuilder = new ReleaseNotesBuilder(
+    null, // baseUrl
+    null, // token
+    '.',  // repoPath
+    'mikepenz',                                         // user
+    'release-changelog-builder-action-playground',      // repo
+    '2.0.0',         // fromTag
+    '3.0.1',         // toTag
+    true,  // includeOpen
+    false, // failOnError
+    false, // ignorePrePrelease
+    false,  // enable to fetch reviewers
+    true, // enable to fetch tag release information
+    false, // commitMode
+    configuration  // configuration
+  )
+
+  const changeLog = await releaseNotesBuilder.build()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(`- no changes`)
 })

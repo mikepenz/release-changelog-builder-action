@@ -81,11 +81,9 @@ export class Tags {
         RestEndpointMethodTypes['repos']['getReleaseByTag']['response']['data']
 
       const release: ReleaseInformation = response.data as ReleaseInformation
-
       tagInfo.date = moment(release.created_at)
-
       core.info(
-        `ℹ️ Retrieved information about the release associated with ${tagInfo.name} from the GitHub API for ${owner}/${repo}`
+        `ℹ️ Retrieved information about the release associated with ${tagInfo.name} from the GitHub API`
       )
     } catch (error) {
       core.info(
@@ -98,6 +96,10 @@ export class Tags {
         tagInfo.date = creationTime
         core.info(
           `ℹ️ Resolved tag creation time (${creationTimeString}) from 'git for-each-ref --format="%(creatordate:rfc)" "refs/tags/${tagInfo.name}`
+        )
+      } else {
+        core.info(
+          `⚠️ Could not retrieve tag creation time via git cli 'git for-each-ref --format="%(creatordate:rfc)" "refs/tags/${tagInfo.name}'`
         )
       }
     }
