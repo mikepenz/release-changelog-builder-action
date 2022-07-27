@@ -299,7 +299,6 @@ Table of supported placeholders allowed to be used in the `pr_template` configur
 | `${{ASSIGNEES}}`  | Login names of assigned GitHub users, joined by `,`               |
 | `${{REVIEWERS}}`  | GitHub Login names of specified reviewers, joined by `,`. Requires `fetchReviewers` to be enabled. |
 | `${{APPROVERS}}`  | GitHub Login names of users who approved the PR, joined by `,`    |
-| `${{DAYS_SINCE}}`  | Days between the 2 releases. Requires `fetchReleaseInformation` to be enabled. |
 
 ### Template placeholders
 
@@ -325,8 +324,9 @@ Table of supported placeholders allowed to be used in the `template` and `empty_
 | `${{COMMITS}}`             | The count of commits in this release.                                                              |           |
 | `${{CATEGORIZED_COUNT}}`   | The count of PRs which were categorized                                                            |           |
 | `${{UNCATEGORIZED_COUNT}}` | The count of PRs and changes which were not categorized. No label overlapping with category labels |           |
-| `${{OPEN_COUNT}}` | The count of open PRs. Will only be fetched if `includeOpen` is configured.                                 |           |
+| `${{OPEN_COUNT}}`          | The count of open PRs. Will only be fetched if `includeOpen` is configured.                        |           |
 | `${{IGNORED_COUNT}}`       | The count of PRs and changes which were specifically ignored from the changelog.                   |           |
+| `${{DAYS_SINCE}}`          | Days between the 2 releases. Requires `fetchReleaseInformation` to be enabled.                     | *         |
 
 ### Configuration Specification
 
