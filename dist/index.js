@@ -690,6 +690,7 @@ const mapPullRequest = (pr, status = 'open') => {
         title: pr.title,
         htmlURL: pr.html_url,
         baseBranch: pr.base.ref,
+        branch: pr.head.ref,
         createdAt: (0, moment_1.default)(pr.created_at),
         mergedAt: pr.merged_at ? (0, moment_1.default)(pr.merged_at) : null,
         mergeCommitSha: pr.merge_commit_sha || '',
