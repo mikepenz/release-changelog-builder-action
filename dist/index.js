@@ -282,38 +282,20 @@ class GitCommandManager {
     }
     latestTag() {
         return __awaiter(this, void 0, void 0, function* () {
-            const revListOutput = yield this.execGit([
-                'rev-list',
-                '--tags',
-                '--skip=0',
-                '--max-count=1'
-            ]);
-            const output = yield this.execGit([
-                'describe',
-                '--abbrev=0',
-                '--tags',
-                revListOutput.stdout.trim()
-            ]);
+            const revListOutput = yield this.execGit(['rev-list', '--tags', '--skip=0', '--max-count=1']);
+            const output = yield this.execGit(['describe', '--abbrev=0', '--tags', revListOutput.stdout.trim()]);
             return output.stdout.trim();
         });
     }
     initialCommit() {
         return __awaiter(this, void 0, void 0, function* () {
-            const revListOutput = yield this.execGit([
-                'rev-list',
-                '--max-parents=0',
-                'HEAD'
-            ]);
+            const revListOutput = yield this.execGit(['rev-list', '--max-parents=0', 'HEAD']);
             return revListOutput.stdout.trim();
         });
     }
     tagCreation(tagName) {
         return __awaiter(this, void 0, void 0, function* () {
-            const creationDate = yield this.execGit([
-                'for-each-ref',
-                '--format="%(creatordate:rfc)"',
-                `refs/tags/${tagName}`
-            ]);
+            const creationDate = yield this.execGit(['for-each-ref', '--format="%(creatordate:rfc)"', `refs/tags/${tagName}`]);
             return creationDate.stdout.trim().replace(/"/g, '');
         });
     }
@@ -800,8 +782,7 @@ class ReleaseNotes {
             core.setOutput('commits', diffInfo.commits);
             if (mergedPullRequests.length === 0) {
                 core.warning(`⚠️ No pull requests found`);
-                return (0, transform_1.fillAdditionalPlaceholders)(this.options.configuration.empty_template ||
-                    configuration_1.DefaultConfiguration.empty_template, this.options);
+                return (0, transform_1.fillAdditionalPlaceholders)(this.options.configuration.empty_template || configuration_1.DefaultConfiguration.empty_template, this.options);
             }
             core.startGroup('📦 Build changelog');
             const resultChangelog = (0, transform_1.buildChangelog)(diffInfo, mergedPullRequests, this.options);
@@ -841,8 +822,7 @@ class ReleaseNotes {
             const lastCommit = commits[commits.length - 1];
             let fromDate = firstCommit.date;
             const toDate = lastCommit.date;
-            const maxDays = configuration.max_back_track_time_days ||
-                configuration_1.DefaultConfiguration.max_back_track_time_days;
+            const maxDays = configuration.max_back_track_time_days || configuration_1.DefaultConfiguration.max_back_track_time_days;
             const maxFromDate = toDate.clone().subtract(maxDays, 'days');
             if (maxFromDate.isAfter(fromDate)) {
                 core.info(`⚠️ Adjusted 'fromDate' to go max ${maxDays} back`);
@@ -852,8 +832,7 @@ class ReleaseNotes {
             const pullRequestsApi = new pullRequests_1.PullRequests(octokit);
             const pullRequests = yield pullRequestsApi.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests || configuration_1.DefaultConfiguration.max_pull_requests);
             core.info(`ℹ️ Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`);
-            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches ||
-                configuration_1.DefaultConfiguration.exclude_merge_branches);
+            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches || configuration_1.DefaultConfiguration.exclude_merge_branches);
             core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`);
             // create array of commits for this release
             const releaseCommitHashes = prCommits.map(commmit => {
@@ -866,8 +845,7 @@ class ReleaseNotes {
             let allPullRequests = mergedPullRequests;
             if (includeOpen) {
                 // retrieve all open pull requests
-                const openPullRequests = yield pullRequestsApi.getOpen(owner, repo, configuration.max_pull_requests ||
-                    configuration_1.DefaultConfiguration.max_pull_requests);
+                const openPullRequests = yield pullRequestsApi.getOpen(owner, repo, configuration.max_pull_requests || configuration_1.DefaultConfiguration.max_pull_requests);
                 core.info(`ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`);
                 // all pull requests
                 allPullRequests = allPullRequests.concat(openPullRequests);
@@ -911,8 +889,7 @@ class ReleaseNotes {
             if (commits.length === 0) {
                 return [diffInfo, []];
             }
-            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches ||
-                configuration_1.DefaultConfiguration.exclude_merge_branches);
+            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches || configuration_1.DefaultConfiguration.exclude_merge_branches);
             core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`);
             const prs = prCommits.map(function (commit) {
                 return {
@@ -1032,8 +1009,7 @@ class ReleaseNotesBuilder {
             // ensure proper from <-> to tag range
             core.startGroup(`🔖 Resolve tags`);
             const tagsApi = new tags_1.Tags(octokit);
-            const tagRange = yield tagsApi.retrieveRange(this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.ignorePreReleases, this.configuration.max_tags_to_fetch ||
-                configuration_1.DefaultConfiguration.max_tags_to_fetch, this.configuration.tag_resolver || configuration_1.DefaultConfiguration.tag_resolver);
+            const tagRange = yield tagsApi.retrieveRange(this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.ignorePreReleases, this.configuration.max_tags_to_fetch || configuration_1.DefaultConfiguration.max_tags_to_fetch, this.configuration.tag_resolver || configuration_1.DefaultConfiguration.tag_resolver);
             let thisTag = tagRange.to;
             if (!thisTag) {
                 (0, utils_1.failOrError)(`💥 Missing or couldn't resolve 'toTag'`, this.failOnError);

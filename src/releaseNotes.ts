@@ -62,54 +62,39 @@ export class ReleaseNotes {
     if (mergedPullRequests.length === 0) {
       core.warning(`⚠️ No pull requests found`)
       return fillAdditionalPlaceholders(
-        this.options.configuration.empty_template ||
-          DefaultConfiguration.empty_template,
+        this.options.configuration.empty_template || DefaultConfiguration.empty_template,
         this.options
       )
     }
 
     core.startGroup('📦 Build changelog')
-    const resultChangelog = buildChangelog(
-      diffInfo,
-      mergedPullRequests,
-      this.options
-    )
+    const resultChangelog = buildChangelog(diffInfo, mergedPullRequests, this.options)
     core.endGroup()
     return resultChangelog
   }
 
   private async getCommitHistory(octokit: Octokit): Promise<DiffInfo> {
     const {owner, repo, fromTag, toTag, failOnError} = this.options
-    core.info(
-      `ℹ️ Comparing ${owner}/${repo} - '${fromTag.name}...${toTag.name}'`
-    )
+    core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag.name}...${toTag.name}'`)
 
     const commitsApi = new Commits(octokit)
     let diffInfo: DiffInfo
     try {
       diffInfo = await commitsApi.getDiff(owner, repo, fromTag.name, toTag.name)
     } catch (error) {
-      failOrError(
-        `💥 Failed to retrieve - Invalid tag? - Because of: ${error}`,
-        failOnError
-      )
+      failOrError(`💥 Failed to retrieve - Invalid tag? - Because of: ${error}`, failOnError)
       return DefaultDiffInfo
     }
     if (diffInfo.commitInfo.length === 0) {
-      core.warning(
-        `⚠️ No commits found between - ${fromTag.name}...${toTag.name}`
-      )
+      core.warning(`⚠️ No commits found between - ${fromTag.name}...${toTag.name}`)
       return DefaultDiffInfo
     }
 
     return diffInfo
   }
 
-  private async getMergedPullRequests(
-    octokit: Octokit
-  ): Promise<[DiffInfo, PullRequestInfo[]]> {
-    const {owner, repo, includeOpen, fetchReviewers, configuration} =
-      this.options
+  private async getMergedPullRequests(octokit: Octokit): Promise<[DiffInfo, PullRequestInfo[]]> {
+    const {owner, repo, includeOpen, fetchReviewers, configuration} = this.options
 
     const diffInfo = await this.getCommitHistory(octokit)
     const commits = diffInfo.commitInfo
@@ -122,18 +107,14 @@ export class ReleaseNotes {
     let fromDate = firstCommit.date
     const toDate = lastCommit.date
 
-    const maxDays =
-      configuration.max_back_track_time_days ||
-      DefaultConfiguration.max_back_track_time_days
+    const maxDays = configuration.max_back_track_time_days || DefaultConfiguration.max_back_track_time_days
     const maxFromDate = toDate.clone().subtract(maxDays, 'days')
     if (maxFromDate.isAfter(fromDate)) {
       core.info(`⚠️ Adjusted 'fromDate' to go max ${maxDays} back`)
       fromDate = maxFromDate
     }
 
-    core.info(
-      `ℹ️ Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`
-    )
+    core.info(`ℹ️ Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`)
 
     const pullRequestsApi = new PullRequests(octokit)
     const pullRequests = await pullRequestsApi.getBetweenDates(
@@ -144,19 +125,14 @@ export class ReleaseNotes {
       configuration.max_pull_requests || DefaultConfiguration.max_pull_requests
     )
 
-    core.info(
-      `ℹ️ Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`
-    )
+    core.info(`ℹ️ Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`)
 
     const prCommits = filterCommits(
       commits,
-      configuration.exclude_merge_branches ||
-        DefaultConfiguration.exclude_merge_branches
+      configuration.exclude_merge_branches || DefaultConfiguration.exclude_merge_branches
     )
 
-    core.info(
-      `ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`
-    )
+    core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`)
 
     // create array of commits for this release
     const releaseCommitHashes = prCommits.map(commmit => {
@@ -174,25 +150,19 @@ export class ReleaseNotes {
       const openPullRequests = await pullRequestsApi.getOpen(
         owner,
         repo,
-        configuration.max_pull_requests ||
-          DefaultConfiguration.max_pull_requests
+        configuration.max_pull_requests || DefaultConfiguration.max_pull_requests
       )
 
-      core.info(
-        `ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`
-      )
+      core.info(`ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`)
 
       // all pull requests
       allPullRequests = allPullRequests.concat(openPullRequests)
 
-      core.info(
-        `ℹ️ Retrieved ${allPullRequests.length} total PRs for ${owner}/${repo}`
-      )
+      core.info(`ℹ️ Retrieved ${allPullRequests.length} total PRs for ${owner}/${repo}`)
     }
 
     // retrieve base branches we allow
-    const baseBranches =
-      configuration.base_branches || DefaultConfiguration.base_branches
+    const baseBranches = configuration.base_branches || DefaultConfiguration.base_branches
     const baseBranchPatterns = baseBranches.map(baseBranch => {
       return new RegExp(baseBranch.replace('\\\\', '\\'), 'gu')
     })
@@ -213,9 +183,7 @@ export class ReleaseNotes {
       for (const pr of finalPrs) {
         await pullRequestsApi.getReviewers(owner, repo, pr)
         if (pr.approvedReviewers.length > 0) {
-          core.info(
-            `ℹ️ Retrieved ${pr.approvedReviewers.length} reviewer(s) for PR ${owner}/${repo}/#${pr.number}`
-          )
+          core.info(`ℹ️ Retrieved ${pr.approvedReviewers.length} reviewer(s) for PR ${owner}/${repo}/#${pr.number}`)
         }
       }
     } else {
@@ -225,9 +193,7 @@ export class ReleaseNotes {
     return [diffInfo, finalPrs]
   }
 
-  private async generateCommitPRs(
-    octokit: Octokit
-  ): Promise<[DiffInfo, PullRequestInfo[]]> {
+  private async generateCommitPRs(octokit: Octokit): Promise<[DiffInfo, PullRequestInfo[]]> {
     const {owner, repo, configuration} = this.options
 
     const diffInfo = await this.getCommitHistory(octokit)
@@ -238,8 +204,7 @@ export class ReleaseNotes {
 
     const prCommits = filterCommits(
       commits,
-      configuration.exclude_merge_branches ||
-        DefaultConfiguration.exclude_merge_branches
+      configuration.exclude_merge_branches || DefaultConfiguration.exclude_merge_branches
     )
 
     core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`)

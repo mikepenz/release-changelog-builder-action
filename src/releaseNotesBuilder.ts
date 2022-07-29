@@ -57,8 +57,7 @@ export class ReleaseNotesBuilder {
       this.fromTag,
       this.toTag,
       this.ignorePreReleases,
-      this.configuration.max_tags_to_fetch ||
-        DefaultConfiguration.max_tags_to_fetch,
+      this.configuration.max_tags_to_fetch || DefaultConfiguration.max_tags_to_fetch,
       this.configuration.tag_resolver || DefaultConfiguration.tag_resolver
     )
 
@@ -73,10 +72,7 @@ export class ReleaseNotesBuilder {
 
     let previousTag = tagRange.from
     if (previousTag == null) {
-      failOrError(
-        `💥 Unable to retrieve previous tag given ${this.toTag}`,
-        this.failOnError
-      )
+      failOrError(`💥 Unable to retrieve previous tag given ${this.toTag}`, this.failOnError)
       return null
     }
     core.setOutput('fromTag', previousTag.name)
@@ -85,18 +81,8 @@ export class ReleaseNotesBuilder {
     if (this.fetchReleaseInformation) {
       // load release information from the GitHub API
       core.info(`ℹ️ Fetching release information was enabled`)
-      thisTag = await tagsApi.fillTagInformation(
-        this.repositoryPath,
-        this.owner,
-        this.repo,
-        thisTag
-      )
-      previousTag = await tagsApi.fillTagInformation(
-        this.repositoryPath,
-        this.owner,
-        this.repo,
-        previousTag
-      )
+      thisTag = await tagsApi.fillTagInformation(this.repositoryPath, this.owner, this.repo, thisTag)
+      previousTag = await tagsApi.fillTagInformation(this.repositoryPath, this.owner, this.repo, previousTag)
     } else {
       core.debug(`ℹ️ Fetching release information was disabled`)
     }
