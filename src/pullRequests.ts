@@ -9,6 +9,7 @@ export interface PullRequestInfo {
   title: string
   htmlURL: string
   baseBranch: string
+  branch?: string
   createdAt: moment.Moment
   mergedAt: moment.Moment | null
   mergeCommitSha: string
@@ -227,6 +228,7 @@ const mapPullRequest = (
   title: pr.title,
   htmlURL: pr.html_url,
   baseBranch: pr.base.ref,
+  branch: pr.head.ref,
   createdAt: moment(pr.created_at),
   mergedAt: pr.merged_at ? moment(pr.merged_at) : null,
   mergeCommitSha: pr.merge_commit_sha || '',

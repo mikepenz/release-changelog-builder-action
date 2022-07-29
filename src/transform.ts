@@ -462,12 +462,18 @@ function extractValues(
 
   if (extractor.onProperty !== undefined) {
     let results: string[] = []
-    const list: ('title' | 'author' | 'milestone' | 'body' | 'status')[] =
-      extractor.onProperty
+    const list: (
+      | 'title'
+      | 'author'
+      | 'milestone'
+      | 'body'
+      | 'status'
+      | 'branch'
+    )[] = extractor.onProperty
     // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < list.length; i++) {
       const prop = list[i]
-      let value: string = pr[prop]
+      let value: string | undefined = pr[prop]
       if (value === undefined) {
         core.warning(
           `⚠️ the provided property '${extractor.onProperty}' for \`${extractor_usecase}\` is not valid`
@@ -514,7 +520,9 @@ function extractValuesFromString(
 export interface RegexTransformer {
   pattern: RegExp | null
   target: string
-  onProperty?: ('title' | 'author' | 'milestone' | 'body')[] | undefined
+  onProperty?:
+    | ('title' | 'author' | 'milestone' | 'body' | 'status' | 'branch')[]
+    | undefined
   method?: 'replace' | 'match' | undefined
   onEmpty?: string | undefined
 }
