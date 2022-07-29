@@ -1449,6 +1449,7 @@ exports.validateTransformer = exports.replaceEmptyTemplate = exports.buildChange
 const core = __importStar(__nccwpck_require__(2186));
 const configuration_1 = __nccwpck_require__(5527);
 const pullRequests_1 = __nccwpck_require__(4217);
+const utils_1 = __nccwpck_require__(918);
 function buildChangelog(diffInfo, prs, options) {
     // sort to target order
     const config = options.configuration;
@@ -1494,15 +1495,17 @@ function buildChangelog(diffInfo, prs, options) {
             }
         }
     }
+    // keep reference for the placeholder values
     const placeholders = new Map();
     for (const ph of config.custom_placeholders || []) {
-        placeholders.set(ph.source, ph);
+        (0, utils_1.createOrSet)(placeholders, ph.source, ph);
     }
+    const placeholderPrMap = new Map();
     const validatedTransformers = validateTransformers(config.transformers);
     const transformedMap = new Map();
     // convert PRs to their text representation
     for (const pr of prs) {
-        transformedMap.set(pr, transform(fillTemplate(pr, config.pr_template || configuration_1.DefaultConfiguration.pr_template, placeholders), validatedTransformers));
+        transformedMap.set(pr, transform(fillPrTemplate(pr, config.pr_template || configuration_1.DefaultConfiguration.pr_template, placeholders, placeholderPrMap), validatedTransformers));
     }
     core.info(`ℹ️ Used ${validatedTransformers.length} transformers to adjust message`);
     core.info(`✒️ Wrote messages for ${prs.length} pull requests`);
@@ -1519,7 +1522,7 @@ function buildChangelog(diffInfo, prs, options) {
     const uncategorizedPrs = [];
     // bring elements in order
     for (const [pr, body] of transformedMap) {
-        if (haveCommonElements(ignoredLabels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
+        if ((0, utils_1.haveCommonElements)(ignoredLabels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
             ignoredPrs.push(body);
             continue;
         }
@@ -1530,7 +1533,7 @@ function buildChangelog(diffInfo, prs, options) {
         for (const [category, pullRequests] of categorized) {
             // check if any exclude label matches
             if (category.exclude_labels !== undefined) {
-                if (haveCommonElements(category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
+                if ((0, utils_1.haveCommonElements)(category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
                     if (core.isDebug()) {
                         const prNum = pr.number;
                         const prLabels = pr.labels;
@@ -1541,13 +1544,13 @@ function buildChangelog(diffInfo, prs, options) {
                 }
             }
             if (category.exhaustive === true) {
-                if (haveEveryElements(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
+                if ((0, utils_1.haveEveryElements)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
                     pullRequests.push(body);
                     matched = true;
                 }
             }
             else {
-                if (haveCommonElements(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
+                if ((0, utils_1.haveCommonElements)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
                     pullRequests.push(body);
                     matched = true;
                 }
@@ -1643,7 +1646,8 @@ function buildChangelog(diffInfo, prs, options) {
     placeholderMap.set('COMMITS', diffInfo.commits.toString());
     fillAdditionalPlaceholders(options, placeholderMap);
     let transformedChangelog = config.template || configuration_1.DefaultConfiguration.template;
-    transformedChangelog = replacePlaceHolders(transformedChangelog, placeholderMap, placeholders);
+    transformedChangelog = replacePlaceholders(transformedChangelog, placeholderMap, placeholders, placeholderPrMap);
+    transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap);
     core.info(`ℹ️ Filled template`);
     return transformedChangelog;
 }
@@ -1651,16 +1655,15 @@ exports.buildChangelog = buildChangelog;
 function replaceEmptyTemplate(template, options) {
     const placeholders = new Map();
     for (const ph of options.configuration.custom_placeholders || []) {
-        placeholders.set(ph.source, ph);
+        (0, utils_1.createOrSet)(placeholders, ph.source, ph);
     }
     const placeholderMap = new Map();
     fillAdditionalPlaceholders(options, placeholderMap);
-    return replacePlaceHolders(template, placeholderMap, placeholders);
+    return replacePlaceholders(template, placeholderMap, placeholders);
 }
 exports.replaceEmptyTemplate = replaceEmptyTemplate;
-function fillAdditionalPlaceholders(options, placeholderMap) {
+function fillAdditionalPlaceholders(options, placeholderMap /* placeholderKey and original value */) {
     var _a, _b;
-    // repository placeholders
     placeholderMap.set('OWNER', options.owner);
     placeholderMap.set('REPO', options.repo);
     placeholderMap.set('FROM_TAG', options.fromTag.name);
@@ -1677,7 +1680,7 @@ function fillAdditionalPlaceholders(options, placeholderMap) {
     }
     placeholderMap.set('RELEASE_DIFF', `https://github.com/${options.owner}/${options.repo}/compare/${options.fromTag.name}...${options.toTag.name}`);
 }
-function fillTemplate(pr, template, placeholders) {
+function fillPrTemplate(pr, template, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */) {
     var _a, _b, _c, _d, _e, _f;
     const placeholderMap = new Map();
     placeholderMap.set('NUMBER', pr.number.toString());
@@ -1696,26 +1699,39 @@ function fillTemplate(pr, template, placeholders) {
     placeholderMap.set('APPROVERS', ((_f = pr.approvedReviewers) === null || _f === void 0 ? void 0 : _f.join(', ')) || '');
     placeholderMap.set('BRANCH', pr.branch || '');
     placeholderMap.set('BASE_BRANCH', pr.baseBranch);
-    return replacePlaceHolders(template, placeholderMap, placeholders);
+    return replacePlaceholders(template, placeholderMap, placeholders, placeholderPrMap);
 }
-function replacePlaceHolders(template, placeholderMap, placeholders) {
+function replacePlaceholders(template, placeholderMap /* placeholderKey and original value */, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */) {
     let transformed = template;
     for (const [key, value] of placeholderMap) {
         transformed = transformed.replaceAll(`\${{${key}}}`, value);
         // replace custom placeholders
-        transformed = applyCustomPlaceholder(transformed, value, placeholders.get(key));
+        const phs = placeholders.get(key);
+        if (phs) {
+            for (const placeholder of phs) {
+                const transformer = validateTransformer(placeholder.transformer);
+                if (transformer === null || transformer === void 0 ? void 0 : transformer.pattern) {
+                    const extractedValue = value.replace(transformer.pattern, transformer.target);
+                    // note: `.replace` will return the full string again if there was no match
+                    if (extractedValue && placeholderPrMap && extractedValue !== value) {
+                        (0, utils_1.createOrSet)(placeholderPrMap, placeholder.name, extractedValue);
+                    }
+                    transformed = transformed.replaceAll(`\${{${placeholder.name}}}`, extractedValue);
+                }
+            }
+        }
     }
     return transformed;
 }
-function applyCustomPlaceholder(template, value, placeholder) {
-    if (placeholder) {
-        const transformer = validateTransformer(placeholder.transformer);
-        if (transformer === null || transformer === void 0 ? void 0 : transformer.pattern) {
-            const extractedValue = value.replace(transformer.pattern, transformer.target);
-            return template.replaceAll(`\${{${placeholder.name}}}`, extractedValue);
+function replacePrPlaceholders(template, placeholderPrMap /* map with all pr related custom placeholder values */) {
+    let transformed = template;
+    for (const [key, values] of placeholderPrMap) {
+        for (let i = 0; i < values.length; i++) {
+            transformed = transformed.replaceAll(`\${{${key}[${i}]}}`, values[i]);
         }
+        transformed = transformed.replaceAll(`\${{${key}[*]}}`, values.join(''));
     }
-    return template;
+    return transformed;
 }
 function transform(filled, transformers) {
     if (transformers.length === 0) {
@@ -1821,12 +1837,6 @@ function extractValuesFromString(value, extractor) {
     }
     return null;
 }
-function haveCommonElements(arr1, arr2) {
-    return arr1.some(item => arr2.has(item));
-}
-function haveEveryElements(arr1, arr2) {
-    return arr1.every(item => arr2.has(item));
-}
 
 
 /***/ }),
@@ -1860,7 +1870,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.writeOutput = exports.directoryExistsSync = exports.parseConfiguration = exports.resolveConfiguration = exports.failOrError = exports.retrieveRepositoryPath = void 0;
+exports.haveEveryElements = exports.haveCommonElements = exports.createOrSet = exports.writeOutput = exports.directoryExistsSync = exports.parseConfiguration = exports.resolveConfiguration = exports.failOrError = exports.retrieveRepositoryPath = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
@@ -1994,6 +2004,24 @@ function writeOutput(githubWorkspacePath, outputFile, changelog) {
     }
 }
 exports.writeOutput = writeOutput;
+function createOrSet(map, key, value) {
+    const entry = map.get(key);
+    if (!entry) {
+        map.set(key, [value]);
+    }
+    else {
+        entry.push(value);
+    }
+}
+exports.createOrSet = createOrSet;
+function haveCommonElements(arr1, arr2) {
+    return arr1.some(item => arr2.has(item));
+}
+exports.haveCommonElements = haveCommonElements;
+function haveEveryElements(arr1, arr2) {
+    return arr1.every(item => arr2.has(item));
+}
+exports.haveEveryElements = haveEveryElements;
 
 
 /***/ }),

@@ -132,3 +132,20 @@ export function writeOutput(githubWorkspacePath: string, outputFile: string, cha
 }
 
 export type Unpacked<T> = T extends (infer U)[] ? U : T
+
+export function createOrSet<T>(map: Map<String, T[]>, key: string, value: T): void {
+  const entry = map.get(key)
+  if (!entry) {
+    map.set(key, [value])
+  } else {
+    entry.push(value)
+  }
+}
+
+export function haveCommonElements(arr1: string[], arr2: Set<string>): Boolean {
+  return arr1.some(item => arr2.has(item))
+}
+
+export function haveEveryElements(arr1: string[], arr2: Set<string>): Boolean {
+  return arr1.every(item => arr2.has(item))
+}

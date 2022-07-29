@@ -1,7 +1,7 @@
 import {buildChangelog} from '../src/transform'
 import {PullRequestInfo} from '../src/pullRequests'
 import moment from 'moment'
-import { DefaultConfiguration } from '../src/configuration';
+import { Configuration, DefaultConfiguration } from '../src/configuration';
 import { DefaultDiffInfo } from '../src/commits';
 
 jest.setTimeout(180000)
@@ -41,7 +41,7 @@ mergedPullRequests.push(
     repoName: 'test-repo',
     labels: new Set<string>(),
     milestone: '',
-    body: 'no magic body for this matter',
+    body: 'no magic body1 for this matter',
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
@@ -59,7 +59,7 @@ mergedPullRequests.push(
     repoName: 'test-repo',
     labels: new Set<string>(),
     milestone: '',
-    body: 'no magic body for this matter',
+    body: 'no magic body2 for this matter',
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
@@ -77,7 +77,7 @@ mergedPullRequests.push(
     repoName: 'test-repo',
     labels: new Set<string>(),
     milestone: '',
-    body: 'no magic body for this matter',
+    body: 'no magic body3 for this matter',
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
@@ -95,7 +95,7 @@ mergedPullRequests.push(
     repoName: 'test-repo',
     labels: new Set<string>(),
     milestone: '',
-    body: 'no magic body for this matter',
+    body: 'no magic body4 for this matter',
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
@@ -582,4 +582,44 @@ it('Use exclude labels to not include a PR within a category.', async () => {
   expect(resultChangelog).toStrictEqual(
     `## 🚀 Features and 🐛 Issues\n\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n## 🚀 Features and/or 🐛 Issues But No 🐛 Fixes\n\n- [ABC-1234] - this is a PR 1 title message\n   - PR: #1\n\n`
   )
+})
+
+
+it('Extract custom placeholder from PR body and replace in global template', async () => {
+  const customConfig = Object.assign({}, configuration)
+  customConfig.custom_placeholders = [
+    {
+      name: "C_PLACEHOLDER_1",
+      source: "BODY",
+      transformer: {
+        pattern: '.+ (b....).+',
+        target: '- $1'
+      }
+    },
+    {
+      name: "C_PLACEHOLER_2",
+      source: "BODY",
+      transformer: {
+        pattern: '.+ b(....).+',
+        target: '\n- $1'
+      }
+    }
+  ]
+  customConfig.template = "${{CHANGELOG}}\n\n${{C_PLACEHOLER_2[2]}}\n\n${{C_PLACEHOLER_2[*]}}"
+  customConfig.pr_template = "${{BODY}} ---->  ${{C_PLACEHOLDER_1}}"
+
+  const resultChangelog = buildChangelog(DefaultDiffInfo, mergedPullRequests, {
+    owner: 'mikepenz',
+    repo: 'test-repo',
+    fromTag: { name: '1.0.0' },
+    toTag: { name: '2.0.0' },
+    includeOpen: false,
+    failOnError: false,
+    fetchReviewers: false,
+    fetchReleaseInformation: false,
+    commitMode: false,
+    configuration: customConfig
+  })
+
+  expect(resultChangelog).toStrictEqual(`## 🚀 Features\n\nno magic body1 for this matter ---->  - body1\nno magic body3 for this matter ---->  - body3\n\n## 🐛 Fixes\n\nno magic body2 for this matter ---->  - body2\nno magic body3 for this matter ---->  - body3\n\n## 🧪 Others\n\nno magic body4 for this matter ---->  - body4\n\n\n\n\n- ody3\n\n\n- ody1\n- ody2\n- ody3\n- ody4`)
 })
