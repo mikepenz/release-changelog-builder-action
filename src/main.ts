@@ -1,11 +1,13 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {
+  parseConfiguration,
   resolveConfiguration,
   retrieveRepositoryPath,
   writeOutput
 } from './utils'
 import {ReleaseNotesBuilder} from './releaseNotesBuilder'
+import {Configuration} from './configuration'
 
 async function run(): Promise<void> {
   core.setOutput('failed', false) // mark the action not failed by default
@@ -17,11 +19,17 @@ async function run(): Promise<void> {
     const repositoryPath = retrieveRepositoryPath(inputPath)
 
     // read in configuration file if possible
-    const configurationFile: string = core.getInput('configuration')
-    const configuration = resolveConfiguration(
-      repositoryPath,
-      configurationFile
-    )
+    let configuration: Configuration | undefined = undefined
+    const configurationJson: string = core.getInput('configurationJson', {
+      trimWhitespace: true
+    })
+    if (configurationJson) {
+      configuration = parseConfiguration(configurationJson)
+    }
+    if (!configuration) {
+      const configurationFile: string = core.getInput('configuration')
+      configuration = resolveConfiguration(repositoryPath, configurationFile)
+    }
 
     // read in repository inputs
     const baseUrl = core.getInput('baseUrl')

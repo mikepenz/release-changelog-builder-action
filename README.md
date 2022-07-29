@@ -103,6 +103,9 @@ Below is a complete example showcasing how to define a build, which is executed 
 
 > Note: PRs will only show up in the changelog if assigned one of the default label categories "feature", "fix" or "test"
 
+<details><summary><b>Example</b></summary>
+<p>
+
 ```yml
 name: 'CI'
 on:
@@ -122,10 +125,46 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
-        uses: softprops/action-gh-release@v0.1.14
+        uses: mikepenz/action-gh-release@v0.2.0-a02 #softprops/action-gh-release
         with:
           body: ${{steps.github_release.outputs.changelog}}
 ```
+
+</p>
+</details>
+
+<details><summary><b>Example w/ Configuration</b></summary>
+<p>
+
+```yml
+jobs:
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Changelog
+        uses: mikepenz/release-changelog-builder-action@v3
+        with:
+          configurationJson: |
+            {
+              "template": "#{{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n#{{UNCATEGORIZED}}\n</details>",
+              "categories": [
+                {
+                    "title": "## 💬 Other",
+                    "labels": ["other"]
+                },
+                {
+                    "title": "## 📦 Dependencies",
+                    "labels": ["dependencies"]
+                }
+              ]
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+</p>
+</details>
 
 ## Customization 🖍️
 
@@ -152,7 +191,7 @@ The action supports flexible configuration options to modify vast areas of its b
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-> **Warning** It is required to have a `checkout` step prior to the changelog step, to allow the action to discover the configuration file.
+> **Warning** It is required to have a `checkout` step prior to the changelog step if `configuration` is used, to allow the action to discover the configuration file. Use `configurationJson` as alternative.
 
 This configuration is a `.json` file in the following format.
 
@@ -262,6 +301,7 @@ For advanced use cases additional settings can be provided to the action
 
 | **Input**         | **Description**                                                                                                                                                               |
 |-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `configurationJson` | Provide the configuration directly via the build `yml` file. Please note that `${{}}`  has to be written as `#{{}}` within the `yml` file.                                  |
 | `configuration`     | Relative path, to the `configuration.json` file, providing additional configurations                                                                                        |
 | `outputFile`        | Optional relative path to a file to store the resulting changelog in.                                                                                                       |
 | `owner`             | The owner of the repository to generate the changelog for                                                                                                                   |
@@ -299,7 +339,6 @@ Table of supported placeholders allowed to be used in the `pr_template` configur
 | `${{ASSIGNEES}}`  | Login names of assigned GitHub users, joined by `,`               |
 | `${{REVIEWERS}}`  | GitHub Login names of specified reviewers, joined by `,`. Requires `fetchReviewers` to be enabled. |
 | `${{APPROVERS}}`  | GitHub Login names of users who approved the PR, joined by `,`    |
-| `${{DAYS_SINCE}}`  | Days between the 2 releases. Requires `fetchReleaseInformation` to be enabled. |
 
 ### Template placeholders
 
@@ -325,8 +364,9 @@ Table of supported placeholders allowed to be used in the `template` and `empty_
 | `${{COMMITS}}`             | The count of commits in this release.                                                              |           |
 | `${{CATEGORIZED_COUNT}}`   | The count of PRs which were categorized                                                            |           |
 | `${{UNCATEGORIZED_COUNT}}` | The count of PRs and changes which were not categorized. No label overlapping with category labels |           |
-| `${{OPEN_COUNT}}` | The count of open PRs. Will only be fetched if `includeOpen` is configured.                                 |           |
+| `${{OPEN_COUNT}}`          | The count of open PRs. Will only be fetched if `includeOpen` is configured.                        |           |
 | `${{IGNORED_COUNT}}`       | The count of PRs and changes which were specifically ignored from the changelog.                   |           |
+| `${{DAYS_SINCE}}`          | Days between the 2 releases. Requires `fetchReleaseInformation` to be enabled.                     | *         |
 
 ### Configuration Specification
 

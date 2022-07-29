@@ -67,24 +67,35 @@ export function resolveConfiguration(
 /**
  * Reads in the configuration from the JSON file
  */
-function readConfiguration(filename: string): Configuration | null {
-  let rawdata: string
+function readConfiguration(filename: string): Configuration | undefined {
   try {
-    rawdata = fs.readFileSync(filename, 'utf8')
+    const rawdata = fs.readFileSync(filename, 'utf8')
+    if (rawdata) {
+      return parseConfiguration(rawdata)
+    }
   } catch (error) {
-    core.info(
-      `⚠️ Configuration provided, but it couldn't be found. Fallback to Defaults.`
-    )
-    return null
+    core.debug(`Failed to load configuration due to: ${error}`)
   }
+  core.info(
+    `⚠️ Configuration provided, but it couldn't be found. Fallback to Defaults.`
+  )
+  return undefined
+}
+/**
+ * Parses the configuration from the JSON file
+ */
+export function parseConfiguration(config: string): Configuration | undefined {
   try {
-    const configurationJSON: Configuration = JSON.parse(rawdata)
+    // for compatiblity with the `yml` file we require to use `#{{}}` instead of `${{}}` - replace it here.
+    const configurationJSON: Configuration = JSON.parse(
+      config.replace(/#{{/g, '${{')
+    )
     return configurationJSON
   } catch (error) {
     core.info(
       `⚠️ Configuration provided, but it couldn't be parsed. Fallback to Defaults.`
     )
-    return null
+    return undefined
   }
 }
 
