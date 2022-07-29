@@ -5,6 +5,8 @@ branding:
   icon: 'award'  
   color: 'green'
 inputs:
+  configurationJson:
+    description: 'Defines the configuration json. If provided, will be prefered over `configuration`.'
   configuration:
     description: 'Defines the relative path to the configuration file.'
   path:

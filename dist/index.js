@@ -412,8 +412,17 @@ function run() {
             const inputPath = core.getInput('path');
             const repositoryPath = (0, utils_1.retrieveRepositoryPath)(inputPath);
             // read in configuration file if possible
-            const configurationFile = core.getInput('configuration');
-            const configuration = (0, utils_1.resolveConfiguration)(repositoryPath, configurationFile);
+            let configuration = undefined;
+            const configurationJson = core.getInput('configurationJson', {
+                trimWhitespace: true
+            });
+            if (configurationJson) {
+                configuration = (0, utils_1.parseConfiguration)(configurationJson);
+            }
+            if (!configuration) {
+                const configurationFile = core.getInput('configuration');
+                configuration = (0, utils_1.resolveConfiguration)(repositoryPath, configurationFile);
+            }
             // read in repository inputs
             const baseUrl = core.getInput('baseUrl');
             const token = core.getInput('token');
@@ -1840,7 +1849,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.writeOutput = exports.directoryExistsSync = exports.resolveConfiguration = exports.failOrError = exports.retrieveRepositoryPath = void 0;
+exports.writeOutput = exports.directoryExistsSync = exports.parseConfiguration = exports.resolveConfiguration = exports.failOrError = exports.retrieveRepositoryPath = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
@@ -1902,23 +1911,33 @@ exports.resolveConfiguration = resolveConfiguration;
  * Reads in the configuration from the JSON file
  */
 function readConfiguration(filename) {
-    let rawdata;
     try {
-        rawdata = fs.readFileSync(filename, 'utf8');
+        const rawdata = fs.readFileSync(filename, 'utf8');
+        if (rawdata) {
+            return parseConfiguration(rawdata);
+        }
     }
     catch (error) {
-        core.info(`⚠️ Configuration provided, but it couldn't be found. Fallback to Defaults.`);
-        return null;
+        core.debug(`Failed to load configuration due to: ${error}`);
     }
+    core.info(`⚠️ Configuration provided, but it couldn't be found. Fallback to Defaults.`);
+    return undefined;
+}
+/**
+ * Parses the configuration from the JSON file
+ */
+function parseConfiguration(config) {
     try {
-        const configurationJSON = JSON.parse(rawdata);
+        // for compatiblity with the `yml` file we require to use `#{{}}` instead of `${{}}` - replace it here.
+        const configurationJSON = JSON.parse(config.replace(/#{{/g, '${{'));
         return configurationJSON;
     }
     catch (error) {
         core.info(`⚠️ Configuration provided, but it couldn't be parsed. Fallback to Defaults.`);
-        return null;
+        return undefined;
     }
 }
+exports.parseConfiguration = parseConfiguration;
 /**
  * Checks if a given directory exists
  */
