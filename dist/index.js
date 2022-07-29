@@ -1928,7 +1928,8 @@ function readConfiguration(filename) {
  */
 function parseConfiguration(config) {
     try {
-        const configurationJSON = JSON.parse(config);
+        // for compatiblity with the `yml` file we require to use `#{{}}` instead of `${{}}` - replace it here.
+        const configurationJSON = JSON.parse(config.replace(/#{{/g, '${{'));
         return configurationJSON;
     }
     catch (error) {

@@ -147,7 +147,7 @@ jobs:
         with:
           configurationJson: |
             {
-              "template": "${{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n${{UNCATEGORIZED}}\n</details>",
+              "template": "#{{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n#{{UNCATEGORIZED}}\n</details>",
               "categories": [
                 {
                     "title": "## 💬 Other",
@@ -301,7 +301,7 @@ For advanced use cases additional settings can be provided to the action
 
 | **Input**         | **Description**                                                                                                                                                               |
 |-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `configurationJson` | Provide the configuration directly via the build `yml` file.                                                                                                                |
+| `configurationJson` | Provide the configuration directly via the build `yml` file. Please note that `${{}}`  has to be written as `#{{}}` within the `yml` file.                                  |
 | `configuration`     | Relative path, to the `configuration.json` file, providing additional configurations                                                                                        |
 | `outputFile`        | Optional relative path to a file to store the resulting changelog in.                                                                                                       |
 | `owner`             | The owner of the repository to generate the changelog for                                                                                                                   |
