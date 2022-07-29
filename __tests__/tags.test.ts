@@ -1,5 +1,3 @@
-import {resolveConfiguration} from '../src/utils'
-import {ReleaseNotesBuilder} from '../src/releaseNotesBuilder'
 import { TagInfo, sortTags, filterTags } from '../src/tags';
 
 jest.setTimeout(180000)

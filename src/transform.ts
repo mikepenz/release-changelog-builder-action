@@ -1,19 +1,19 @@
 import * as core from '@actions/core'
-import {
-  Category,
-  DefaultConfiguration,
-  Extractor,
-  Transformer
-} from './configuration'
+import {Category, DefaultConfiguration, Extractor, Placeholder, Transformer} from './configuration'
 import {PullRequestInfo, sortPullRequests} from './pullRequests'
 import {ReleaseNotesOptions} from './releaseNotes'
 import {DiffInfo} from './commits'
+import {createOrSet, haveCommonElements, haveEveryElements} from './utils'
 
-export function buildChangelog(
-  diffInfo: DiffInfo,
-  prs: PullRequestInfo[],
-  options: ReleaseNotesOptions
-): string {
+export interface RegexTransformer {
+  pattern: RegExp | null
+  target: string
+  onProperty?: ('title' | 'author' | 'milestone' | 'body' | 'status' | 'branch')[] | undefined
+  method?: 'replace' | 'match' | undefined
+  onEmpty?: string | undefined
+}
+
+export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], options: ReleaseNotesOptions): string {
   // sort to target order
   const config = options.configuration
   const sort = config.sort || DefaultConfiguration.sort
@@ -33,18 +33,14 @@ export function buildChangelog(
         if (extracted !== null && extracted.length > 0) {
           deduplicatedMap.set(extracted[0], pr)
         } else {
-          core.info(
-            `  PR (${pr.number}) did not resolve an ID using the \`duplicate_filter\``
-          )
+          core.info(`  PR (${pr.number}) did not resolve an ID using the \`duplicate_filter\``)
           unmatched.push(pr)
         }
       }
       const deduplicatedPRs = Array.from(deduplicatedMap.values())
       deduplicatedPRs.push(...unmatched) // add all unmatched PRs to map
       const removedElements = prs.length - deduplicatedPRs.length
-      core.info(
-        `ℹ️ Removed ${removedElements} pull requests during deduplication`
-      )
+      core.info(`ℹ️ Removed ${removedElements} pull requests during deduplication`)
       prs = sortPullRequests(deduplicatedPRs, sort) // resort deduplicatedPRs
     } else {
       core.warning(`⚠️ Configured \`duplicate_filter\` invalid.`)
@@ -64,6 +60,13 @@ export function buildChangelog(
     }
   }
 
+  // keep reference for the placeholder values
+  const placeholders = new Map<string, Placeholder[]>()
+  for (const ph of config.custom_placeholders || []) {
+    createOrSet(placeholders, ph.source, ph)
+  }
+  const placeholderPrMap = new Map<string, string[]>()
+
   const validatedTransformers = validateTransformers(config.transformers)
   const transformedMap = new Map<PullRequestInfo, string>()
   // convert PRs to their text representation
@@ -71,24 +74,18 @@ export function buildChangelog(
     transformedMap.set(
       pr,
       transform(
-        fillTemplate(
-          pr,
-          config.pr_template || DefaultConfiguration.pr_template
-        ),
+        fillPrTemplate(pr, config.pr_template || DefaultConfiguration.pr_template, placeholders, placeholderPrMap),
         validatedTransformers
       )
     )
   }
-  core.info(
-    `ℹ️ Used ${validatedTransformers.length} transformers to adjust message`
-  )
+  core.info(`ℹ️ Used ${validatedTransformers.length} transformers to adjust message`)
   core.info(`✒️ Wrote messages for ${prs.length} pull requests`)
 
   // bring PRs into the order of categories
   const categorized = new Map<Category, string[]>()
   const categories = config.categories || DefaultConfiguration.categories
-  const ignoredLabels =
-    config.ignore_labels || DefaultConfiguration.ignore_labels
+  const ignoredLabels = config.ignore_labels || DefaultConfiguration.ignore_labels
 
   for (const category of categories) {
     categorized.set(category, [])
@@ -203,9 +200,7 @@ export function buildChangelog(
   for (const pr of uncategorizedPrs) {
     changelogUncategorized = `${changelogUncategorized + pr}\n`
   }
-  core.info(
-    `✒️ Wrote ${uncategorizedPrs.length} non categorized pull requests down`
-  )
+  core.info(`✒️ Wrote ${uncategorizedPrs.length} non categorized pull requests down`)
   if (core.isDebug()) {
     for (const pr of uncategorizedPrs) {
       core.debug(`    ${pr}`)
@@ -239,148 +234,144 @@ export function buildChangelog(
   core.info(`✒️ Wrote ${ignoredPrs.length} ignored pull requests down`)
 
   // fill template
-  let transformedChangelog = config.template || DefaultConfiguration.template
-  transformedChangelog = transformedChangelog.replace(
-    /\${{CHANGELOG}}/g,
-    changelog
-  )
-  transformedChangelog = transformedChangelog.replace(
-    /\${{UNCATEGORIZED}}/g,
-    changelogUncategorized
-  )
-  transformedChangelog = transformedChangelog.replace(
-    /\${{OPEN}}/g,
-    changelogOpen
-  )
-  transformedChangelog = transformedChangelog.replace(
-    /\${{IGNORED}}/g,
-    changelogIgnored
-  )
-
+  const placeholderMap = new Map<string, string>()
+  placeholderMap.set('CHANGELOG', changelog)
+  placeholderMap.set('UNCATEGORIZED', changelogUncategorized)
+  placeholderMap.set('OPEN', changelogOpen)
+  placeholderMap.set('IGNORED', changelogIgnored)
   // fill other placeholders
-  transformedChangelog = transformedChangelog.replace(
-    /\${{CATEGORIZED_COUNT}}/g,
-    categorizedPrs.length.toString()
-  )
-  transformedChangelog = transformedChangelog.replace(
-    /\${{UNCATEGORIZED_COUNT}}/g,
-    uncategorizedPrs.length.toString()
-  )
-  transformedChangelog = transformedChangelog.replace(
-    /\${{OPEN_COUNT}}/g,
-    openPrs.length.toString()
-  )
-  transformedChangelog = transformedChangelog.replace(
-    /\${{IGNORED_COUNT}}/g,
-    ignoredPrs.length.toString()
-  )
+  placeholderMap.set('CATEGORIZED_COUNT', categorizedPrs.length.toString())
+  placeholderMap.set('UNCATEGORIZED_COUNT', uncategorizedPrs.length.toString())
+  placeholderMap.set('OPEN_COUNT', openPrs.length.toString())
+  placeholderMap.set('IGNORED_COUNT', ignoredPrs.length.toString())
   // code change placeholders
-  transformedChangelog = transformedChangelog.replace(
-    /\${{CHANGED_FILES}}/g,
-    diffInfo.changedFiles.toString()
-  )
-  transformedChangelog = transformedChangelog.replace(
-    /\${{ADDITIONS}}/g,
-    diffInfo.additions.toString()
-  )
-  transformedChangelog = transformedChangelog.replace(
-    /\${{DELETIONS}}/g,
-    diffInfo.deletions.toString()
-  )
-  transformedChangelog = transformedChangelog.replace(
-    /\${{CHANGES}}/g,
-    diffInfo.changes.toString()
-  )
-  transformedChangelog = transformedChangelog.replace(
-    /\${{COMMITS}}/g,
-    diffInfo.commits.toString()
-  )
-  transformedChangelog = fillAdditionalPlaceholders(
-    transformedChangelog,
-    options
-  )
+  placeholderMap.set('CHANGED_FILES', diffInfo.changedFiles.toString())
+  placeholderMap.set('ADDITIONS', diffInfo.additions.toString())
+  placeholderMap.set('DELETIONS', diffInfo.deletions.toString())
+  placeholderMap.set('CHANGES', diffInfo.changes.toString())
+  placeholderMap.set('COMMITS', diffInfo.commits.toString())
+  fillAdditionalPlaceholders(options, placeholderMap)
 
+  let transformedChangelog = config.template || DefaultConfiguration.template
+  transformedChangelog = replacePlaceholders(transformedChangelog, placeholderMap, placeholders, placeholderPrMap)
+  transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap)
+  transformedChangelog = cleanupPrPlaceHolders(transformedChangelog, placeholders)
   core.info(`ℹ️ Filled template`)
   return transformedChangelog
 }
 
-export function fillAdditionalPlaceholders(
-  text: string,
-  options: ReleaseNotesOptions
-): string {
-  let transformed = text
-  // repository placeholders
-  transformed = transformed.replace(/\${{OWNER}}/g, options.owner)
-  transformed = transformed.replace(/\${{REPO}}/g, options.repo)
-  transformed = transformed.replace(/\${{FROM_TAG}}/g, options.fromTag.name)
-  transformed = transformed.replace(
-    /\${{FROM_TAG_DATE}}/g,
-    options.fromTag.date?.toISOString() || ''
-  )
-  transformed = transformed.replace(/\${{TO_TAG}}/g, options.toTag.name)
-  transformed = transformed.replace(
-    /\${{TO_TAG_DATE}}/g,
-    options.toTag.date?.toISOString() || ''
-  )
+export function replaceEmptyTemplate(template: string, options: ReleaseNotesOptions): string {
+  const placeholders = new Map<string, Placeholder[]>()
+  for (const ph of options.configuration.custom_placeholders || []) {
+    createOrSet(placeholders, ph.source, ph)
+  }
+  const placeholderMap = new Map<string, string>()
+  fillAdditionalPlaceholders(options, placeholderMap)
+  return replacePlaceholders(template, placeholderMap, placeholders)
+}
+
+function fillAdditionalPlaceholders(
+  options: ReleaseNotesOptions,
+  placeholderMap: Map<string, string> /* placeholderKey and original value */
+): void {
+  placeholderMap.set('OWNER', options.owner)
+  placeholderMap.set('REPO', options.repo)
+  placeholderMap.set('FROM_TAG', options.fromTag.name)
+  placeholderMap.set('FROM_TAG_DATE', options.fromTag.date?.toISOString() || '')
+  placeholderMap.set('TO_TAG', options.toTag.name)
+  placeholderMap.set('TO_TAG_DATE', options.toTag.date?.toISOString() || '')
   const fromDate = options.fromTag.date
   const toDate = options.toTag.date
   if (fromDate !== undefined && toDate !== undefined) {
-    transformed = transformed.replace(
-      /\${{DAYS_SINCE}}/g,
-      toDate.diff(fromDate, 'days').toString() || ''
-    )
+    placeholderMap.set('DAYS_SINCE', toDate.diff(fromDate, 'days').toString() || '')
   } else {
-    transformed = transformed.replace(/\${{DAYS_SINCE}}/g, '')
+    placeholderMap.set('DAYS_SINCE', '')
   }
-  transformed = transformed.replace(
-    /\${{RELEASE_DIFF}}/g,
+  placeholderMap.set(
+    'RELEASE_DIFF',
     `https://github.com/${options.owner}/${options.repo}/compare/${options.fromTag.name}...${options.toTag.name}`
   )
+}
+
+function fillPrTemplate(
+  pr: PullRequestInfo,
+  template: string,
+  placeholders: Map<string, Placeholder[]> /* placeholders to apply */,
+  placeholderPrMap: Map<string, string[]> /* map to keep replaced placeholder values with their key */
+): string {
+  const placeholderMap = new Map<string, string>()
+  placeholderMap.set('NUMBER', pr.number.toString())
+  placeholderMap.set('TITLE', pr.title)
+  placeholderMap.set('URL', pr.htmlURL)
+  placeholderMap.set('STATUS', pr.status)
+  placeholderMap.set('CREATED_AT', pr.createdAt.toISOString())
+  placeholderMap.set('MERGED_AT', pr.mergedAt?.toISOString() || '')
+  placeholderMap.set('MERGE_SHA', pr.mergeCommitSha)
+  placeholderMap.set('AUTHOR', pr.author)
+  placeholderMap.set('LABELS', [...pr.labels]?.filter(l => !l.startsWith('--rcba-'))?.join(', ') || '')
+  placeholderMap.set('MILESTONE', pr.milestone || '')
+  placeholderMap.set('BODY', pr.body)
+  placeholderMap.set('ASSIGNEES', pr.assignees?.join(', ') || '')
+  placeholderMap.set('REVIEWERS', pr.requestedReviewers?.join(', ') || '')
+  placeholderMap.set('APPROVERS', pr.approvedReviewers?.join(', ') || '')
+  placeholderMap.set('BRANCH', pr.branch || '')
+  placeholderMap.set('BASE_BRANCH', pr.baseBranch)
+  return replacePlaceholders(template, placeholderMap, placeholders, placeholderPrMap)
+}
+
+function replacePlaceholders(
+  template: string,
+  placeholderMap: Map<string, string> /* placeholderKey and original value */,
+  placeholders: Map<string, Placeholder[]> /* placeholders to apply */,
+  placeholderPrMap?: Map<string, string[]> /* map to keep replaced placeholder values with their key */
+): string {
+  let transformed = template
+  for (const [key, value] of placeholderMap) {
+    transformed = transformed.replaceAll(`\${{${key}}}`, value)
+
+    // replace custom placeholders
+    const phs = placeholders.get(key)
+    if (phs) {
+      for (const placeholder of phs) {
+        const transformer = validateTransformer(placeholder.transformer)
+        if (transformer?.pattern) {
+          const extractedValue = value.replace(transformer.pattern, transformer.target)
+          // note: `.replace` will return the full string again if there was no match
+          if (extractedValue && placeholderPrMap && extractedValue !== value) {
+            createOrSet(placeholderPrMap, placeholder.name, extractedValue)
+          }
+          transformed = transformed.replaceAll(`\${{${placeholder.name}}}`, extractedValue)
+        }
+      }
+    }
+  }
   return transformed
 }
 
-function haveCommonElements(arr1: string[], arr2: Set<string>): Boolean {
-  return arr1.some(item => arr2.has(item))
-}
-
-function haveEveryElements(arr1: string[], arr2: Set<string>): Boolean {
-  return arr1.every(item => arr2.has(item))
-}
-
-function fillTemplate(pr: PullRequestInfo, template: string): string {
+function replacePrPlaceholders(
+  template: string,
+  placeholderPrMap: Map<string, string[]> /* map with all pr related custom placeholder values */
+): string {
   let transformed = template
-  transformed = transformed.replace(/\${{NUMBER}}/g, pr.number.toString())
-  transformed = transformed.replace(/\${{TITLE}}/g, pr.title)
-  transformed = transformed.replace(/\${{URL}}/g, pr.htmlURL)
-  transformed = transformed.replace(/\${{STATUS}}/g, pr.status)
-  transformed = transformed.replace(
-    /\${{CREATED_AT}}/g,
-    pr.createdAt.toISOString()
-  )
-  transformed = transformed.replace(
-    /\${{MERGED_AT}}/g,
-    pr.mergedAt?.toISOString() || ''
-  )
-  transformed = transformed.replace(/\${{MERGE_SHA}}/g, pr.mergeCommitSha)
-  transformed = transformed.replace(/\${{AUTHOR}}/g, pr.author)
-  transformed = transformed.replace(
-    /\${{LABELS}}/g,
-    [...pr.labels]?.filter(l => !l.startsWith('--rcba-'))?.join(', ') || ''
-  )
-  transformed = transformed.replace(/\${{MILESTONE}}/g, pr.milestone || '')
-  transformed = transformed.replace(/\${{BODY}}/g, pr.body)
-  transformed = transformed.replace(
-    /\${{ASSIGNEES}}/g,
-    pr.assignees?.join(', ') || ''
-  )
-  transformed = transformed.replace(
-    /\${{REVIEWERS}}/g,
-    pr.requestedReviewers?.join(', ') || ''
-  )
-  transformed = transformed.replace(
-    /\${{APPROVERS}}/g,
-    pr.approvedReviewers?.join(', ') || ''
-  )
+  for (const [key, values] of placeholderPrMap) {
+    for (let i = 0; i < values.length; i++) {
+      transformed = transformed.replaceAll(`\${{${key}[${i}]}}`, values[i])
+    }
+    transformed = transformed.replaceAll(`\${{${key}[*]}}`, values.join(''))
+  }
+  return transformed
+}
+
+function cleanupPrPlaceHolders(
+  template: string,
+  placeholders: Map<string, Placeholder[]> /* placeholders to apply */
+): string {
+  let transformed = template
+  for (const [, phs] of placeholders) {
+    for (const ph of phs) {
+      transformed = transformed.replaceAll(new RegExp(`\\$\\{\\{${ph.name}\\[.+?\\]\\}\\}`, 'gu'), '')
+    }
+  }
   return transformed
 }
 
@@ -397,11 +388,8 @@ function transform(filled: string, transformers: RegexTransformer[]): string {
   return transformed
 }
 
-function validateTransformers(
-  specifiedTransformers: Transformer[]
-): RegexTransformer[] {
-  const transformers =
-    specifiedTransformers || DefaultConfiguration.transformers
+function validateTransformers(specifiedTransformers: Transformer[]): RegexTransformer[] {
+  const transformers = specifiedTransformers || DefaultConfiguration.transformers
   return transformers
     .map(transformer => {
       return validateTransformer(transformer)
@@ -412,9 +400,7 @@ function validateTransformers(
     })
 }
 
-export function validateTransformer(
-  transformer?: Transformer
-): RegexTransformer | null {
+export function validateTransformer(transformer?: Transformer): RegexTransformer | null {
   if (transformer === undefined) {
     return null
   }
@@ -436,10 +422,7 @@ export function validateTransformer(
     }
 
     return {
-      pattern: new RegExp(
-        transformer.pattern.replace('\\\\', '\\'),
-        transformer.flags ?? 'gu'
-      ),
+      pattern: new RegExp(transformer.pattern.replace('\\\\', '\\'), transformer.flags ?? 'gu'),
       target: transformer.target || '',
       onProperty,
       method,
@@ -451,33 +434,20 @@ export function validateTransformer(
   }
 }
 
-function extractValues(
-  pr: PullRequestInfo,
-  extractor: RegexTransformer,
-  extractor_usecase: string
-): string[] | null {
+function extractValues(pr: PullRequestInfo, extractor: RegexTransformer, extractor_usecase: string): string[] | null {
   if (extractor.pattern == null) {
     return null
   }
 
   if (extractor.onProperty !== undefined) {
     let results: string[] = []
-    const list: (
-      | 'title'
-      | 'author'
-      | 'milestone'
-      | 'body'
-      | 'status'
-      | 'branch'
-    )[] = extractor.onProperty
+    const list: ('title' | 'author' | 'milestone' | 'body' | 'status' | 'branch')[] = extractor.onProperty
     // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < list.length; i++) {
       const prop = list[i]
       let value: string | undefined = pr[prop]
       if (value === undefined) {
-        core.warning(
-          `⚠️ the provided property '${extractor.onProperty}' for \`${extractor_usecase}\` is not valid`
-        )
+        core.warning(`⚠️ the provided property '${extractor.onProperty}' for \`${extractor_usecase}\` is not valid`)
         value = pr['body']
       }
 
@@ -492,10 +462,7 @@ function extractValues(
   }
 }
 
-function extractValuesFromString(
-  value: string,
-  extractor: RegexTransformer
-): string[] | null {
+function extractValuesFromString(value: string, extractor: RegexTransformer): string[] | null {
   if (extractor.pattern == null) {
     return null
   }
@@ -515,14 +482,4 @@ function extractValuesFromString(
     return [extractor.onEmpty.toLocaleLowerCase('en')]
   }
   return null
-}
-
-export interface RegexTransformer {
-  pattern: RegExp | null
-  target: string
-  onProperty?:
-    | ('title' | 'author' | 'milestone' | 'body' | 'status' | 'branch')[]
-    | undefined
-  method?: 'replace' | 'match' | undefined
-  onEmpty?: string | undefined
 }

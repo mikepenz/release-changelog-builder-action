@@ -26,20 +26,14 @@ export interface PullRequestInfo {
 
 type PullData = RestEndpointMethodTypes['pulls']['get']['response']['data']
 
-type PullsListData =
-  RestEndpointMethodTypes['pulls']['list']['response']['data']
+type PullsListData = RestEndpointMethodTypes['pulls']['list']['response']['data']
 
-type PullReviewData =
-  RestEndpointMethodTypes['pulls']['listReviews']['response']['data']
+type PullReviewData = RestEndpointMethodTypes['pulls']['listReviews']['response']['data']
 
 export class PullRequests {
   constructor(private octokit: Octokit) {}
 
-  async getSingle(
-    owner: string,
-    repo: string,
-    prNumber: number
-  ): Promise<PullRequestInfo | null> {
+  async getSingle(owner: string, repo: string, prNumber: number): Promise<PullRequestInfo | null> {
     try {
       const {data} = await this.octokit.pulls.get({
         owner,
@@ -49,9 +43,7 @@ export class PullRequests {
 
       return mapPullRequest(data)
     } catch (e: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
-      core.warning(
-        `⚠️ Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`
-      )
+      core.warning(`⚠️ Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`)
       return null
     }
   }
@@ -98,11 +90,7 @@ export class PullRequests {
     return sortPrs(mergedPRs)
   }
 
-  async getOpen(
-    owner: string,
-    repo: string,
-    maxPullRequests: number
-  ): Promise<PullRequestInfo[]> {
+  async getOpen(owner: string, repo: string, maxPullRequests: number): Promise<PullRequestInfo[]> {
     const openPrs: PullRequestInfo[] = []
     const options = this.octokit.pulls.list.endpoint.merge({
       owner,
@@ -134,11 +122,7 @@ export class PullRequests {
     return sortPrs(openPrs)
   }
 
-  async getReviewers(
-    owner: string,
-    repo: string,
-    pr: PullRequestInfo
-  ): Promise<PullReviewData[]> {
+  async getReviewers(owner: string, repo: string, pr: PullRequestInfo): Promise<PullReviewData[]> {
     const options = this.octokit.pulls.listReviews.endpoint.merge({
       owner,
       repo,
@@ -164,10 +148,7 @@ function sortPrs(pullRequests: PullRequestInfo[]): PullRequestInfo[] {
   })
 }
 
-export function sortPullRequests(
-  pullRequests: PullRequestInfo[],
-  sort: Sort | string
-): PullRequestInfo[] {
+export function sortPullRequests(pullRequests: PullRequestInfo[], sort: Sort | string): PullRequestInfo[] {
   let sortConfig: Sort
 
   // legacy handling to support string sort config
@@ -191,11 +172,7 @@ export function sortPullRequests(
   return pullRequests
 }
 
-export function compare(
-  a: PullRequestInfo,
-  b: PullRequestInfo,
-  sort: Sort
-): number {
+export function compare(a: PullRequestInfo, b: PullRequestInfo, sort: Sort): number {
   if (sort.on_property === 'mergedAt') {
     const aa = a.mergedAt || a.createdAt
     const bb = b.mergedAt || b.createdAt
@@ -212,10 +189,7 @@ export function compare(
 }
 
 // helper function to add a special open label to prs not merged.
-function attachSpeciaLabels(
-  status: 'open' | 'merged',
-  labels: Set<string>
-): Set<string> {
+function attachSpeciaLabels(status: 'open' | 'merged', labels: Set<string>): Set<string> {
   labels.add(`--rcba-${status}`)
   return labels
 }
@@ -234,17 +208,11 @@ const mapPullRequest = (
   mergeCommitSha: pr.merge_commit_sha || '',
   author: pr.user?.login || '',
   repoName: pr.base.repo.full_name,
-  labels: attachSpeciaLabels(
-    status,
-    new Set(
-      pr.labels?.map(lbl => lbl.name?.toLocaleLowerCase('en') || '') || []
-    )
-  ),
+  labels: attachSpeciaLabels(status, new Set(pr.labels?.map(lbl => lbl.name?.toLocaleLowerCase('en') || '') || [])),
   milestone: pr.milestone?.title || '',
   body: pr.body || '',
   assignees: pr.assignees?.map(asignee => asignee?.login || '') || [],
-  requestedReviewers:
-    pr.requested_reviewers?.map(reviewer => reviewer?.login || '') || [],
+  requestedReviewers: pr.requested_reviewers?.map(reviewer => reviewer?.login || '') || [],
   approvedReviewers: [],
   status
 })

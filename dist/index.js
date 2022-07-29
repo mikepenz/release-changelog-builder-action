@@ -217,7 +217,8 @@ exports.DefaultConfiguration = {
         filter: undefined,
         transformer: undefined // transforms the tag name using the regex, run after the filter
     },
-    base_branches: [] // target branches for the merged PR ignoring PRs with different target branch, by default it will get all PRs
+    base_branches: [],
+    custom_placeholders: []
 };
 
 
@@ -282,38 +283,20 @@ class GitCommandManager {
     }
     latestTag() {
         return __awaiter(this, void 0, void 0, function* () {
-            const revListOutput = yield this.execGit([
-                'rev-list',
-                '--tags',
-                '--skip=0',
-                '--max-count=1'
-            ]);
-            const output = yield this.execGit([
-                'describe',
-                '--abbrev=0',
-                '--tags',
-                revListOutput.stdout.trim()
-            ]);
+            const revListOutput = yield this.execGit(['rev-list', '--tags', '--skip=0', '--max-count=1']);
+            const output = yield this.execGit(['describe', '--abbrev=0', '--tags', revListOutput.stdout.trim()]);
             return output.stdout.trim();
         });
     }
     initialCommit() {
         return __awaiter(this, void 0, void 0, function* () {
-            const revListOutput = yield this.execGit([
-                'rev-list',
-                '--max-parents=0',
-                'HEAD'
-            ]);
+            const revListOutput = yield this.execGit(['rev-list', '--max-parents=0', 'HEAD']);
             return revListOutput.stdout.trim();
         });
     }
     tagCreation(tagName) {
         return __awaiter(this, void 0, void 0, function* () {
-            const creationDate = yield this.execGit([
-                'for-each-ref',
-                '--format="%(creatordate:rfc)"',
-                `refs/tags/${tagName}`
-            ]);
+            const creationDate = yield this.execGit(['for-each-ref', '--format="%(creatordate:rfc)"', `refs/tags/${tagName}`]);
             return creationDate.stdout.trim().replace(/"/g, '');
         });
     }
@@ -800,8 +783,7 @@ class ReleaseNotes {
             core.setOutput('commits', diffInfo.commits);
             if (mergedPullRequests.length === 0) {
                 core.warning(`⚠️ No pull requests found`);
-                return (0, transform_1.fillAdditionalPlaceholders)(this.options.configuration.empty_template ||
-                    configuration_1.DefaultConfiguration.empty_template, this.options);
+                return (0, transform_1.replaceEmptyTemplate)(this.options.configuration.empty_template || configuration_1.DefaultConfiguration.empty_template, this.options);
             }
             core.startGroup('📦 Build changelog');
             const resultChangelog = (0, transform_1.buildChangelog)(diffInfo, mergedPullRequests, this.options);
@@ -841,8 +823,7 @@ class ReleaseNotes {
             const lastCommit = commits[commits.length - 1];
             let fromDate = firstCommit.date;
             const toDate = lastCommit.date;
-            const maxDays = configuration.max_back_track_time_days ||
-                configuration_1.DefaultConfiguration.max_back_track_time_days;
+            const maxDays = configuration.max_back_track_time_days || configuration_1.DefaultConfiguration.max_back_track_time_days;
             const maxFromDate = toDate.clone().subtract(maxDays, 'days');
             if (maxFromDate.isAfter(fromDate)) {
                 core.info(`⚠️ Adjusted 'fromDate' to go max ${maxDays} back`);
@@ -852,8 +833,7 @@ class ReleaseNotes {
             const pullRequestsApi = new pullRequests_1.PullRequests(octokit);
             const pullRequests = yield pullRequestsApi.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests || configuration_1.DefaultConfiguration.max_pull_requests);
             core.info(`ℹ️ Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`);
-            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches ||
-                configuration_1.DefaultConfiguration.exclude_merge_branches);
+            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches || configuration_1.DefaultConfiguration.exclude_merge_branches);
             core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`);
             // create array of commits for this release
             const releaseCommitHashes = prCommits.map(commmit => {
@@ -866,8 +846,7 @@ class ReleaseNotes {
             let allPullRequests = mergedPullRequests;
             if (includeOpen) {
                 // retrieve all open pull requests
-                const openPullRequests = yield pullRequestsApi.getOpen(owner, repo, configuration.max_pull_requests ||
-                    configuration_1.DefaultConfiguration.max_pull_requests);
+                const openPullRequests = yield pullRequestsApi.getOpen(owner, repo, configuration.max_pull_requests || configuration_1.DefaultConfiguration.max_pull_requests);
                 core.info(`ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`);
                 // all pull requests
                 allPullRequests = allPullRequests.concat(openPullRequests);
@@ -911,8 +890,7 @@ class ReleaseNotes {
             if (commits.length === 0) {
                 return [diffInfo, []];
             }
-            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches ||
-                configuration_1.DefaultConfiguration.exclude_merge_branches);
+            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches || configuration_1.DefaultConfiguration.exclude_merge_branches);
             core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`);
             const prs = prCommits.map(function (commit) {
                 return {
@@ -1032,8 +1010,7 @@ class ReleaseNotesBuilder {
             // ensure proper from <-> to tag range
             core.startGroup(`🔖 Resolve tags`);
             const tagsApi = new tags_1.Tags(octokit);
-            const tagRange = yield tagsApi.retrieveRange(this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.ignorePreReleases, this.configuration.max_tags_to_fetch ||
-                configuration_1.DefaultConfiguration.max_tags_to_fetch, this.configuration.tag_resolver || configuration_1.DefaultConfiguration.tag_resolver);
+            const tagRange = yield tagsApi.retrieveRange(this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.ignorePreReleases, this.configuration.max_tags_to_fetch || configuration_1.DefaultConfiguration.max_tags_to_fetch, this.configuration.tag_resolver || configuration_1.DefaultConfiguration.tag_resolver);
             let thisTag = tagRange.to;
             if (!thisTag) {
                 (0, utils_1.failOrError)(`💥 Missing or couldn't resolve 'toTag'`, this.failOnError);
@@ -1468,10 +1445,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.validateTransformer = exports.fillAdditionalPlaceholders = exports.buildChangelog = void 0;
+exports.validateTransformer = exports.replaceEmptyTemplate = exports.buildChangelog = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const configuration_1 = __nccwpck_require__(5527);
 const pullRequests_1 = __nccwpck_require__(4217);
+const utils_1 = __nccwpck_require__(918);
 function buildChangelog(diffInfo, prs, options) {
     // sort to target order
     const config = options.configuration;
@@ -1517,11 +1495,17 @@ function buildChangelog(diffInfo, prs, options) {
             }
         }
     }
+    // keep reference for the placeholder values
+    const placeholders = new Map();
+    for (const ph of config.custom_placeholders || []) {
+        (0, utils_1.createOrSet)(placeholders, ph.source, ph);
+    }
+    const placeholderPrMap = new Map();
     const validatedTransformers = validateTransformers(config.transformers);
     const transformedMap = new Map();
     // convert PRs to their text representation
     for (const pr of prs) {
-        transformedMap.set(pr, transform(fillTemplate(pr, config.pr_template || configuration_1.DefaultConfiguration.pr_template), validatedTransformers));
+        transformedMap.set(pr, transform(fillPrTemplate(pr, config.pr_template || configuration_1.DefaultConfiguration.pr_template, placeholders, placeholderPrMap), validatedTransformers));
     }
     core.info(`ℹ️ Used ${validatedTransformers.length} transformers to adjust message`);
     core.info(`✒️ Wrote messages for ${prs.length} pull requests`);
@@ -1538,7 +1522,7 @@ function buildChangelog(diffInfo, prs, options) {
     const uncategorizedPrs = [];
     // bring elements in order
     for (const [pr, body] of transformedMap) {
-        if (haveCommonElements(ignoredLabels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
+        if ((0, utils_1.haveCommonElements)(ignoredLabels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
             ignoredPrs.push(body);
             continue;
         }
@@ -1549,7 +1533,7 @@ function buildChangelog(diffInfo, prs, options) {
         for (const [category, pullRequests] of categorized) {
             // check if any exclude label matches
             if (category.exclude_labels !== undefined) {
-                if (haveCommonElements(category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
+                if ((0, utils_1.haveCommonElements)(category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
                     if (core.isDebug()) {
                         const prNum = pr.number;
                         const prLabels = pr.labels;
@@ -1560,13 +1544,13 @@ function buildChangelog(diffInfo, prs, options) {
                 }
             }
             if (category.exhaustive === true) {
-                if (haveEveryElements(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
+                if ((0, utils_1.haveEveryElements)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
                     pullRequests.push(body);
                     matched = true;
                 }
             }
             else {
-                if (haveCommonElements(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
+                if ((0, utils_1.haveCommonElements)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
                     pullRequests.push(body);
                     matched = true;
                 }
@@ -1644,72 +1628,119 @@ function buildChangelog(diffInfo, prs, options) {
     }
     core.info(`✒️ Wrote ${ignoredPrs.length} ignored pull requests down`);
     // fill template
-    let transformedChangelog = config.template || configuration_1.DefaultConfiguration.template;
-    transformedChangelog = transformedChangelog.replace(/\${{CHANGELOG}}/g, changelog);
-    transformedChangelog = transformedChangelog.replace(/\${{UNCATEGORIZED}}/g, changelogUncategorized);
-    transformedChangelog = transformedChangelog.replace(/\${{OPEN}}/g, changelogOpen);
-    transformedChangelog = transformedChangelog.replace(/\${{IGNORED}}/g, changelogIgnored);
+    const placeholderMap = new Map();
+    placeholderMap.set('CHANGELOG', changelog);
+    placeholderMap.set('UNCATEGORIZED', changelogUncategorized);
+    placeholderMap.set('OPEN', changelogOpen);
+    placeholderMap.set('IGNORED', changelogIgnored);
     // fill other placeholders
-    transformedChangelog = transformedChangelog.replace(/\${{CATEGORIZED_COUNT}}/g, categorizedPrs.length.toString());
-    transformedChangelog = transformedChangelog.replace(/\${{UNCATEGORIZED_COUNT}}/g, uncategorizedPrs.length.toString());
-    transformedChangelog = transformedChangelog.replace(/\${{OPEN_COUNT}}/g, openPrs.length.toString());
-    transformedChangelog = transformedChangelog.replace(/\${{IGNORED_COUNT}}/g, ignoredPrs.length.toString());
+    placeholderMap.set('CATEGORIZED_COUNT', categorizedPrs.length.toString());
+    placeholderMap.set('UNCATEGORIZED_COUNT', uncategorizedPrs.length.toString());
+    placeholderMap.set('OPEN_COUNT', openPrs.length.toString());
+    placeholderMap.set('IGNORED_COUNT', ignoredPrs.length.toString());
     // code change placeholders
-    transformedChangelog = transformedChangelog.replace(/\${{CHANGED_FILES}}/g, diffInfo.changedFiles.toString());
-    transformedChangelog = transformedChangelog.replace(/\${{ADDITIONS}}/g, diffInfo.additions.toString());
-    transformedChangelog = transformedChangelog.replace(/\${{DELETIONS}}/g, diffInfo.deletions.toString());
-    transformedChangelog = transformedChangelog.replace(/\${{CHANGES}}/g, diffInfo.changes.toString());
-    transformedChangelog = transformedChangelog.replace(/\${{COMMITS}}/g, diffInfo.commits.toString());
-    transformedChangelog = fillAdditionalPlaceholders(transformedChangelog, options);
+    placeholderMap.set('CHANGED_FILES', diffInfo.changedFiles.toString());
+    placeholderMap.set('ADDITIONS', diffInfo.additions.toString());
+    placeholderMap.set('DELETIONS', diffInfo.deletions.toString());
+    placeholderMap.set('CHANGES', diffInfo.changes.toString());
+    placeholderMap.set('COMMITS', diffInfo.commits.toString());
+    fillAdditionalPlaceholders(options, placeholderMap);
+    let transformedChangelog = config.template || configuration_1.DefaultConfiguration.template;
+    transformedChangelog = replacePlaceholders(transformedChangelog, placeholderMap, placeholders, placeholderPrMap);
+    transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap);
+    transformedChangelog = cleanupPrPlaceHolders(transformedChangelog, placeholders);
     core.info(`ℹ️ Filled template`);
     return transformedChangelog;
 }
 exports.buildChangelog = buildChangelog;
-function fillAdditionalPlaceholders(text, options) {
+function replaceEmptyTemplate(template, options) {
+    const placeholders = new Map();
+    for (const ph of options.configuration.custom_placeholders || []) {
+        (0, utils_1.createOrSet)(placeholders, ph.source, ph);
+    }
+    const placeholderMap = new Map();
+    fillAdditionalPlaceholders(options, placeholderMap);
+    return replacePlaceholders(template, placeholderMap, placeholders);
+}
+exports.replaceEmptyTemplate = replaceEmptyTemplate;
+function fillAdditionalPlaceholders(options, placeholderMap /* placeholderKey and original value */) {
     var _a, _b;
-    let transformed = text;
-    // repository placeholders
-    transformed = transformed.replace(/\${{OWNER}}/g, options.owner);
-    transformed = transformed.replace(/\${{REPO}}/g, options.repo);
-    transformed = transformed.replace(/\${{FROM_TAG}}/g, options.fromTag.name);
-    transformed = transformed.replace(/\${{FROM_TAG_DATE}}/g, ((_a = options.fromTag.date) === null || _a === void 0 ? void 0 : _a.toISOString()) || '');
-    transformed = transformed.replace(/\${{TO_TAG}}/g, options.toTag.name);
-    transformed = transformed.replace(/\${{TO_TAG_DATE}}/g, ((_b = options.toTag.date) === null || _b === void 0 ? void 0 : _b.toISOString()) || '');
+    placeholderMap.set('OWNER', options.owner);
+    placeholderMap.set('REPO', options.repo);
+    placeholderMap.set('FROM_TAG', options.fromTag.name);
+    placeholderMap.set('FROM_TAG_DATE', ((_a = options.fromTag.date) === null || _a === void 0 ? void 0 : _a.toISOString()) || '');
+    placeholderMap.set('TO_TAG', options.toTag.name);
+    placeholderMap.set('TO_TAG_DATE', ((_b = options.toTag.date) === null || _b === void 0 ? void 0 : _b.toISOString()) || '');
     const fromDate = options.fromTag.date;
     const toDate = options.toTag.date;
     if (fromDate !== undefined && toDate !== undefined) {
-        transformed = transformed.replace(/\${{DAYS_SINCE}}/g, toDate.diff(fromDate, 'days').toString() || '');
+        placeholderMap.set('DAYS_SINCE', toDate.diff(fromDate, 'days').toString() || '');
     }
     else {
-        transformed = transformed.replace(/\${{DAYS_SINCE}}/g, '');
+        placeholderMap.set('DAYS_SINCE', '');
     }
-    transformed = transformed.replace(/\${{RELEASE_DIFF}}/g, `https://github.com/${options.owner}/${options.repo}/compare/${options.fromTag.name}...${options.toTag.name}`);
+    placeholderMap.set('RELEASE_DIFF', `https://github.com/${options.owner}/${options.repo}/compare/${options.fromTag.name}...${options.toTag.name}`);
+}
+function fillPrTemplate(pr, template, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */) {
+    var _a, _b, _c, _d, _e, _f;
+    const placeholderMap = new Map();
+    placeholderMap.set('NUMBER', pr.number.toString());
+    placeholderMap.set('TITLE', pr.title);
+    placeholderMap.set('URL', pr.htmlURL);
+    placeholderMap.set('STATUS', pr.status);
+    placeholderMap.set('CREATED_AT', pr.createdAt.toISOString());
+    placeholderMap.set('MERGED_AT', ((_a = pr.mergedAt) === null || _a === void 0 ? void 0 : _a.toISOString()) || '');
+    placeholderMap.set('MERGE_SHA', pr.mergeCommitSha);
+    placeholderMap.set('AUTHOR', pr.author);
+    placeholderMap.set('LABELS', ((_c = (_b = [...pr.labels]) === null || _b === void 0 ? void 0 : _b.filter(l => !l.startsWith('--rcba-'))) === null || _c === void 0 ? void 0 : _c.join(', ')) || '');
+    placeholderMap.set('MILESTONE', pr.milestone || '');
+    placeholderMap.set('BODY', pr.body);
+    placeholderMap.set('ASSIGNEES', ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.join(', ')) || '');
+    placeholderMap.set('REVIEWERS', ((_e = pr.requestedReviewers) === null || _e === void 0 ? void 0 : _e.join(', ')) || '');
+    placeholderMap.set('APPROVERS', ((_f = pr.approvedReviewers) === null || _f === void 0 ? void 0 : _f.join(', ')) || '');
+    placeholderMap.set('BRANCH', pr.branch || '');
+    placeholderMap.set('BASE_BRANCH', pr.baseBranch);
+    return replacePlaceholders(template, placeholderMap, placeholders, placeholderPrMap);
+}
+function replacePlaceholders(template, placeholderMap /* placeholderKey and original value */, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */) {
+    let transformed = template;
+    for (const [key, value] of placeholderMap) {
+        transformed = transformed.replaceAll(`\${{${key}}}`, value);
+        // replace custom placeholders
+        const phs = placeholders.get(key);
+        if (phs) {
+            for (const placeholder of phs) {
+                const transformer = validateTransformer(placeholder.transformer);
+                if (transformer === null || transformer === void 0 ? void 0 : transformer.pattern) {
+                    const extractedValue = value.replace(transformer.pattern, transformer.target);
+                    // note: `.replace` will return the full string again if there was no match
+                    if (extractedValue && placeholderPrMap && extractedValue !== value) {
+                        (0, utils_1.createOrSet)(placeholderPrMap, placeholder.name, extractedValue);
+                    }
+                    transformed = transformed.replaceAll(`\${{${placeholder.name}}}`, extractedValue);
+                }
+            }
+        }
+    }
     return transformed;
 }
-exports.fillAdditionalPlaceholders = fillAdditionalPlaceholders;
-function haveCommonElements(arr1, arr2) {
-    return arr1.some(item => arr2.has(item));
-}
-function haveEveryElements(arr1, arr2) {
-    return arr1.every(item => arr2.has(item));
-}
-function fillTemplate(pr, template) {
-    var _a, _b, _c, _d, _e, _f;
+function replacePrPlaceholders(template, placeholderPrMap /* map with all pr related custom placeholder values */) {
     let transformed = template;
-    transformed = transformed.replace(/\${{NUMBER}}/g, pr.number.toString());
-    transformed = transformed.replace(/\${{TITLE}}/g, pr.title);
-    transformed = transformed.replace(/\${{URL}}/g, pr.htmlURL);
-    transformed = transformed.replace(/\${{STATUS}}/g, pr.status);
-    transformed = transformed.replace(/\${{CREATED_AT}}/g, pr.createdAt.toISOString());
-    transformed = transformed.replace(/\${{MERGED_AT}}/g, ((_a = pr.mergedAt) === null || _a === void 0 ? void 0 : _a.toISOString()) || '');
-    transformed = transformed.replace(/\${{MERGE_SHA}}/g, pr.mergeCommitSha);
-    transformed = transformed.replace(/\${{AUTHOR}}/g, pr.author);
-    transformed = transformed.replace(/\${{LABELS}}/g, ((_c = (_b = [...pr.labels]) === null || _b === void 0 ? void 0 : _b.filter(l => !l.startsWith('--rcba-'))) === null || _c === void 0 ? void 0 : _c.join(', ')) || '');
-    transformed = transformed.replace(/\${{MILESTONE}}/g, pr.milestone || '');
-    transformed = transformed.replace(/\${{BODY}}/g, pr.body);
-    transformed = transformed.replace(/\${{ASSIGNEES}}/g, ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.join(', ')) || '');
-    transformed = transformed.replace(/\${{REVIEWERS}}/g, ((_e = pr.requestedReviewers) === null || _e === void 0 ? void 0 : _e.join(', ')) || '');
-    transformed = transformed.replace(/\${{APPROVERS}}/g, ((_f = pr.approvedReviewers) === null || _f === void 0 ? void 0 : _f.join(', ')) || '');
+    for (const [key, values] of placeholderPrMap) {
+        for (let i = 0; i < values.length; i++) {
+            transformed = transformed.replaceAll(`\${{${key}[${i}]}}`, values[i]);
+        }
+        transformed = transformed.replaceAll(`\${{${key}[*]}}`, values.join(''));
+    }
+    return transformed;
+}
+function cleanupPrPlaceHolders(template, placeholders /* placeholders to apply */) {
+    let transformed = template;
+    for (const [, phs] of placeholders) {
+        for (const ph of phs) {
+            transformed = transformed.replaceAll(new RegExp(`\\$\\{\\{${ph.name}\\[.+?\\]\\}\\}`, 'gu'), '');
+        }
+    }
     return transformed;
 }
 function transform(filled, transformers) {
@@ -1849,7 +1880,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.writeOutput = exports.directoryExistsSync = exports.parseConfiguration = exports.resolveConfiguration = exports.failOrError = exports.retrieveRepositoryPath = void 0;
+exports.haveEveryElements = exports.haveCommonElements = exports.createOrSet = exports.writeOutput = exports.directoryExistsSync = exports.parseConfiguration = exports.resolveConfiguration = exports.failOrError = exports.retrieveRepositoryPath = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
@@ -1983,6 +2014,24 @@ function writeOutput(githubWorkspacePath, outputFile, changelog) {
     }
 }
 exports.writeOutput = writeOutput;
+function createOrSet(map, key, value) {
+    const entry = map.get(key);
+    if (!entry) {
+        map.set(key, [value]);
+    }
+    else {
+        entry.push(value);
+    }
+}
+exports.createOrSet = createOrSet;
+function haveCommonElements(arr1, arr2) {
+    return arr1.some(item => arr2.has(item));
+}
+exports.haveCommonElements = haveCommonElements;
+function haveEveryElements(arr1, arr2) {
+    return arr1.every(item => arr2.has(item));
+}
+exports.haveEveryElements = haveEveryElements;
 
 
 /***/ }),
