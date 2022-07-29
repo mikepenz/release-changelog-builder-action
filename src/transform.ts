@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import {Category, DefaultConfiguration, Extractor, Transformer} from './configuration'
+import {Category, DefaultConfiguration, Extractor, Placeholder, Transformer} from './configuration'
 import {PullRequestInfo, sortPullRequests} from './pullRequests'
 import {ReleaseNotesOptions} from './releaseNotes'
 import {DiffInfo} from './commits'
@@ -51,13 +51,21 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
     }
   }
 
+  const placeholderMap = new Map<string, Placeholder>()
+  for (const ph of config.custom_placeholders || []) {
+    placeholderMap.set(ph.source, ph)
+  }
+
   const validatedTransformers = validateTransformers(config.transformers)
   const transformedMap = new Map<PullRequestInfo, string>()
   // convert PRs to their text representation
   for (const pr of prs) {
     transformedMap.set(
       pr,
-      transform(fillTemplate(pr, config.pr_template || DefaultConfiguration.pr_template), validatedTransformers)
+      transform(
+        fillTemplate(pr, config.pr_template || DefaultConfiguration.pr_template, placeholderMap),
+        validatedTransformers
+      )
     )
   }
   core.info(`ℹ️ Used ${validatedTransformers.length} transformers to adjust message`)
@@ -269,26 +277,45 @@ function haveEveryElements(arr1: string[], arr2: Set<string>): Boolean {
   return arr1.every(item => arr2.has(item))
 }
 
-function fillTemplate(pr: PullRequestInfo, template: string): string {
+function fillTemplate(pr: PullRequestInfo, template: string, customPlaceholders: Map<string, Placeholder>): string {
+  const placeholderMap = new Map<string, string>()
+  placeholderMap.set('NUMBER', pr.number.toString())
+  placeholderMap.set('TITLE', pr.title)
+  placeholderMap.set('URL', pr.htmlURL)
+  placeholderMap.set('STATUS', pr.status)
+  placeholderMap.set('CREATED_AT', pr.createdAt.toISOString())
+  placeholderMap.set('MERGED_AT', pr.mergedAt?.toISOString() || '')
+  placeholderMap.set('MERGE_SHA', pr.mergeCommitSha)
+  placeholderMap.set('AUTHOR', pr.author)
+  placeholderMap.set('LABELS', [...pr.labels]?.filter(l => !l.startsWith('--rcba-'))?.join(', ') || '')
+  placeholderMap.set('MILESTONE', pr.milestone || '')
+  placeholderMap.set('BODY', pr.body)
+  placeholderMap.set('ASSIGNEES', pr.assignees?.join(', ') || '')
+  placeholderMap.set('REVIEWERS', pr.requestedReviewers?.join(', ') || '')
+  placeholderMap.set('APPROVERS', pr.approvedReviewers?.join(', ') || '')
+  placeholderMap.set('BRANCH', pr.branch || '')
+  placeholderMap.set('BASE_BRANCH', pr.baseBranch)
+
   let transformed = template
-  transformed = transformed.replace(/\${{NUMBER}}/g, pr.number.toString())
-  transformed = transformed.replace(/\${{TITLE}}/g, pr.title)
-  transformed = transformed.replace(/\${{URL}}/g, pr.htmlURL)
-  transformed = transformed.replace(/\${{STATUS}}/g, pr.status)
-  transformed = transformed.replace(/\${{CREATED_AT}}/g, pr.createdAt.toISOString())
-  transformed = transformed.replace(/\${{MERGED_AT}}/g, pr.mergedAt?.toISOString() || '')
-  transformed = transformed.replace(/\${{MERGE_SHA}}/g, pr.mergeCommitSha)
-  transformed = transformed.replace(/\${{AUTHOR}}/g, pr.author)
-  transformed = transformed.replace(
-    /\${{LABELS}}/g,
-    [...pr.labels]?.filter(l => !l.startsWith('--rcba-'))?.join(', ') || ''
-  )
-  transformed = transformed.replace(/\${{MILESTONE}}/g, pr.milestone || '')
-  transformed = transformed.replace(/\${{BODY}}/g, pr.body)
-  transformed = transformed.replace(/\${{ASSIGNEES}}/g, pr.assignees?.join(', ') || '')
-  transformed = transformed.replace(/\${{REVIEWERS}}/g, pr.requestedReviewers?.join(', ') || '')
-  transformed = transformed.replace(/\${{APPROVERS}}/g, pr.approvedReviewers?.join(', ') || '')
+  for (const [key, value] of placeholderMap) {
+    transformed = transformed.replaceAll(`\${{${key}}}`, value)
+
+    // replace custom placeholders
+    transformed = applyCustomPlaceholder(transformed, value, customPlaceholders.get(key))
+  }
+
   return transformed
+}
+
+function applyCustomPlaceholder(template: string, value: string, placeholder: Placeholder | undefined) {
+  if (placeholder) {
+    const transformer = validateTransformer(placeholder.transformer)
+    if (transformer?.pattern) {
+      const extractedValue = value.replace(transformer.pattern, transformer.target)
+      return template.replaceAll(`\${{${placeholder.name}}}`, extractedValue)
+    }
+  }
+  return template
 }
 
 function transform(filled: string, transformers: RegexTransformer[]): string {
