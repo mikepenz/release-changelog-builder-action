@@ -3,7 +3,7 @@ import {Commits, filterCommits, DiffInfo, DefaultDiffInfo} from './commits'
 import {Configuration, DefaultConfiguration} from './configuration'
 import {PullRequestInfo, PullRequests} from './pullRequests'
 import {Octokit} from '@octokit/rest'
-import {buildChangelog, fillAdditionalPlaceholders} from './transform'
+import {buildChangelog, replaceEmptyTemplate} from './transform'
 import {failOrError} from './utils'
 import {TagInfo} from './tags'
 
@@ -61,7 +61,7 @@ export class ReleaseNotes {
 
     if (mergedPullRequests.length === 0) {
       core.warning(`⚠️ No pull requests found`)
-      return fillAdditionalPlaceholders(
+      return replaceEmptyTemplate(
         this.options.configuration.empty_template || DefaultConfiguration.empty_template,
         this.options
       )

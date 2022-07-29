@@ -14,6 +14,7 @@ export interface Configuration {
   transformers: Transformer[]
   tag_resolver: TagResolver
   base_branches: string[]
+  custom_placeholders?: Placeholder[]
 }
 
 export interface Category {
@@ -57,6 +58,12 @@ export interface TagResolver {
   transformer?: Transformer // transforms the tag name using the regex, run after the filter
 }
 
+export interface Placeholder {
+  name: string // the name of the new placeholder
+  source: string // the src placeholder which will be used to apply the transformer on
+  transformer: Transformer // the transformer to use to transform the original placeholder into the custom placheolder
+}
+
 export const DefaultConfiguration: Configuration = {
   max_tags_to_fetch: 200, // the amount of tags to fetch from the github API
   max_pull_requests: 200, // the amount of pull requests to process
@@ -94,5 +101,6 @@ export const DefaultConfiguration: Configuration = {
     filter: undefined, // filter out all tags not matching the regex
     transformer: undefined // transforms the tag name using the regex, run after the filter
   },
-  base_branches: [] // target branches for the merged PR ignoring PRs with different target branch, by default it will get all PRs
+  base_branches: [], // target branches for the merged PR ignoring PRs with different target branch, by default it will get all PRs
+  custom_placeholders: []
 }
