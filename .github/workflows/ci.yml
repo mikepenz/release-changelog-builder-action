@@ -34,12 +34,38 @@ jobs:
     steps:
       # the below actions use the local state of the action. please replace `./` with `mikepenz/release-changelog-builder-action@{latest-release}`
       # Showcases how to use the action without a prior checkout
-      # Won't support providing a configuration file, as no checkout was done
+      # Since 3.2.0 the configuration can be provided within the `yml` file
       - name: "Configuration without Checkout"
         id: without_checkout
-        uses: mikepenz/release-changelog-builder-action@develop
+        uses: ./
         with:
           toTag: "v0.0.3"
+          configurationJson: |
+            {
+              "template": "${{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n${{UNCATEGORIZED}}\n</details>",
+              "categories": [
+                {
+                    "title": "## 🚀 Features",
+                    "labels": ["feature"]
+                },
+                {
+                    "title": "## 🐛 Fixes",
+                    "labels": ["fix"]
+                },
+                {
+                    "title": "## 🧪 Tests",
+                    "labels": ["test"]
+                },
+                {
+                    "title": "## 💬 Other",
+                    "labels": ["other"]
+                },
+                {
+                    "title": "## 📦 Dependencies",
+                    "labels": ["dependencies"]
+                }
+              ],
+            }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
