@@ -23,10 +23,7 @@ export function retrieveRepositoryPath(providedPath: string): string {
 /**
  * Will automatically either report the message to the log, or mark the action as failed. Additionally defining the output failed, allowing it to be read in by other actions
  */
-export function failOrError(
-  message: string | Error,
-  failOnError: boolean
-): void {
+export function failOrError(message: string | Error, failOnError: boolean): void {
   // if we report any failure, consider the action to have failed, may not make the build fail
   core.setOutput('failed', true)
   if (failOnError) {
@@ -39,16 +36,10 @@ export function failOrError(
 /**
  * Retrieves the configuration given the file path, if not found it will fallback to the `DefaultConfiguration`
  */
-export function resolveConfiguration(
-  githubWorkspacePath: string,
-  configurationFile: string
-): Configuration {
+export function resolveConfiguration(githubWorkspacePath: string, configurationFile: string): Configuration {
   let configuration = DefaultConfiguration
   if (configurationFile) {
-    const configurationPath = path.resolve(
-      githubWorkspacePath,
-      configurationFile
-    )
+    const configurationPath = path.resolve(githubWorkspacePath, configurationFile)
     core.debug(`configurationPath = '${configurationPath}'`)
     const providedConfiguration = readConfiguration(configurationPath)
     if (providedConfiguration) {
@@ -76,9 +67,7 @@ function readConfiguration(filename: string): Configuration | undefined {
   } catch (error) {
     core.debug(`Failed to load configuration due to: ${error}`)
   }
-  core.info(
-    `⚠️ Configuration provided, but it couldn't be found. Fallback to Defaults.`
-  )
+  core.info(`⚠️ Configuration provided, but it couldn't be found. Fallback to Defaults.`)
   return undefined
 }
 /**
@@ -87,14 +76,10 @@ function readConfiguration(filename: string): Configuration | undefined {
 export function parseConfiguration(config: string): Configuration | undefined {
   try {
     // for compatiblity with the `yml` file we require to use `#{{}}` instead of `${{}}` - replace it here.
-    const configurationJSON: Configuration = JSON.parse(
-      config.replace(/#{{/g, '${{')
-    )
+    const configurationJSON: Configuration = JSON.parse(config.replace(/#{{/g, '${{'))
     return configurationJSON
   } catch (error) {
-    core.info(
-      `⚠️ Configuration provided, but it couldn't be parsed. Fallback to Defaults.`
-    )
+    core.info(`⚠️ Configuration provided, but it couldn't be parsed. Fallback to Defaults.`)
     return undefined
   }
 }
@@ -102,10 +87,7 @@ export function parseConfiguration(config: string): Configuration | undefined {
 /**
  * Checks if a given directory exists
  */
-export function directoryExistsSync(
-  inputPath: string,
-  required?: boolean
-): boolean {
+export function directoryExistsSync(inputPath: string, required?: boolean): boolean {
   if (!inputPath) {
     throw new Error("Arg 'path' must not be empty")
   }
@@ -122,9 +104,7 @@ export function directoryExistsSync(
       throw new Error(`Directory '${inputPath}' does not exist`)
     }
 
-    throw new Error(
-      `Encountered an error when checking whether path '${inputPath}' exists: ${error.message}`
-    )
+    throw new Error(`Encountered an error when checking whether path '${inputPath}' exists: ${error.message}`)
   }
 
   if (stats.isDirectory()) {
@@ -139,11 +119,7 @@ export function directoryExistsSync(
 /**
  * Writes the changelog to the given the file
  */
-export function writeOutput(
-  githubWorkspacePath: string,
-  outputFile: string,
-  changelog: string | null
-): void {
+export function writeOutput(githubWorkspacePath: string, outputFile: string, changelog: string | null): void {
   if (outputFile && changelog) {
     const outputPath = path.resolve(githubWorkspacePath, outputFile)
     core.debug(`outputPath = '${outputPath}'`)

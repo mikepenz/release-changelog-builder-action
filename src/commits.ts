@@ -31,23 +31,13 @@ export interface CommitInfo {
 export class Commits {
   constructor(private octokit: Octokit) {}
 
-  async getDiff(
-    owner: string,
-    repo: string,
-    base: string,
-    head: string
-  ): Promise<DiffInfo> {
+  async getDiff(owner: string, repo: string, base: string, head: string): Promise<DiffInfo> {
     const diff: DiffInfo = await this.getDiffRemote(owner, repo, base, head)
     diff.commitInfo = this.sortCommits(diff.commitInfo)
     return diff
   }
 
-  private async getDiffRemote(
-    owner: string,
-    repo: string,
-    base: string,
-    head: string
-  ): Promise<DiffInfo> {
+  private async getDiffRemote(owner: string, repo: string, base: string, head: string): Promise<DiffInfo> {
     let changedFilesCount = 0
     let additionCount = 0
     let deletionCount = 0
@@ -56,8 +46,7 @@ export class Commits {
 
     // Fetch comparisons recursively until we don't find any commits
     // This is because the GitHub API limits the number of commits returned in a single response.
-    let commits: RestEndpointMethodTypes['repos']['compareCommits']['response']['data']['commits'] =
-      []
+    let commits: RestEndpointMethodTypes['repos']['compareCommits']['response']['data']['commits'] = []
     let compareHead = head
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -84,9 +73,7 @@ export class Commits {
       compareHead = `${commits[0].sha}^`
     }
 
-    core.info(
-      `ℹ️ Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`
-    )
+    core.info(`ℹ️ Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`)
 
     return {
       changedFiles: changedFilesCount,
@@ -135,10 +122,7 @@ export class Commits {
 /**
  * Filters out all commits which match the exclude pattern
  */
-export function filterCommits(
-  commits: CommitInfo[],
-  excludeMergeBranches: string[]
-): CommitInfo[] {
+export function filterCommits(commits: CommitInfo[], excludeMergeBranches: string[]): CommitInfo[] {
   const filteredCommits = []
 
   for (const commit of commits) {

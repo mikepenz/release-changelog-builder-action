@@ -1,11 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import {
-  parseConfiguration,
-  resolveConfiguration,
-  retrieveRepositoryPath,
-  writeOutput
-} from './utils'
+import {parseConfiguration, resolveConfiguration, retrieveRepositoryPath, writeOutput} from './utils'
 import {ReleaseNotesBuilder} from './releaseNotesBuilder'
 import {Configuration} from './configuration'
 
@@ -44,8 +39,7 @@ async function run(): Promise<void> {
     const ignorePreReleases = core.getInput('ignorePreReleases') === 'true'
     const failOnError = core.getInput('failOnError') === 'true'
     const fetchReviewers = core.getInput('fetchReviewers') === 'true'
-    const fetchReleaseInformation =
-      core.getInput('fetchReleaseInformation') === 'true'
+    const fetchReleaseInformation = core.getInput('fetchReleaseInformation') === 'true'
     const commitMode = core.getInput('commitMode') === 'true'
 
     const result = await new ReleaseNotesBuilder(

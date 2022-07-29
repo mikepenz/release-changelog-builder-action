@@ -1,19 +1,10 @@
 import * as core from '@actions/core'
-import {
-  Category,
-  DefaultConfiguration,
-  Extractor,
-  Transformer
-} from './configuration'
+import {Category, DefaultConfiguration, Extractor, Transformer} from './configuration'
 import {PullRequestInfo, sortPullRequests} from './pullRequests'
 import {ReleaseNotesOptions} from './releaseNotes'
 import {DiffInfo} from './commits'
 
-export function buildChangelog(
-  diffInfo: DiffInfo,
-  prs: PullRequestInfo[],
-  options: ReleaseNotesOptions
-): string {
+export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], options: ReleaseNotesOptions): string {
   // sort to target order
   const config = options.configuration
   const sort = config.sort || DefaultConfiguration.sort
@@ -33,18 +24,14 @@ export function buildChangelog(
         if (extracted !== null && extracted.length > 0) {
           deduplicatedMap.set(extracted[0], pr)
         } else {
-          core.info(
-            `  PR (${pr.number}) did not resolve an ID using the \`duplicate_filter\``
-          )
+          core.info(`  PR (${pr.number}) did not resolve an ID using the \`duplicate_filter\``)
           unmatched.push(pr)
         }
       }
       const deduplicatedPRs = Array.from(deduplicatedMap.values())
       deduplicatedPRs.push(...unmatched) // add all unmatched PRs to map
       const removedElements = prs.length - deduplicatedPRs.length
-      core.info(
-        `ℹ️ Removed ${removedElements} pull requests during deduplication`
-      )
+      core.info(`ℹ️ Removed ${removedElements} pull requests during deduplication`)
       prs = sortPullRequests(deduplicatedPRs, sort) // resort deduplicatedPRs
     } else {
       core.warning(`⚠️ Configured \`duplicate_filter\` invalid.`)
@@ -70,25 +57,16 @@ export function buildChangelog(
   for (const pr of prs) {
     transformedMap.set(
       pr,
-      transform(
-        fillTemplate(
-          pr,
-          config.pr_template || DefaultConfiguration.pr_template
-        ),
-        validatedTransformers
-      )
+      transform(fillTemplate(pr, config.pr_template || DefaultConfiguration.pr_template), validatedTransformers)
     )
   }
-  core.info(
-    `ℹ️ Used ${validatedTransformers.length} transformers to adjust message`
-  )
+  core.info(`ℹ️ Used ${validatedTransformers.length} transformers to adjust message`)
   core.info(`✒️ Wrote messages for ${prs.length} pull requests`)
 
   // bring PRs into the order of categories
   const categorized = new Map<Category, string[]>()
   const categories = config.categories || DefaultConfiguration.categories
-  const ignoredLabels =
-    config.ignore_labels || DefaultConfiguration.ignore_labels
+  const ignoredLabels = config.ignore_labels || DefaultConfiguration.ignore_labels
 
   for (const category of categories) {
     categorized.set(category, [])
@@ -203,9 +181,7 @@ export function buildChangelog(
   for (const pr of uncategorizedPrs) {
     changelogUncategorized = `${changelogUncategorized + pr}\n`
   }
-  core.info(
-    `✒️ Wrote ${uncategorizedPrs.length} non categorized pull requests down`
-  )
+  core.info(`✒️ Wrote ${uncategorizedPrs.length} non categorized pull requests down`)
   if (core.isDebug()) {
     for (const pr of uncategorizedPrs) {
       core.debug(`    ${pr}`)
@@ -240,95 +216,41 @@ export function buildChangelog(
 
   // fill template
   let transformedChangelog = config.template || DefaultConfiguration.template
-  transformedChangelog = transformedChangelog.replace(
-    /\${{CHANGELOG}}/g,
-    changelog
-  )
-  transformedChangelog = transformedChangelog.replace(
-    /\${{UNCATEGORIZED}}/g,
-    changelogUncategorized
-  )
-  transformedChangelog = transformedChangelog.replace(
-    /\${{OPEN}}/g,
-    changelogOpen
-  )
-  transformedChangelog = transformedChangelog.replace(
-    /\${{IGNORED}}/g,
-    changelogIgnored
-  )
+  transformedChangelog = transformedChangelog.replace(/\${{CHANGELOG}}/g, changelog)
+  transformedChangelog = transformedChangelog.replace(/\${{UNCATEGORIZED}}/g, changelogUncategorized)
+  transformedChangelog = transformedChangelog.replace(/\${{OPEN}}/g, changelogOpen)
+  transformedChangelog = transformedChangelog.replace(/\${{IGNORED}}/g, changelogIgnored)
 
   // fill other placeholders
-  transformedChangelog = transformedChangelog.replace(
-    /\${{CATEGORIZED_COUNT}}/g,
-    categorizedPrs.length.toString()
-  )
-  transformedChangelog = transformedChangelog.replace(
-    /\${{UNCATEGORIZED_COUNT}}/g,
-    uncategorizedPrs.length.toString()
-  )
-  transformedChangelog = transformedChangelog.replace(
-    /\${{OPEN_COUNT}}/g,
-    openPrs.length.toString()
-  )
-  transformedChangelog = transformedChangelog.replace(
-    /\${{IGNORED_COUNT}}/g,
-    ignoredPrs.length.toString()
-  )
+  transformedChangelog = transformedChangelog.replace(/\${{CATEGORIZED_COUNT}}/g, categorizedPrs.length.toString())
+  transformedChangelog = transformedChangelog.replace(/\${{UNCATEGORIZED_COUNT}}/g, uncategorizedPrs.length.toString())
+  transformedChangelog = transformedChangelog.replace(/\${{OPEN_COUNT}}/g, openPrs.length.toString())
+  transformedChangelog = transformedChangelog.replace(/\${{IGNORED_COUNT}}/g, ignoredPrs.length.toString())
   // code change placeholders
-  transformedChangelog = transformedChangelog.replace(
-    /\${{CHANGED_FILES}}/g,
-    diffInfo.changedFiles.toString()
-  )
-  transformedChangelog = transformedChangelog.replace(
-    /\${{ADDITIONS}}/g,
-    diffInfo.additions.toString()
-  )
-  transformedChangelog = transformedChangelog.replace(
-    /\${{DELETIONS}}/g,
-    diffInfo.deletions.toString()
-  )
-  transformedChangelog = transformedChangelog.replace(
-    /\${{CHANGES}}/g,
-    diffInfo.changes.toString()
-  )
-  transformedChangelog = transformedChangelog.replace(
-    /\${{COMMITS}}/g,
-    diffInfo.commits.toString()
-  )
-  transformedChangelog = fillAdditionalPlaceholders(
-    transformedChangelog,
-    options
-  )
+  transformedChangelog = transformedChangelog.replace(/\${{CHANGED_FILES}}/g, diffInfo.changedFiles.toString())
+  transformedChangelog = transformedChangelog.replace(/\${{ADDITIONS}}/g, diffInfo.additions.toString())
+  transformedChangelog = transformedChangelog.replace(/\${{DELETIONS}}/g, diffInfo.deletions.toString())
+  transformedChangelog = transformedChangelog.replace(/\${{CHANGES}}/g, diffInfo.changes.toString())
+  transformedChangelog = transformedChangelog.replace(/\${{COMMITS}}/g, diffInfo.commits.toString())
+  transformedChangelog = fillAdditionalPlaceholders(transformedChangelog, options)
 
   core.info(`ℹ️ Filled template`)
   return transformedChangelog
 }
 
-export function fillAdditionalPlaceholders(
-  text: string,
-  options: ReleaseNotesOptions
-): string {
+export function fillAdditionalPlaceholders(text: string, options: ReleaseNotesOptions): string {
   let transformed = text
   // repository placeholders
   transformed = transformed.replace(/\${{OWNER}}/g, options.owner)
   transformed = transformed.replace(/\${{REPO}}/g, options.repo)
   transformed = transformed.replace(/\${{FROM_TAG}}/g, options.fromTag.name)
-  transformed = transformed.replace(
-    /\${{FROM_TAG_DATE}}/g,
-    options.fromTag.date?.toISOString() || ''
-  )
+  transformed = transformed.replace(/\${{FROM_TAG_DATE}}/g, options.fromTag.date?.toISOString() || '')
   transformed = transformed.replace(/\${{TO_TAG}}/g, options.toTag.name)
-  transformed = transformed.replace(
-    /\${{TO_TAG_DATE}}/g,
-    options.toTag.date?.toISOString() || ''
-  )
+  transformed = transformed.replace(/\${{TO_TAG_DATE}}/g, options.toTag.date?.toISOString() || '')
   const fromDate = options.fromTag.date
   const toDate = options.toTag.date
   if (fromDate !== undefined && toDate !== undefined) {
-    transformed = transformed.replace(
-      /\${{DAYS_SINCE}}/g,
-      toDate.diff(fromDate, 'days').toString() || ''
-    )
+    transformed = transformed.replace(/\${{DAYS_SINCE}}/g, toDate.diff(fromDate, 'days').toString() || '')
   } else {
     transformed = transformed.replace(/\${{DAYS_SINCE}}/g, '')
   }
@@ -353,14 +275,8 @@ function fillTemplate(pr: PullRequestInfo, template: string): string {
   transformed = transformed.replace(/\${{TITLE}}/g, pr.title)
   transformed = transformed.replace(/\${{URL}}/g, pr.htmlURL)
   transformed = transformed.replace(/\${{STATUS}}/g, pr.status)
-  transformed = transformed.replace(
-    /\${{CREATED_AT}}/g,
-    pr.createdAt.toISOString()
-  )
-  transformed = transformed.replace(
-    /\${{MERGED_AT}}/g,
-    pr.mergedAt?.toISOString() || ''
-  )
+  transformed = transformed.replace(/\${{CREATED_AT}}/g, pr.createdAt.toISOString())
+  transformed = transformed.replace(/\${{MERGED_AT}}/g, pr.mergedAt?.toISOString() || '')
   transformed = transformed.replace(/\${{MERGE_SHA}}/g, pr.mergeCommitSha)
   transformed = transformed.replace(/\${{AUTHOR}}/g, pr.author)
   transformed = transformed.replace(
@@ -369,18 +285,9 @@ function fillTemplate(pr: PullRequestInfo, template: string): string {
   )
   transformed = transformed.replace(/\${{MILESTONE}}/g, pr.milestone || '')
   transformed = transformed.replace(/\${{BODY}}/g, pr.body)
-  transformed = transformed.replace(
-    /\${{ASSIGNEES}}/g,
-    pr.assignees?.join(', ') || ''
-  )
-  transformed = transformed.replace(
-    /\${{REVIEWERS}}/g,
-    pr.requestedReviewers?.join(', ') || ''
-  )
-  transformed = transformed.replace(
-    /\${{APPROVERS}}/g,
-    pr.approvedReviewers?.join(', ') || ''
-  )
+  transformed = transformed.replace(/\${{ASSIGNEES}}/g, pr.assignees?.join(', ') || '')
+  transformed = transformed.replace(/\${{REVIEWERS}}/g, pr.requestedReviewers?.join(', ') || '')
+  transformed = transformed.replace(/\${{APPROVERS}}/g, pr.approvedReviewers?.join(', ') || '')
   return transformed
 }
 
@@ -397,11 +304,8 @@ function transform(filled: string, transformers: RegexTransformer[]): string {
   return transformed
 }
 
-function validateTransformers(
-  specifiedTransformers: Transformer[]
-): RegexTransformer[] {
-  const transformers =
-    specifiedTransformers || DefaultConfiguration.transformers
+function validateTransformers(specifiedTransformers: Transformer[]): RegexTransformer[] {
+  const transformers = specifiedTransformers || DefaultConfiguration.transformers
   return transformers
     .map(transformer => {
       return validateTransformer(transformer)
@@ -412,9 +316,7 @@ function validateTransformers(
     })
 }
 
-export function validateTransformer(
-  transformer?: Transformer
-): RegexTransformer | null {
+export function validateTransformer(transformer?: Transformer): RegexTransformer | null {
   if (transformer === undefined) {
     return null
   }
@@ -436,10 +338,7 @@ export function validateTransformer(
     }
 
     return {
-      pattern: new RegExp(
-        transformer.pattern.replace('\\\\', '\\'),
-        transformer.flags ?? 'gu'
-      ),
+      pattern: new RegExp(transformer.pattern.replace('\\\\', '\\'), transformer.flags ?? 'gu'),
       target: transformer.target || '',
       onProperty,
       method,
@@ -451,33 +350,20 @@ export function validateTransformer(
   }
 }
 
-function extractValues(
-  pr: PullRequestInfo,
-  extractor: RegexTransformer,
-  extractor_usecase: string
-): string[] | null {
+function extractValues(pr: PullRequestInfo, extractor: RegexTransformer, extractor_usecase: string): string[] | null {
   if (extractor.pattern == null) {
     return null
   }
 
   if (extractor.onProperty !== undefined) {
     let results: string[] = []
-    const list: (
-      | 'title'
-      | 'author'
-      | 'milestone'
-      | 'body'
-      | 'status'
-      | 'branch'
-    )[] = extractor.onProperty
+    const list: ('title' | 'author' | 'milestone' | 'body' | 'status' | 'branch')[] = extractor.onProperty
     // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < list.length; i++) {
       const prop = list[i]
       let value: string | undefined = pr[prop]
       if (value === undefined) {
-        core.warning(
-          `⚠️ the provided property '${extractor.onProperty}' for \`${extractor_usecase}\` is not valid`
-        )
+        core.warning(`⚠️ the provided property '${extractor.onProperty}' for \`${extractor_usecase}\` is not valid`)
         value = pr['body']
       }
 
@@ -492,10 +378,7 @@ function extractValues(
   }
 }
 
-function extractValuesFromString(
-  value: string,
-  extractor: RegexTransformer
-): string[] | null {
+function extractValuesFromString(value: string, extractor: RegexTransformer): string[] | null {
   if (extractor.pattern == null) {
     return null
   }
@@ -520,9 +403,7 @@ function extractValuesFromString(
 export interface RegexTransformer {
   pattern: RegExp | null
   target: string
-  onProperty?:
-    | ('title' | 'author' | 'milestone' | 'body' | 'status' | 'branch')[]
-    | undefined
+  onProperty?: ('title' | 'author' | 'milestone' | 'body' | 'status' | 'branch')[] | undefined
   method?: 'replace' | 'match' | undefined
   onEmpty?: string | undefined
 }
