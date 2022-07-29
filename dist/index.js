@@ -1648,6 +1648,7 @@ function buildChangelog(diffInfo, prs, options) {
     let transformedChangelog = config.template || configuration_1.DefaultConfiguration.template;
     transformedChangelog = replacePlaceholders(transformedChangelog, placeholderMap, placeholders, placeholderPrMap);
     transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap);
+    transformedChangelog = cleanupPrPlaceHolders(transformedChangelog, placeholders);
     core.info(`ℹ️ Filled template`);
     return transformedChangelog;
 }
@@ -1730,6 +1731,15 @@ function replacePrPlaceholders(template, placeholderPrMap /* map with all pr rel
             transformed = transformed.replaceAll(`\${{${key}[${i}]}}`, values[i]);
         }
         transformed = transformed.replaceAll(`\${{${key}[*]}}`, values.join(''));
+    }
+    return transformed;
+}
+function cleanupPrPlaceHolders(template, placeholders /* placeholders to apply */) {
+    let transformed = template;
+    for (const [, phs] of placeholders) {
+        for (const ph of phs) {
+            transformed = transformed.replaceAll(new RegExp(`\\$\\{\\{${ph.name}\\[.+?\\]\\}\\}`, 'gu'), '');
+        }
     }
     return transformed;
 }
