@@ -16,6 +16,10 @@ on:
       - '**.md'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.event.pull_request.number }}-check
+  cancel-in-progress: true
+
 jobs:
   check-dist:
     runs-on: ubuntu-latest

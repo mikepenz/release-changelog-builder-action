@@ -157,7 +157,7 @@ jobs:
                     "title": "## 📦 Dependencies",
                     "labels": ["dependencies"]
                 }
-              ],
+              ]
             }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

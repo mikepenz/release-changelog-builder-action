@@ -5,6 +5,10 @@ on:
       - '*'
   pull_request:
 
+concurrency:
+  group: ${{ github.event.pull_request.number }}-ci
+  cancel-in-progress: true
+
 jobs:
   build:
     if: github.event_name  == 'pull_request'
@@ -37,9 +41,9 @@ jobs:
       # Since 3.2.0 the configuration can be provided within the `yml` file
       - name: "Configuration without Checkout"
         id: without_checkout
-        uses: mikepenz/release-changelog-builder-action@f55f49981dfb29d4ceedb6ad6667acccaa6dc6ef
+        uses: mikepenz/release-changelog-builder-action@develop
         with:
-          toTag: "v0.0.3"
+          toTag: "v3.1.1"
           configurationJson: |
             {
               "template": "#{{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n#{{UNCATEGORIZED}}\n</details>",
@@ -64,7 +68,7 @@ jobs:
                     "title": "## 📦 Dependencies",
                     "labels": ["dependencies"]
                 }
-              ],
+              ]
             }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
