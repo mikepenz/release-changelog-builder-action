@@ -4,6 +4,14 @@ import {PullRequestInfo, sortPullRequests} from './pullRequests'
 import {ReleaseNotesOptions} from './releaseNotes'
 import {DiffInfo} from './commits'
 
+export interface RegexTransformer {
+  pattern: RegExp | null
+  target: string
+  onProperty?: ('title' | 'author' | 'milestone' | 'body' | 'status' | 'branch')[] | undefined
+  method?: 'replace' | 'match' | undefined
+  onEmpty?: string | undefined
+}
+
 export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], options: ReleaseNotesOptions): string {
   // sort to target order
   const config = options.configuration
@@ -51,9 +59,9 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
     }
   }
 
-  const placeholderMap = new Map<string, Placeholder>()
+  const placeholders = new Map<string, Placeholder>()
   for (const ph of config.custom_placeholders || []) {
-    placeholderMap.set(ph.source, ph)
+    placeholders.set(ph.source, ph)
   }
 
   const validatedTransformers = validateTransformers(config.transformers)
@@ -63,7 +71,7 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
     transformedMap.set(
       pr,
       transform(
-        fillTemplate(pr, config.pr_template || DefaultConfiguration.pr_template, placeholderMap),
+        fillTemplate(pr, config.pr_template || DefaultConfiguration.pr_template, placeholders),
         validatedTransformers
       )
     )
@@ -223,61 +231,63 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
   core.info(`✒️ Wrote ${ignoredPrs.length} ignored pull requests down`)
 
   // fill template
-  let transformedChangelog = config.template || DefaultConfiguration.template
-  transformedChangelog = transformedChangelog.replace(/\${{CHANGELOG}}/g, changelog)
-  transformedChangelog = transformedChangelog.replace(/\${{UNCATEGORIZED}}/g, changelogUncategorized)
-  transformedChangelog = transformedChangelog.replace(/\${{OPEN}}/g, changelogOpen)
-  transformedChangelog = transformedChangelog.replace(/\${{IGNORED}}/g, changelogIgnored)
-
+  const placeholderMap = new Map<string, string>()
+  placeholderMap.set('CHANGELOG', changelog)
+  placeholderMap.set('UNCATEGORIZED', changelogUncategorized)
+  placeholderMap.set('OPEN', changelogOpen)
+  placeholderMap.set('IGNORED', changelogIgnored)
   // fill other placeholders
-  transformedChangelog = transformedChangelog.replace(/\${{CATEGORIZED_COUNT}}/g, categorizedPrs.length.toString())
-  transformedChangelog = transformedChangelog.replace(/\${{UNCATEGORIZED_COUNT}}/g, uncategorizedPrs.length.toString())
-  transformedChangelog = transformedChangelog.replace(/\${{OPEN_COUNT}}/g, openPrs.length.toString())
-  transformedChangelog = transformedChangelog.replace(/\${{IGNORED_COUNT}}/g, ignoredPrs.length.toString())
+  placeholderMap.set('CATEGORIZED_COUNT', categorizedPrs.length.toString())
+  placeholderMap.set('UNCATEGORIZED_COUNT', uncategorizedPrs.length.toString())
+  placeholderMap.set('OPEN_COUNT', openPrs.length.toString())
+  placeholderMap.set('IGNORED_COUNT', ignoredPrs.length.toString())
   // code change placeholders
-  transformedChangelog = transformedChangelog.replace(/\${{CHANGED_FILES}}/g, diffInfo.changedFiles.toString())
-  transformedChangelog = transformedChangelog.replace(/\${{ADDITIONS}}/g, diffInfo.additions.toString())
-  transformedChangelog = transformedChangelog.replace(/\${{DELETIONS}}/g, diffInfo.deletions.toString())
-  transformedChangelog = transformedChangelog.replace(/\${{CHANGES}}/g, diffInfo.changes.toString())
-  transformedChangelog = transformedChangelog.replace(/\${{COMMITS}}/g, diffInfo.commits.toString())
-  transformedChangelog = fillAdditionalPlaceholders(transformedChangelog, options)
+  placeholderMap.set('CHANGED_FILES', diffInfo.changedFiles.toString())
+  placeholderMap.set('ADDITIONS', diffInfo.additions.toString())
+  placeholderMap.set('DELETIONS', diffInfo.deletions.toString())
+  placeholderMap.set('CHANGES', diffInfo.changes.toString())
+  placeholderMap.set('COMMITS', diffInfo.commits.toString())
+  fillAdditionalPlaceholders(options, placeholderMap)
+
+  let transformedChangelog = config.template || DefaultConfiguration.template
+  transformedChangelog = replacePlaceHolders(transformedChangelog, placeholderMap, placeholders)
 
   core.info(`ℹ️ Filled template`)
   return transformedChangelog
 }
 
-export function fillAdditionalPlaceholders(text: string, options: ReleaseNotesOptions): string {
-  let transformed = text
+export function replaceEmptyTemplate(template: string, options: ReleaseNotesOptions): string {
+  const placeholders = new Map<string, Placeholder>()
+  for (const ph of options.configuration.custom_placeholders || []) {
+    placeholders.set(ph.source, ph)
+  }
+  const placeholderMap = new Map<string, string>()
+  fillAdditionalPlaceholders(options, placeholderMap)
+  return replacePlaceHolders(template, placeholderMap, placeholders)
+}
+
+function fillAdditionalPlaceholders(options: ReleaseNotesOptions, placeholderMap: Map<string, string>): void {
   // repository placeholders
-  transformed = transformed.replace(/\${{OWNER}}/g, options.owner)
-  transformed = transformed.replace(/\${{REPO}}/g, options.repo)
-  transformed = transformed.replace(/\${{FROM_TAG}}/g, options.fromTag.name)
-  transformed = transformed.replace(/\${{FROM_TAG_DATE}}/g, options.fromTag.date?.toISOString() || '')
-  transformed = transformed.replace(/\${{TO_TAG}}/g, options.toTag.name)
-  transformed = transformed.replace(/\${{TO_TAG_DATE}}/g, options.toTag.date?.toISOString() || '')
+  placeholderMap.set('OWNER', options.owner)
+  placeholderMap.set('REPO', options.repo)
+  placeholderMap.set('FROM_TAG', options.fromTag.name)
+  placeholderMap.set('FROM_TAG_DATE', options.fromTag.date?.toISOString() || '')
+  placeholderMap.set('TO_TAG', options.toTag.name)
+  placeholderMap.set('TO_TAG_DATE', options.toTag.date?.toISOString() || '')
   const fromDate = options.fromTag.date
   const toDate = options.toTag.date
   if (fromDate !== undefined && toDate !== undefined) {
-    transformed = transformed.replace(/\${{DAYS_SINCE}}/g, toDate.diff(fromDate, 'days').toString() || '')
+    placeholderMap.set('DAYS_SINCE', toDate.diff(fromDate, 'days').toString() || '')
   } else {
-    transformed = transformed.replace(/\${{DAYS_SINCE}}/g, '')
+    placeholderMap.set('DAYS_SINCE', '')
   }
-  transformed = transformed.replace(
-    /\${{RELEASE_DIFF}}/g,
+  placeholderMap.set(
+    'RELEASE_DIFF',
     `https://github.com/${options.owner}/${options.repo}/compare/${options.fromTag.name}...${options.toTag.name}`
   )
-  return transformed
 }
 
-function haveCommonElements(arr1: string[], arr2: Set<string>): Boolean {
-  return arr1.some(item => arr2.has(item))
-}
-
-function haveEveryElements(arr1: string[], arr2: Set<string>): Boolean {
-  return arr1.every(item => arr2.has(item))
-}
-
-function fillTemplate(pr: PullRequestInfo, template: string, customPlaceholders: Map<string, Placeholder>): string {
+function fillTemplate(pr: PullRequestInfo, template: string, placeholders: Map<string, Placeholder>): string {
   const placeholderMap = new Map<string, string>()
   placeholderMap.set('NUMBER', pr.number.toString())
   placeholderMap.set('TITLE', pr.title)
@@ -295,19 +305,25 @@ function fillTemplate(pr: PullRequestInfo, template: string, customPlaceholders:
   placeholderMap.set('APPROVERS', pr.approvedReviewers?.join(', ') || '')
   placeholderMap.set('BRANCH', pr.branch || '')
   placeholderMap.set('BASE_BRANCH', pr.baseBranch)
+  return replacePlaceHolders(template, placeholderMap, placeholders)
+}
 
+function replacePlaceHolders(
+  template: string,
+  placeholderMap: Map<string, string>,
+  placeholders: Map<string, Placeholder>
+): string {
   let transformed = template
   for (const [key, value] of placeholderMap) {
     transformed = transformed.replaceAll(`\${{${key}}}`, value)
 
     // replace custom placeholders
-    transformed = applyCustomPlaceholder(transformed, value, customPlaceholders.get(key))
+    transformed = applyCustomPlaceholder(transformed, value, placeholders.get(key))
   }
-
   return transformed
 }
 
-function applyCustomPlaceholder(template: string, value: string, placeholder: Placeholder | undefined) {
+function applyCustomPlaceholder(template: string, value: string, placeholder: Placeholder | undefined): string {
   if (placeholder) {
     const transformer = validateTransformer(placeholder.transformer)
     if (transformer?.pattern) {
@@ -427,10 +443,10 @@ function extractValuesFromString(value: string, extractor: RegexTransformer): st
   return null
 }
 
-export interface RegexTransformer {
-  pattern: RegExp | null
-  target: string
-  onProperty?: ('title' | 'author' | 'milestone' | 'body' | 'status' | 'branch')[] | undefined
-  method?: 'replace' | 'match' | undefined
-  onEmpty?: string | undefined
+function haveCommonElements(arr1: string[], arr2: Set<string>): Boolean {
+  return arr1.some(item => arr2.has(item))
+}
+
+function haveEveryElements(arr1: string[], arr2: Set<string>): Boolean {
+  return arr1.every(item => arr2.has(item))
 }
