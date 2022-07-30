@@ -337,10 +337,12 @@ function replacePlaceholders(
         if (transformer?.pattern) {
           const extractedValue = value.replace(transformer.pattern, transformer.target)
           // note: `.replace` will return the full string again if there was no match
-          if (extractedValue && placeholderPrMap && extractedValue !== value) {
-            createOrSet(placeholderPrMap, placeholder.name, extractedValue)
+          if (extractedValue && extractedValue !== value) {
+            if (placeholderPrMap) {
+              createOrSet(placeholderPrMap, placeholder.name, extractedValue)
+            }
+            transformed = transformed.replaceAll(`\${{${placeholder.name}}}`, extractedValue)
           }
-          transformed = transformed.replaceAll(`\${{${placeholder.name}}}`, extractedValue)
         }
       }
     }
