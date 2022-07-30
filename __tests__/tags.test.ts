@@ -1,4 +1,4 @@
-import { TagInfo, sortTags, filterTags } from '../src/tags';
+import {TagInfo, sortTags, filterTags} from '../src/tags'
 
 jest.setTimeout(180000)
 
@@ -108,8 +108,8 @@ it('Should filter tags correctly using the regex', async () => {
   const tagResolver = {
     method: 'non-existing-method',
     filter: {
-      "pattern": "api-(.+)",
-      "flags": "gu"
+      pattern: 'api-(.+)',
+      flags: 'gu'
     }
   }
   const filtered = filterTags(tags, tagResolver)
@@ -118,7 +118,5 @@ it('Should filter tags correctly using the regex', async () => {
     })
     .join(',')
 
-  expect(filtered).toStrictEqual(
-    `api-0.0.1,api-0.0.1-rc01,api-10.1.0-2`
-  )
+  expect(filtered).toStrictEqual(`api-0.0.1,api-0.0.1-rc01,api-10.1.0-2`)
 })

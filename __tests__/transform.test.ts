@@ -1,8 +1,8 @@
 import {buildChangelog} from '../src/transform'
 import {PullRequestInfo} from '../src/pullRequests'
 import moment from 'moment'
-import { Configuration, DefaultConfiguration } from '../src/configuration';
-import { DefaultDiffInfo } from '../src/commits';
+import {Configuration, DefaultConfiguration} from '../src/configuration'
+import {DefaultDiffInfo} from '../src/commits'
 
 jest.setTimeout(180000)
 
@@ -45,7 +45,7 @@ mergedPullRequests.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: "merged"
+    status: 'merged'
   },
   {
     number: 2,
@@ -63,7 +63,7 @@ mergedPullRequests.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: "merged"
+    status: 'merged'
   },
   {
     number: 3,
@@ -81,7 +81,7 @@ mergedPullRequests.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: "merged"
+    status: 'merged'
   },
   {
     number: 4,
@@ -99,7 +99,7 @@ mergedPullRequests.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: "merged"
+    status: 'merged'
   }
 )
 
@@ -119,7 +119,7 @@ const pullRequestWithLabelInBody: PullRequestInfo = {
   assignees: [],
   requestedReviewers: [],
   approvedReviewers: [],
-  status: "merged"
+  status: 'merged'
 }
 
 it('Extract label from title, combined regex', async () => {
@@ -134,8 +134,8 @@ it('Extract label from title, combined regex', async () => {
   const resultChangelog = buildChangelog(DefaultDiffInfo, mergedPullRequests, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: { name: '1.0.0' },
-    toTag: { name: '2.0.0' },
+    fromTag: {name: '1.0.0'},
+    toTag: {name: '2.0.0'},
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
@@ -149,7 +149,6 @@ it('Extract label from title, combined regex', async () => {
   )
 })
 
-
 it('Extract label from title and body, combined regex', async () => {
   configuration.label_extractor = [
     {
@@ -158,14 +157,14 @@ it('Extract label from title and body, combined regex', async () => {
       on_property: ['title', 'body']
     }
   ]
-  
+
   let prs = Array.from(mergedPullRequests)
   prs.push(pullRequestWithLabelInBody)
   const resultChangelog = buildChangelog(DefaultDiffInfo, prs, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: { name: '1.0.0' },
-    toTag: { name: '2.0.0' },
+    fromTag: {name: '1.0.0'},
+    toTag: {name: '2.0.0'},
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
@@ -196,8 +195,8 @@ it('Extract label from title, split regex', async () => {
   const resultChangelog = buildChangelog(DefaultDiffInfo, mergedPullRequests, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: { name: '1.0.0' },
-    toTag: { name: '2.0.0' },
+    fromTag: {name: '1.0.0'},
+    toTag: {name: '2.0.0'},
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
@@ -228,8 +227,8 @@ it('Extract label from title, match', async () => {
   const resultChangelog = buildChangelog(DefaultDiffInfo, mergedPullRequests, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: { name: '1.0.0' },
-    toTag: { name: '2.0.0' },
+    fromTag: {name: '1.0.0'},
+    toTag: {name: '2.0.0'},
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
@@ -255,8 +254,8 @@ it('Extract label from title, match multiple', async () => {
   const resultChangelog = buildChangelog(DefaultDiffInfo, mergedPullRequests, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: { name: '1.0.0' },
-    toTag: { name: '2.0.0' },
+    fromTag: {name: '1.0.0'},
+    toTag: {name: '2.0.0'},
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
@@ -283,8 +282,8 @@ it('Extract label from title, match multiple, custon non matching label', async 
   const resultChangelog = buildChangelog(DefaultDiffInfo, mergedPullRequests, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: { name: '1.0.0' },
-    toTag: { name: '2.0.0' },
+    fromTag: {name: '1.0.0'},
+    toTag: {name: '2.0.0'},
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
@@ -317,7 +316,7 @@ pullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: "merged"
+    status: 'merged'
   },
   {
     number: 2,
@@ -335,7 +334,7 @@ pullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: "merged"
+    status: 'merged'
   },
   {
     number: 3,
@@ -353,7 +352,7 @@ pullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: "merged"
+    status: 'merged'
   },
   {
     number: 4,
@@ -371,7 +370,7 @@ pullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: "merged"
+    status: 'merged'
   }
 )
 
@@ -398,8 +397,8 @@ it('Match multiple labels exhaustive for category', async () => {
   const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: { name: '1.0.0' },
-    toTag: { name: '2.0.0' },
+    fromTag: {name: '1.0.0'},
+    toTag: {name: '2.0.0'},
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
@@ -424,8 +423,8 @@ it('Deduplicate duplicated PRs', async () => {
   const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: { name: '1.0.0' },
-    toTag: { name: '2.0.0' },
+    fromTag: {name: '1.0.0'},
+    toTag: {name: '2.0.0'},
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
@@ -441,7 +440,7 @@ it('Deduplicate duplicated PRs', async () => {
 
 it('Deduplicate duplicated PRs DESC', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
-  customConfig.sort = "DESC"
+  customConfig.sort = 'DESC'
   customConfig.duplicate_filter = {
     pattern: '\\[ABC-....\\]',
     on_property: 'title',
@@ -451,8 +450,8 @@ it('Deduplicate duplicated PRs DESC', async () => {
   const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: { name: '1.0.0' },
-    toTag: { name: '2.0.0' },
+    fromTag: {name: '1.0.0'},
+    toTag: {name: '2.0.0'},
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
@@ -466,26 +465,25 @@ it('Deduplicate duplicated PRs DESC', async () => {
   )
 })
 
-
 it('Use empty_content for empty category', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.categories = [
     {
       title: '## 🚀 Features and 🐛 Issues',
       labels: ['Never-Matching-Category'],
-      empty_content: "- No PRs in this category"
+      empty_content: '- No PRs in this category'
     },
     {
       title: '## 🚀 Features',
-      labels: ['Feature'],
+      labels: ['Feature']
     }
   ]
 
   const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: { name: '1.0.0' },
-    toTag: { name: '2.0.0' },
+    fromTag: {name: '1.0.0'},
+    toTag: {name: '2.0.0'},
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
@@ -501,14 +499,14 @@ it('Use empty_content for empty category', async () => {
 
 it('Commit SHA-1 in commitMode', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
-  customConfig.sort = "DESC"
-  customConfig.pr_template = "${{MERGE_SHA}}"
+  customConfig.sort = 'DESC'
+  customConfig.pr_template = '${{MERGE_SHA}}'
 
   const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: { name: '1.0.0' },
-    toTag: { name: '2.0.0' },
+    fromTag: {name: '1.0.0'},
+    toTag: {name: '2.0.0'},
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
@@ -517,20 +515,18 @@ it('Commit SHA-1 in commitMode', async () => {
     configuration: customConfig
   })
 
-  expect(resultChangelog).toStrictEqual(
-    `## 🚀 Features\n\nsha1-3\nsha1-1\n\n## 🐛 Fixes\n\nsha1-3\nsha1-2\n\n`
-  )
+  expect(resultChangelog).toStrictEqual(`## 🚀 Features\n\nsha1-3\nsha1-1\n\n## 🐛 Fixes\n\nsha1-3\nsha1-2\n\n`)
 })
 
 it('Release Diff', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
-  customConfig.template = "${{RELEASE_DIFF}}\n${{DAYS_SINCE}}"
+  customConfig.template = '${{RELEASE_DIFF}}\n${{DAYS_SINCE}}'
 
   const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
-    fromTag: { name: 'v2.8.0' },
-    toTag: { name: 'v2.8.1' },
+    fromTag: {name: 'v2.8.0'},
+    toTag: {name: 'v2.8.1'},
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
@@ -543,7 +539,6 @@ it('Release Diff', async () => {
     `https://github.com/mikepenz/release-changelog-builder-action/compare/v2.8.0...v2.8.1\n`
   )
 })
-
 
 it('Use exclude labels to not include a PR within a category.', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
@@ -569,8 +564,8 @@ it('Use exclude labels to not include a PR within a category.', async () => {
   const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: { name: '1.0.0' },
-    toTag: { name: '2.0.0' },
+    fromTag: {name: '1.0.0'},
+    toTag: {name: '2.0.0'},
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
@@ -584,35 +579,35 @@ it('Use exclude labels to not include a PR within a category.', async () => {
   )
 })
 
-
 it('Extract custom placeholder from PR body and replace in global template', async () => {
   const customConfig = Object.assign({}, configuration)
   customConfig.custom_placeholders = [
     {
-      name: "C_PLACEHOLDER_1",
-      source: "BODY",
+      name: 'C_PLACEHOLDER_1',
+      source: 'BODY',
       transformer: {
         pattern: '.+ (b....).+',
         target: '- $1'
       }
     },
     {
-      name: "C_PLACEHOLER_2",
-      source: "BODY",
+      name: 'C_PLACEHOLER_2',
+      source: 'BODY',
       transformer: {
         pattern: '.+ b(....).+',
         target: '\n- $1'
       }
     }
   ]
-  customConfig.template = "${{CHANGELOG}}\n\n${{C_PLACEHOLER_2[2]}}\n\n${{C_PLACEHOLER_2[*]}}${{C_PLACEHOLDER_1[7]}}${{C_PLACEHOLER_2[1493]}}"
-  customConfig.pr_template = "${{BODY}} ---->  ${{C_PLACEHOLDER_1}}"
+  customConfig.template =
+    '${{CHANGELOG}}\n\n${{C_PLACEHOLER_2[2]}}\n\n${{C_PLACEHOLER_2[*]}}${{C_PLACEHOLDER_1[7]}}${{C_PLACEHOLER_2[1493]}}'
+  customConfig.pr_template = '${{BODY}} ---->  ${{C_PLACEHOLDER_1}}'
 
   const resultChangelog = buildChangelog(DefaultDiffInfo, mergedPullRequests, {
     owner: 'mikepenz',
     repo: 'test-repo',
-    fromTag: { name: '1.0.0' },
-    toTag: { name: '2.0.0' },
+    fromTag: {name: '1.0.0'},
+    toTag: {name: '2.0.0'},
     includeOpen: false,
     failOnError: false,
     fetchReviewers: false,
@@ -621,5 +616,7 @@ it('Extract custom placeholder from PR body and replace in global template', asy
     configuration: customConfig
   })
 
-  expect(resultChangelog).toStrictEqual(`## 🚀 Features\n\nno magic body1 for this matter ---->  - body1\nno magic body3 for this matter ---->  - body3\n\n## 🐛 Fixes\n\nno magic body2 for this matter ---->  - body2\nno magic body3 for this matter ---->  - body3\n\n## 🧪 Others\n\nno magic body4 for this matter ---->  - body4\n\n\n\n\n- ody3\n\n\n- ody1\n- ody2\n- ody3\n- ody4`)
+  expect(resultChangelog).toStrictEqual(
+    `## 🚀 Features\n\nno magic body1 for this matter ---->  - body1\nno magic body3 for this matter ---->  - body3\n\n## 🐛 Fixes\n\nno magic body2 for this matter ---->  - body2\nno magic body3 for this matter ---->  - body3\n\n## 🧪 Others\n\nno magic body4 for this matter ---->  - body4\n\n\n\n\n- ody3\n\n\n- ody1\n- ody2\n- ody3\n- ody4`
+  )
 })
