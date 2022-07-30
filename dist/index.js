@@ -1714,10 +1714,12 @@ function replacePlaceholders(template, placeholderMap /* placeholderKey and orig
                 if (transformer === null || transformer === void 0 ? void 0 : transformer.pattern) {
                     const extractedValue = value.replace(transformer.pattern, transformer.target);
                     // note: `.replace` will return the full string again if there was no match
-                    if (extractedValue && placeholderPrMap && extractedValue !== value) {
-                        (0, utils_1.createOrSet)(placeholderPrMap, placeholder.name, extractedValue);
+                    if (extractedValue && extractedValue !== value) {
+                        if (placeholderPrMap) {
+                            (0, utils_1.createOrSet)(placeholderPrMap, placeholder.name, extractedValue);
+                        }
+                        transformed = transformed.replaceAll(`\${{${placeholder.name}}}`, extractedValue);
                     }
-                    transformed = transformed.replaceAll(`\${{${placeholder.name}}}`, extractedValue);
                 }
             }
         }
