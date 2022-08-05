@@ -408,6 +408,53 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | tag_resolver.transformer    | Defines a regex transformer used to optionally transform the tag after the filter was applied. Allows to adjust the format to e.g. semver.                                                                                         |
 | base_branches               | The target branches for the merged PR, ingnores PRs with different target branch. Values can be a `regex`. Default: allow all base branches                                                                                        |
 
+## Experimental 🧪
+
+Starting with v3.2.0 the action provides an experimental feature of defining `CUSTOM_PLACEHOLDERS`. 
+Custom placeholders allow to extract values from any existing placeholder and insert them into the target template.
+
+<details><summary><b>Example</b></summary>
+<p>
+
+Custom placeholders can be defined via the `configuration.json` as `custom_placeholders`. See the below example json:
+
+```json
+{
+  "template": "**Epics**\n${{EPIC[*]}}\n\n${{CHANGELOG}}",
+  "pr_template": "- ${{TITLE}} - ${{URL}} ${{EPIC}}",
+  "custom_placeholders": [
+    {
+      "name": "EPIC",
+      "source": "BODY",
+      "transformer": {
+        "pattern": "[\\S\\s]*?(https:\\/\\/corp\\.atlassian\\.net\\/browse\\/EPIC-.{2,4})[\\S\\s]*",
+        "target": "- $1"
+      }
+    }
+  ]
+}
+```
+
+This example will look for JIRA tickets in the EPIC project, and extract all of these tickets. The exciting part for that case is, that the ticket is PR bound, but can be used in the global TEMPLATE, but equally also in the PR template. This is unique for CUSTOM PLACEHOLDERS as standard palceholders do not offer this functionality. 
+
+| **Input**                   | **Description**                                                                                                                                                                                                                    |
+|-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| custom_placeholders               |    An array of `Placeholder` specifications, offering a flexible API to extract custom placeholders from existing placeholders.     |
+| custom_placeholders.name               |   The name of the custom placeholder. Will be used within the template.     |
+| custom_placeholders.source               |   The source PLACEHOLDER, requires to be one of the existing Template or PR Template placeholders.     |
+| custom_placeholders.transformer               |   The transformer specification used to extract the value from the original source PLACEHOLDER.     |
+
+A placeholder with the name as `CUSTOM_PLACEHOLDER` can be used as `${{CUSTOM_PLACEHOLDER}}` in the target template. 
+By default the same restriction applies as for PR vs template placeholder. E.g. a global placeholder can only be used in the global template (and not in the PR template).
+
+Custom placeholders offer one new feature though. PR related placeholders can be used in the global template via the following syntax:
+
+- `CUSTOM_PLACEHOLDER[*]` - Will join all found values and insert them at the given location in the global template
+- `CUSTOM_PLACEHOLDER[0]` / `CUSTOM_PLACEHOLDER[index]` - Will insert the first found value (item at index) into the global template
+
+</p>
+</details>
+
 ## Contribute 🧬
 
 ```bash

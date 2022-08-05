@@ -342,6 +342,14 @@ function replacePlaceholders(
               createOrSet(placeholderPrMap, placeholder.name, extractedValue)
             }
             transformed = transformed.replaceAll(`\${{${placeholder.name}}}`, extractedValue)
+
+            if (core.isDebug()) {
+              core.debug(`    Custom Placeholder successfully matched data - ${extractValues} (${placeholder.name})`)
+            }
+          } else if (core.isDebug() && extractedValue === value) {
+            core.debug(
+              `    Custom Placeholder did result in the full original value returned. Skipping. (${placeholder.name})`
+            )
           }
         }
       }
