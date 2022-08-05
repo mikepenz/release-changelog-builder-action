@@ -8823,6 +8823,7 @@ const Endpoints = {
     getAnalysis: ["GET /repos/{owner}/{repo}/code-scanning/analyses/{analysis_id}"],
     getSarif: ["GET /repos/{owner}/{repo}/code-scanning/sarifs/{sarif_id}"],
     listAlertInstances: ["GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}/instances"],
+    listAlertsForEnterprise: ["GET /enterprises/{enterprise}/code-scanning/alerts"],
     listAlertsForOrg: ["GET /orgs/{org}/code-scanning/alerts"],
     listAlertsForRepo: ["GET /repos/{owner}/{repo}/code-scanning/alerts"],
     listAlertsInstances: ["GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}/instances", {}, {
@@ -9556,7 +9557,7 @@ const Endpoints = {
   }
 };
 
-const VERSION = "6.1.2";
+const VERSION = "6.2.0";
 
 function endpointsToMethods(octokit, endpointsMap) {
   const newMethods = {};
