@@ -4,6 +4,7 @@ import {Octokit} from '@octokit/rest'
 import {ReleaseNotes} from './releaseNotes'
 import {Tags} from './tags'
 import {failOrError} from './utils'
+import ProxyAgent from 'proxy-agent'
 
 export class ReleaseNotesBuilder {
   constructor(
@@ -44,7 +45,10 @@ export class ReleaseNotesBuilder {
     // load octokit instance
     const octokit = new Octokit({
       auth: `token ${this.token || process.env.GITHUB_TOKEN}`,
-      baseUrl: `${this.baseUrl || 'https://api.github.com'}`
+      baseUrl: `${this.baseUrl || 'https://api.github.com'}`,
+      request: {
+        agent: new ProxyAgent()
+      }
     })
 
     // ensure proper from <-> to tag range

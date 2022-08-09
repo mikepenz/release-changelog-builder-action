@@ -38,6 +38,7 @@
     "@octokit/rest": "^19.0.3",
     "@types/semver": "^7.3.10",
     "moment": "^2.29.4",
+    "proxy-agent": "^5.0.0",
     "semver": "^7.3.7",
     "tunnel": "^0.0.6",
     "webpack": "^5.74.0"
