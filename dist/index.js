@@ -1455,7 +1455,7 @@ function buildChangelog(diffInfo, prs, options) {
     const config = options.configuration;
     const sort = config.sort || configuration_1.DefaultConfiguration.sort;
     prs = (0, pullRequests_1.sortPullRequests)(prs, sort);
-    core.info(`ℹ️ Sorted all pull requests ascending: ${sort}`);
+    core.info(`ℹ️ Sorted all pull requests ascending: ${JSON.stringify(sort)}`);
     // drop duplicate pull requests
     if (config.duplicate_filter !== undefined) {
         const extractor = validateTransformer(config.duplicate_filter);

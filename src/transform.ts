@@ -18,7 +18,7 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
   const config = options.configuration
   const sort = config.sort || DefaultConfiguration.sort
   prs = sortPullRequests(prs, sort)
-  core.info(`ℹ️ Sorted all pull requests ascending: ${sort}`)
+  core.info(`ℹ️ Sorted all pull requests ascending: ${JSON.stringify(sort)}`)
 
   // drop duplicate pull requests
   if (config.duplicate_filter !== undefined) {
