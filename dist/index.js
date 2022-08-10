@@ -1004,7 +1004,7 @@ class ReleaseNotesBuilder {
             }
             core.endGroup();
             // check proxy setup for GHES environments
-            let agent = {};
+            let agent = undefined;
             const proxy = process.env.https_proxy || process.env.HTTPS_PROXY;
             if (proxy) {
                 agent = new https_proxy_agent_1.HttpsProxyAgent(proxy);
