@@ -4,6 +4,7 @@ import {Octokit} from '@octokit/rest'
 import {ReleaseNotes} from './releaseNotes'
 import {Tags} from './tags'
 import {failOrError} from './utils'
+import {HttpsProxyAgent} from 'https-proxy-agent'
 
 export class ReleaseNotesBuilder {
   constructor(
@@ -41,10 +42,20 @@ export class ReleaseNotesBuilder {
     }
     core.endGroup()
 
+    // check proxy setup for GHES environments
+    let agent = undefined
+    const proxy = process.env.https_proxy || process.env.HTTPS_PROXY
+    if (proxy) {
+      agent = new HttpsProxyAgent(proxy)
+    }
+
     // load octokit instance
     const octokit = new Octokit({
       auth: `token ${this.token || process.env.GITHUB_TOKEN}`,
-      baseUrl: `${this.baseUrl || 'https://api.github.com'}`
+      baseUrl: `${this.baseUrl || 'https://api.github.com'}`,
+      request: {
+        agent
+      }
     })
 
     // ensure proper from <-> to tag range
