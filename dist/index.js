@@ -1383,8 +1383,7 @@ exports.sortTags = sortTags;
 function semVerSorting(tags) {
     // filter out tags which do not follow semver
     const validatedTags = tags.filter(tag => {
-        const isValid = semver.validRange(tag.name, {
-            includePrerelease: true,
+        const isValid = semver.valid(tag.name, {
             loose: true
         }) !== null;
         if (!isValid) {
