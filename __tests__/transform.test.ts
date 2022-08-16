@@ -605,10 +605,18 @@ it('Extract custom placeholder from PR body and replace in global template', asy
         pattern: '.+(body1).+',
         target: '$1'
       }
+    },
+    {
+      name: 'C_PLACEHOLER_4',
+      source: 'BODY',
+      transformer: {
+        pattern: '.+(body-never-matches).+',
+        target: '$1'
+      }
     }
   ]
   customConfig.template =
-    '${{CHANGELOG}}\n\n${{C_PLACEHOLER_2[2]}}\n\n${{C_PLACEHOLER_2[*]}}${{C_PLACEHOLDER_1[7]}}${{C_PLACEHOLER_2[1493]}}'
+    '${{CHANGELOG}}\n\n${{C_PLACEHOLER_2[2]}}\n\n${{C_PLACEHOLER_2[*]}}${{C_PLACEHOLDER_1[7]}}${{C_PLACEHOLER_2[1493]}}${{C_PLACEHOLER_4[*]}}${{C_PLACEHOLER_4[0]}}${{C_PLACEHOLER_3[1]}}'
   customConfig.pr_template = '${{BODY}} ---->  ${{C_PLACEHOLDER_1}}${{C_PLACEHOLER_3}}'
 
   const resultChangelog = buildChangelog(DefaultDiffInfo, mergedPullRequests, {
