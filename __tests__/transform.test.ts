@@ -597,11 +597,19 @@ it('Extract custom placeholder from PR body and replace in global template', asy
         pattern: '.+ b(....).+',
         target: '\n- $1'
       }
+    },
+    {
+      name: 'C_PLACEHOLER_3',
+      source: 'BODY',
+      transformer: {
+        pattern: '.+(body1).+',
+        target: '$1'
+      }
     }
   ]
   customConfig.template =
     '${{CHANGELOG}}\n\n${{C_PLACEHOLER_2[2]}}\n\n${{C_PLACEHOLER_2[*]}}${{C_PLACEHOLDER_1[7]}}${{C_PLACEHOLER_2[1493]}}'
-  customConfig.pr_template = '${{BODY}} ---->  ${{C_PLACEHOLDER_1}}'
+  customConfig.pr_template = '${{BODY}} ---->  ${{C_PLACEHOLDER_1}}${{C_PLACEHOLER_3}}'
 
   const resultChangelog = buildChangelog(DefaultDiffInfo, mergedPullRequests, {
     owner: 'mikepenz',
@@ -617,6 +625,6 @@ it('Extract custom placeholder from PR body and replace in global template', asy
   })
 
   expect(resultChangelog).toStrictEqual(
-    `## 🚀 Features\n\nno magic body1 for this matter ---->  - body1\nno magic body3 for this matter ---->  - body3\n\n## 🐛 Fixes\n\nno magic body2 for this matter ---->  - body2\nno magic body3 for this matter ---->  - body3\n\n## 🧪 Others\n\nno magic body4 for this matter ---->  - body4\n\n\n\n\n- ody3\n\n\n- ody1\n- ody2\n- ody3\n- ody4`
+    `## 🚀 Features\n\nno magic body1 for this matter ---->  - body1body1\nno magic body3 for this matter ---->  - body3\n\n## 🐛 Fixes\n\nno magic body2 for this matter ---->  - body2\nno magic body3 for this matter ---->  - body3\n\n## 🧪 Others\n\nno magic body4 for this matter ---->  - body4\n\n\n\n\n- ody3\n\n\n- ody1\n- ody2\n- ody3\n- ody4`
   )
 })
