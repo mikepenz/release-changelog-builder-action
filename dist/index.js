@@ -1756,7 +1756,7 @@ function cleanupPrPlaceHolders(template, placeholders /* placeholders to apply *
     let transformed = template;
     for (const [, phs] of placeholders) {
         for (const ph of phs) {
-            transformed = transformed.replaceAll(new RegExp(`\\$\\{\\{${ph.name}\\[.+?\\]\\}\\}`, 'gu'), '');
+            transformed = transformed.replaceAll(new RegExp(`\\$\\{\\{${ph.name}(?:\\[.+?\\])?\\}\\}`, 'gu'), '');
         }
     }
     return transformed;
