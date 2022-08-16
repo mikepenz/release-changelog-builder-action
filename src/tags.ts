@@ -294,7 +294,7 @@ function semVerSorting(tags: TagInfo[]): TagInfo[] {
   // filter out tags which do not follow semver
   const validatedTags = tags.filter(tag => {
     const isValid =
-      semver.valid(tag.name, {
+      semver.validRange(tag.name, {
         includePrerelease: true,
         loose: true
       }) !== null
