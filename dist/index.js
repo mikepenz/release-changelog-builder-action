@@ -8458,7 +8458,7 @@ exports.withCustomRequest = withCustomRequest;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 
-const VERSION = "4.0.0";
+const VERSION = "4.1.0";
 
 /**
  * Some “list” response that can be paginated have a different response structure
