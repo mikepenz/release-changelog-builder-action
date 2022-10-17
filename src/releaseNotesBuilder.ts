@@ -43,20 +43,28 @@ export class ReleaseNotesBuilder {
     core.endGroup()
 
     // check proxy setup for GHES environments
-    let agent = undefined
     const proxy = process.env.https_proxy || process.env.HTTPS_PROXY
-    if (proxy) {
-      agent = new HttpsProxyAgent(proxy)
+    const noProxy = process.env.no_proxy || process.env.NO_PROXY
+    let noProxyArray: string[] = []
+    if (noProxy) {
+      noProxyArray = noProxy.split(',')
     }
 
     // load octokit instance
     const octokit = new Octokit({
       auth: `token ${this.token || process.env.GITHUB_TOKEN}`,
-      baseUrl: `${this.baseUrl || 'https://api.github.com'}`,
-      request: {
-        agent
-      }
+      baseUrl: `${this.baseUrl || 'https://api.github.com'}`
     })
+
+    if (proxy) {
+      const agent = new HttpsProxyAgent(proxy)
+      octokit.hook.before('request', options => {
+        if (noProxyArray.includes(options.request.hostname)) {
+          return
+        }
+        options.request.agent = agent
+      })
+    }
 
     // ensure proper from <-> to tag range
     core.startGroup(`🔖 Resolve tags`)
