@@ -7,7 +7,7 @@ import {DefaultDiffInfo} from '../src/commits'
 jest.setTimeout(180000)
 
 const configuration = Object.assign({}, DefaultConfiguration)
-configuration.pr_template = '${{TITLE}}'
+configuration.pr_template = '${{TITLE}} - ${{TICKET}}'
 configuration.categories = [
   {
     title: '## 🚀 Test',
@@ -94,18 +94,14 @@ mergedPullRequests.push(
 
 
 it('Transform', async () => {
-  configuration.transformers = [
+  configuration.custom_placeholders = [
     {
-      "pattern": "(CRIC-\\d{4})[:,] ([a-zA-Z0-9 _\\s]*)",
-      "target": "[$1](https://jira.finods.com/browse/$1) $2"
-    },
-    {
-      "pattern": "(CRIC-\\d{4}) ([a-zA-Z0-9 _\\s]*)",
-      "target": "[$1](https://jira.finods.com/browse/$1) $2"
-    },
-    {
-      "pattern": "(CRIC-\\d{4}$)",
-      "target": "[$1](https://jira.finods.com/browse/$1)"
+      "name": "TICKET",
+      "source": "TITLE",
+      "transformer": {
+        "pattern": "[\\S\\s]*?(CRIC-\\d{4})[\\S\\s]*",
+        "target": "[$1](https://jira.finods.com/browse/$1)"
+      }
     }
   ]
 
