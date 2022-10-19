@@ -1730,7 +1730,8 @@ function replacePlaceholders(template, placeholderMap /* placeholderKey and orig
                 if (transformer === null || transformer === void 0 ? void 0 : transformer.pattern) {
                     const extractedValue = value.replace(transformer.pattern, transformer.target);
                     // note: `.replace` will return the full string again if there was no match
-                    if (extractedValue && extractedValue !== value) {
+                    if (extractedValue &&
+                        (extractedValue !== value || (extractedValue === value && value.match(transformer.pattern)))) {
                         if (placeholderPrMap) {
                             (0, utils_1.createOrSet)(placeholderPrMap, placeholder.name, extractedValue);
                         }
