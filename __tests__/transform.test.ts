@@ -7,7 +7,7 @@ import {DefaultDiffInfo} from '../src/commits'
 jest.setTimeout(180000)
 
 const configuration = Object.assign({}, DefaultConfiguration)
-configuration.pr_template = '${{TITLE}} - ${{TICKET}}'
+configuration.pr_template = '${{TITLE_ONLY}} - ${{TICKET}}'
 configuration.categories = [
   {
     title: '## 🚀 Test',
@@ -38,7 +38,7 @@ mergedPullRequests.push(
   },
   {
     number: 2,
-    title: 'This is a PR 2 title message',
+    title: 'CRIC-1233: This is a PR 1 title message',
     htmlURL: '',
     baseBranch: '',
     createdAt: moment(),
@@ -56,7 +56,7 @@ mergedPullRequests.push(
   },
   {
     number: 3,
-    title: 'This is a PR 3 title message',
+    title: 'CRIC-1235 This is a PR 3 title message',
     htmlURL: '',
     baseBranch: '',
     createdAt: moment(),
@@ -74,7 +74,7 @@ mergedPullRequests.push(
   },
   {
     number: 4,
-    title: 'Not found label',
+    title: 'Not fou CRIC-1234 nd label',
     htmlURL: '',
     baseBranch: '',
     createdAt: moment(),
@@ -95,6 +95,14 @@ mergedPullRequests.push(
 
 it('Transform', async () => {
   configuration.custom_placeholders = [
+    {
+      "name": "TITLE_ONLY",
+      "source": "TITLE",
+      "transformer": {
+        "pattern": "(CRIC-\\d{4}:{0,1} )?([\\S\\s]*)",
+        "target": "$2"
+      }
+    },
     {
       "name": "TICKET",
       "source": "TITLE",
