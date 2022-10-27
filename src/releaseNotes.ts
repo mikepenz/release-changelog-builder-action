@@ -125,7 +125,7 @@ export class ReleaseNotes {
       configuration.max_pull_requests || DefaultConfiguration.max_pull_requests
     )
 
-    core.info(`ℹ️ Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`)
+    core.info(`ℹ️ Retrieved ${pullRequests.length} PRs for ${owner}/${repo} in date range from API`)
 
     const prCommits = filterCommits(
       commits,
@@ -143,6 +143,8 @@ export class ReleaseNotes {
     const mergedPullRequests = pullRequests.filter(pr => {
       return releaseCommitHashes.includes(pr.mergeCommitSha)
     })
+
+    core.info(`ℹ️ Retrieved ${mergedPullRequests.length} merged PRs for ${owner}/${repo}`)
 
     let allPullRequests = mergedPullRequests
     if (includeOpen) {
@@ -176,6 +178,12 @@ export class ReleaseNotes {
       }
       return true
     })
+
+    if (baseBranches.length !== 0) {
+      core.info(
+        `ℹ️ Retrieved ${mergedPullRequests.length} PRs for ${owner}/${repo} filtered by the 'base_branches' configuration.`
+      )
+    }
 
     if (fetchReviewers) {
       core.info(`ℹ️ Fetching reviewers was enabled`)

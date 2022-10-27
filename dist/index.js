@@ -832,7 +832,7 @@ class ReleaseNotes {
             core.info(`ℹ️ Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`);
             const pullRequestsApi = new pullRequests_1.PullRequests(octokit);
             const pullRequests = yield pullRequestsApi.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests || configuration_1.DefaultConfiguration.max_pull_requests);
-            core.info(`ℹ️ Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`);
+            core.info(`ℹ️ Retrieved ${pullRequests.length} PRs for ${owner}/${repo} in date range from API`);
             const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches || configuration_1.DefaultConfiguration.exclude_merge_branches);
             core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`);
             // create array of commits for this release
@@ -843,6 +843,7 @@ class ReleaseNotes {
             const mergedPullRequests = pullRequests.filter(pr => {
                 return releaseCommitHashes.includes(pr.mergeCommitSha);
             });
+            core.info(`ℹ️ Retrieved ${mergedPullRequests.length} merged PRs for ${owner}/${repo}`);
             let allPullRequests = mergedPullRequests;
             if (includeOpen) {
                 // retrieve all open pull requests
@@ -866,6 +867,9 @@ class ReleaseNotes {
                 }
                 return true;
             });
+            if (baseBranches.length !== 0) {
+                core.info(`ℹ️ Retrieved ${mergedPullRequests.length} PRs for ${owner}/${repo} filtered by the 'base_branches' configuration.`);
+            }
             if (fetchReviewers) {
                 core.info(`ℹ️ Fetching reviewers was enabled`);
                 // update PR information with reviewers who approved
