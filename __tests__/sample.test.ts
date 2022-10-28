@@ -5,15 +5,15 @@ jest.setTimeout(180000)
 
 
 it('Verify custom categorisation of open PRs', async () => {
-  const configuration = resolveConfiguration('', 'configs_test/configuration_excluding_open.json')
+  const configuration = resolveConfiguration('', 'configs_test/config_sample.json')
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null, // baseUrl
     null, // token
     '.', // repoPath
     'TheLastDarkthorne', // user
     'svof', // repo
-    '896ffc9d02d598396241b2044733500b3298476a', // fromTag
-    '51', // toTag
+    'ffde868f4a8ced55fa6d8d1d57a0f9f9e062a1d5', // fromTag
+    '0d8b223436081e69deb719fa1b2d54190fc5aa96', // toTag
     false, // includeOpen
     false, // failOnError
     false, // ignorePrePrelease
