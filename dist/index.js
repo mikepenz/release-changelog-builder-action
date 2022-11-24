@@ -512,7 +512,7 @@ class PullRequests {
         });
     }
     getBetweenDates(owner, repo, fromDate, toDate, maxPullRequests) {
-        var e_1, _a;
+        var _a, e_1, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const mergedPRs = [];
             const options = this.octokit.pulls.list.endpoint.merge({
@@ -524,28 +524,35 @@ class PullRequests {
                 direction: 'desc'
             });
             try {
-                for (var _b = __asyncValues(this.octokit.paginate.iterator(options)), _c; _c = yield _b.next(), !_c.done;) {
-                    const response = _c.value;
-                    const prs = response.data;
-                    for (const pr of prs.filter(p => !!p.merged_at)) {
-                        mergedPRs.push(mapPullRequest(pr, 'merged'));
-                    }
-                    const firstPR = prs[0];
-                    if (firstPR === undefined ||
-                        (firstPR.merged_at && fromDate.isAfter((0, moment_1.default)(firstPR.merged_at))) ||
-                        mergedPRs.length >= maxPullRequests) {
-                        if (mergedPRs.length >= maxPullRequests) {
-                            core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
+                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a;) {
+                    _c = _f.value;
+                    _d = false;
+                    try {
+                        const response = _c;
+                        const prs = response.data;
+                        for (const pr of prs.filter(p => !!p.merged_at)) {
+                            mergedPRs.push(mapPullRequest(pr, 'merged'));
                         }
-                        // bail out early to not keep iterating on PRs super old
-                        return sortPrs(mergedPRs);
+                        const firstPR = prs[0];
+                        if (firstPR === undefined ||
+                            (firstPR.merged_at && fromDate.isAfter((0, moment_1.default)(firstPR.merged_at))) ||
+                            mergedPRs.length >= maxPullRequests) {
+                            if (mergedPRs.length >= maxPullRequests) {
+                                core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
+                            }
+                            // bail out early to not keep iterating on PRs super old
+                            return sortPrs(mergedPRs);
+                        }
+                    }
+                    finally {
+                        _d = true;
                     }
                 }
             }
             catch (e_1_1) { e_1 = { error: e_1_1 }; }
             finally {
                 try {
-                    if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
                 }
                 finally { if (e_1) throw e_1.error; }
             }
@@ -553,7 +560,7 @@ class PullRequests {
         });
     }
     getOpen(owner, repo, maxPullRequests) {
-        var e_2, _a;
+        var _a, e_2, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const openPrs = [];
             const options = this.octokit.pulls.list.endpoint.merge({
@@ -565,26 +572,33 @@ class PullRequests {
                 direction: 'desc'
             });
             try {
-                for (var _b = __asyncValues(this.octokit.paginate.iterator(options)), _c; _c = yield _b.next(), !_c.done;) {
-                    const response = _c.value;
-                    const prs = response.data;
-                    for (const pr of prs) {
-                        openPrs.push(mapPullRequest(pr, 'open'));
-                    }
-                    const firstPR = prs[0];
-                    if (firstPR === undefined || openPrs.length >= maxPullRequests) {
-                        if (openPrs.length >= maxPullRequests) {
-                            core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
+                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a;) {
+                    _c = _f.value;
+                    _d = false;
+                    try {
+                        const response = _c;
+                        const prs = response.data;
+                        for (const pr of prs) {
+                            openPrs.push(mapPullRequest(pr, 'open'));
                         }
-                        // bail out early to not keep iterating on PRs super old
-                        return sortPrs(openPrs);
+                        const firstPR = prs[0];
+                        if (firstPR === undefined || openPrs.length >= maxPullRequests) {
+                            if (openPrs.length >= maxPullRequests) {
+                                core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
+                            }
+                            // bail out early to not keep iterating on PRs super old
+                            return sortPrs(openPrs);
+                        }
+                    }
+                    finally {
+                        _d = true;
                     }
                 }
             }
             catch (e_2_1) { e_2 = { error: e_2_1 }; }
             finally {
                 try {
-                    if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
                 }
                 finally { if (e_2) throw e_2.error; }
             }
@@ -592,7 +606,7 @@ class PullRequests {
         });
     }
     getReviewers(owner, repo, pr) {
-        var e_3, _a;
+        var _a, e_3, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const options = this.octokit.pulls.listReviews.endpoint.merge({
                 owner,
@@ -600,19 +614,26 @@ class PullRequests {
                 pull_number: pr.number
             });
             try {
-                for (var _b = __asyncValues(this.octokit.paginate.iterator(options)), _c; _c = yield _b.next(), !_c.done;) {
-                    const response = _c.value;
-                    const reviews = response.data;
-                    pr.approvedReviewers = reviews
-                        .filter(r => r.state === 'APPROVED')
-                        .map(r => { var _a; return (_a = r.user) === null || _a === void 0 ? void 0 : _a.login; })
-                        .filter(r => !!r);
+                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a;) {
+                    _c = _f.value;
+                    _d = false;
+                    try {
+                        const response = _c;
+                        const reviews = response.data;
+                        pr.approvedReviewers = reviews
+                            .filter(r => r.state === 'APPROVED')
+                            .map(r => { var _a; return (_a = r.user) === null || _a === void 0 ? void 0 : _a.login; })
+                            .filter(r => !!r);
+                    }
+                    finally {
+                        _d = true;
+                    }
                 }
             }
             catch (e_3_1) { e_3 = { error: e_3_1 }; }
             finally {
                 try {
-                    if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
                 }
                 finally { if (e_3) throw e_3.error; }
             }
@@ -1141,7 +1162,7 @@ class Tags {
         this.octokit = octokit;
     }
     getTags(owner, repo, maxTagsToFetch) {
-        var e_1, _a;
+        var _a, e_1, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const tagsInfo = [];
             const options = this.octokit.repos.listTags.endpoint.merge({
@@ -1151,25 +1172,32 @@ class Tags {
                 per_page: 100
             });
             try {
-                for (var _b = __asyncValues(this.octokit.paginate.iterator(options)), _c; _c = yield _b.next(), !_c.done;) {
-                    const response = _c.value;
-                    const tags = response.data;
-                    for (const tag of tags) {
-                        tagsInfo.push({
-                            name: tag.name,
-                            commit: tag.commit.sha
-                        });
+                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a;) {
+                    _c = _f.value;
+                    _d = false;
+                    try {
+                        const response = _c;
+                        const tags = response.data;
+                        for (const tag of tags) {
+                            tagsInfo.push({
+                                name: tag.name,
+                                commit: tag.commit.sha
+                            });
+                        }
+                        // for performance only fetch newest maxTagsToFetch tags!!
+                        if (tagsInfo.length >= maxTagsToFetch) {
+                            break;
+                        }
                     }
-                    // for performance only fetch newest maxTagsToFetch tags!!
-                    if (tagsInfo.length >= maxTagsToFetch) {
-                        break;
+                    finally {
+                        _d = true;
                     }
                 }
             }
             catch (e_1_1) { e_1 = { error: e_1_1 }; }
             finally {
                 try {
-                    if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
                 }
                 finally { if (e_1) throw e_1.error; }
             }
