@@ -193,9 +193,11 @@ The action supports flexible configuration options to modify vast areas of its b
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
+> **Note** Defaults for the configuration can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
+
 > **Warning** It is required to have a `checkout` step prior to the changelog step if `configuration` is used, to allow the action to discover the configuration file. Use `configurationJson` as alternative.
 
-This configuration is a `.json` file in the following format.
+This configuration is a `.json` file in the following format. (The below shocases *example* configurations for all possible options. In most scenarios most of the settings will not be needed, and the defaults will be appropiate.)
 
 ```json
 {
@@ -275,8 +277,6 @@ This configuration is a `.json` file in the following format.
 Any section of the configuration can be omitted to have defaults apply.
 
 > **Warning**: `ignore_labels` take precedence over category labels, allowing to specifically exclude certain PRs.
-
-Defaults for the configuration can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
 
 Please see the [Configuration Specification](#configuration-specification) for detailed descriptions on the offered configuration options.
 
