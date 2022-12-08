@@ -41,6 +41,7 @@ inputs:
     description: 'If defined, the changelog will get written to this file. (relative to the checkout dir)'
   token:
     description: 'Defines the token to use to execute the git API requests with, uses `env.GITHUB_TOKEN` by default'
+    default: ${{ github.token }}
   baseUrl:
     description: 'Defines the base url for GitHub Enterprise authentication, uses `https://api.github.com` by default'
 outputs:
