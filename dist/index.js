@@ -1890,7 +1890,7 @@ function extractValuesFromString(value, extractor) {
     if (extractor.method === 'match') {
         const lables = value.match(extractor.pattern);
         if (lables !== null && lables.length > 0) {
-            return lables.map(label => label.toLocaleLowerCase('en'));
+            return lables.map(label => (label === null || label === void 0 ? void 0 : label.toLocaleLowerCase('en')) || '');
         }
     }
     else {
