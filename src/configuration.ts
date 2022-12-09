@@ -15,6 +15,7 @@ export interface Configuration {
   tag_resolver: TagResolver
   base_branches: string[]
   custom_placeholders?: Placeholder[]
+  trim_values: boolean
 }
 
 export interface Category {
@@ -95,5 +96,6 @@ export const DefaultConfiguration: Configuration = {
     transformer: undefined // transforms the tag name using the regex, run after the filter
   },
   base_branches: [], // target branches for the merged PR ignoring PRs with different target branch, by default it will get all PRs
-  custom_placeholders: []
+  custom_placeholders: [],
+  trim_values: false // defines if values are being trimmed prior to inserting
 }

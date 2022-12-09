@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import {Category, DefaultConfiguration, Extractor, Placeholder, Transformer} from './configuration'
+import {Category, Configuration, DefaultConfiguration, Extractor, Placeholder, Transformer} from './configuration'
 import {CommentInfo, EMPTY_COMMENT_INFO, PullRequestInfo, sortPullRequests} from './pullRequests'
 import {ReleaseNotesOptions} from './releaseNotes'
 import {DiffInfo} from './commits'
@@ -76,7 +76,7 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
     transformedMap.set(
       pr,
       transform(
-        fillPrTemplate(pr, config.pr_template || DefaultConfiguration.pr_template, placeholders, placeholderPrMap),
+        fillPrTemplate(pr, config.pr_template || DefaultConfiguration.pr_template, placeholders, placeholderPrMap, config),
         validatedTransformers
       )
     )
@@ -253,8 +253,8 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
   fillAdditionalPlaceholders(options, placeholderMap)
 
   let transformedChangelog = config.template || DefaultConfiguration.template
-  transformedChangelog = replacePlaceholders(transformedChangelog, EMPTY_MAP, placeholderMap, placeholders, placeholderPrMap)
-  transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap)
+  transformedChangelog = replacePlaceholders(transformedChangelog, EMPTY_MAP, placeholderMap, placeholders, placeholderPrMap, config)
+  transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap, config)
   transformedChangelog = cleanupPrPlaceholders(transformedChangelog, placeholders)
   core.info(`ℹ️ Filled template`)
   return transformedChangelog
@@ -267,7 +267,7 @@ export function replaceEmptyTemplate(template: string, options: ReleaseNotesOpti
   }
   const placeholderMap = new Map<string, string>()
   fillAdditionalPlaceholders(options, placeholderMap)
-  return replacePlaceholders(template, new Map<string, string>(), placeholderMap, placeholders)
+  return replacePlaceholders(template, new Map<string, string>(), placeholderMap, placeholders, undefined, options.configuration)
 }
 
 function fillAdditionalPlaceholders(
@@ -297,7 +297,8 @@ function fillPrTemplate(
   pr: PullRequestInfo,
   template: string,
   placeholders: Map<string, Placeholder[]> /* placeholders to apply */,
-  placeholderPrMap: Map<string, string[]> /* map to keep replaced placeholder values with their key */
+  placeholderPrMap: Map<string, string[]> /* map to keep replaced placeholder values with their key */,
+  configuration: Configuration
 ): string {
   const arrayPlaceholderMap = new Map<string, string>()
   fillReviewPlaceholders(arrayPlaceholderMap, 'REVIEWS', pr.reviews || [])
@@ -321,7 +322,7 @@ function fillPrTemplate(
   placeholderMap.set('APPROVERS', pr.approvedReviewers?.join(', ') || '')
   placeholderMap.set('BRANCH', pr.branch || '')
   placeholderMap.set('BASE_BRANCH', pr.baseBranch)
-  return replacePlaceholders(template, arrayPlaceholderMap, placeholderMap, placeholders, placeholderPrMap)
+  return replacePlaceholders(template, arrayPlaceholderMap, placeholderMap, placeholders, placeholderPrMap, configuration)
 }
 
 function replacePlaceholders(
@@ -329,18 +330,19 @@ function replacePlaceholders(
   arrayPlaceholderMap: Map<string, string> /* arrayPlaceholderKey and original value */,
   placeholderMap: Map<string, string> /* placeholderKey and original value */,
   placeholders: Map<string, Placeholder[]> /* placeholders to apply */,
-  placeholderPrMap?: Map<string, string[]> /* map to keep replaced placeholder values with their key */
+  placeholderPrMap: Map<string, string[]> | undefined /* map to keep replaced placeholder values with their key */,
+  configuration: Configuration
 ): string {
   let transformed = template
 
   // replace array placeholders first
   for (const [key, value] of arrayPlaceholderMap) {
-    transformed = handlePlaceholder(transformed, key, value, placeholders, placeholderPrMap)
+    transformed = handlePlaceholder(transformed, key, value, placeholders, placeholderPrMap, configuration)
   }
 
   // replace traditional placeholders
   for (const [key, value] of placeholderMap) {
-    transformed = handlePlaceholder(transformed, key, value, placeholders, placeholderPrMap)
+    transformed = handlePlaceholder(transformed, key, value, placeholders, placeholderPrMap, configuration)
   }
 
   return transformed
@@ -351,9 +353,10 @@ function handlePlaceholder(
   key: string,
   value: string,
   placeholders: Map<string, Placeholder[]> /* placeholders to apply */,
-  placeholderPrMap?: Map<string, string[]> /* map to keep replaced placeholder values with their key */
+  placeholderPrMap: Map<string, string[]> | undefined /* map to keep replaced placeholder values with their key */,
+  configuration: Configuration
 ): string {
-  let transformed = template.replaceAll(`\${{${key}}}`, value)
+  let transformed = template.replaceAll(`\${{${key}}}`, configuration.trim_values ? value.trim() : value)
   // replace custom placeholders
   const phs = placeholders.get(key)
   if (phs) {
@@ -366,7 +369,10 @@ function handlePlaceholder(
           if (placeholderPrMap) {
             createOrSet(placeholderPrMap, placeholder.name, extractedValue)
           }
-          transformed = transformed.replaceAll(`\${{${placeholder.name}}}`, extractedValue)
+          transformed = transformed.replaceAll(
+            `\${{${placeholder.name}}}`,
+            configuration.trim_values ? extractedValue.trim() : extractedValue
+          )
 
           if (core.isDebug()) {
             core.debug(`    Custom Placeholder successfully matched data - ${extractValues} (${placeholder.name})`)
@@ -410,19 +416,20 @@ function fillReviewPlaceholders(
 
 function replacePrPlaceholders(
   template: string,
-  placeholderPrMap: Map<string, string[]> /* map with all pr related custom placeholder values */
+  placeholderPrMap: Map<string, string[]> /* map with all pr related custom placeholder values */,
+  configuration: Configuration
 ): string {
   let transformed = template
   for (const [key, values] of placeholderPrMap) {
     for (let i = 0; i < values.length; i++) {
-      transformed = transformed.replaceAll(`\${{${key}[${i}]}}`, values[i])
+      transformed = transformed.replaceAll(`\${{${key}[${i}]}}`, configuration.trim_values ? values[i].trim() : values[i])
     }
     transformed = transformed.replaceAll(`\${{${key}[*]}}`, values.join(''))
   }
   return transformed
 }
 
-function cleanupPrPlaceholders(template: string, placeholders: Map<string, Placeholder[]> /* placeholders to apply */): string {
+function cleanupPrPlaceholders(template: string, placeholders: Map<string, Placeholder[]>): string {
   let transformed = template
   for (const [, phs] of placeholders) {
     for (const ph of phs) {

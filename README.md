@@ -253,6 +253,7 @@ This configuration is a `.json` file in the following format. (The below shocase
         "target": "- $4\n  - $6"
       }
     ],
+    "trim_values": false,
     "max_tags_to_fetch": 200,
     "max_pull_requests": 200,
     "max_back_track_time_days": 365,
@@ -409,6 +410,7 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | tag_resolver.filter         | Defines a regex which is used to filter out tags not matching.                                                                                                                                                                     |
 | tag_resolver.transformer    | Defines a regex transformer used to optionally transform the tag after the filter was applied. Allows to adjust the format to e.g. semver.                                                                                         |
 | base_branches               | The target branches for the merged PR, ingnores PRs with different target branch. Values can be a `regex`. Default: allow all base branches                                                                                        |
+| trim_values                 | Defines if all values inserted in templates are `trimmed`. Default: false                                                                                        |
 
 ## Experimental 🧪
 

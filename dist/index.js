@@ -218,7 +218,8 @@ exports.DefaultConfiguration = {
         transformer: undefined // transforms the tag name using the regex, run after the filter
     },
     base_branches: [],
-    custom_placeholders: []
+    custom_placeholders: [],
+    trim_values: false // defines if values are being trimmed prior to inserting
 };
 
 
@@ -1627,7 +1628,7 @@ function buildChangelog(diffInfo, prs, options) {
     const transformedMap = new Map();
     // convert PRs to their text representation
     for (const pr of prs) {
-        transformedMap.set(pr, transform(fillPrTemplate(pr, config.pr_template || configuration_1.DefaultConfiguration.pr_template, placeholders, placeholderPrMap), validatedTransformers));
+        transformedMap.set(pr, transform(fillPrTemplate(pr, config.pr_template || configuration_1.DefaultConfiguration.pr_template, placeholders, placeholderPrMap, config), validatedTransformers));
     }
     core.info(`ℹ️ Used ${validatedTransformers.length} transformers to adjust message`);
     core.info(`✒️ Wrote messages for ${prs.length} pull requests`);
@@ -1768,8 +1769,8 @@ function buildChangelog(diffInfo, prs, options) {
     placeholderMap.set('COMMITS', diffInfo.commits.toString());
     fillAdditionalPlaceholders(options, placeholderMap);
     let transformedChangelog = config.template || configuration_1.DefaultConfiguration.template;
-    transformedChangelog = replacePlaceholders(transformedChangelog, EMPTY_MAP, placeholderMap, placeholders, placeholderPrMap);
-    transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap);
+    transformedChangelog = replacePlaceholders(transformedChangelog, EMPTY_MAP, placeholderMap, placeholders, placeholderPrMap, config);
+    transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap, config);
     transformedChangelog = cleanupPrPlaceholders(transformedChangelog, placeholders);
     core.info(`ℹ️ Filled template`);
     return transformedChangelog;
@@ -1782,7 +1783,7 @@ function replaceEmptyTemplate(template, options) {
     }
     const placeholderMap = new Map();
     fillAdditionalPlaceholders(options, placeholderMap);
-    return replacePlaceholders(template, new Map(), placeholderMap, placeholders);
+    return replacePlaceholders(template, new Map(), placeholderMap, placeholders, undefined, options.configuration);
 }
 exports.replaceEmptyTemplate = replaceEmptyTemplate;
 function fillAdditionalPlaceholders(options, placeholderMap /* placeholderKey and original value */) {
@@ -1803,7 +1804,7 @@ function fillAdditionalPlaceholders(options, placeholderMap /* placeholderKey an
     }
     placeholderMap.set('RELEASE_DIFF', `https://github.com/${options.owner}/${options.repo}/compare/${options.fromTag.name}...${options.toTag.name}`);
 }
-function fillPrTemplate(pr, template, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */) {
+function fillPrTemplate(pr, template, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */, configuration) {
     var _a, _b, _c, _d, _e, _f;
     const arrayPlaceholderMap = new Map();
     fillReviewPlaceholders(arrayPlaceholderMap, 'REVIEWS', pr.reviews || []);
@@ -1827,22 +1828,22 @@ function fillPrTemplate(pr, template, placeholders /* placeholders to apply */, 
     placeholderMap.set('APPROVERS', ((_f = pr.approvedReviewers) === null || _f === void 0 ? void 0 : _f.join(', ')) || '');
     placeholderMap.set('BRANCH', pr.branch || '');
     placeholderMap.set('BASE_BRANCH', pr.baseBranch);
-    return replacePlaceholders(template, arrayPlaceholderMap, placeholderMap, placeholders, placeholderPrMap);
+    return replacePlaceholders(template, arrayPlaceholderMap, placeholderMap, placeholders, placeholderPrMap, configuration);
 }
-function replacePlaceholders(template, arrayPlaceholderMap /* arrayPlaceholderKey and original value */, placeholderMap /* placeholderKey and original value */, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */) {
+function replacePlaceholders(template, arrayPlaceholderMap /* arrayPlaceholderKey and original value */, placeholderMap /* placeholderKey and original value */, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */, configuration) {
     let transformed = template;
     // replace array placeholders first
     for (const [key, value] of arrayPlaceholderMap) {
-        transformed = handlePlaceholder(transformed, key, value, placeholders, placeholderPrMap);
+        transformed = handlePlaceholder(transformed, key, value, placeholders, placeholderPrMap, configuration);
     }
     // replace traditional placeholders
     for (const [key, value] of placeholderMap) {
-        transformed = handlePlaceholder(transformed, key, value, placeholders, placeholderPrMap);
+        transformed = handlePlaceholder(transformed, key, value, placeholders, placeholderPrMap, configuration);
     }
     return transformed;
 }
-function handlePlaceholder(template, key, value, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */) {
-    let transformed = template.replaceAll(`\${{${key}}}`, value);
+function handlePlaceholder(template, key, value, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */, configuration) {
+    let transformed = template.replaceAll(`\${{${key}}}`, configuration.trim_values ? value.trim() : value);
     // replace custom placeholders
     const phs = placeholders.get(key);
     if (phs) {
@@ -1855,7 +1856,7 @@ function handlePlaceholder(template, key, value, placeholders /* placeholders to
                     if (placeholderPrMap) {
                         (0, utils_1.createOrSet)(placeholderPrMap, placeholder.name, extractedValue);
                     }
-                    transformed = transformed.replaceAll(`\${{${placeholder.name}}}`, extractedValue);
+                    transformed = transformed.replaceAll(`\${{${placeholder.name}}}`, configuration.trim_values ? extractedValue.trim() : extractedValue);
                     if (core.isDebug()) {
                         core.debug(`    Custom Placeholder successfully matched data - ${extractValues} (${placeholder.name})`);
                     }
@@ -1884,17 +1885,17 @@ function fillReviewPlaceholders(placeholderMap /* placeholderKey and original va
         placeholderMap.set(`\${{${parentKey}[*].${childKey}}}`, values.map(value => { var _a; return ((_a = value[childKey]) === null || _a === void 0 ? void 0 : _a.toLocaleString('en')) || ''; }).join(', '));
     }
 }
-function replacePrPlaceholders(template, placeholderPrMap /* map with all pr related custom placeholder values */) {
+function replacePrPlaceholders(template, placeholderPrMap /* map with all pr related custom placeholder values */, configuration) {
     let transformed = template;
     for (const [key, values] of placeholderPrMap) {
         for (let i = 0; i < values.length; i++) {
-            transformed = transformed.replaceAll(`\${{${key}[${i}]}}`, values[i]);
+            transformed = transformed.replaceAll(`\${{${key}[${i}]}}`, configuration.trim_values ? values[i].trim() : values[i]);
         }
         transformed = transformed.replaceAll(`\${{${key}[*]}}`, values.join(''));
     }
     return transformed;
 }
-function cleanupPrPlaceholders(template, placeholders /* placeholders to apply */) {
+function cleanupPrPlaceholders(template, placeholders) {
     let transformed = template;
     for (const [, phs] of placeholders) {
         for (const ph of phs) {
