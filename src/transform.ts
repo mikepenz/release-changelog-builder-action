@@ -47,6 +47,13 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
     }
   }
 
+  // limit the PRs to the `max_pull_requests`
+  const max_pull_requests = config.max_pull_requests || DefaultConfiguration.max_pull_requests
+  if (prs.length > max_pull_requests) {
+    core.info(`ℹ️ Retrieved ${prs.length} PRs, limit count to: ${max_pull_requests} (max_pull_requests).`)
+    prs.length = Math.min(prs.length, max_pull_requests)
+  }
+
   // extract additional labels from the commit message
   const labelExtractors = validateTransformers(config.label_extractor)
   for (const extractor of labelExtractors) {
