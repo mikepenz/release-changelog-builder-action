@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import {Category, DefaultConfiguration, Extractor, Placeholder, Transformer} from './configuration'
-import {PullRequestInfo, sortPullRequests} from './pullRequests'
+import {CommentInfo, PullRequestInfo, sortPullRequests} from './pullRequests'
 import {ReleaseNotesOptions} from './releaseNotes'
 import {DiffInfo} from './commits'
 import {createOrSet, haveCommonElements, haveEveryElements} from './utils'
@@ -299,6 +299,11 @@ function fillPrTemplate(
   placeholders: Map<string, Placeholder[]> /* placeholders to apply */,
   placeholderPrMap: Map<string, string[]> /* map to keep replaced placeholder values with their key */
 ): string {
+  let transformed = replaceArrayPlaceholders(template, 'ASSIGNEES', pr.assignees || [])
+  transformed = replaceArrayPlaceholders(transformed, 'REVIEWERS', pr.requestedReviewers || [])
+  transformed = replaceArrayPlaceholders(transformed, 'APPROVERS', pr.approvedReviewers || [])
+  transformed = replaceReviewPlaceholders(transformed, 'REVIEWS', pr.reviews || [])
+
   const placeholderMap = new Map<string, string>()
   placeholderMap.set('NUMBER', pr.number.toString())
   placeholderMap.set('TITLE', pr.title)
@@ -316,7 +321,7 @@ function fillPrTemplate(
   placeholderMap.set('APPROVERS', pr.approvedReviewers?.join(', ') || '')
   placeholderMap.set('BRANCH', pr.branch || '')
   placeholderMap.set('BASE_BRANCH', pr.baseBranch)
-  return replacePlaceholders(template, placeholderMap, placeholders, placeholderPrMap)
+  return replacePlaceholders(transformed, placeholderMap, placeholders, placeholderPrMap)
 }
 
 function replacePlaceholders(
@@ -371,6 +376,41 @@ function replacePrPlaceholders(
       transformed = transformed.replaceAll(`\${{${key}[${i}]}}`, values[i])
     }
     transformed = transformed.replaceAll(`\${{${key}[*]}}`, values.join(''))
+  }
+  return transformed
+}
+
+function replaceArrayPlaceholders(template: string, key: string, values: string[]): string {
+  let transformed = template
+  for (let i = 0; i < values.length; i++) {
+    transformed = transformed.replaceAll(`\${{${key}[${i}]}}`, values[i])
+  }
+  transformed = transformed.replaceAll(`\${{${key}[*]}}`, values.join(', '))
+  return transformed
+}
+
+function replaceReviewPlaceholders(template: string, parentKey: string, values: CommentInfo[]): string {
+  let transformed = template
+
+  // retrieve the keys from the CommentInfo object
+  const comment: CommentInfo = {
+    id: 0,
+    htmlURL: '',
+    submittedAt: undefined,
+    author: '',
+    body: ''
+  }
+  for (const childKey of Object.keys(comment)) {
+    for (let i = 0; i < values.length; i++) {
+      transformed = transformed.replaceAll(
+        `\${{${parentKey}[${i}].${childKey}}}`,
+        values[i][childKey as keyof CommentInfo]?.toLocaleString('en') || ''
+      )
+    }
+    transformed = transformed.replaceAll(
+      `\${{${parentKey}[*].${childKey}}}`,
+      values.map(value => value[childKey as keyof CommentInfo]?.toLocaleString('en') || '').join(', ')
+    )
   }
   return transformed
 }

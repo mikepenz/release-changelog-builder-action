@@ -11,7 +11,7 @@ export interface PullRequestInfo {
   baseBranch: string
   branch?: string
   createdAt: moment.Moment
-  mergedAt: moment.Moment | null
+  mergedAt: moment.Moment | undefined
   mergeCommitSha: string
   author: string
   repoName: string
@@ -21,7 +21,16 @@ export interface PullRequestInfo {
   assignees: string[]
   requestedReviewers: string[]
   approvedReviewers: string[]
+  reviews?: CommentInfo[]
   status: 'open' | 'merged'
+}
+
+export interface CommentInfo {
+  id: number
+  htmlURL: string
+  submittedAt: moment.Moment | undefined
+  author: string
+  body: string
 }
 
 type PullData = RestEndpointMethodTypes['pulls']['get']['response']['data']
@@ -29,6 +38,8 @@ type PullData = RestEndpointMethodTypes['pulls']['get']['response']['data']
 type PullsListData = RestEndpointMethodTypes['pulls']['list']['response']['data']
 
 type PullReviewData = RestEndpointMethodTypes['pulls']['listReviews']['response']['data']
+
+type PullReviewsData = RestEndpointMethodTypes['pulls']['listReviews']['response']['data']
 
 export class PullRequests {
   constructor(private octokit: Octokit) {}
@@ -122,7 +133,7 @@ export class PullRequests {
     return sortPrs(openPrs)
   }
 
-  async getReviewers(owner: string, repo: string, pr: PullRequestInfo): Promise<PullReviewData[]> {
+  async getReviewers(owner: string, repo: string, pr: PullRequestInfo): Promise<void> {
     const options = this.octokit.pulls.listReviews.endpoint.merge({
       owner,
       repo,
@@ -136,8 +147,25 @@ export class PullRequests {
         .map(r => r.user?.login)
         .filter(r => !!r) as string[]
     }
+  }
 
-    return []
+  async getReviews(owner: string, repo: string, pr: PullRequestInfo): Promise<void> {
+    const options = this.octokit.pulls.listReviews.endpoint.merge({
+      owner,
+      repo,
+      pull_number: pr.number,
+      sort: 'created',
+      direction: 'desc'
+    })
+    const prReviews: CommentInfo[] = []
+    for await (const response of this.octokit.paginate.iterator(options)) {
+      const comments: PullReviewsData = response.data as PullReviewsData
+
+      for (const comment of comments) {
+        prReviews.push(mapComment(comment))
+      }
+    }
+    pr.reviews = prReviews
   }
 }
 
@@ -204,7 +232,7 @@ const mapPullRequest = (
   baseBranch: pr.base.ref,
   branch: pr.head.ref,
   createdAt: moment(pr.created_at),
-  mergedAt: pr.merged_at ? moment(pr.merged_at) : null,
+  mergedAt: pr.merged_at ? moment(pr.merged_at) : undefined,
   mergeCommitSha: pr.merge_commit_sha || '',
   author: pr.user?.login || '',
   repoName: pr.base.repo.full_name,
@@ -214,5 +242,14 @@ const mapPullRequest = (
   assignees: pr.assignees?.map(asignee => asignee?.login || '') || [],
   requestedReviewers: pr.requested_reviewers?.map(reviewer => reviewer?.login || '') || [],
   approvedReviewers: [],
+  reviews: undefined,
   status
+})
+
+const mapComment = (comment: Unpacked<PullReviewsData>): CommentInfo => ({
+  id: comment.id,
+  htmlURL: comment.html_url,
+  submittedAt: comment.submitted_at ? moment(comment.submitted_at) : undefined,
+  author: comment.user?.login || '',
+  body: comment.body
 })

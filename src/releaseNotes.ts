@@ -95,6 +95,7 @@ export class ReleaseNotes {
 
   private async getMergedPullRequests(octokit: Octokit): Promise<[DiffInfo, PullRequestInfo[]]> {
     const {owner, repo, includeOpen, fetchReviewers, configuration} = this.options
+    const fetchReviews = true // TEMPORARY!!
 
     const diffInfo = await this.getCommitHistory(octokit)
     const commits = diffInfo.commitInfo
@@ -196,6 +197,19 @@ export class ReleaseNotes {
       }
     } else {
       core.debug(`ℹ️ Fetching reviewers was disabled`)
+    }
+
+    if (fetchReviews) {
+      core.info(`ℹ️ Fetching reviews was enabled`)
+      // update PR information with reviewers who approved
+      for (const pr of finalPrs) {
+        await pullRequestsApi.getReviews(owner, repo, pr)
+        if ((pr.reviews?.length || 0) > 0) {
+          core.info(`ℹ️ Retrieved ${pr.reviews?.length || 0} review(s) for PR ${owner}/${repo}/#${pr.number}`)
+        }
+      }
+    } else {
+      core.debug(`ℹ️ Fetching reviews was disabled`)
     }
 
     return [diffInfo, finalPrs]

@@ -637,7 +637,43 @@ class PullRequests {
                 }
                 finally { if (e_3) throw e_3.error; }
             }
-            return [];
+        });
+    }
+    getReviews(owner, repo, pr) {
+        var _a, e_4, _b, _c;
+        return __awaiter(this, void 0, void 0, function* () {
+            const options = this.octokit.pulls.listReviews.endpoint.merge({
+                owner,
+                repo,
+                pull_number: pr.number,
+                sort: 'created',
+                direction: 'desc'
+            });
+            const prReviews = [];
+            try {
+                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a;) {
+                    _c = _f.value;
+                    _d = false;
+                    try {
+                        const response = _c;
+                        const comments = response.data;
+                        for (const comment of comments) {
+                            prReviews.push(mapComment(comment));
+                        }
+                    }
+                    finally {
+                        _d = true;
+                    }
+                }
+            }
+            catch (e_4_1) { e_4 = { error: e_4_1 }; }
+            finally {
+                try {
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
+                }
+                finally { if (e_4) throw e_4.error; }
+            }
+            pr.reviews = prReviews;
         });
     }
 }
@@ -705,7 +741,7 @@ const mapPullRequest = (pr, status = 'open') => {
         baseBranch: pr.base.ref,
         branch: pr.head.ref,
         createdAt: (0, moment_1.default)(pr.created_at),
-        mergedAt: pr.merged_at ? (0, moment_1.default)(pr.merged_at) : null,
+        mergedAt: pr.merged_at ? (0, moment_1.default)(pr.merged_at) : undefined,
         mergeCommitSha: pr.merge_commit_sha || '',
         author: ((_a = pr.user) === null || _a === void 0 ? void 0 : _a.login) || '',
         repoName: pr.base.repo.full_name,
@@ -715,7 +751,18 @@ const mapPullRequest = (pr, status = 'open') => {
         assignees: ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.map(asignee => (asignee === null || asignee === void 0 ? void 0 : asignee.login) || '')) || [],
         requestedReviewers: ((_e = pr.requested_reviewers) === null || _e === void 0 ? void 0 : _e.map(reviewer => (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '')) || [],
         approvedReviewers: [],
+        reviews: undefined,
         status
+    });
+};
+const mapComment = (comment) => {
+    var _a;
+    return ({
+        id: comment.id,
+        htmlURL: comment.html_url,
+        submittedAt: comment.submitted_at ? (0, moment_1.default)(comment.submitted_at) : undefined,
+        author: ((_a = comment.user) === null || _a === void 0 ? void 0 : _a.login) || '',
+        body: comment.body
     });
 };
 
@@ -833,8 +880,10 @@ class ReleaseNotes {
         });
     }
     getMergedPullRequests(octokit) {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             const { owner, repo, includeOpen, fetchReviewers, configuration } = this.options;
+            const fetchReviews = true; // TEMPORARY!!
             const diffInfo = yield this.getCommitHistory(octokit);
             const commits = diffInfo.commitInfo;
             if (commits.length === 0) {
@@ -903,6 +952,19 @@ class ReleaseNotes {
             }
             else {
                 core.debug(`ℹ️ Fetching reviewers was disabled`);
+            }
+            if (fetchReviews) {
+                core.info(`ℹ️ Fetching reviews was enabled`);
+                // update PR information with reviewers who approved
+                for (const pr of finalPrs) {
+                    yield pullRequestsApi.getReviews(owner, repo, pr);
+                    if ((((_a = pr.reviews) === null || _a === void 0 ? void 0 : _a.length) || 0) > 0) {
+                        core.info(`ℹ️ Retrieved ${((_b = pr.reviews) === null || _b === void 0 ? void 0 : _b.length) || 0} review(s) for PR ${owner}/${repo}/#${pr.number}`);
+                    }
+                }
+            }
+            else {
+                core.debug(`ℹ️ Fetching reviews was disabled`);
             }
             return [diffInfo, finalPrs];
         });
@@ -1731,6 +1793,10 @@ function fillAdditionalPlaceholders(options, placeholderMap /* placeholderKey an
 }
 function fillPrTemplate(pr, template, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */) {
     var _a, _b, _c, _d, _e, _f;
+    let transformed = replaceArrayPlaceholders(template, 'ASSIGNEES', pr.assignees || []);
+    transformed = replaceArrayPlaceholders(transformed, 'REVIEWERS', pr.requestedReviewers || []);
+    transformed = replaceArrayPlaceholders(transformed, 'APPROVERS', pr.approvedReviewers || []);
+    transformed = replaceReviewPlaceholders(transformed, 'REVIEWS', pr.reviews || []);
     const placeholderMap = new Map();
     placeholderMap.set('NUMBER', pr.number.toString());
     placeholderMap.set('TITLE', pr.title);
@@ -1748,7 +1814,7 @@ function fillPrTemplate(pr, template, placeholders /* placeholders to apply */, 
     placeholderMap.set('APPROVERS', ((_f = pr.approvedReviewers) === null || _f === void 0 ? void 0 : _f.join(', ')) || '');
     placeholderMap.set('BRANCH', pr.branch || '');
     placeholderMap.set('BASE_BRANCH', pr.baseBranch);
-    return replacePlaceholders(template, placeholderMap, placeholders, placeholderPrMap);
+    return replacePlaceholders(transformed, placeholderMap, placeholders, placeholderPrMap);
 }
 function replacePlaceholders(template, placeholderMap /* placeholderKey and original value */, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */) {
     let transformed = template;
@@ -1788,6 +1854,33 @@ function replacePrPlaceholders(template, placeholderPrMap /* map with all pr rel
             transformed = transformed.replaceAll(`\${{${key}[${i}]}}`, values[i]);
         }
         transformed = transformed.replaceAll(`\${{${key}[*]}}`, values.join(''));
+    }
+    return transformed;
+}
+function replaceArrayPlaceholders(template, key, values) {
+    let transformed = template;
+    for (let i = 0; i < values.length; i++) {
+        transformed = transformed.replaceAll(`\${{${key}[${i}]}}`, values[i]);
+    }
+    transformed = transformed.replaceAll(`\${{${key}[*]}}`, values.join(', '));
+    return transformed;
+}
+function replaceReviewPlaceholders(template, parentKey, values) {
+    var _a;
+    let transformed = template;
+    // retrieve the keys from the CommentInfo object
+    const comment = {
+        id: 0,
+        htmlURL: '',
+        submittedAt: undefined,
+        author: '',
+        body: ''
+    };
+    for (const childKey of Object.keys(comment)) {
+        for (let i = 0; i < values.length; i++) {
+            transformed = transformed.replaceAll(`\${{${parentKey}[${i}].${childKey}}}`, ((_a = values[i][childKey]) === null || _a === void 0 ? void 0 : _a.toLocaleString('en')) || '');
+        }
+        transformed = transformed.replaceAll(`\${{${parentKey}[*].${childKey}}}`, values.map(value => { var _a; return ((_a = value[childKey]) === null || _a === void 0 ? void 0 : _a.toLocaleString('en')) || ''; }).join(', '));
     }
     return transformed;
 }
