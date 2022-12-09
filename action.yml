@@ -34,6 +34,9 @@ inputs:
   fetchReleaseInformation:
     description: 'Will enable fetching release information for the tags. E.g. creation date'
     default: "false"
+  fetchReviews:
+    description: 'Will enable fetching the reviews (comments) attached to the PR'
+    default: "false"
   commitMode:
     description: 'Enables a `light` commit based mode. This mode generates changelogs based on the commits. Please note that this is not officially supported, and lacks a lot of features only possible with PRs.'
     default: "false"

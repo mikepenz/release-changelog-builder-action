@@ -20,6 +20,7 @@ it('Should have empty changelog (tags)', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration
   })
@@ -40,6 +41,7 @@ it('Should match generated changelog (tags)', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration
   })
@@ -65,6 +67,7 @@ it('Should match generated changelog (refs)', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration
   })
@@ -98,6 +101,7 @@ it('Should match generated changelog and replace all occurrences (refs)', async 
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration
   })
@@ -133,6 +137,7 @@ it('Should match ordered ASC', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration
   })
@@ -153,6 +158,7 @@ it('Should match ordered DESC', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration
   })
@@ -173,6 +179,7 @@ it('Should match ordered by title ASC', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration
   })
@@ -195,6 +202,7 @@ it('Should match ordered by title DESC', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration
   })
@@ -217,6 +225,7 @@ it('Should ignore PRs not merged into develop branch', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration
   })
@@ -237,6 +246,7 @@ it('Should ignore PRs not merged into main branch', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration
   })

@@ -523,6 +523,7 @@ it('Test custom changelog builder', async () => {
     false, // ignorePrePrelease
     true,  // enable to fetch reviewers
     false, // enable to fetch release information
+    false, // enable to fetch reviews
     false, // commitMode
     configuration  // configuration
   )

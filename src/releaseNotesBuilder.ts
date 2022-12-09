@@ -20,6 +20,7 @@ export class ReleaseNotesBuilder {
     private ignorePreReleases: boolean,
     private fetchReviewers: boolean = false,
     private fetchReleaseInformation: boolean = false,
+    private fetchReviews: boolean = false,
     private commitMode: boolean,
     private configuration: Configuration
   ) {}
@@ -117,6 +118,7 @@ export class ReleaseNotesBuilder {
       failOnError: this.failOnError,
       fetchReviewers: this.fetchReviewers,
       fetchReleaseInformation: this.fetchReleaseInformation,
+      fetchReviews: this.fetchReviews,
       commitMode: this.commitMode,
       configuration: this.configuration
     }

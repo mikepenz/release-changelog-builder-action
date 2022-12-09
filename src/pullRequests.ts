@@ -31,6 +31,16 @@ export interface CommentInfo {
   submittedAt: moment.Moment | undefined
   author: string
   body: string
+  state: string | undefined
+}
+
+export const EMPTY_COMMENT_INFO: CommentInfo = {
+  id: 0,
+  htmlURL: '',
+  submittedAt: undefined,
+  author: '',
+  body: '',
+  state: undefined
 }
 
 type PullData = RestEndpointMethodTypes['pulls']['get']['response']['data']
@@ -251,5 +261,6 @@ const mapComment = (comment: Unpacked<PullReviewsData>): CommentInfo => ({
   htmlURL: comment.html_url,
   submittedAt: comment.submitted_at ? moment(comment.submitted_at) : undefined,
   author: comment.user?.login || '',
-  body: comment.body
+  body: comment.body,
+  state: comment.state
 })

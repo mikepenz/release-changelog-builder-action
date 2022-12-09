@@ -420,8 +420,9 @@ function run() {
             const failOnError = core.getInput('failOnError') === 'true';
             const fetchReviewers = core.getInput('fetchReviewers') === 'true';
             const fetchReleaseInformation = core.getInput('fetchReleaseInformation') === 'true';
+            const fetchReviews = core.getInput('fetchReviews') === 'true';
             const commitMode = core.getInput('commitMode') === 'true';
-            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchReviewers, fetchReleaseInformation, commitMode, configuration).build();
+            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchReviewers, fetchReleaseInformation, fetchReviews, commitMode, configuration).build();
             core.setOutput('changelog', result);
             // write the result in changelog to file if possible
             const outputFile = core.getInput('outputFile');
@@ -488,9 +489,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.compare = exports.sortPullRequests = exports.PullRequests = void 0;
+exports.compare = exports.sortPullRequests = exports.PullRequests = exports.EMPTY_COMMENT_INFO = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const moment_1 = __importDefault(__nccwpck_require__(9623));
+exports.EMPTY_COMMENT_INFO = {
+    id: 0,
+    htmlURL: '',
+    submittedAt: undefined,
+    author: '',
+    body: '',
+    state: undefined
+};
 class PullRequests {
     constructor(octokit) {
         this.octokit = octokit;
@@ -762,7 +771,8 @@ const mapComment = (comment) => {
         htmlURL: comment.html_url,
         submittedAt: comment.submitted_at ? (0, moment_1.default)(comment.submitted_at) : undefined,
         author: ((_a = comment.user) === null || _a === void 0 ? void 0 : _a.login) || '',
-        body: comment.body
+        body: comment.body,
+        state: comment.state
     });
 };
 
@@ -882,8 +892,7 @@ class ReleaseNotes {
     getMergedPullRequests(octokit) {
         var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
-            const { owner, repo, includeOpen, fetchReviewers, configuration } = this.options;
-            const fetchReviews = true; // TEMPORARY!!
+            const { owner, repo, includeOpen, fetchReviewers, fetchReviews, configuration } = this.options;
             const diffInfo = yield this.getCommitHistory(octokit);
             const commits = diffInfo.commitInfo;
             if (commits.length === 0) {
@@ -1055,7 +1064,7 @@ const tags_1 = __nccwpck_require__(7532);
 const utils_1 = __nccwpck_require__(918);
 const https_proxy_agent_1 = __nccwpck_require__(7219);
 class ReleaseNotesBuilder {
-    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchReviewers = false, fetchReleaseInformation = false, commitMode, configuration) {
+    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode, configuration) {
         this.baseUrl = baseUrl;
         this.token = token;
         this.repositoryPath = repositoryPath;
@@ -1068,6 +1077,7 @@ class ReleaseNotesBuilder {
         this.ignorePreReleases = ignorePreReleases;
         this.fetchReviewers = fetchReviewers;
         this.fetchReleaseInformation = fetchReleaseInformation;
+        this.fetchReviews = fetchReviews;
         this.commitMode = commitMode;
         this.configuration = configuration;
     }
@@ -1150,6 +1160,7 @@ class ReleaseNotesBuilder {
                 failOnError: this.failOnError,
                 fetchReviewers: this.fetchReviewers,
                 fetchReleaseInformation: this.fetchReleaseInformation,
+                fetchReviews: this.fetchReviews,
                 commitMode: this.commitMode,
                 configuration: this.configuration
             };
@@ -1593,12 +1604,6 @@ function buildChangelog(diffInfo, prs, options) {
             core.warning(`⚠️ Configured \`duplicate_filter\` invalid.`);
         }
     }
-    // limit the PRs to the `max_pull_requests`
-    const max_pull_requests = config.max_pull_requests || configuration_1.DefaultConfiguration.max_pull_requests;
-    if (prs.length > max_pull_requests) {
-        core.info(`ℹ️ Retrieved ${prs.length} PRs, limit count to: ${max_pull_requests} (max_pull_requests).`);
-        prs.length = Math.min(prs.length, max_pull_requests);
-    }
     // extract additional labels from the commit message
     const labelExtractors = validateTransformers(config.label_extractor);
     for (const extractor of labelExtractors) {
@@ -1875,14 +1880,7 @@ function replaceReviewPlaceholders(template, parentKey, values) {
     var _a;
     let transformed = template;
     // retrieve the keys from the CommentInfo object
-    const comment = {
-        id: 0,
-        htmlURL: '',
-        submittedAt: undefined,
-        author: '',
-        body: ''
-    };
-    for (const childKey of Object.keys(comment)) {
+    for (const childKey of Object.keys(pullRequests_1.EMPTY_COMMENT_INFO)) {
         for (let i = 0; i < values.length; i++) {
             transformed = transformed.replaceAll(`\${{${parentKey}[${i}].${childKey}}}`, ((_a = values[i][childKey]) === null || _a === void 0 ? void 0 : _a.toLocaleString('en')) || '');
         }

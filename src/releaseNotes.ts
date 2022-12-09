@@ -16,6 +16,7 @@ export interface ReleaseNotesOptions {
   failOnError: boolean // defines if we should fail the action in case of an error
   fetchReviewers: boolean // defines if the action should fetch the reviewers for PRs - approved reviewers are not included in the default PR listing
   fetchReleaseInformation: boolean // defines if the action should fetch the release information for the from and to tag - e.g. the creation date for the associated release
+  fetchReviews: boolean // defines if the action should fetch the reviews for the PR.
   commitMode: boolean // defines if we use the alternative commit based mode. note: this is only partially supported
   configuration: Configuration // the configuration as defined in `configuration.ts`
 }
@@ -94,8 +95,7 @@ export class ReleaseNotes {
   }
 
   private async getMergedPullRequests(octokit: Octokit): Promise<[DiffInfo, PullRequestInfo[]]> {
-    const {owner, repo, includeOpen, fetchReviewers, configuration} = this.options
-    const fetchReviews = true // TEMPORARY!!
+    const {owner, repo, includeOpen, fetchReviewers, fetchReviews, configuration} = this.options
 
     const diffInfo = await this.getCommitHistory(octokit)
     const commits = diffInfo.commitInfo

@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import {Category, DefaultConfiguration, Extractor, Placeholder, Transformer} from './configuration'
-import {CommentInfo, PullRequestInfo, sortPullRequests} from './pullRequests'
+import {CommentInfo, EMPTY_COMMENT_INFO, PullRequestInfo, sortPullRequests} from './pullRequests'
 import {ReleaseNotesOptions} from './releaseNotes'
 import {DiffInfo} from './commits'
 import {createOrSet, haveCommonElements, haveEveryElements} from './utils'
@@ -45,13 +45,6 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
     } else {
       core.warning(`⚠️ Configured \`duplicate_filter\` invalid.`)
     }
-  }
-
-  // limit the PRs to the `max_pull_requests`
-  const max_pull_requests = config.max_pull_requests || DefaultConfiguration.max_pull_requests
-  if (prs.length > max_pull_requests) {
-    core.info(`ℹ️ Retrieved ${prs.length} PRs, limit count to: ${max_pull_requests} (max_pull_requests).`)
-    prs.length = Math.min(prs.length, max_pull_requests)
   }
 
   // extract additional labels from the commit message
@@ -400,14 +393,7 @@ function replaceReviewPlaceholders(template: string, parentKey: string, values: 
   let transformed = template
 
   // retrieve the keys from the CommentInfo object
-  const comment: CommentInfo = {
-    id: 0,
-    htmlURL: '',
-    submittedAt: undefined,
-    author: '',
-    body: ''
-  }
-  for (const childKey of Object.keys(comment)) {
+  for (const childKey of Object.keys(EMPTY_COMMENT_INFO)) {
     for (let i = 0; i < values.length; i++) {
       transformed = transformed.replaceAll(
         `\${{${parentKey}[${i}].${childKey}}}`,
