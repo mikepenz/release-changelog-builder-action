@@ -317,6 +317,8 @@ For advanced use cases additional settings can be provided to the action
 | `ignorePreReleases` | Allows to ignore pre-releases for changelog generation (E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick). Only used if `fromTag` was not specified. Default: false    |
 | `failOnError`       | Defines if the action will result in a build failure if problems occurred. Default: false                                                                                   |
 | `fetchReviewers`    | Will enable fetching the users/reviewers who approved the PR. Default: false                                                                                                |
+| `fetchReleaseInformation` | Will enable fetching additional release information from tags. Default: false |
+| `fetchReviews`      | Will enable fetching the reviews on of the PR. Default: false                                                                                                |
 | `commitMode`        | Special configuration for projects which work without PRs. Uses commit messages as changelog. This mode looses access to information only available for PRs. Default: false |
 
 > **Warning**: `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repositories please use a PAT (Personal Access Token).
