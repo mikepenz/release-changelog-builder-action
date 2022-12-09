@@ -520,7 +520,7 @@ class PullRequests {
                 repo,
                 state: 'closed',
                 sort: 'merged',
-                per_page: '100',
+                per_page: `${Math.min(100, maxPullRequests)}`,
                 direction: 'desc'
             });
             try {
