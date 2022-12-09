@@ -60,8 +60,6 @@ Specify the action as part of your GitHub actions workflow:
 - name: "Build Changelog"
   id: build_changelog
   uses: mikepenz/release-changelog-builder-action@{latest-release}
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ### Action outputs

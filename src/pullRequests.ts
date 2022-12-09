@@ -232,10 +232,7 @@ function attachSpeciaLabels(status: 'open' | 'merged', labels: Set<string>): Set
   return labels
 }
 
-const mapPullRequest = (
-  pr: PullData | Unpacked<PullsListData>,
-  status: 'open' | 'merged' = 'open'
-): PullRequestInfo => ({
+const mapPullRequest = (pr: PullData | Unpacked<PullsListData>, status: 'open' | 'merged' = 'open'): PullRequestInfo => ({
   number: pr.number,
   title: pr.title,
   htmlURL: pr.html_url,

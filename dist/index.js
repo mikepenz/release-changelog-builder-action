@@ -1571,6 +1571,7 @@ const core = __importStar(__nccwpck_require__(2186));
 const configuration_1 = __nccwpck_require__(5527);
 const pullRequests_1 = __nccwpck_require__(4217);
 const utils_1 = __nccwpck_require__(918);
+const EMPTY_MAP = new Map();
 function buildChangelog(diffInfo, prs, options) {
     // sort to target order
     const config = options.configuration;
@@ -1767,9 +1768,9 @@ function buildChangelog(diffInfo, prs, options) {
     placeholderMap.set('COMMITS', diffInfo.commits.toString());
     fillAdditionalPlaceholders(options, placeholderMap);
     let transformedChangelog = config.template || configuration_1.DefaultConfiguration.template;
-    transformedChangelog = replacePlaceholders(transformedChangelog, placeholderMap, placeholders, placeholderPrMap);
+    transformedChangelog = replacePlaceholders(transformedChangelog, EMPTY_MAP, placeholderMap, placeholders, placeholderPrMap);
     transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap);
-    transformedChangelog = cleanupPrPlaceHolders(transformedChangelog, placeholders);
+    transformedChangelog = cleanupPrPlaceholders(transformedChangelog, placeholders);
     core.info(`ℹ️ Filled template`);
     return transformedChangelog;
 }
@@ -1781,7 +1782,7 @@ function replaceEmptyTemplate(template, options) {
     }
     const placeholderMap = new Map();
     fillAdditionalPlaceholders(options, placeholderMap);
-    return replacePlaceholders(template, placeholderMap, placeholders);
+    return replacePlaceholders(template, new Map(), placeholderMap, placeholders);
 }
 exports.replaceEmptyTemplate = replaceEmptyTemplate;
 function fillAdditionalPlaceholders(options, placeholderMap /* placeholderKey and original value */) {
@@ -1804,10 +1805,8 @@ function fillAdditionalPlaceholders(options, placeholderMap /* placeholderKey an
 }
 function fillPrTemplate(pr, template, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */) {
     var _a, _b, _c, _d, _e, _f;
-    let transformed = replaceArrayPlaceholders(template, 'ASSIGNEES', pr.assignees || []);
-    transformed = replaceArrayPlaceholders(transformed, 'REVIEWERS', pr.requestedReviewers || []);
-    transformed = replaceArrayPlaceholders(transformed, 'APPROVERS', pr.approvedReviewers || []);
-    transformed = replaceReviewPlaceholders(transformed, 'REVIEWS', pr.reviews || []);
+    const arrayPlaceholderMap = new Map();
+    fillReviewPlaceholders(arrayPlaceholderMap, 'REVIEWS', pr.reviews || []);
     const placeholderMap = new Map();
     placeholderMap.set('NUMBER', pr.number.toString());
     placeholderMap.set('TITLE', pr.title);
@@ -1820,43 +1819,70 @@ function fillPrTemplate(pr, template, placeholders /* placeholders to apply */, 
     placeholderMap.set('LABELS', ((_c = (_b = [...pr.labels]) === null || _b === void 0 ? void 0 : _b.filter(l => !l.startsWith('--rcba-'))) === null || _c === void 0 ? void 0 : _c.join(', ')) || '');
     placeholderMap.set('MILESTONE', pr.milestone || '');
     placeholderMap.set('BODY', pr.body);
+    fillArrayPlaceholders(arrayPlaceholderMap, 'ASSIGNEES', pr.assignees || []);
     placeholderMap.set('ASSIGNEES', ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.join(', ')) || '');
+    fillArrayPlaceholders(arrayPlaceholderMap, 'REVIEWERS', pr.requestedReviewers || []);
     placeholderMap.set('REVIEWERS', ((_e = pr.requestedReviewers) === null || _e === void 0 ? void 0 : _e.join(', ')) || '');
+    fillArrayPlaceholders(arrayPlaceholderMap, 'APPROVERS', pr.approvedReviewers || []);
     placeholderMap.set('APPROVERS', ((_f = pr.approvedReviewers) === null || _f === void 0 ? void 0 : _f.join(', ')) || '');
     placeholderMap.set('BRANCH', pr.branch || '');
     placeholderMap.set('BASE_BRANCH', pr.baseBranch);
-    return replacePlaceholders(transformed, placeholderMap, placeholders, placeholderPrMap);
+    return replacePlaceholders(template, arrayPlaceholderMap, placeholderMap, placeholders, placeholderPrMap);
 }
-function replacePlaceholders(template, placeholderMap /* placeholderKey and original value */, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */) {
+function replacePlaceholders(template, arrayPlaceholderMap /* arrayPlaceholderKey and original value */, placeholderMap /* placeholderKey and original value */, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */) {
     let transformed = template;
+    // replace array placeholders first
+    for (const [key, value] of arrayPlaceholderMap) {
+        transformed = handlePlaceholder(transformed, key, value, placeholders, placeholderPrMap);
+    }
+    // replace traditional placeholders
     for (const [key, value] of placeholderMap) {
-        transformed = transformed.replaceAll(`\${{${key}}}`, value);
-        // replace custom placeholders
-        const phs = placeholders.get(key);
-        if (phs) {
-            for (const placeholder of phs) {
-                const transformer = validateTransformer(placeholder.transformer);
-                if (transformer === null || transformer === void 0 ? void 0 : transformer.pattern) {
-                    const extractedValue = value.replace(transformer.pattern, transformer.target);
-                    // note: `.replace` will return the full string again if there was no match
-                    if (extractedValue &&
-                        (extractedValue !== value || (extractedValue === value && value.match(transformer.pattern)))) {
-                        if (placeholderPrMap) {
-                            (0, utils_1.createOrSet)(placeholderPrMap, placeholder.name, extractedValue);
-                        }
-                        transformed = transformed.replaceAll(`\${{${placeholder.name}}}`, extractedValue);
-                        if (core.isDebug()) {
-                            core.debug(`    Custom Placeholder successfully matched data - ${extractValues} (${placeholder.name})`);
-                        }
+        transformed = handlePlaceholder(transformed, key, value, placeholders, placeholderPrMap);
+    }
+    return transformed;
+}
+function handlePlaceholder(template, key, value, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */) {
+    let transformed = template.replaceAll(`\${{${key}}}`, value);
+    // replace custom placeholders
+    const phs = placeholders.get(key);
+    if (phs) {
+        for (const placeholder of phs) {
+            const transformer = validateTransformer(placeholder.transformer);
+            if (transformer === null || transformer === void 0 ? void 0 : transformer.pattern) {
+                const extractedValue = value.replace(transformer.pattern, transformer.target);
+                // note: `.replace` will return the full string again if there was no match
+                if (extractedValue && (extractedValue !== value || (extractedValue === value && value.match(transformer.pattern)))) {
+                    if (placeholderPrMap) {
+                        (0, utils_1.createOrSet)(placeholderPrMap, placeholder.name, extractedValue);
                     }
-                    else if (core.isDebug() && extractedValue === value) {
-                        core.debug(`    Custom Placeholder did result in the full original value returned. Skipping. (${placeholder.name})`);
+                    transformed = transformed.replaceAll(`\${{${placeholder.name}}}`, extractedValue);
+                    if (core.isDebug()) {
+                        core.debug(`    Custom Placeholder successfully matched data - ${extractValues} (${placeholder.name})`);
                     }
+                }
+                else if (core.isDebug() && extractedValue === value) {
+                    core.debug(`    Custom Placeholder did result in the full original value returned. Skipping. (${placeholder.name})`);
                 }
             }
         }
     }
     return transformed;
+}
+function fillArrayPlaceholders(placeholderMap /* placeholderKey and original value */, key, values) {
+    for (let i = 0; i < values.length; i++) {
+        placeholderMap.set(`\${{${key}[${i}]}}`, values[i]);
+    }
+    placeholderMap.set(`\${{${key}[*]}}`, values.join(', '));
+}
+function fillReviewPlaceholders(placeholderMap /* placeholderKey and original value */, parentKey, values) {
+    var _a;
+    // retrieve the keys from the CommentInfo object
+    for (const childKey of Object.keys(pullRequests_1.EMPTY_COMMENT_INFO)) {
+        for (let i = 0; i < values.length; i++) {
+            placeholderMap.set(`\${{${parentKey}[${i}].${childKey}}}`, ((_a = values[i][childKey]) === null || _a === void 0 ? void 0 : _a.toLocaleString('en')) || '');
+        }
+        placeholderMap.set(`\${{${parentKey}[*].${childKey}}}`, values.map(value => { var _a; return ((_a = value[childKey]) === null || _a === void 0 ? void 0 : _a.toLocaleString('en')) || ''; }).join(', '));
+    }
 }
 function replacePrPlaceholders(template, placeholderPrMap /* map with all pr related custom placeholder values */) {
     let transformed = template;
@@ -1868,27 +1894,7 @@ function replacePrPlaceholders(template, placeholderPrMap /* map with all pr rel
     }
     return transformed;
 }
-function replaceArrayPlaceholders(template, key, values) {
-    let transformed = template;
-    for (let i = 0; i < values.length; i++) {
-        transformed = transformed.replaceAll(`\${{${key}[${i}]}}`, values[i]);
-    }
-    transformed = transformed.replaceAll(`\${{${key}[*]}}`, values.join(', '));
-    return transformed;
-}
-function replaceReviewPlaceholders(template, parentKey, values) {
-    var _a;
-    let transformed = template;
-    // retrieve the keys from the CommentInfo object
-    for (const childKey of Object.keys(pullRequests_1.EMPTY_COMMENT_INFO)) {
-        for (let i = 0; i < values.length; i++) {
-            transformed = transformed.replaceAll(`\${{${parentKey}[${i}].${childKey}}}`, ((_a = values[i][childKey]) === null || _a === void 0 ? void 0 : _a.toLocaleString('en')) || '');
-        }
-        transformed = transformed.replaceAll(`\${{${parentKey}[*].${childKey}}}`, values.map(value => { var _a; return ((_a = value[childKey]) === null || _a === void 0 ? void 0 : _a.toLocaleString('en')) || ''; }).join(', '));
-    }
-    return transformed;
-}
-function cleanupPrPlaceHolders(template, placeholders /* placeholders to apply */) {
+function cleanupPrPlaceholders(template, placeholders /* placeholders to apply */) {
     let transformed = template;
     for (const [, phs] of placeholders) {
         for (const ph of phs) {

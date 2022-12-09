@@ -62,10 +62,7 @@ export class ReleaseNotes {
 
     if (mergedPullRequests.length === 0) {
       core.warning(`⚠️ No pull requests found`)
-      return replaceEmptyTemplate(
-        this.options.configuration.empty_template || DefaultConfiguration.empty_template,
-        this.options
-      )
+      return replaceEmptyTemplate(this.options.configuration.empty_template || DefaultConfiguration.empty_template, this.options)
     }
 
     core.startGroup('📦 Build changelog')
@@ -128,10 +125,7 @@ export class ReleaseNotes {
 
     core.info(`ℹ️ Retrieved ${pullRequests.length} PRs for ${owner}/${repo} in date range from API`)
 
-    const prCommits = filterCommits(
-      commits,
-      configuration.exclude_merge_branches || DefaultConfiguration.exclude_merge_branches
-    )
+    const prCommits = filterCommits(commits, configuration.exclude_merge_branches || DefaultConfiguration.exclude_merge_branches)
 
     core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`)
 
@@ -181,9 +175,7 @@ export class ReleaseNotes {
     })
 
     if (baseBranches.length !== 0) {
-      core.info(
-        `ℹ️ Retrieved ${mergedPullRequests.length} PRs for ${owner}/${repo} filtered by the 'base_branches' configuration.`
-      )
+      core.info(`ℹ️ Retrieved ${mergedPullRequests.length} PRs for ${owner}/${repo} filtered by the 'base_branches' configuration.`)
     }
 
     if (fetchReviewers) {
@@ -224,10 +216,7 @@ export class ReleaseNotes {
       return [diffInfo, []]
     }
 
-    const prCommits = filterCommits(
-      commits,
-      configuration.exclude_merge_branches || DefaultConfiguration.exclude_merge_branches
-    )
+    const prCommits = filterCommits(commits, configuration.exclude_merge_branches || DefaultConfiguration.exclude_merge_branches)
 
     core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`)
 

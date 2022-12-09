@@ -13,6 +13,8 @@ export interface RegexTransformer {
   onEmpty?: string | undefined
 }
 
+const EMPTY_MAP = new Map<string, string>()
+
 export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], options: ReleaseNotesOptions): string {
   // sort to target order
   const config = options.configuration
@@ -126,9 +128,7 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
             const prNum = pr.number
             const prLabels = pr.labels
             const excludeLabels = JSON.stringify(category.exclude_labels)
-            core.debug(
-              `PR ${prNum} with labels: ${prLabels} excluded from category via exclude label: ${excludeLabels}`
-            )
+            core.debug(`PR ${prNum} with labels: ${prLabels} excluded from category via exclude label: ${excludeLabels}`)
           }
           continue // one of the exclude labels matched, skip the PR for this category
         }
@@ -253,9 +253,9 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
   fillAdditionalPlaceholders(options, placeholderMap)
 
   let transformedChangelog = config.template || DefaultConfiguration.template
-  transformedChangelog = replacePlaceholders(transformedChangelog, placeholderMap, placeholders, placeholderPrMap)
+  transformedChangelog = replacePlaceholders(transformedChangelog, EMPTY_MAP, placeholderMap, placeholders, placeholderPrMap)
   transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap)
-  transformedChangelog = cleanupPrPlaceHolders(transformedChangelog, placeholders)
+  transformedChangelog = cleanupPrPlaceholders(transformedChangelog, placeholders)
   core.info(`ℹ️ Filled template`)
   return transformedChangelog
 }
@@ -267,7 +267,7 @@ export function replaceEmptyTemplate(template: string, options: ReleaseNotesOpti
   }
   const placeholderMap = new Map<string, string>()
   fillAdditionalPlaceholders(options, placeholderMap)
-  return replacePlaceholders(template, placeholderMap, placeholders)
+  return replacePlaceholders(template, new Map<string, string>(), placeholderMap, placeholders)
 }
 
 function fillAdditionalPlaceholders(
@@ -299,11 +299,8 @@ function fillPrTemplate(
   placeholders: Map<string, Placeholder[]> /* placeholders to apply */,
   placeholderPrMap: Map<string, string[]> /* map to keep replaced placeholder values with their key */
 ): string {
-  let transformed = replaceArrayPlaceholders(template, 'ASSIGNEES', pr.assignees || [])
-  transformed = replaceArrayPlaceholders(transformed, 'REVIEWERS', pr.requestedReviewers || [])
-  transformed = replaceArrayPlaceholders(transformed, 'APPROVERS', pr.approvedReviewers || [])
-  transformed = replaceReviewPlaceholders(transformed, 'REVIEWS', pr.reviews || [])
-
+  const arrayPlaceholderMap = new Map<string, string>()
+  fillReviewPlaceholders(arrayPlaceholderMap, 'REVIEWS', pr.reviews || [])
   const placeholderMap = new Map<string, string>()
   placeholderMap.set('NUMBER', pr.number.toString())
   placeholderMap.set('TITLE', pr.title)
@@ -316,54 +313,99 @@ function fillPrTemplate(
   placeholderMap.set('LABELS', [...pr.labels]?.filter(l => !l.startsWith('--rcba-'))?.join(', ') || '')
   placeholderMap.set('MILESTONE', pr.milestone || '')
   placeholderMap.set('BODY', pr.body)
+  fillArrayPlaceholders(arrayPlaceholderMap, 'ASSIGNEES', pr.assignees || [])
   placeholderMap.set('ASSIGNEES', pr.assignees?.join(', ') || '')
+  fillArrayPlaceholders(arrayPlaceholderMap, 'REVIEWERS', pr.requestedReviewers || [])
   placeholderMap.set('REVIEWERS', pr.requestedReviewers?.join(', ') || '')
+  fillArrayPlaceholders(arrayPlaceholderMap, 'APPROVERS', pr.approvedReviewers || [])
   placeholderMap.set('APPROVERS', pr.approvedReviewers?.join(', ') || '')
   placeholderMap.set('BRANCH', pr.branch || '')
   placeholderMap.set('BASE_BRANCH', pr.baseBranch)
-  return replacePlaceholders(transformed, placeholderMap, placeholders, placeholderPrMap)
+  return replacePlaceholders(template, arrayPlaceholderMap, placeholderMap, placeholders, placeholderPrMap)
 }
 
 function replacePlaceholders(
   template: string,
+  arrayPlaceholderMap: Map<string, string> /* arrayPlaceholderKey and original value */,
   placeholderMap: Map<string, string> /* placeholderKey and original value */,
   placeholders: Map<string, Placeholder[]> /* placeholders to apply */,
   placeholderPrMap?: Map<string, string[]> /* map to keep replaced placeholder values with their key */
 ): string {
   let transformed = template
+
+  // replace array placeholders first
+  for (const [key, value] of arrayPlaceholderMap) {
+    transformed = handlePlaceholder(transformed, key, value, placeholders, placeholderPrMap)
+  }
+
+  // replace traditional placeholders
   for (const [key, value] of placeholderMap) {
-    transformed = transformed.replaceAll(`\${{${key}}}`, value)
+    transformed = handlePlaceholder(transformed, key, value, placeholders, placeholderPrMap)
+  }
 
-    // replace custom placeholders
-    const phs = placeholders.get(key)
-    if (phs) {
-      for (const placeholder of phs) {
-        const transformer = validateTransformer(placeholder.transformer)
-        if (transformer?.pattern) {
-          const extractedValue = value.replace(transformer.pattern, transformer.target)
-          // note: `.replace` will return the full string again if there was no match
-          if (
-            extractedValue &&
-            (extractedValue !== value || (extractedValue === value && value.match(transformer.pattern)))
-          ) {
-            if (placeholderPrMap) {
-              createOrSet(placeholderPrMap, placeholder.name, extractedValue)
-            }
-            transformed = transformed.replaceAll(`\${{${placeholder.name}}}`, extractedValue)
+  return transformed
+}
 
-            if (core.isDebug()) {
-              core.debug(`    Custom Placeholder successfully matched data - ${extractValues} (${placeholder.name})`)
-            }
-          } else if (core.isDebug() && extractedValue === value) {
-            core.debug(
-              `    Custom Placeholder did result in the full original value returned. Skipping. (${placeholder.name})`
-            )
+function handlePlaceholder(
+  template: string,
+  key: string,
+  value: string,
+  placeholders: Map<string, Placeholder[]> /* placeholders to apply */,
+  placeholderPrMap?: Map<string, string[]> /* map to keep replaced placeholder values with their key */
+): string {
+  let transformed = template.replaceAll(`\${{${key}}}`, value)
+  // replace custom placeholders
+  const phs = placeholders.get(key)
+  if (phs) {
+    for (const placeholder of phs) {
+      const transformer = validateTransformer(placeholder.transformer)
+      if (transformer?.pattern) {
+        const extractedValue = value.replace(transformer.pattern, transformer.target)
+        // note: `.replace` will return the full string again if there was no match
+        if (extractedValue && (extractedValue !== value || (extractedValue === value && value.match(transformer.pattern)))) {
+          if (placeholderPrMap) {
+            createOrSet(placeholderPrMap, placeholder.name, extractedValue)
           }
+          transformed = transformed.replaceAll(`\${{${placeholder.name}}}`, extractedValue)
+
+          if (core.isDebug()) {
+            core.debug(`    Custom Placeholder successfully matched data - ${extractValues} (${placeholder.name})`)
+          }
+        } else if (core.isDebug() && extractedValue === value) {
+          core.debug(`    Custom Placeholder did result in the full original value returned. Skipping. (${placeholder.name})`)
         }
       }
     }
   }
   return transformed
+}
+
+function fillArrayPlaceholders(
+  placeholderMap: Map<string, string> /* placeholderKey and original value */,
+  key: string,
+  values: string[]
+): void {
+  for (let i = 0; i < values.length; i++) {
+    placeholderMap.set(`\${{${key}[${i}]}}`, values[i])
+  }
+  placeholderMap.set(`\${{${key}[*]}}`, values.join(', '))
+}
+
+function fillReviewPlaceholders(
+  placeholderMap: Map<string, string> /* placeholderKey and original value */,
+  parentKey: string,
+  values: CommentInfo[]
+): void {
+  // retrieve the keys from the CommentInfo object
+  for (const childKey of Object.keys(EMPTY_COMMENT_INFO)) {
+    for (let i = 0; i < values.length; i++) {
+      placeholderMap.set(`\${{${parentKey}[${i}].${childKey}}}`, values[i][childKey as keyof CommentInfo]?.toLocaleString('en') || '')
+    }
+    placeholderMap.set(
+      `\${{${parentKey}[*].${childKey}}}`,
+      values.map(value => value[childKey as keyof CommentInfo]?.toLocaleString('en') || '').join(', ')
+    )
+  }
 }
 
 function replacePrPlaceholders(
@@ -380,38 +422,7 @@ function replacePrPlaceholders(
   return transformed
 }
 
-function replaceArrayPlaceholders(template: string, key: string, values: string[]): string {
-  let transformed = template
-  for (let i = 0; i < values.length; i++) {
-    transformed = transformed.replaceAll(`\${{${key}[${i}]}}`, values[i])
-  }
-  transformed = transformed.replaceAll(`\${{${key}[*]}}`, values.join(', '))
-  return transformed
-}
-
-function replaceReviewPlaceholders(template: string, parentKey: string, values: CommentInfo[]): string {
-  let transformed = template
-
-  // retrieve the keys from the CommentInfo object
-  for (const childKey of Object.keys(EMPTY_COMMENT_INFO)) {
-    for (let i = 0; i < values.length; i++) {
-      transformed = transformed.replaceAll(
-        `\${{${parentKey}[${i}].${childKey}}}`,
-        values[i][childKey as keyof CommentInfo]?.toLocaleString('en') || ''
-      )
-    }
-    transformed = transformed.replaceAll(
-      `\${{${parentKey}[*].${childKey}}}`,
-      values.map(value => value[childKey as keyof CommentInfo]?.toLocaleString('en') || '').join(', ')
-    )
-  }
-  return transformed
-}
-
-function cleanupPrPlaceHolders(
-  template: string,
-  placeholders: Map<string, Placeholder[]> /* placeholders to apply */
-): string {
+function cleanupPrPlaceholders(template: string, placeholders: Map<string, Placeholder[]> /* placeholders to apply */): string {
   let transformed = template
   for (const [, phs] of placeholders) {
     for (const ph of phs) {
