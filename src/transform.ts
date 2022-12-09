@@ -483,7 +483,7 @@ function extractValuesFromString(value: string, extractor: RegexTransformer): st
   if (extractor.method === 'match') {
     const lables = value.match(extractor.pattern)
     if (lables !== null && lables.length > 0) {
-      return lables.map(label => label.toLocaleLowerCase('en'))
+      return lables.map(label => label?.toLocaleLowerCase('en') || '')
     }
   } else {
     const label = value.replace(extractor.pattern, extractor.target)
