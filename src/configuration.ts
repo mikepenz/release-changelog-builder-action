@@ -15,6 +15,7 @@ export interface Configuration {
   tag_resolver: TagResolver
   base_branches: string[]
   custom_placeholders?: Placeholder[]
+  trim_values: boolean
 }
 
 export interface Category {
@@ -40,14 +41,7 @@ export interface Transformer extends Regex {
 }
 
 export interface Extractor extends Transformer {
-  on_property?:
-    | ('title' | 'author' | 'milestone' | 'body' | 'branch')[]
-    | 'title'
-    | 'author'
-    | 'milestone'
-    | 'body'
-    | 'branch'
-    | undefined // retrieve the property to extract the value from
+  on_property?: ('title' | 'author' | 'milestone' | 'body' | 'branch')[] | 'title' | 'author' | 'milestone' | 'body' | 'branch' | undefined // retrieve the property to extract the value from
   method?: 'replace' | 'match' | undefined // the method to use to extract the value, `match` will not use the `target` property
   on_empty?: string | undefined // in case the regex results in an empty string, this value is gonna be used instead (only for label_extractor currently)
 }
@@ -102,5 +96,6 @@ export const DefaultConfiguration: Configuration = {
     transformer: undefined // transforms the tag name using the regex, run after the filter
   },
   base_branches: [], // target branches for the merged PR ignoring PRs with different target branch, by default it will get all PRs
-  custom_placeholders: []
+  custom_placeholders: [],
+  trim_values: false // defines if values are being trimmed prior to inserting
 }

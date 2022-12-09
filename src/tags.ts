@@ -52,9 +52,7 @@ export class Tags {
       }
     }
 
-    core.info(
-      `ℹ️ Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`
-    )
+    core.info(`ℹ️ Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`)
     return tagsInfo
   }
 
@@ -73,9 +71,7 @@ export class Tags {
       tagInfo.date = moment(release.created_at)
       core.info(`ℹ️ Retrieved information about the release associated with ${tagInfo.name} from the GitHub API`)
     } catch (error) {
-      core.info(
-        `⚠️ No release information found for ${tagInfo.name}, trying to retrieve tag creation time as fallback.`
-      )
+      core.info(`⚠️ No release information found for ${tagInfo.name}, trying to retrieve tag creation time as fallback.`)
       const gitHelper = await createCommandManager(repositoryPath)
       const creationTimeString = await gitHelper.tagCreation(tagInfo.name)
       const creationTime = moment(creationTimeString)

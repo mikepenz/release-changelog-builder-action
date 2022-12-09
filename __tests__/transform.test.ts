@@ -140,6 +140,7 @@ it('Extract label from title, combined regex', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration
   })
@@ -169,6 +170,7 @@ it('Extract label from title and body, combined regex', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration
   })
@@ -201,6 +203,7 @@ it('Extract label from title, split regex', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration
   })
@@ -233,6 +236,7 @@ it('Extract label from title, match', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration
   })
@@ -260,6 +264,7 @@ it('Extract label from title, match multiple', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration
   })
@@ -288,6 +293,7 @@ it('Extract label from title, match multiple, custon non matching label', async 
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration
   })
@@ -403,6 +409,7 @@ it('Match multiple labels exhaustive for category', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration: customConfig
   })
@@ -429,6 +436,7 @@ it('Deduplicate duplicated PRs', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration: customConfig
   })
@@ -456,6 +464,7 @@ it('Deduplicate duplicated PRs DESC', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration: customConfig
   })
@@ -488,6 +497,7 @@ it('Use empty_content for empty category', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration: customConfig
   })
@@ -511,6 +521,7 @@ it('Commit SHA-1 in commitMode', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: true,
     configuration: customConfig
   })
@@ -531,6 +542,7 @@ it('Release Diff', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: true,
+    fetchReviews: false,
     commitMode: true,
     configuration: customConfig
   })
@@ -570,6 +582,7 @@ it('Use exclude labels to not include a PR within a category.', async () => {
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration: customConfig
   })
@@ -628,6 +641,7 @@ it('Extract custom placeholder from PR body and replace in global template', asy
     failOnError: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
+    fetchReviews: false,
     commitMode: false,
     configuration: customConfig
   })
