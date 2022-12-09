@@ -16,6 +16,7 @@ export interface ReleaseNotesOptions {
   failOnError: boolean // defines if we should fail the action in case of an error
   fetchReviewers: boolean // defines if the action should fetch the reviewers for PRs - approved reviewers are not included in the default PR listing
   fetchReleaseInformation: boolean // defines if the action should fetch the release information for the from and to tag - e.g. the creation date for the associated release
+  fetchReviews: boolean // defines if the action should fetch the reviews for the PR.
   commitMode: boolean // defines if we use the alternative commit based mode. note: this is only partially supported
   configuration: Configuration // the configuration as defined in `configuration.ts`
 }
@@ -61,10 +62,7 @@ export class ReleaseNotes {
 
     if (mergedPullRequests.length === 0) {
       core.warning(`⚠️ No pull requests found`)
-      return replaceEmptyTemplate(
-        this.options.configuration.empty_template || DefaultConfiguration.empty_template,
-        this.options
-      )
+      return replaceEmptyTemplate(this.options.configuration.empty_template || DefaultConfiguration.empty_template, this.options)
     }
 
     core.startGroup('📦 Build changelog')
@@ -94,7 +92,7 @@ export class ReleaseNotes {
   }
 
   private async getMergedPullRequests(octokit: Octokit): Promise<[DiffInfo, PullRequestInfo[]]> {
-    const {owner, repo, includeOpen, fetchReviewers, configuration} = this.options
+    const {owner, repo, includeOpen, fetchReviewers, fetchReviews, configuration} = this.options
 
     const diffInfo = await this.getCommitHistory(octokit)
     const commits = diffInfo.commitInfo
@@ -125,12 +123,9 @@ export class ReleaseNotes {
       configuration.max_pull_requests || DefaultConfiguration.max_pull_requests
     )
 
-    core.info(`ℹ️ Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`)
+    core.info(`ℹ️ Retrieved ${pullRequests.length} PRs for ${owner}/${repo} in date range from API`)
 
-    const prCommits = filterCommits(
-      commits,
-      configuration.exclude_merge_branches || DefaultConfiguration.exclude_merge_branches
-    )
+    const prCommits = filterCommits(commits, configuration.exclude_merge_branches || DefaultConfiguration.exclude_merge_branches)
 
     core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`)
 
@@ -143,6 +138,8 @@ export class ReleaseNotes {
     const mergedPullRequests = pullRequests.filter(pr => {
       return releaseCommitHashes.includes(pr.mergeCommitSha)
     })
+
+    core.info(`ℹ️ Retrieved ${mergedPullRequests.length} merged PRs for ${owner}/${repo}`)
 
     let allPullRequests = mergedPullRequests
     if (includeOpen) {
@@ -177,6 +174,10 @@ export class ReleaseNotes {
       return true
     })
 
+    if (baseBranches.length !== 0) {
+      core.info(`ℹ️ Retrieved ${mergedPullRequests.length} PRs for ${owner}/${repo} filtered by the 'base_branches' configuration.`)
+    }
+
     if (fetchReviewers) {
       core.info(`ℹ️ Fetching reviewers was enabled`)
       // update PR information with reviewers who approved
@@ -188,6 +189,19 @@ export class ReleaseNotes {
       }
     } else {
       core.debug(`ℹ️ Fetching reviewers was disabled`)
+    }
+
+    if (fetchReviews) {
+      core.info(`ℹ️ Fetching reviews was enabled`)
+      // update PR information with reviewers who approved
+      for (const pr of finalPrs) {
+        await pullRequestsApi.getReviews(owner, repo, pr)
+        if ((pr.reviews?.length || 0) > 0) {
+          core.info(`ℹ️ Retrieved ${pr.reviews?.length || 0} review(s) for PR ${owner}/${repo}/#${pr.number}`)
+        }
+      }
+    } else {
+      core.debug(`ℹ️ Fetching reviews was disabled`)
     }
 
     return [diffInfo, finalPrs]
@@ -202,10 +216,7 @@ export class ReleaseNotes {
       return [diffInfo, []]
     }
 
-    const prCommits = filterCommits(
-      commits,
-      configuration.exclude_merge_branches || DefaultConfiguration.exclude_merge_branches
-    )
+    const prCommits = filterCommits(commits, configuration.exclude_merge_branches || DefaultConfiguration.exclude_merge_branches)
 
     core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`)
 

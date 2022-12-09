@@ -218,7 +218,8 @@ exports.DefaultConfiguration = {
         transformer: undefined // transforms the tag name using the regex, run after the filter
     },
     base_branches: [],
-    custom_placeholders: []
+    custom_placeholders: [],
+    trim_values: false // defines if values are being trimmed prior to inserting
 };
 
 
@@ -420,8 +421,9 @@ function run() {
             const failOnError = core.getInput('failOnError') === 'true';
             const fetchReviewers = core.getInput('fetchReviewers') === 'true';
             const fetchReleaseInformation = core.getInput('fetchReleaseInformation') === 'true';
+            const fetchReviews = core.getInput('fetchReviews') === 'true';
             const commitMode = core.getInput('commitMode') === 'true';
-            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchReviewers, fetchReleaseInformation, commitMode, configuration).build();
+            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchReviewers, fetchReleaseInformation, fetchReviews, commitMode, configuration).build();
             core.setOutput('changelog', result);
             // write the result in changelog to file if possible
             const outputFile = core.getInput('outputFile');
@@ -488,9 +490,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.compare = exports.sortPullRequests = exports.PullRequests = void 0;
+exports.compare = exports.sortPullRequests = exports.PullRequests = exports.EMPTY_COMMENT_INFO = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const moment_1 = __importDefault(__nccwpck_require__(9623));
+exports.EMPTY_COMMENT_INFO = {
+    id: 0,
+    htmlURL: '',
+    submittedAt: undefined,
+    author: '',
+    body: '',
+    state: undefined
+};
 class PullRequests {
     constructor(octokit) {
         this.octokit = octokit;
@@ -512,7 +522,7 @@ class PullRequests {
         });
     }
     getBetweenDates(owner, repo, fromDate, toDate, maxPullRequests) {
-        var e_1, _a;
+        var _a, e_1, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const mergedPRs = [];
             const options = this.octokit.pulls.list.endpoint.merge({
@@ -520,32 +530,39 @@ class PullRequests {
                 repo,
                 state: 'closed',
                 sort: 'merged',
-                per_page: '100',
+                per_page: `${Math.min(100, maxPullRequests)}`,
                 direction: 'desc'
             });
             try {
-                for (var _b = __asyncValues(this.octokit.paginate.iterator(options)), _c; _c = yield _b.next(), !_c.done;) {
-                    const response = _c.value;
-                    const prs = response.data;
-                    for (const pr of prs.filter(p => !!p.merged_at)) {
-                        mergedPRs.push(mapPullRequest(pr, 'merged'));
-                    }
-                    const firstPR = prs[0];
-                    if (firstPR === undefined ||
-                        (firstPR.merged_at && fromDate.isAfter((0, moment_1.default)(firstPR.merged_at))) ||
-                        mergedPRs.length >= maxPullRequests) {
-                        if (mergedPRs.length >= maxPullRequests) {
-                            core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
+                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a;) {
+                    _c = _f.value;
+                    _d = false;
+                    try {
+                        const response = _c;
+                        const prs = response.data;
+                        for (const pr of prs.filter(p => !!p.merged_at)) {
+                            mergedPRs.push(mapPullRequest(pr, 'merged'));
                         }
-                        // bail out early to not keep iterating on PRs super old
-                        return sortPrs(mergedPRs);
+                        const firstPR = prs[0];
+                        if (firstPR === undefined ||
+                            (firstPR.merged_at && fromDate.isAfter((0, moment_1.default)(firstPR.merged_at))) ||
+                            mergedPRs.length >= maxPullRequests) {
+                            if (mergedPRs.length >= maxPullRequests) {
+                                core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
+                            }
+                            // bail out early to not keep iterating on PRs super old
+                            return sortPrs(mergedPRs);
+                        }
+                    }
+                    finally {
+                        _d = true;
                     }
                 }
             }
             catch (e_1_1) { e_1 = { error: e_1_1 }; }
             finally {
                 try {
-                    if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
                 }
                 finally { if (e_1) throw e_1.error; }
             }
@@ -553,7 +570,7 @@ class PullRequests {
         });
     }
     getOpen(owner, repo, maxPullRequests) {
-        var e_2, _a;
+        var _a, e_2, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const openPrs = [];
             const options = this.octokit.pulls.list.endpoint.merge({
@@ -565,26 +582,33 @@ class PullRequests {
                 direction: 'desc'
             });
             try {
-                for (var _b = __asyncValues(this.octokit.paginate.iterator(options)), _c; _c = yield _b.next(), !_c.done;) {
-                    const response = _c.value;
-                    const prs = response.data;
-                    for (const pr of prs) {
-                        openPrs.push(mapPullRequest(pr, 'open'));
-                    }
-                    const firstPR = prs[0];
-                    if (firstPR === undefined || openPrs.length >= maxPullRequests) {
-                        if (openPrs.length >= maxPullRequests) {
-                            core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
+                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a;) {
+                    _c = _f.value;
+                    _d = false;
+                    try {
+                        const response = _c;
+                        const prs = response.data;
+                        for (const pr of prs) {
+                            openPrs.push(mapPullRequest(pr, 'open'));
                         }
-                        // bail out early to not keep iterating on PRs super old
-                        return sortPrs(openPrs);
+                        const firstPR = prs[0];
+                        if (firstPR === undefined || openPrs.length >= maxPullRequests) {
+                            if (openPrs.length >= maxPullRequests) {
+                                core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
+                            }
+                            // bail out early to not keep iterating on PRs super old
+                            return sortPrs(openPrs);
+                        }
+                    }
+                    finally {
+                        _d = true;
                     }
                 }
             }
             catch (e_2_1) { e_2 = { error: e_2_1 }; }
             finally {
                 try {
-                    if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
                 }
                 finally { if (e_2) throw e_2.error; }
             }
@@ -592,7 +616,7 @@ class PullRequests {
         });
     }
     getReviewers(owner, repo, pr) {
-        var e_3, _a;
+        var _a, e_3, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const options = this.octokit.pulls.listReviews.endpoint.merge({
                 owner,
@@ -600,23 +624,66 @@ class PullRequests {
                 pull_number: pr.number
             });
             try {
-                for (var _b = __asyncValues(this.octokit.paginate.iterator(options)), _c; _c = yield _b.next(), !_c.done;) {
-                    const response = _c.value;
-                    const reviews = response.data;
-                    pr.approvedReviewers = reviews
-                        .filter(r => r.state === 'APPROVED')
-                        .map(r => { var _a; return (_a = r.user) === null || _a === void 0 ? void 0 : _a.login; })
-                        .filter(r => !!r);
+                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a;) {
+                    _c = _f.value;
+                    _d = false;
+                    try {
+                        const response = _c;
+                        const reviews = response.data;
+                        pr.approvedReviewers = reviews
+                            .filter(r => r.state === 'APPROVED')
+                            .map(r => { var _a; return (_a = r.user) === null || _a === void 0 ? void 0 : _a.login; })
+                            .filter(r => !!r);
+                    }
+                    finally {
+                        _d = true;
+                    }
                 }
             }
             catch (e_3_1) { e_3 = { error: e_3_1 }; }
             finally {
                 try {
-                    if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
                 }
                 finally { if (e_3) throw e_3.error; }
             }
-            return [];
+        });
+    }
+    getReviews(owner, repo, pr) {
+        var _a, e_4, _b, _c;
+        return __awaiter(this, void 0, void 0, function* () {
+            const options = this.octokit.pulls.listReviews.endpoint.merge({
+                owner,
+                repo,
+                pull_number: pr.number,
+                sort: 'created',
+                direction: 'desc'
+            });
+            const prReviews = [];
+            try {
+                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a;) {
+                    _c = _f.value;
+                    _d = false;
+                    try {
+                        const response = _c;
+                        const comments = response.data;
+                        for (const comment of comments) {
+                            prReviews.push(mapComment(comment));
+                        }
+                    }
+                    finally {
+                        _d = true;
+                    }
+                }
+            }
+            catch (e_4_1) { e_4 = { error: e_4_1 }; }
+            finally {
+                try {
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
+                }
+                finally { if (e_4) throw e_4.error; }
+            }
+            pr.reviews = prReviews;
         });
     }
 }
@@ -684,7 +751,7 @@ const mapPullRequest = (pr, status = 'open') => {
         baseBranch: pr.base.ref,
         branch: pr.head.ref,
         createdAt: (0, moment_1.default)(pr.created_at),
-        mergedAt: pr.merged_at ? (0, moment_1.default)(pr.merged_at) : null,
+        mergedAt: pr.merged_at ? (0, moment_1.default)(pr.merged_at) : undefined,
         mergeCommitSha: pr.merge_commit_sha || '',
         author: ((_a = pr.user) === null || _a === void 0 ? void 0 : _a.login) || '',
         repoName: pr.base.repo.full_name,
@@ -694,7 +761,19 @@ const mapPullRequest = (pr, status = 'open') => {
         assignees: ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.map(asignee => (asignee === null || asignee === void 0 ? void 0 : asignee.login) || '')) || [],
         requestedReviewers: ((_e = pr.requested_reviewers) === null || _e === void 0 ? void 0 : _e.map(reviewer => (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '')) || [],
         approvedReviewers: [],
+        reviews: undefined,
         status
+    });
+};
+const mapComment = (comment) => {
+    var _a;
+    return ({
+        id: comment.id,
+        htmlURL: comment.html_url,
+        submittedAt: comment.submitted_at ? (0, moment_1.default)(comment.submitted_at) : undefined,
+        author: ((_a = comment.user) === null || _a === void 0 ? void 0 : _a.login) || '',
+        body: comment.body,
+        state: comment.state
     });
 };
 
@@ -812,8 +891,9 @@ class ReleaseNotes {
         });
     }
     getMergedPullRequests(octokit) {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
-            const { owner, repo, includeOpen, fetchReviewers, configuration } = this.options;
+            const { owner, repo, includeOpen, fetchReviewers, fetchReviews, configuration } = this.options;
             const diffInfo = yield this.getCommitHistory(octokit);
             const commits = diffInfo.commitInfo;
             if (commits.length === 0) {
@@ -832,7 +912,7 @@ class ReleaseNotes {
             core.info(`ℹ️ Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`);
             const pullRequestsApi = new pullRequests_1.PullRequests(octokit);
             const pullRequests = yield pullRequestsApi.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests || configuration_1.DefaultConfiguration.max_pull_requests);
-            core.info(`ℹ️ Retrieved ${pullRequests.length} merged PRs for ${owner}/${repo}`);
+            core.info(`ℹ️ Retrieved ${pullRequests.length} PRs for ${owner}/${repo} in date range from API`);
             const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches || configuration_1.DefaultConfiguration.exclude_merge_branches);
             core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`);
             // create array of commits for this release
@@ -843,6 +923,7 @@ class ReleaseNotes {
             const mergedPullRequests = pullRequests.filter(pr => {
                 return releaseCommitHashes.includes(pr.mergeCommitSha);
             });
+            core.info(`ℹ️ Retrieved ${mergedPullRequests.length} merged PRs for ${owner}/${repo}`);
             let allPullRequests = mergedPullRequests;
             if (includeOpen) {
                 // retrieve all open pull requests
@@ -866,6 +947,9 @@ class ReleaseNotes {
                 }
                 return true;
             });
+            if (baseBranches.length !== 0) {
+                core.info(`ℹ️ Retrieved ${mergedPullRequests.length} PRs for ${owner}/${repo} filtered by the 'base_branches' configuration.`);
+            }
             if (fetchReviewers) {
                 core.info(`ℹ️ Fetching reviewers was enabled`);
                 // update PR information with reviewers who approved
@@ -878,6 +962,19 @@ class ReleaseNotes {
             }
             else {
                 core.debug(`ℹ️ Fetching reviewers was disabled`);
+            }
+            if (fetchReviews) {
+                core.info(`ℹ️ Fetching reviews was enabled`);
+                // update PR information with reviewers who approved
+                for (const pr of finalPrs) {
+                    yield pullRequestsApi.getReviews(owner, repo, pr);
+                    if ((((_a = pr.reviews) === null || _a === void 0 ? void 0 : _a.length) || 0) > 0) {
+                        core.info(`ℹ️ Retrieved ${((_b = pr.reviews) === null || _b === void 0 ? void 0 : _b.length) || 0} review(s) for PR ${owner}/${repo}/#${pr.number}`);
+                    }
+                }
+            }
+            else {
+                core.debug(`ℹ️ Fetching reviews was disabled`);
             }
             return [diffInfo, finalPrs];
         });
@@ -968,7 +1065,7 @@ const tags_1 = __nccwpck_require__(7532);
 const utils_1 = __nccwpck_require__(918);
 const https_proxy_agent_1 = __nccwpck_require__(7219);
 class ReleaseNotesBuilder {
-    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchReviewers = false, fetchReleaseInformation = false, commitMode, configuration) {
+    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode, configuration) {
         this.baseUrl = baseUrl;
         this.token = token;
         this.repositoryPath = repositoryPath;
@@ -981,6 +1078,7 @@ class ReleaseNotesBuilder {
         this.ignorePreReleases = ignorePreReleases;
         this.fetchReviewers = fetchReviewers;
         this.fetchReleaseInformation = fetchReleaseInformation;
+        this.fetchReviews = fetchReviews;
         this.commitMode = commitMode;
         this.configuration = configuration;
     }
@@ -1063,6 +1161,7 @@ class ReleaseNotesBuilder {
                 failOnError: this.failOnError,
                 fetchReviewers: this.fetchReviewers,
                 fetchReleaseInformation: this.fetchReleaseInformation,
+                fetchReviews: this.fetchReviews,
                 commitMode: this.commitMode,
                 configuration: this.configuration
             };
@@ -1137,7 +1236,7 @@ class Tags {
         this.octokit = octokit;
     }
     getTags(owner, repo, maxTagsToFetch) {
-        var e_1, _a;
+        var _a, e_1, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const tagsInfo = [];
             const options = this.octokit.repos.listTags.endpoint.merge({
@@ -1147,25 +1246,32 @@ class Tags {
                 per_page: 100
             });
             try {
-                for (var _b = __asyncValues(this.octokit.paginate.iterator(options)), _c; _c = yield _b.next(), !_c.done;) {
-                    const response = _c.value;
-                    const tags = response.data;
-                    for (const tag of tags) {
-                        tagsInfo.push({
-                            name: tag.name,
-                            commit: tag.commit.sha
-                        });
+                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a;) {
+                    _c = _f.value;
+                    _d = false;
+                    try {
+                        const response = _c;
+                        const tags = response.data;
+                        for (const tag of tags) {
+                            tagsInfo.push({
+                                name: tag.name,
+                                commit: tag.commit.sha
+                            });
+                        }
+                        // for performance only fetch newest maxTagsToFetch tags!!
+                        if (tagsInfo.length >= maxTagsToFetch) {
+                            break;
+                        }
                     }
-                    // for performance only fetch newest maxTagsToFetch tags!!
-                    if (tagsInfo.length >= maxTagsToFetch) {
-                        break;
+                    finally {
+                        _d = true;
                     }
                 }
             }
             catch (e_1_1) { e_1 = { error: e_1_1 }; }
             finally {
                 try {
-                    if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
                 }
                 finally { if (e_1) throw e_1.error; }
             }
@@ -1466,6 +1572,7 @@ const core = __importStar(__nccwpck_require__(2186));
 const configuration_1 = __nccwpck_require__(5527);
 const pullRequests_1 = __nccwpck_require__(4217);
 const utils_1 = __nccwpck_require__(918);
+const EMPTY_MAP = new Map();
 function buildChangelog(diffInfo, prs, options) {
     // sort to target order
     const config = options.configuration;
@@ -1521,7 +1628,7 @@ function buildChangelog(diffInfo, prs, options) {
     const transformedMap = new Map();
     // convert PRs to their text representation
     for (const pr of prs) {
-        transformedMap.set(pr, transform(fillPrTemplate(pr, config.pr_template || configuration_1.DefaultConfiguration.pr_template, placeholders, placeholderPrMap), validatedTransformers));
+        transformedMap.set(pr, transform(fillPrTemplate(pr, config.pr_template || configuration_1.DefaultConfiguration.pr_template, placeholders, placeholderPrMap, config), validatedTransformers));
     }
     core.info(`ℹ️ Used ${validatedTransformers.length} transformers to adjust message`);
     core.info(`✒️ Wrote messages for ${prs.length} pull requests`);
@@ -1662,9 +1769,9 @@ function buildChangelog(diffInfo, prs, options) {
     placeholderMap.set('COMMITS', diffInfo.commits.toString());
     fillAdditionalPlaceholders(options, placeholderMap);
     let transformedChangelog = config.template || configuration_1.DefaultConfiguration.template;
-    transformedChangelog = replacePlaceholders(transformedChangelog, placeholderMap, placeholders, placeholderPrMap);
-    transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap);
-    transformedChangelog = cleanupPrPlaceHolders(transformedChangelog, placeholders);
+    transformedChangelog = replacePlaceholders(transformedChangelog, EMPTY_MAP, placeholderMap, placeholders, placeholderPrMap, config);
+    transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap, config);
+    transformedChangelog = cleanupPrPlaceholders(transformedChangelog, placeholders);
     core.info(`ℹ️ Filled template`);
     return transformedChangelog;
 }
@@ -1676,7 +1783,7 @@ function replaceEmptyTemplate(template, options) {
     }
     const placeholderMap = new Map();
     fillAdditionalPlaceholders(options, placeholderMap);
-    return replacePlaceholders(template, placeholderMap, placeholders);
+    return replacePlaceholders(template, new Map(), placeholderMap, placeholders, undefined, options.configuration);
 }
 exports.replaceEmptyTemplate = replaceEmptyTemplate;
 function fillAdditionalPlaceholders(options, placeholderMap /* placeholderKey and original value */) {
@@ -1697,8 +1804,10 @@ function fillAdditionalPlaceholders(options, placeholderMap /* placeholderKey an
     }
     placeholderMap.set('RELEASE_DIFF', `https://github.com/${options.owner}/${options.repo}/compare/${options.fromTag.name}...${options.toTag.name}`);
 }
-function fillPrTemplate(pr, template, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */) {
+function fillPrTemplate(pr, template, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */, configuration) {
     var _a, _b, _c, _d, _e, _f;
+    const arrayPlaceholderMap = new Map();
+    fillReviewPlaceholders(arrayPlaceholderMap, 'REVIEWS', pr.reviews || []);
     const placeholderMap = new Map();
     placeholderMap.set('NUMBER', pr.number.toString());
     placeholderMap.set('TITLE', pr.title);
@@ -1711,54 +1820,82 @@ function fillPrTemplate(pr, template, placeholders /* placeholders to apply */, 
     placeholderMap.set('LABELS', ((_c = (_b = [...pr.labels]) === null || _b === void 0 ? void 0 : _b.filter(l => !l.startsWith('--rcba-'))) === null || _c === void 0 ? void 0 : _c.join(', ')) || '');
     placeholderMap.set('MILESTONE', pr.milestone || '');
     placeholderMap.set('BODY', pr.body);
+    fillArrayPlaceholders(arrayPlaceholderMap, 'ASSIGNEES', pr.assignees || []);
     placeholderMap.set('ASSIGNEES', ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.join(', ')) || '');
+    fillArrayPlaceholders(arrayPlaceholderMap, 'REVIEWERS', pr.requestedReviewers || []);
     placeholderMap.set('REVIEWERS', ((_e = pr.requestedReviewers) === null || _e === void 0 ? void 0 : _e.join(', ')) || '');
+    fillArrayPlaceholders(arrayPlaceholderMap, 'APPROVERS', pr.approvedReviewers || []);
     placeholderMap.set('APPROVERS', ((_f = pr.approvedReviewers) === null || _f === void 0 ? void 0 : _f.join(', ')) || '');
     placeholderMap.set('BRANCH', pr.branch || '');
     placeholderMap.set('BASE_BRANCH', pr.baseBranch);
-    return replacePlaceholders(template, placeholderMap, placeholders, placeholderPrMap);
+    return replacePlaceholders(template, arrayPlaceholderMap, placeholderMap, placeholders, placeholderPrMap, configuration);
 }
-function replacePlaceholders(template, placeholderMap /* placeholderKey and original value */, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */) {
+function replacePlaceholders(template, arrayPlaceholderMap /* arrayPlaceholderKey and original value */, placeholderMap /* placeholderKey and original value */, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */, configuration) {
     let transformed = template;
+    // replace array placeholders first
+    for (const [key, value] of arrayPlaceholderMap) {
+        transformed = handlePlaceholder(transformed, key, value, placeholders, placeholderPrMap, configuration);
+    }
+    // replace traditional placeholders
     for (const [key, value] of placeholderMap) {
-        transformed = transformed.replaceAll(`\${{${key}}}`, value);
-        // replace custom placeholders
-        const phs = placeholders.get(key);
-        if (phs) {
-            for (const placeholder of phs) {
-                const transformer = validateTransformer(placeholder.transformer);
-                if (transformer === null || transformer === void 0 ? void 0 : transformer.pattern) {
-                    const extractedValue = value.replace(transformer.pattern, transformer.target);
-                    // note: `.replace` will return the full string again if there was no match
-                    if (extractedValue && extractedValue !== value) {
-                        if (placeholderPrMap) {
-                            (0, utils_1.createOrSet)(placeholderPrMap, placeholder.name, extractedValue);
-                        }
-                        transformed = transformed.replaceAll(`\${{${placeholder.name}}}`, extractedValue);
-                        if (core.isDebug()) {
-                            core.debug(`    Custom Placeholder successfully matched data - ${extractValues} (${placeholder.name})`);
-                        }
+        transformed = handlePlaceholder(transformed, key, value, placeholders, placeholderPrMap, configuration);
+    }
+    return transformed;
+}
+function handlePlaceholder(template, key, value, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */, configuration) {
+    let transformed = template.replaceAll(`\${{${key}}}`, configuration.trim_values ? value.trim() : value);
+    // replace custom placeholders
+    const phs = placeholders.get(key);
+    if (phs) {
+        for (const placeholder of phs) {
+            const transformer = validateTransformer(placeholder.transformer);
+            if (transformer === null || transformer === void 0 ? void 0 : transformer.pattern) {
+                const extractedValue = value.replace(transformer.pattern, transformer.target);
+                // note: `.replace` will return the full string again if there was no match
+                if (extractedValue && (extractedValue !== value || (extractedValue === value && value.match(transformer.pattern)))) {
+                    if (placeholderPrMap) {
+                        (0, utils_1.createOrSet)(placeholderPrMap, placeholder.name, extractedValue);
                     }
-                    else if (core.isDebug() && extractedValue === value) {
-                        core.debug(`    Custom Placeholder did result in the full original value returned. Skipping. (${placeholder.name})`);
+                    transformed = transformed.replaceAll(`\${{${placeholder.name}}}`, configuration.trim_values ? extractedValue.trim() : extractedValue);
+                    if (core.isDebug()) {
+                        core.debug(`    Custom Placeholder successfully matched data - ${extractValues} (${placeholder.name})`);
                     }
+                }
+                else if (core.isDebug() && extractedValue === value) {
+                    core.debug(`    Custom Placeholder did result in the full original value returned. Skipping. (${placeholder.name})`);
                 }
             }
         }
     }
     return transformed;
 }
-function replacePrPlaceholders(template, placeholderPrMap /* map with all pr related custom placeholder values */) {
+function fillArrayPlaceholders(placeholderMap /* placeholderKey and original value */, key, values) {
+    for (let i = 0; i < values.length; i++) {
+        placeholderMap.set(`\${{${key}[${i}]}}`, values[i]);
+    }
+    placeholderMap.set(`\${{${key}[*]}}`, values.join(', '));
+}
+function fillReviewPlaceholders(placeholderMap /* placeholderKey and original value */, parentKey, values) {
+    var _a;
+    // retrieve the keys from the CommentInfo object
+    for (const childKey of Object.keys(pullRequests_1.EMPTY_COMMENT_INFO)) {
+        for (let i = 0; i < values.length; i++) {
+            placeholderMap.set(`\${{${parentKey}[${i}].${childKey}}}`, ((_a = values[i][childKey]) === null || _a === void 0 ? void 0 : _a.toLocaleString('en')) || '');
+        }
+        placeholderMap.set(`\${{${parentKey}[*].${childKey}}}`, values.map(value => { var _a; return ((_a = value[childKey]) === null || _a === void 0 ? void 0 : _a.toLocaleString('en')) || ''; }).join(', '));
+    }
+}
+function replacePrPlaceholders(template, placeholderPrMap /* map with all pr related custom placeholder values */, configuration) {
     let transformed = template;
     for (const [key, values] of placeholderPrMap) {
         for (let i = 0; i < values.length; i++) {
-            transformed = transformed.replaceAll(`\${{${key}[${i}]}}`, values[i]);
+            transformed = transformed.replaceAll(`\${{${key}[${i}]}}`, configuration.trim_values ? values[i].trim() : values[i]);
         }
         transformed = transformed.replaceAll(`\${{${key}[*]}}`, values.join(''));
     }
     return transformed;
 }
-function cleanupPrPlaceHolders(template, placeholders /* placeholders to apply */) {
+function cleanupPrPlaceholders(template, placeholders) {
     let transformed = template;
     for (const [, phs] of placeholders) {
         for (const ph of phs) {
@@ -1857,7 +1994,7 @@ function extractValuesFromString(value, extractor) {
     if (extractor.method === 'match') {
         const lables = value.match(extractor.pattern);
         if (lables !== null && lables.length > 0) {
-            return lables.map(label => label.toLocaleLowerCase('en'));
+            return lables.map(label => (label === null || label === void 0 ? void 0 : label.toLocaleLowerCase('en')) || '');
         }
     }
     else {

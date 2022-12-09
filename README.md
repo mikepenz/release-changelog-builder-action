@@ -60,8 +60,6 @@ Specify the action as part of your GitHub actions workflow:
 - name: "Build Changelog"
   id: build_changelog
   uses: mikepenz/release-changelog-builder-action@{latest-release}
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ### Action outputs
@@ -193,9 +191,11 @@ The action supports flexible configuration options to modify vast areas of its b
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
+> **Note** Defaults for the configuration can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
+
 > **Warning** It is required to have a `checkout` step prior to the changelog step if `configuration` is used, to allow the action to discover the configuration file. Use `configurationJson` as alternative.
 
-This configuration is a `.json` file in the following format.
+This configuration is a `.json` file in the following format. (The below shocases *example* configurations for all possible options. In most scenarios most of the settings will not be needed, and the defaults will be appropiate.)
 
 ```json
 {
@@ -253,6 +253,7 @@ This configuration is a `.json` file in the following format.
         "target": "- $4\n  - $6"
       }
     ],
+    "trim_values": false,
     "max_tags_to_fetch": 200,
     "max_pull_requests": 200,
     "max_back_track_time_days": 365,
@@ -275,8 +276,6 @@ This configuration is a `.json` file in the following format.
 Any section of the configuration can be omitted to have defaults apply.
 
 > **Warning**: `ignore_labels` take precedence over category labels, allowing to specifically exclude certain PRs.
-
-Defaults for the configuration can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
 
 Please see the [Configuration Specification](#configuration-specification) for detailed descriptions on the offered configuration options.
 
@@ -317,6 +316,8 @@ For advanced use cases additional settings can be provided to the action
 | `ignorePreReleases` | Allows to ignore pre-releases for changelog generation (E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick). Only used if `fromTag` was not specified. Default: false    |
 | `failOnError`       | Defines if the action will result in a build failure if problems occurred. Default: false                                                                                   |
 | `fetchReviewers`    | Will enable fetching the users/reviewers who approved the PR. Default: false                                                                                                |
+| `fetchReleaseInformation` | Will enable fetching additional release information from tags. Default: false |
+| `fetchReviews`      | Will enable fetching the reviews on of the PR. Default: false                                                                                                |
 | `commitMode`        | Special configuration for projects which work without PRs. Uses commit messages as changelog. This mode looses access to information only available for PRs. Default: false |
 
 > **Warning**: `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repositories please use a PAT (Personal Access Token).
@@ -409,6 +410,7 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | tag_resolver.filter         | Defines a regex which is used to filter out tags not matching.                                                                                                                                                                     |
 | tag_resolver.transformer    | Defines a regex transformer used to optionally transform the tag after the filter was applied. Allows to adjust the format to e.g. semver.                                                                                         |
 | base_branches               | The target branches for the merged PR, ingnores PRs with different target branch. Values can be a `regex`. Default: allow all base branches                                                                                        |
+| trim_values                 | Defines if all values inserted in templates are `trimmed`. Default: false                                                                                        |
 
 ## Experimental 🧪
 
@@ -523,6 +525,7 @@ it('Test custom changelog builder', async () => {
     false, // ignorePrePrelease
     true,  // enable to fetch reviewers
     false, // enable to fetch release information
+    false, // enable to fetch reviews
     false, // commitMode
     configuration  // configuration
   )

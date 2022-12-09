@@ -34,6 +34,9 @@ inputs:
   fetchReleaseInformation:
     description: 'Will enable fetching release information for the tags. E.g. creation date'
     default: "false"
+  fetchReviews:
+    description: 'Will enable fetching the reviews (comments) attached to the PR'
+    default: "false"
   commitMode:
     description: 'Enables a `light` commit based mode. This mode generates changelogs based on the commits. Please note that this is not officially supported, and lacks a lot of features only possible with PRs.'
     default: "false"
@@ -41,6 +44,7 @@ inputs:
     description: 'If defined, the changelog will get written to this file. (relative to the checkout dir)'
   token:
     description: 'Defines the token to use to execute the git API requests with, uses `env.GITHUB_TOKEN` by default'
+    default: ${{ github.token }}
   baseUrl:
     description: 'Defines the base url for GitHub Enterprise authentication, uses `https://api.github.com` by default'
 outputs:
