@@ -2,7 +2,7 @@ import * as core from '@actions/core'
 import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import {Unpacked} from './utils'
 import moment from 'moment'
-import {Sort} from './configuration'
+import {Property, Sort} from './configuration'
 
 export interface PullRequestInfo {
   number: number
@@ -224,6 +224,22 @@ export function compare(a: PullRequestInfo, b: PullRequestInfo, sort: Sort): num
     // only else for now `label`
     return a.title.localeCompare(b.title)
   }
+}
+
+/**
+ * Helper function to retrieve a property from the PullRequestInfo
+ */
+export function retrieveProperty(pr: PullRequestInfo, property: Property, useCase: string): string {
+  let value: string | Set<string> | string[] | undefined = pr[property]
+  if (value === undefined) {
+    core.warning(`⚠️ the provided property '${property}' for \`${useCase}\` is not valid. Fallback to 'body'`)
+    value = pr['body']
+  } else if (value instanceof Set) {
+    value = Array.from(value).join(',') // join into single string
+  } else if (Array.isArray(value)) {
+    value = value.join(',') // join into single string
+  }
+  return value
 }
 
 // helper function to add a special open label to prs not merged.

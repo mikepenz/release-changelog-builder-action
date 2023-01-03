@@ -2,7 +2,6 @@ import * as core from '@actions/core'
 import * as fs from 'fs'
 import * as path from 'path'
 import {Configuration, DefaultConfiguration} from './configuration'
-
 /**
  * Resolves the repository path, relatively to the GITHUB_WORKSPACE
  */
@@ -158,7 +157,7 @@ export function writeOutput(githubWorkspacePath: string, outputFile: string, cha
 
 export type Unpacked<T> = T extends (infer U)[] ? U : T
 
-export function createOrSet<T>(map: Map<String, T[]>, key: string, value: T): void {
+export function createOrSet<T>(map: Map<string, T[]>, key: string, value: T): void {
   const entry = map.get(key)
   if (!entry) {
     map.set(key, [value])

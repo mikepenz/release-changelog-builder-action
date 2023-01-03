@@ -1,17 +1,10 @@
 import * as core from '@actions/core'
-import {Category, Configuration, Extractor, Placeholder, Transformer} from './configuration'
-import {CommentInfo, EMPTY_COMMENT_INFO, PullRequestInfo, sortPullRequests} from './pullRequests'
+import {Category, Configuration, Placeholder, Property, Transformer} from './configuration'
+import {CommentInfo, EMPTY_COMMENT_INFO, PullRequestInfo, retrieveProperty, sortPullRequests} from './pullRequests'
 import {ReleaseNotesOptions} from './releaseNotes'
 import {DiffInfo} from './commits'
 import {createOrSet, haveCommonElements, haveEveryElements} from './utils'
-
-export interface RegexTransformer {
-  pattern: RegExp | null
-  target: string
-  onProperty?: ('title' | 'author' | 'milestone' | 'body' | 'status' | 'branch')[] | undefined
-  method?: 'replace' | 'match' | undefined
-  onEmpty?: string | undefined
-}
+import {matchesRules, RegexTransformer, validateTransformer} from './regexUtils'
 
 const EMPTY_MAP = new Map<string, string>()
 
@@ -128,23 +121,32 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
         }
       }
 
-      if (category.exhaustive === true) {
-        if (
-          haveEveryElements(
-            category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
-            pr.labels
-          )
-        ) {
-          pullRequests.push(body)
-          matched = true
+      if (category.labels !== undefined) {
+        if (category.exhaustive === true) {
+          if (
+            haveEveryElements(
+              category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
+              pr.labels
+            )
+          ) {
+            pullRequests.push(body)
+            matched = true
+          }
+        } else {
+          if (
+            haveCommonElements(
+              category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
+              pr.labels
+            )
+          ) {
+            pullRequests.push(body)
+            matched = true
+          }
         }
-      } else {
-        if (
-          haveCommonElements(
-            category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
-            pr.labels
-          )
-        ) {
+      }
+
+      if (category.rules !== undefined) {
+        if (matchesRules(category.rules, pr, category.exhaustive === true)) {
           pullRequests.push(body)
           matched = true
         }
@@ -154,7 +156,11 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
     if (!matched) {
       // we allow to have pull requests included in an "uncategorized" category
       for (const [category, pullRequests] of categorized) {
-        if (category.labels.length === 0) {
+        if (
+          (category.labels === undefined || category.labels.length === 0) &&
+          category.rules === undefined &&
+          category.exclude_labels === undefined
+        ) {
           pullRequests.push(body)
           break
         }
@@ -458,40 +464,6 @@ function validateTransformers(specifiedTransformers: Transformer[]): RegexTransf
     })
 }
 
-export function validateTransformer(transformer?: Transformer): RegexTransformer | null {
-  if (transformer === undefined) {
-    return null
-  }
-  try {
-    let onProperty = undefined
-    let method = undefined
-    let onEmpty = undefined
-    if (transformer.hasOwnProperty('on_property')) {
-      onProperty = (transformer as Extractor).on_property
-      method = (transformer as Extractor).method
-      onEmpty = (transformer as Extractor).on_empty
-    }
-
-    // legacy handling, transform single value input to array
-    if (!Array.isArray(onProperty)) {
-      if (onProperty !== undefined) {
-        onProperty = [onProperty]
-      }
-    }
-
-    return {
-      pattern: new RegExp(transformer.pattern.replace('\\\\', '\\'), transformer.flags ?? 'gu'),
-      target: transformer.target || '',
-      onProperty,
-      method,
-      onEmpty
-    }
-  } catch (e) {
-    core.warning(`⚠️ Bad replacer regex: ${transformer.pattern}`)
-    return null
-  }
-}
-
 function extractValues(pr: PullRequestInfo, extractor: RegexTransformer, extractor_usecase: string): string[] | null {
   if (extractor.pattern == null) {
     return null
@@ -499,16 +471,11 @@ function extractValues(pr: PullRequestInfo, extractor: RegexTransformer, extract
 
   if (extractor.onProperty !== undefined) {
     let results: string[] = []
-    const list: ('title' | 'author' | 'milestone' | 'body' | 'status' | 'branch')[] = extractor.onProperty
+    const list: Property[] = extractor.onProperty
     // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < list.length; i++) {
       const prop = list[i]
-      let value: string | undefined = pr[prop]
-      if (value === undefined) {
-        core.warning(`⚠️ the provided property '${extractor.onProperty}' for \`${extractor_usecase}\` is not valid`)
-        value = pr['body']
-      }
-
+      const value = retrieveProperty(pr, prop, extractor_usecase)
       const values = extractValuesFromString(value, extractor)
       if (values !== null) {
         results = results.concat(values)
