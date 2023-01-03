@@ -356,9 +356,9 @@ Table of supported placeholders allowed to be used in the `template` and `empty_
 | `${{OWNER}}`               | Describes the owner of the repository the changelog was generated for                              | x         |
 | `${{REPO}}`                | The repository name of the repo the changelog was generated for                                    | x         |
 | `${{FROM_TAG}}`            | Defines the 'start' from where the changelog did consider merged pull requests                     | x         |
-| `${{FROM_TAG_DATE}}`       | Defines the date at which the 'start' tag was created                                              | x         |
+| `${{FROM_TAG_DATE}}`       | Defines the date at which the 'start' tag was created. Requires `fetchReleaseInformation`.         | x         |
 | `${{TO_TAG}}`              | Defines until which tag the changelog did consider merged pull requests                            | x         |
-| `${{TO_TAG_DATE}}`         | Defines the date at which the 'until' tag was created                                              | x         |
+| `${{TO_TAG_DATE}}`         | Defines the date at which the 'until' tag was created. Requires `fetchReleaseInformation`.         | x         |
 | `${{RELEASE_DIFF}}`        | Introduces a link to the full diff between from tag and to tag releases                            | x         |
 | `${{CHANGED_FILES}}`       | The count of changed files.                                                                        |           |
 | `${{ADDITIONS}}`           | The count of code additions (lines).                                                               |           |
