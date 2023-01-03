@@ -395,18 +395,19 @@ function run() {
             // read in path specification, resolve github workspace, and repo path
             const inputPath = core.getInput('path');
             const repositoryPath = (0, utils_1.retrieveRepositoryPath)(inputPath);
-            // read in configuration file if possible
-            let configuration = undefined;
+            // read in configuration from json if possible
+            let configJson = undefined;
             const configurationJson = core.getInput('configurationJson', {
                 trimWhitespace: true
             });
             if (configurationJson) {
-                configuration = (0, utils_1.parseConfiguration)(configurationJson);
+                configJson = (0, utils_1.parseConfiguration)(configurationJson);
             }
-            if (!configuration) {
-                const configurationFile = core.getInput('configuration');
-                configuration = (0, utils_1.resolveConfiguration)(repositoryPath, configurationFile);
-            }
+            // read in the configuration from the file if possible
+            const configurationFile = core.getInput('configuration');
+            const configFile = (0, utils_1.resolveConfiguration)(repositoryPath, configurationFile);
+            // merge configs, use default values from DefaultConfig on missing definition
+            const configuration = (0, utils_1.mergeConfiguration)(configJson, configFile);
             // read in repository inputs
             const baseUrl = core.getInput('baseUrl');
             const token = core.getInput('token');
@@ -821,7 +822,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ReleaseNotes = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const commits_1 = __nccwpck_require__(3916);
-const configuration_1 = __nccwpck_require__(5527);
 const pullRequests_1 = __nccwpck_require__(4217);
 const transform_1 = __nccwpck_require__(1644);
 const utils_1 = __nccwpck_require__(918);
@@ -862,7 +862,7 @@ class ReleaseNotes {
             core.setOutput('commits', diffInfo.commits);
             if (mergedPullRequests.length === 0) {
                 core.warning(`⚠️ No pull requests found`);
-                return (0, transform_1.replaceEmptyTemplate)(this.options.configuration.empty_template || configuration_1.DefaultConfiguration.empty_template, this.options);
+                return (0, transform_1.replaceEmptyTemplate)(this.options.configuration.empty_template, this.options);
             }
             core.startGroup('📦 Build changelog');
             const resultChangelog = (0, transform_1.buildChangelog)(diffInfo, mergedPullRequests, this.options);
@@ -903,7 +903,7 @@ class ReleaseNotes {
             const lastCommit = commits[commits.length - 1];
             let fromDate = firstCommit.date;
             const toDate = lastCommit.date;
-            const maxDays = configuration.max_back_track_time_days || configuration_1.DefaultConfiguration.max_back_track_time_days;
+            const maxDays = configuration.max_back_track_time_days;
             const maxFromDate = toDate.clone().subtract(maxDays, 'days');
             if (maxFromDate.isAfter(fromDate)) {
                 core.info(`⚠️ Adjusted 'fromDate' to go max ${maxDays} back`);
@@ -911,9 +911,9 @@ class ReleaseNotes {
             }
             core.info(`ℹ️ Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`);
             const pullRequestsApi = new pullRequests_1.PullRequests(octokit);
-            const pullRequests = yield pullRequestsApi.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests || configuration_1.DefaultConfiguration.max_pull_requests);
+            const pullRequests = yield pullRequestsApi.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests);
             core.info(`ℹ️ Retrieved ${pullRequests.length} PRs for ${owner}/${repo} in date range from API`);
-            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches || configuration_1.DefaultConfiguration.exclude_merge_branches);
+            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches);
             core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`);
             // create array of commits for this release
             const releaseCommitHashes = prCommits.map(commmit => {
@@ -927,14 +927,14 @@ class ReleaseNotes {
             let allPullRequests = mergedPullRequests;
             if (includeOpen) {
                 // retrieve all open pull requests
-                const openPullRequests = yield pullRequestsApi.getOpen(owner, repo, configuration.max_pull_requests || configuration_1.DefaultConfiguration.max_pull_requests);
+                const openPullRequests = yield pullRequestsApi.getOpen(owner, repo, configuration.max_pull_requests);
                 core.info(`ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`);
                 // all pull requests
                 allPullRequests = allPullRequests.concat(openPullRequests);
                 core.info(`ℹ️ Retrieved ${allPullRequests.length} total PRs for ${owner}/${repo}`);
             }
             // retrieve base branches we allow
-            const baseBranches = configuration.base_branches || configuration_1.DefaultConfiguration.base_branches;
+            const baseBranches = configuration.base_branches;
             const baseBranchPatterns = baseBranches.map(baseBranch => {
                 return new RegExp(baseBranch.replace('\\\\', '\\'), 'gu');
             });
@@ -987,7 +987,7 @@ class ReleaseNotes {
             if (commits.length === 0) {
                 return [diffInfo, []];
             }
-            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches || configuration_1.DefaultConfiguration.exclude_merge_branches);
+            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches);
             core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`);
             const prs = prCommits.map(function (commit) {
                 return {
@@ -1058,7 +1058,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ReleaseNotesBuilder = void 0;
 const core = __importStar(__nccwpck_require__(2186));
-const configuration_1 = __nccwpck_require__(5527);
 const rest_1 = __nccwpck_require__(5375);
 const releaseNotes_1 = __nccwpck_require__(5882);
 const tags_1 = __nccwpck_require__(7532);
@@ -1125,7 +1124,7 @@ class ReleaseNotesBuilder {
             // ensure proper from <-> to tag range
             core.startGroup(`🔖 Resolve tags`);
             const tagsApi = new tags_1.Tags(octokit);
-            const tagRange = yield tagsApi.retrieveRange(this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.ignorePreReleases, this.configuration.max_tags_to_fetch || configuration_1.DefaultConfiguration.max_tags_to_fetch, this.configuration.tag_resolver || configuration_1.DefaultConfiguration.tag_resolver);
+            const tagRange = yield tagsApi.retrieveRange(this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.ignorePreReleases, this.configuration.max_tags_to_fetch, this.configuration.tag_resolver);
             let thisTag = tagRange.to;
             if (!thisTag) {
                 (0, utils_1.failOrError)(`💥 Missing or couldn't resolve 'toTag'`, this.failOnError);
@@ -1569,14 +1568,13 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.validateTransformer = exports.replaceEmptyTemplate = exports.buildChangelog = void 0;
 const core = __importStar(__nccwpck_require__(2186));
-const configuration_1 = __nccwpck_require__(5527);
 const pullRequests_1 = __nccwpck_require__(4217);
 const utils_1 = __nccwpck_require__(918);
 const EMPTY_MAP = new Map();
 function buildChangelog(diffInfo, prs, options) {
     // sort to target order
     const config = options.configuration;
-    const sort = config.sort || configuration_1.DefaultConfiguration.sort;
+    const sort = config.sort;
     prs = (0, pullRequests_1.sortPullRequests)(prs, sort);
     core.info(`ℹ️ Sorted all pull requests ascending: ${JSON.stringify(sort)}`);
     // drop duplicate pull requests
@@ -1628,14 +1626,14 @@ function buildChangelog(diffInfo, prs, options) {
     const transformedMap = new Map();
     // convert PRs to their text representation
     for (const pr of prs) {
-        transformedMap.set(pr, transform(fillPrTemplate(pr, config.pr_template || configuration_1.DefaultConfiguration.pr_template, placeholders, placeholderPrMap, config), validatedTransformers));
+        transformedMap.set(pr, transform(fillPrTemplate(pr, config.pr_template, placeholders, placeholderPrMap, config), validatedTransformers));
     }
     core.info(`ℹ️ Used ${validatedTransformers.length} transformers to adjust message`);
     core.info(`✒️ Wrote messages for ${prs.length} pull requests`);
     // bring PRs into the order of categories
     const categorized = new Map();
-    const categories = config.categories || configuration_1.DefaultConfiguration.categories;
-    const ignoredLabels = config.ignore_labels || configuration_1.DefaultConfiguration.ignore_labels;
+    const categories = config.categories;
+    const ignoredLabels = config.ignore_labels;
     for (const category of categories) {
         categorized.set(category, []);
     }
@@ -1768,7 +1766,7 @@ function buildChangelog(diffInfo, prs, options) {
     placeholderMap.set('CHANGES', diffInfo.changes.toString());
     placeholderMap.set('COMMITS', diffInfo.commits.toString());
     fillAdditionalPlaceholders(options, placeholderMap);
-    let transformedChangelog = config.template || configuration_1.DefaultConfiguration.template;
+    let transformedChangelog = config.template;
     transformedChangelog = replacePlaceholders(transformedChangelog, EMPTY_MAP, placeholderMap, placeholders, placeholderPrMap, config);
     transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap, config);
     transformedChangelog = cleanupPrPlaceholders(transformedChangelog, placeholders);
@@ -1917,7 +1915,7 @@ function transform(filled, transformers) {
     return transformed;
 }
 function validateTransformers(specifiedTransformers) {
-    const transformers = specifiedTransformers || configuration_1.DefaultConfiguration.transformers;
+    const transformers = specifiedTransformers;
     return transformers
         .map(transformer => {
         return validateTransformer(transformer);
@@ -2041,7 +2039,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.haveEveryElements = exports.haveCommonElements = exports.createOrSet = exports.writeOutput = exports.directoryExistsSync = exports.parseConfiguration = exports.resolveConfiguration = exports.failOrError = exports.retrieveRepositoryPath = void 0;
+exports.haveEveryElements = exports.haveCommonElements = exports.createOrSet = exports.writeOutput = exports.directoryExistsSync = exports.mergeConfiguration = exports.parseConfiguration = exports.resolveConfiguration = exports.failOrError = exports.retrieveRepositoryPath = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
@@ -2130,6 +2128,31 @@ function parseConfiguration(config) {
     }
 }
 exports.parseConfiguration = parseConfiguration;
+/**
+ * Merges the configurations, will fallback to the DefaultConfiguration value
+ */
+function mergeConfiguration(jc, fc) {
+    return {
+        max_tags_to_fetch: (jc === null || jc === void 0 ? void 0 : jc.max_tags_to_fetch) || (fc === null || fc === void 0 ? void 0 : fc.max_tags_to_fetch) || configuration_1.DefaultConfiguration.max_tags_to_fetch,
+        max_pull_requests: (jc === null || jc === void 0 ? void 0 : jc.max_pull_requests) || (fc === null || fc === void 0 ? void 0 : fc.max_pull_requests) || configuration_1.DefaultConfiguration.max_pull_requests,
+        max_back_track_time_days: (jc === null || jc === void 0 ? void 0 : jc.max_back_track_time_days) || (fc === null || fc === void 0 ? void 0 : fc.max_back_track_time_days) || configuration_1.DefaultConfiguration.max_back_track_time_days,
+        exclude_merge_branches: (jc === null || jc === void 0 ? void 0 : jc.exclude_merge_branches) || (fc === null || fc === void 0 ? void 0 : fc.exclude_merge_branches) || configuration_1.DefaultConfiguration.exclude_merge_branches,
+        sort: (jc === null || jc === void 0 ? void 0 : jc.sort) || (fc === null || fc === void 0 ? void 0 : fc.sort) || configuration_1.DefaultConfiguration.sort,
+        template: (jc === null || jc === void 0 ? void 0 : jc.template) || (fc === null || fc === void 0 ? void 0 : fc.template) || configuration_1.DefaultConfiguration.template,
+        pr_template: (jc === null || jc === void 0 ? void 0 : jc.pr_template) || (fc === null || fc === void 0 ? void 0 : fc.pr_template) || configuration_1.DefaultConfiguration.pr_template,
+        empty_template: (jc === null || jc === void 0 ? void 0 : jc.empty_template) || (fc === null || fc === void 0 ? void 0 : fc.empty_template) || configuration_1.DefaultConfiguration.empty_template,
+        categories: (jc === null || jc === void 0 ? void 0 : jc.categories) || (fc === null || fc === void 0 ? void 0 : fc.categories) || configuration_1.DefaultConfiguration.categories,
+        ignore_labels: (jc === null || jc === void 0 ? void 0 : jc.ignore_labels) || (fc === null || fc === void 0 ? void 0 : fc.ignore_labels) || configuration_1.DefaultConfiguration.ignore_labels,
+        label_extractor: (jc === null || jc === void 0 ? void 0 : jc.label_extractor) || (fc === null || fc === void 0 ? void 0 : fc.label_extractor) || configuration_1.DefaultConfiguration.label_extractor,
+        duplicate_filter: (jc === null || jc === void 0 ? void 0 : jc.duplicate_filter) || (fc === null || fc === void 0 ? void 0 : fc.duplicate_filter) || configuration_1.DefaultConfiguration.duplicate_filter,
+        transformers: (jc === null || jc === void 0 ? void 0 : jc.transformers) || (fc === null || fc === void 0 ? void 0 : fc.transformers) || configuration_1.DefaultConfiguration.transformers,
+        tag_resolver: (jc === null || jc === void 0 ? void 0 : jc.tag_resolver) || (fc === null || fc === void 0 ? void 0 : fc.tag_resolver) || configuration_1.DefaultConfiguration.tag_resolver,
+        base_branches: (jc === null || jc === void 0 ? void 0 : jc.base_branches) || (fc === null || fc === void 0 ? void 0 : fc.base_branches) || configuration_1.DefaultConfiguration.base_branches,
+        custom_placeholders: (jc === null || jc === void 0 ? void 0 : jc.custom_placeholders) || (fc === null || fc === void 0 ? void 0 : fc.custom_placeholders) || configuration_1.DefaultConfiguration.custom_placeholders,
+        trim_values: (jc === null || jc === void 0 ? void 0 : jc.trim_values) || (fc === null || fc === void 0 ? void 0 : fc.trim_values) || configuration_1.DefaultConfiguration.trim_values
+    };
+}
+exports.mergeConfiguration = mergeConfiguration;
 /**
  * Checks if a given directory exists
  */

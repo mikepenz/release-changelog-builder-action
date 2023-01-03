@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import {parseConfiguration, resolveConfiguration, retrieveRepositoryPath, writeOutput} from './utils'
+import {mergeConfiguration, parseConfiguration, resolveConfiguration, retrieveRepositoryPath, writeOutput} from './utils'
 import {ReleaseNotesBuilder} from './releaseNotesBuilder'
 import {Configuration} from './configuration'
 
@@ -13,18 +13,20 @@ async function run(): Promise<void> {
     const inputPath = core.getInput('path')
     const repositoryPath = retrieveRepositoryPath(inputPath)
 
-    // read in configuration file if possible
-    let configuration: Configuration | undefined = undefined
+    // read in configuration from json if possible
+    let configJson: Configuration | undefined = undefined
     const configurationJson: string = core.getInput('configurationJson', {
       trimWhitespace: true
     })
     if (configurationJson) {
-      configuration = parseConfiguration(configurationJson)
+      configJson = parseConfiguration(configurationJson)
     }
-    if (!configuration) {
-      const configurationFile: string = core.getInput('configuration')
-      configuration = resolveConfiguration(repositoryPath, configurationFile)
-    }
+    // read in the configuration from the file if possible
+    const configurationFile: string = core.getInput('configuration')
+    const configFile = resolveConfiguration(repositoryPath, configurationFile)
+
+    // merge configs, use default values from DefaultConfig on missing definition
+    const configuration = mergeConfiguration(configJson, configFile)
 
     // read in repository inputs
     const baseUrl = core.getInput('baseUrl')

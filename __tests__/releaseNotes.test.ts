@@ -1,5 +1,5 @@
 import {ReleaseNotes} from '../src/releaseNotes'
-import {resolveConfiguration} from '../src/utils'
+import {mergeConfiguration, resolveConfiguration} from '../src/utils'
 import {Octokit} from '@octokit/rest'
 
 jest.setTimeout(180000)
@@ -10,7 +10,7 @@ const octokit = new Octokit({
 })
 
 it('Should have empty changelog (tags)', async () => {
-  const configuration = resolveConfiguration('', 'configs/configuration.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs/configuration.json'))
   const releaseNotes = new ReleaseNotes(octokit, {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -31,7 +31,7 @@ it('Should have empty changelog (tags)', async () => {
 })
 
 it('Should match generated changelog (tags)', async () => {
-  const configuration = resolveConfiguration('', 'configs/configuration.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs/configuration.json'))
   const releaseNotes = new ReleaseNotes(octokit, {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -57,7 +57,7 @@ it('Should match generated changelog (tags)', async () => {
 })
 
 it('Should match generated changelog (refs)', async () => {
-  const configuration = resolveConfiguration('', 'configs_test/configuration_all_placeholders.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_all_placeholders.json'))
   const releaseNotes = new ReleaseNotes(octokit, {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -91,7 +91,7 @@ nhoelzl
 })
 
 it('Should match generated changelog and replace all occurrences (refs)', async () => {
-  const configuration = resolveConfiguration('', 'configs_test/configuration_replace_all_placeholders.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_replace_all_placeholders.json'))
   const releaseNotes = new ReleaseNotes(octokit, {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -127,7 +127,7 @@ nhoelzl
 })
 
 it('Should match ordered ASC', async () => {
-  const configuration = resolveConfiguration('', 'configs_test/configuration_asc.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_asc.json'))
   const releaseNotes = new ReleaseNotes(octokit, {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -148,7 +148,7 @@ it('Should match ordered ASC', async () => {
 })
 
 it('Should match ordered DESC', async () => {
-  const configuration = resolveConfiguration('', 'configs_test/configuration_desc.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_desc.json'))
   const releaseNotes = new ReleaseNotes(octokit, {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -169,7 +169,7 @@ it('Should match ordered DESC', async () => {
 })
 
 it('Should match ordered by title ASC', async () => {
-  const configuration = resolveConfiguration('', 'configs_test/configuration_sort_title_asc.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_sort_title_asc.json'))
   const releaseNotes = new ReleaseNotes(octokit, {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -192,7 +192,7 @@ it('Should match ordered by title ASC', async () => {
 })
 
 it('Should match ordered by title DESC', async () => {
-  const configuration = resolveConfiguration('', 'configs_test/configuration_sort_title_desc.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_sort_title_desc.json'))
   const releaseNotes = new ReleaseNotes(octokit, {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -215,7 +215,7 @@ it('Should match ordered by title DESC', async () => {
 })
 
 it('Should ignore PRs not merged into develop branch', async () => {
-  const configuration = resolveConfiguration('', 'configs_test/configuration_base_branches_develop.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_base_branches_develop.json'))
   const releaseNotes = new ReleaseNotes(octokit, {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -236,7 +236,7 @@ it('Should ignore PRs not merged into develop branch', async () => {
 })
 
 it('Should ignore PRs not merged into main branch', async () => {
-  const configuration = resolveConfiguration('', 'configs_test/configuration_base_branches_main.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_base_branches_main.json'))
   const releaseNotes = new ReleaseNotes(octokit, {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',

@@ -1,10 +1,10 @@
-import {resolveConfiguration} from '../src/utils'
+import {mergeConfiguration, resolveConfiguration} from '../src/utils'
 import {ReleaseNotesBuilder} from '../src/releaseNotesBuilder'
 
 jest.setTimeout(180000)
 
 it('Should match generated changelog (unspecified fromTag)', async () => {
-  const configuration = resolveConfiguration('', 'configs/configuration.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs/configuration.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
     null,
@@ -34,7 +34,7 @@ it('Should match generated changelog (unspecified fromTag)', async () => {
 })
 
 it('Should match generated changelog (unspecified tags)', async () => {
-  const configuration = resolveConfiguration('', 'configs/configuration.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs/configuration.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
     null,
@@ -59,7 +59,7 @@ it('Should match generated changelog (unspecified tags)', async () => {
 })
 
 it('Should use empty placeholder', async () => {
-  const configuration = resolveConfiguration('', 'configs/configuration.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs/configuration.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
     null,
@@ -84,7 +84,7 @@ it('Should use empty placeholder', async () => {
 })
 
 it('Should fill empty placeholders', async () => {
-  const configuration = resolveConfiguration('', 'configs_test/configuration_empty_all_placeholders.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_empty_all_placeholders.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
     null,
@@ -111,7 +111,7 @@ it('Should fill empty placeholders', async () => {
 })
 
 it('Should fill `template` placeholders', async () => {
-  const configuration = resolveConfiguration('', 'configs_test/configuration_empty_all_placeholders.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_empty_all_placeholders.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
     null,
@@ -138,7 +138,7 @@ it('Should fill `template` placeholders', async () => {
 })
 
 it('Should fill `template` placeholders, ignore', async () => {
-  const configuration = resolveConfiguration('', 'configs_test/configuration_empty_all_placeholders.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_empty_all_placeholders.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
     null,
@@ -165,7 +165,7 @@ it('Should fill `template` placeholders, ignore', async () => {
 })
 
 it('Uncategorized category', async () => {
-  const configuration = resolveConfiguration('', 'configs_test/configuration_uncategorized_category.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_uncategorized_category.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
     null,
@@ -192,7 +192,7 @@ it('Uncategorized category', async () => {
 })
 
 it('Verify commit based changelog', async () => {
-  const configuration = resolveConfiguration('', 'configs_test/configuration_commits.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_commits.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
     null,
@@ -219,7 +219,7 @@ it('Verify commit based changelog', async () => {
 })
 
 it('Verify commit based changelog, with emoji categorisation', async () => {
-  const configuration = resolveConfiguration('', 'configs_test/configuration_commits_emoji.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_commits_emoji.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
     null,
@@ -246,7 +246,7 @@ it('Verify commit based changelog, with emoji categorisation', async () => {
 })
 
 it('Verify default inclusion of open PRs', async () => {
-  const configuration = resolveConfiguration('', 'configs_test/configuration_including_open.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_including_open.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null, // baseUrl
     null, // token
@@ -273,7 +273,7 @@ it('Verify default inclusion of open PRs', async () => {
 })
 
 it('Verify custom categorisation of open PRs', async () => {
-  const configuration = resolveConfiguration('', 'configs_test/configuration_excluding_open.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_excluding_open.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null, // baseUrl
     null, // token
@@ -300,7 +300,7 @@ it('Verify custom categorisation of open PRs', async () => {
 })
 
 it('Verify reviewers who approved are fetched and also release information', async () => {
-  const configuration = resolveConfiguration('', 'configs_test/configuration_approvers.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_approvers.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null, // baseUrl
     null, // token
@@ -327,7 +327,7 @@ it('Verify reviewers who approved are fetched and also release information', asy
 })
 
 it('Fetch release information', async () => {
-  const configuration = resolveConfiguration('', 'configs_test/configuration_approvers.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_approvers.json'))
   configuration.template = '${{FROM_TAG}}-${{FROM_TAG_DATE}}\n${{TO_TAG}}-${{TO_TAG_DATE}}\n${{DAYS_SINCE}}'
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null, // baseUrl
@@ -353,7 +353,7 @@ it('Fetch release information', async () => {
 })
 
 it('Fetch release information for non existing tag / release', async () => {
-  const configuration = resolveConfiguration('', 'configs_test/configuration_approvers.json')
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_approvers.json'))
   configuration.template = '${{FROM_TAG}}-${{FROM_TAG_DATE}}\n${{TO_TAG}}-${{TO_TAG_DATE}}\n${{DAYS_SINCE}}'
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null, // baseUrl
