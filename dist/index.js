@@ -491,7 +491,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.compare = exports.sortPullRequests = exports.PullRequests = exports.EMPTY_COMMENT_INFO = void 0;
+exports.retrieveProperty = exports.compare = exports.sortPullRequests = exports.PullRequests = exports.EMPTY_COMMENT_INFO = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const moment_1 = __importDefault(__nccwpck_require__(9623));
 exports.EMPTY_COMMENT_INFO = {
@@ -738,6 +738,24 @@ function compare(a, b, sort) {
     }
 }
 exports.compare = compare;
+/**
+ * Helper function to retrieve a property from the PullRequestInfo
+ */
+function retrieveProperty(pr, property, useCase) {
+    let value = pr[property];
+    if (value === undefined) {
+        core.warning(`⚠️ the provided property '${property}' for \`${useCase}\` is not valid. Fallback to 'body'`);
+        value = pr['body'];
+    }
+    else if (value instanceof Set) {
+        value = Array.from(value).join(','); // join into single string
+    }
+    else if (Array.isArray(value)) {
+        value = value.join(','); // join into single string
+    }
+    return value;
+}
+exports.retrieveProperty = retrieveProperty;
 // helper function to add a special open label to prs not merged.
 function attachSpeciaLabels(status, labels) {
     labels.add(`--rcba-${status}`);
@@ -777,6 +795,127 @@ const mapComment = (comment) => {
         state: comment.state
     });
 };
+
+
+/***/ }),
+
+/***/ 2364:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.buildRegex = exports.validateTransformer = exports.matchesRules = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const pullRequests_1 = __nccwpck_require__(4217);
+/**
+ * Checks if any of the rules match the given PR
+ */
+function matchesRules(rules, pr, exhaustive) {
+    const transformers = rules.map(rule => validateTransformer(rule)).filter(t => t !== null);
+    if (exhaustive) {
+        return transformers.every(transformer => {
+            return matches(pr, transformer, 'rule');
+        });
+    }
+    else {
+        return transformers.some(transformer => {
+            return matches(pr, transformer, 'rule');
+        });
+    }
+}
+exports.matchesRules = matchesRules;
+/**
+ * Checks if the configured property results in a positive `test` with the regex.
+ */
+function matches(pr, extractor, extractor_usecase) {
+    if (extractor.pattern == null) {
+        return false;
+    }
+    if (extractor.onProperty !== undefined && extractor.onProperty.length === 1) {
+        const prop = extractor.onProperty[0];
+        const value = (0, pullRequests_1.retrieveProperty)(pr, prop, extractor_usecase);
+        return extractor.pattern.test(value);
+    }
+    return false;
+}
+function validateTransformer(transformer) {
+    if (transformer === undefined) {
+        return null;
+    }
+    try {
+        let target = undefined;
+        if (transformer.hasOwnProperty('target')) {
+            target = transformer.target;
+        }
+        let onProperty = undefined;
+        let method = undefined;
+        let onEmpty = undefined;
+        if (transformer.hasOwnProperty('method')) {
+            method = transformer.method;
+            onEmpty = transformer.on_empty;
+            onProperty = transformer.on_property;
+        }
+        else if (transformer.hasOwnProperty('on_property')) {
+            onProperty = transformer.on_property;
+        }
+        // legacy handling, transform single value input to array
+        if (!Array.isArray(onProperty)) {
+            if (onProperty !== undefined) {
+                onProperty = [onProperty];
+            }
+        }
+        return buildRegex(transformer, target, onProperty, method, onEmpty);
+    }
+    catch (e) {
+        core.warning(`⚠️ Failed to validate transformer: ${transformer.pattern}`);
+        return null;
+    }
+}
+exports.validateTransformer = validateTransformer;
+/**
+ * Constructs the RegExp, providing the configured Regex and additional values
+ */
+function buildRegex(regex, target, onProperty, method, onEmpty) {
+    var _a;
+    try {
+        return {
+            pattern: new RegExp(regex.pattern.replace('\\\\', '\\'), (_a = regex.flags) !== null && _a !== void 0 ? _a : 'gu'),
+            target: target || '',
+            onProperty,
+            method,
+            onEmpty
+        };
+    }
+    catch (e) {
+        core.warning(`⚠️ Bad replacer regex: ${regex.pattern}`);
+        return null;
+    }
+}
+exports.buildRegex = buildRegex;
 
 
 /***/ }),
@@ -1228,8 +1367,8 @@ const github = __importStar(__nccwpck_require__(5438));
 const semver = __importStar(__nccwpck_require__(1383));
 const semver_1 = __nccwpck_require__(1383);
 const gitHelper_1 = __nccwpck_require__(353);
-const transform_1 = __nccwpck_require__(1644);
 const moment_1 = __importDefault(__nccwpck_require__(9623));
+const regexUtils_1 = __nccwpck_require__(2364);
 class Tags {
     constructor(octokit) {
         this.octokit = octokit;
@@ -1353,7 +1492,7 @@ class Tags {
             // retrieve the tags from the API
             yield this.getTags(owner, repo, maxTagsToFetch), tagResolver);
             // check if a transformer was defined
-            const tagTransformer = (0, transform_1.validateTransformer)(tagResolver.transformer);
+            const tagTransformer = (0, regexUtils_1.validateTransformer)(tagResolver.transformer);
             let transformedTags;
             if (tagTransformer != null) {
                 core.debug(`ℹ️ Using configured tagTransformer`);
@@ -1566,10 +1705,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.validateTransformer = exports.replaceEmptyTemplate = exports.buildChangelog = void 0;
+exports.replaceEmptyTemplate = exports.buildChangelog = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const pullRequests_1 = __nccwpck_require__(4217);
 const utils_1 = __nccwpck_require__(918);
+const regexUtils_1 = __nccwpck_require__(2364);
 const EMPTY_MAP = new Map();
 function buildChangelog(diffInfo, prs, options) {
     // sort to target order
@@ -1579,7 +1719,7 @@ function buildChangelog(diffInfo, prs, options) {
     core.info(`ℹ️ Sorted all pull requests ascending: ${JSON.stringify(sort)}`);
     // drop duplicate pull requests
     if (config.duplicate_filter !== undefined) {
-        const extractor = validateTransformer(config.duplicate_filter);
+        const extractor = (0, regexUtils_1.validateTransformer)(config.duplicate_filter);
         if (extractor != null) {
             core.info(`ℹ️ Remove duplicated pull requests using \`duplicate_filter\``);
             const deduplicatedMap = new Map();
@@ -1664,14 +1804,22 @@ function buildChangelog(diffInfo, prs, options) {
                     continue; // one of the exclude labels matched, skip the PR for this category
                 }
             }
-            if (category.exhaustive === true) {
-                if ((0, utils_1.haveEveryElements)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
-                    pullRequests.push(body);
-                    matched = true;
+            if (category.labels !== undefined) {
+                if (category.exhaustive === true) {
+                    if ((0, utils_1.haveEveryElements)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
+                        pullRequests.push(body);
+                        matched = true;
+                    }
+                }
+                else {
+                    if ((0, utils_1.haveCommonElements)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
+                        pullRequests.push(body);
+                        matched = true;
+                    }
                 }
             }
-            else {
-                if ((0, utils_1.haveCommonElements)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
+            if (category.rules !== undefined) {
+                if ((0, regexUtils_1.matchesRules)(category.rules, pr, category.exhaustive === true)) {
                     pullRequests.push(body);
                     matched = true;
                 }
@@ -1680,7 +1828,9 @@ function buildChangelog(diffInfo, prs, options) {
         if (!matched) {
             // we allow to have pull requests included in an "uncategorized" category
             for (const [category, pullRequests] of categorized) {
-                if (category.labels.length === 0) {
+                if ((category.labels === undefined || category.labels.length === 0) &&
+                    category.rules === undefined &&
+                    category.exclude_labels === undefined) {
                     pullRequests.push(body);
                     break;
                 }
@@ -1846,7 +1996,7 @@ function handlePlaceholder(template, key, value, placeholders /* placeholders to
     const phs = placeholders.get(key);
     if (phs) {
         for (const placeholder of phs) {
-            const transformer = validateTransformer(placeholder.transformer);
+            const transformer = (0, regexUtils_1.validateTransformer)(placeholder.transformer);
             if (transformer === null || transformer === void 0 ? void 0 : transformer.pattern) {
                 const extractedValue = value.replace(transformer.pattern, transformer.target);
                 // note: `.replace` will return the full string again if there was no match
@@ -1918,47 +2068,13 @@ function validateTransformers(specifiedTransformers) {
     const transformers = specifiedTransformers;
     return transformers
         .map(transformer => {
-        return validateTransformer(transformer);
+        return (0, regexUtils_1.validateTransformer)(transformer);
     })
         .filter(transformer => (transformer === null || transformer === void 0 ? void 0 : transformer.pattern) != null)
         .map(transformer => {
         return transformer;
     });
 }
-function validateTransformer(transformer) {
-    var _a;
-    if (transformer === undefined) {
-        return null;
-    }
-    try {
-        let onProperty = undefined;
-        let method = undefined;
-        let onEmpty = undefined;
-        if (transformer.hasOwnProperty('on_property')) {
-            onProperty = transformer.on_property;
-            method = transformer.method;
-            onEmpty = transformer.on_empty;
-        }
-        // legacy handling, transform single value input to array
-        if (!Array.isArray(onProperty)) {
-            if (onProperty !== undefined) {
-                onProperty = [onProperty];
-            }
-        }
-        return {
-            pattern: new RegExp(transformer.pattern.replace('\\\\', '\\'), (_a = transformer.flags) !== null && _a !== void 0 ? _a : 'gu'),
-            target: transformer.target || '',
-            onProperty,
-            method,
-            onEmpty
-        };
-    }
-    catch (e) {
-        core.warning(`⚠️ Bad replacer regex: ${transformer.pattern}`);
-        return null;
-    }
-}
-exports.validateTransformer = validateTransformer;
 function extractValues(pr, extractor, extractor_usecase) {
     if (extractor.pattern == null) {
         return null;
@@ -1969,11 +2085,7 @@ function extractValues(pr, extractor, extractor_usecase) {
         // eslint-disable-next-line @typescript-eslint/prefer-for-of
         for (let i = 0; i < list.length; i++) {
             const prop = list[i];
-            let value = pr[prop];
-            if (value === undefined) {
-                core.warning(`⚠️ the provided property '${extractor.onProperty}' for \`${extractor_usecase}\` is not valid`);
-                value = pr['body'];
-            }
+            const value = (0, pullRequests_1.retrieveProperty)(pr, prop, extractor_usecase);
             const values = extractValuesFromString(value, extractor);
             if (values !== null) {
                 results = results.concat(values);
