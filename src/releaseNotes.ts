@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import {Commits, filterCommits, DiffInfo, DefaultDiffInfo} from './commits'
-import {Configuration, DefaultConfiguration} from './configuration'
+import {Configuration} from './configuration'
 import {PullRequestInfo, PullRequests} from './pullRequests'
 import {Octokit} from '@octokit/rest'
 import {buildChangelog, replaceEmptyTemplate} from './transform'
@@ -62,7 +62,7 @@ export class ReleaseNotes {
 
     if (mergedPullRequests.length === 0) {
       core.warning(`⚠️ No pull requests found`)
-      return replaceEmptyTemplate(this.options.configuration.empty_template || DefaultConfiguration.empty_template, this.options)
+      return replaceEmptyTemplate(this.options.configuration.empty_template, this.options)
     }
 
     core.startGroup('📦 Build changelog')
@@ -105,7 +105,7 @@ export class ReleaseNotes {
     let fromDate = firstCommit.date
     const toDate = lastCommit.date
 
-    const maxDays = configuration.max_back_track_time_days || DefaultConfiguration.max_back_track_time_days
+    const maxDays = configuration.max_back_track_time_days
     const maxFromDate = toDate.clone().subtract(maxDays, 'days')
     if (maxFromDate.isAfter(fromDate)) {
       core.info(`⚠️ Adjusted 'fromDate' to go max ${maxDays} back`)
@@ -115,17 +115,11 @@ export class ReleaseNotes {
     core.info(`ℹ️ Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`)
 
     const pullRequestsApi = new PullRequests(octokit)
-    const pullRequests = await pullRequestsApi.getBetweenDates(
-      owner,
-      repo,
-      fromDate,
-      toDate,
-      configuration.max_pull_requests || DefaultConfiguration.max_pull_requests
-    )
+    const pullRequests = await pullRequestsApi.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests)
 
     core.info(`ℹ️ Retrieved ${pullRequests.length} PRs for ${owner}/${repo} in date range from API`)
 
-    const prCommits = filterCommits(commits, configuration.exclude_merge_branches || DefaultConfiguration.exclude_merge_branches)
+    const prCommits = filterCommits(commits, configuration.exclude_merge_branches)
 
     core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`)
 
@@ -144,11 +138,7 @@ export class ReleaseNotes {
     let allPullRequests = mergedPullRequests
     if (includeOpen) {
       // retrieve all open pull requests
-      const openPullRequests = await pullRequestsApi.getOpen(
-        owner,
-        repo,
-        configuration.max_pull_requests || DefaultConfiguration.max_pull_requests
-      )
+      const openPullRequests = await pullRequestsApi.getOpen(owner, repo, configuration.max_pull_requests)
 
       core.info(`ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`)
 
@@ -159,7 +149,7 @@ export class ReleaseNotes {
     }
 
     // retrieve base branches we allow
-    const baseBranches = configuration.base_branches || DefaultConfiguration.base_branches
+    const baseBranches = configuration.base_branches
     const baseBranchPatterns = baseBranches.map(baseBranch => {
       return new RegExp(baseBranch.replace('\\\\', '\\'), 'gu')
     })
@@ -216,7 +206,7 @@ export class ReleaseNotes {
       return [diffInfo, []]
     }
 
-    const prCommits = filterCommits(commits, configuration.exclude_merge_branches || DefaultConfiguration.exclude_merge_branches)
+    const prCommits = filterCommits(commits, configuration.exclude_merge_branches)
 
     core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`)
 

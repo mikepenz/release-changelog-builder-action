@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import {Category, Configuration, DefaultConfiguration, Extractor, Placeholder, Transformer} from './configuration'
+import {Category, Configuration, Extractor, Placeholder, Transformer} from './configuration'
 import {CommentInfo, EMPTY_COMMENT_INFO, PullRequestInfo, sortPullRequests} from './pullRequests'
 import {ReleaseNotesOptions} from './releaseNotes'
 import {DiffInfo} from './commits'
@@ -18,7 +18,7 @@ const EMPTY_MAP = new Map<string, string>()
 export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], options: ReleaseNotesOptions): string {
   // sort to target order
   const config = options.configuration
-  const sort = config.sort || DefaultConfiguration.sort
+  const sort = config.sort
   prs = sortPullRequests(prs, sort)
   core.info(`ℹ️ Sorted all pull requests ascending: ${JSON.stringify(sort)}`)
 
@@ -73,21 +73,15 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
   const transformedMap = new Map<PullRequestInfo, string>()
   // convert PRs to their text representation
   for (const pr of prs) {
-    transformedMap.set(
-      pr,
-      transform(
-        fillPrTemplate(pr, config.pr_template || DefaultConfiguration.pr_template, placeholders, placeholderPrMap, config),
-        validatedTransformers
-      )
-    )
+    transformedMap.set(pr, transform(fillPrTemplate(pr, config.pr_template, placeholders, placeholderPrMap, config), validatedTransformers))
   }
   core.info(`ℹ️ Used ${validatedTransformers.length} transformers to adjust message`)
   core.info(`✒️ Wrote messages for ${prs.length} pull requests`)
 
   // bring PRs into the order of categories
   const categorized = new Map<Category, string[]>()
-  const categories = config.categories || DefaultConfiguration.categories
-  const ignoredLabels = config.ignore_labels || DefaultConfiguration.ignore_labels
+  const categories = config.categories
+  const ignoredLabels = config.ignore_labels
 
   for (const category of categories) {
     categorized.set(category, [])
@@ -252,7 +246,7 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
   placeholderMap.set('COMMITS', diffInfo.commits.toString())
   fillAdditionalPlaceholders(options, placeholderMap)
 
-  let transformedChangelog = config.template || DefaultConfiguration.template
+  let transformedChangelog = config.template
   transformedChangelog = replacePlaceholders(transformedChangelog, EMPTY_MAP, placeholderMap, placeholders, placeholderPrMap, config)
   transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap, config)
   transformedChangelog = cleanupPrPlaceholders(transformedChangelog, placeholders)
@@ -453,7 +447,7 @@ function transform(filled: string, transformers: RegexTransformer[]): string {
 }
 
 function validateTransformers(specifiedTransformers: Transformer[]): RegexTransformer[] {
-  const transformers = specifiedTransformers || DefaultConfiguration.transformers
+  const transformers = specifiedTransformers
   return transformers
     .map(transformer => {
       return validateTransformer(transformer)
