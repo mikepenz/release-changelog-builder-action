@@ -122,6 +122,25 @@ const pullRequestWithLabelInBody: PullRequestInfo = {
   status: 'merged'
 }
 
+const openPullRequest: PullRequestInfo = {
+  number: 6,
+  title: 'Still pending open pull request',
+  htmlURL: '',
+  baseBranch: '',
+  createdAt: moment(),
+  mergedAt: moment(),
+  mergeCommitSha: 'sha1',
+  author: 'Mike',
+  repoName: 'test-repo',
+  labels: new Set<string>(),
+  milestone: '',
+  body: 'Some fancy body message',
+  assignees: [],
+  requestedReviewers: [],
+  approvedReviewers: [],
+  status: 'open'
+}
+
 it('Extract label from title, combined regex', async () => {
   configuration.label_extractor = [
     {
@@ -130,22 +149,7 @@ it('Extract label from title, combined regex', async () => {
       on_property: 'title'
     }
   ]
-
-  const resultChangelog = buildChangelog(DefaultDiffInfo, mergedPullRequests, {
-    owner: 'mikepenz',
-    repo: 'test-repo',
-    fromTag: {name: '1.0.0'},
-    toTag: {name: '2.0.0'},
-    includeOpen: false,
-    failOnError: false,
-    fetchReviewers: false,
-    fetchReleaseInformation: false,
-    fetchReviews: false,
-    commitMode: false,
-    configuration
-  })
-
-  expect(resultChangelog).toStrictEqual(
+  expect(buildChangelogTest(configuration, mergedPullRequests)).toStrictEqual(
     `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n\n`
   )
 })
@@ -161,21 +165,7 @@ it('Extract label from title and body, combined regex', async () => {
 
   let prs = Array.from(mergedPullRequests)
   prs.push(pullRequestWithLabelInBody)
-  const resultChangelog = buildChangelog(DefaultDiffInfo, prs, {
-    owner: 'mikepenz',
-    repo: 'test-repo',
-    fromTag: {name: '1.0.0'},
-    toTag: {name: '2.0.0'},
-    includeOpen: false,
-    failOnError: false,
-    fetchReviewers: false,
-    fetchReleaseInformation: false,
-    fetchReviews: false,
-    commitMode: false,
-    configuration
-  })
-
-  expect(resultChangelog).toStrictEqual(
+  expect(buildChangelogTest(configuration, prs)).toStrictEqual(
     `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n- label in body\n   - PR: #5\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n\n`
   )
 })
@@ -193,22 +183,7 @@ it('Extract label from title, split regex', async () => {
       on_property: 'title'
     }
   ]
-
-  const resultChangelog = buildChangelog(DefaultDiffInfo, mergedPullRequests, {
-    owner: 'mikepenz',
-    repo: 'test-repo',
-    fromTag: {name: '1.0.0'},
-    toTag: {name: '2.0.0'},
-    includeOpen: false,
-    failOnError: false,
-    fetchReviewers: false,
-    fetchReleaseInformation: false,
-    fetchReviews: false,
-    commitMode: false,
-    configuration
-  })
-
-  expect(resultChangelog).toStrictEqual(
+  expect(buildChangelogTest(configuration, mergedPullRequests)).toStrictEqual(
     `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
@@ -226,22 +201,7 @@ it('Extract label from title, match', async () => {
       method: 'match'
     }
   ]
-
-  const resultChangelog = buildChangelog(DefaultDiffInfo, mergedPullRequests, {
-    owner: 'mikepenz',
-    repo: 'test-repo',
-    fromTag: {name: '1.0.0'},
-    toTag: {name: '2.0.0'},
-    includeOpen: false,
-    failOnError: false,
-    fetchReviewers: false,
-    fetchReleaseInformation: false,
-    fetchReviews: false,
-    commitMode: false,
-    configuration
-  })
-
-  expect(resultChangelog).toStrictEqual(
+  expect(buildChangelogTest(configuration, mergedPullRequests)).toStrictEqual(
     `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
@@ -254,22 +214,7 @@ it('Extract label from title, match multiple', async () => {
       method: 'match'
     }
   ]
-
-  const resultChangelog = buildChangelog(DefaultDiffInfo, mergedPullRequests, {
-    owner: 'mikepenz',
-    repo: 'test-repo',
-    fromTag: {name: '1.0.0'},
-    toTag: {name: '2.0.0'},
-    includeOpen: false,
-    failOnError: false,
-    fetchReviewers: false,
-    fetchReleaseInformation: false,
-    fetchReviews: false,
-    commitMode: false,
-    configuration
-  })
-
-  expect(resultChangelog).toStrictEqual(
+  expect(buildChangelogTest(configuration, mergedPullRequests)).toStrictEqual(
     `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
@@ -283,22 +228,7 @@ it('Extract label from title, match multiple, custon non matching label', async 
       on_empty: '[Other]'
     }
   ]
-
-  const resultChangelog = buildChangelog(DefaultDiffInfo, mergedPullRequests, {
-    owner: 'mikepenz',
-    repo: 'test-repo',
-    fromTag: {name: '1.0.0'},
-    toTag: {name: '2.0.0'},
-    includeOpen: false,
-    failOnError: false,
-    fetchReviewers: false,
-    fetchReleaseInformation: false,
-    fetchReviews: false,
-    commitMode: false,
-    configuration
-  })
-
-  expect(resultChangelog).toStrictEqual(
+  expect(buildChangelogTest(configuration, mergedPullRequests)).toStrictEqual(
     `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🧪 Others\n\n- [AB-404] - not found label\n   - PR: #4\n\n`
   )
 })
@@ -399,22 +329,7 @@ it('Match multiple labels exhaustive for category', async () => {
       exhaustive: true
     }
   ]
-
-  const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
-    owner: 'mikepenz',
-    repo: 'test-repo',
-    fromTag: {name: '1.0.0'},
-    toTag: {name: '2.0.0'},
-    includeOpen: false,
-    failOnError: false,
-    fetchReviewers: false,
-    fetchReleaseInformation: false,
-    fetchReviews: false,
-    commitMode: false,
-    configuration: customConfig
-  })
-
-  expect(resultChangelog).toStrictEqual(
+  expect(buildChangelogTest(customConfig, pullRequestsWithLabels)).toStrictEqual(
     `## 🚀 Features and 🐛 Issues\n\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
@@ -426,22 +341,7 @@ it('Deduplicate duplicated PRs', async () => {
     on_property: 'title',
     method: 'match'
   }
-
-  const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
-    owner: 'mikepenz',
-    repo: 'test-repo',
-    fromTag: {name: '1.0.0'},
-    toTag: {name: '2.0.0'},
-    includeOpen: false,
-    failOnError: false,
-    fetchReviewers: false,
-    fetchReleaseInformation: false,
-    fetchReviews: false,
-    commitMode: false,
-    configuration: customConfig
-  })
-
-  expect(resultChangelog).toStrictEqual(
+  expect(buildChangelogTest(customConfig, pullRequestsWithLabels)).toStrictEqual(
     `## 🚀 Features\n\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [ABC-4321] - this is a PR 2 title message\n   - PR: #2\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
@@ -454,22 +354,7 @@ it('Deduplicate duplicated PRs DESC', async () => {
     on_property: 'title',
     method: 'match'
   }
-
-  const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
-    owner: 'mikepenz',
-    repo: 'test-repo',
-    fromTag: {name: '1.0.0'},
-    toTag: {name: '2.0.0'},
-    includeOpen: false,
-    failOnError: false,
-    fetchReviewers: false,
-    fetchReleaseInformation: false,
-    fetchReviews: false,
-    commitMode: false,
-    configuration: customConfig
-  })
-
-  expect(resultChangelog).toStrictEqual(
+  expect(buildChangelogTest(customConfig, pullRequestsWithLabels)).toStrictEqual(
     `## 🚀 Features\n\n- [ABC-1234] - this is a PR 1 title message\n   - PR: #1\n\n## 🐛 Fixes\n\n- [ABC-4321] - this is a PR 2 title message\n   - PR: #2\n\n`
   )
 })
@@ -487,22 +372,7 @@ it('Use empty_content for empty category', async () => {
       labels: ['Feature']
     }
   ]
-
-  const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
-    owner: 'mikepenz',
-    repo: 'test-repo',
-    fromTag: {name: '1.0.0'},
-    toTag: {name: '2.0.0'},
-    includeOpen: false,
-    failOnError: false,
-    fetchReviewers: false,
-    fetchReleaseInformation: false,
-    fetchReviews: false,
-    commitMode: false,
-    configuration: customConfig
-  })
-
-  expect(resultChangelog).toStrictEqual(
+  expect(buildChangelogTest(customConfig, pullRequestsWithLabels)).toStrictEqual(
     `## 🚀 Features and 🐛 Issues\n\n- No PRs in this category\n\n## 🚀 Features\n\n- [ABC-1234] - this is a PR 1 title message\n   - PR: #1\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
@@ -572,22 +442,7 @@ it('Use exclude labels to not include a PR within a category.', async () => {
       exclude_labels: ['Fix']
     }
   ]
-
-  const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
-    owner: 'mikepenz',
-    repo: 'test-repo',
-    fromTag: {name: '1.0.0'},
-    toTag: {name: '2.0.0'},
-    includeOpen: false,
-    failOnError: false,
-    fetchReviewers: false,
-    fetchReleaseInformation: false,
-    fetchReviews: false,
-    commitMode: false,
-    configuration: customConfig
-  })
-
-  expect(resultChangelog).toStrictEqual(
+  expect(buildChangelogTest(customConfig, pullRequestsWithLabels)).toStrictEqual(
     `## 🚀 Features and 🐛 Issues\n\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n## 🚀 Features and/or 🐛 Issues But No 🐛 Fixes\n\n- [ABC-1234] - this is a PR 1 title message\n   - PR: #1\n\n`
   )
 })
@@ -632,7 +487,92 @@ it('Extract custom placeholder from PR body and replace in global template', asy
     '${{CHANGELOG}}\n\n${{C_PLACEHOLER_2[2]}}\n\n${{C_PLACEHOLER_2[*]}}${{C_PLACEHOLDER_1[7]}}${{C_PLACEHOLER_2[1493]}}${{C_PLACEHOLER_4[*]}}${{C_PLACEHOLER_4[0]}}${{C_PLACEHOLER_3[1]}}'
   customConfig.pr_template = '${{BODY}} ---->  ${{C_PLACEHOLDER_1}}${{C_PLACEHOLER_3}}'
 
-  const resultChangelog = buildChangelog(DefaultDiffInfo, mergedPullRequests, {
+  expect(buildChangelogTest(customConfig, mergedPullRequests)).toStrictEqual(
+    `## 🚀 Features\n\nno magic body1 for this matter ---->  - body1body1\nno magic body3 for this matter ---->  - body3\n\n## 🐛 Fixes\n\nno magic body2 for this matter ---->  - body2\nno magic body3 for this matter ---->  - body3\n\n## 🧪 Others\n\nno magic body4 for this matter ---->  - body4\n\n\n\n\n- ody3\n\n\n- ody1\n- ody2\n- ody3\n- ody4`
+  )
+})
+
+
+it('Use Rules to include a PR within a Category.', async () => {
+  const customConfig = Object.assign({}, DefaultConfiguration)
+  customConfig.categories = [
+    {
+      title: '## 🚀 Features But No 🐛 Fixes and only merged with a title containing `[ABC-1234]`',
+      labels: ['Feature'],
+      exclude_labels: ['Fix'],
+      rules: [
+        {
+          pattern: "\[ABC-1234\]",
+          on_property: "title"
+        },
+        {
+          pattern: "merged",
+          on_property: "status"
+        }
+      ],
+      exhaustive: true
+    }
+  ]
+  expect(buildChangelogTest(customConfig, pullRequestsWithLabels)).toStrictEqual(
+    `## 🚀 Features But No 🐛 Fixes and only merged with a title containing \`[ABC-1234]\`\n\n- [ABC-1234] - this is a PR 1 title message\n   - PR: #1\n\n`
+  )
+})
+
+it('Use Rules to get all open PRs in a Category.', async () => {
+  let prs = Array.from(pullRequestsWithLabels)
+  prs.push(openPullRequest)
+
+  const customConfig = Object.assign({}, DefaultConfiguration)
+  customConfig.categories = [
+    {
+      title: '## Open PRs only',
+      rules: [
+        {
+          pattern: "open",
+          on_property: "status"
+        }
+      ]
+    }
+  ]
+  expect(buildChangelogTest(customConfig, prs)).toStrictEqual(
+    `## Open PRs only\n\n- Still pending open pull request\n   - PR: #6\n\n`
+  )
+})
+
+it('Use Rules to get all open PRs in one Category and merged categorised.', async () => {
+  let prs = Array.from(pullRequestsWithLabels)
+  prs.push(openPullRequest)
+
+  const customConfig = Object.assign({}, DefaultConfiguration)
+  customConfig.categories = [
+    {
+      title: '## Open PRs only',
+      rules: [
+        {
+          pattern: "open",
+          on_property: "status"
+        }
+      ]
+    },
+    {
+      title: '## 🚀 Features and 🐛 Issues',
+      labels: ['Feature', 'Issue'],
+      rules: [
+        {
+          pattern: "merged",
+          on_property: "status"
+        }
+      ],
+      exhaustive: true,
+    }
+  ]
+  expect(buildChangelogTest(customConfig, prs)).toStrictEqual(
+    `## Open PRs only\n\n- Still pending open pull request\n   - PR: #6\n\n## 🚀 Features and 🐛 Issues\n\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n`
+  )
+})
+
+function buildChangelogTest(config: Configuration, prs: PullRequestInfo[]): string {
+  return buildChangelog(DefaultDiffInfo, prs, {
     owner: 'mikepenz',
     repo: 'test-repo',
     fromTag: {name: '1.0.0'},
@@ -643,10 +583,6 @@ it('Extract custom placeholder from PR body and replace in global template', asy
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration: customConfig
+    configuration: config
   })
-
-  expect(resultChangelog).toStrictEqual(
-    `## 🚀 Features\n\nno magic body1 for this matter ---->  - body1body1\nno magic body3 for this matter ---->  - body3\n\n## 🐛 Fixes\n\nno magic body2 for this matter ---->  - body2\nno magic body3 for this matter ---->  - body3\n\n## 🧪 Others\n\nno magic body4 for this matter ---->  - body4\n\n\n\n\n- ody3\n\n\n- ody1\n- ody2\n- ody3\n- ody4`
-  )
-})
+}
