@@ -101,8 +101,9 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
       openPrs.push(body)
     }
 
-    let matched = false
+    let matchedOnce = false // in case we matched once at least, the PR can't be uncategorized
     for (const [category, pullRequests] of categorized) {
+      let matched = false // check if we matched within the given category
       // check if any exclude label matches
       if (category.exclude_labels !== undefined) {
         if (
@@ -150,9 +151,10 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
       if (matched) {
         pullRequests.push(body) // if matched add the PR to the list
       }
+      matchedOnce = matchedOnce || matched
     }
 
-    if (!matched) {
+    if (!matchedOnce) {
       // we allow to have pull requests included in an "uncategorized" category
       for (const [category, pullRequests] of categorized) {
         if ((category.labels === undefined || category.labels.length === 0) && category.rules === undefined) {

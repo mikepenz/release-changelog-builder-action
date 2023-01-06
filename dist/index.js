@@ -1790,8 +1790,9 @@ function buildChangelog(diffInfo, prs, options) {
         if (pr.status === 'open') {
             openPrs.push(body);
         }
-        let matched = false;
+        let matchedOnce = false; // in case we matched once at least, the PR can't be uncategorized
         for (const [category, pullRequests] of categorized) {
+            let matched = false; // check if we matched within the given category
             // check if any exclude label matches
             if (category.exclude_labels !== undefined) {
                 if ((0, utils_1.haveCommonElements)(category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
@@ -1828,8 +1829,9 @@ function buildChangelog(diffInfo, prs, options) {
             if (matched) {
                 pullRequests.push(body); // if matched add the PR to the list
             }
+            matchedOnce = matchedOnce || matched;
         }
-        if (!matched) {
+        if (!matchedOnce) {
             // we allow to have pull requests included in an "uncategorized" category
             for (const [category, pullRequests] of categorized) {
                 if ((category.labels === undefined || category.labels.length === 0) && category.rules === undefined) {
