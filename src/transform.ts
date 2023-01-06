@@ -121,51 +121,45 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
         }
       }
 
-      if (category.labels !== undefined) {
-        if (category.exhaustive === true) {
-          if (
-            haveEveryElements(
-              category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
-              pr.labels
-            )
-          ) {
-            pullRequests.push(body)
-            matched = true
-          }
-        } else {
-          if (
-            haveCommonElements(
-              category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
-              pr.labels
-            )
-          ) {
-            pullRequests.push(body)
-            matched = true
-          }
+      // in case we have exhaustive matching enabled, and have labels and/or rules
+      // validate for an exhaustive match (e.g. every provided rule applies)
+      if (category.exhaustive === true && (category.labels !== undefined || category.rules !== undefined)) {
+        if (category.labels !== undefined) {
+          matched = haveEveryElements(
+            category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
+            pr.labels
+          )
+        }
+        if (matched && category.rules !== undefined) {
+          matched = matchesRules(category.rules, pr, true)
+        }
+      } else {
+        // if not exhaustive, do individual matches
+        if (category.labels !== undefined) {
+          // check if either any of the labels applies
+          matched = haveCommonElements(
+            category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
+            pr.labels
+          )
+        }
+        if (!matched && category.rules !== undefined) {
+          // if no label did apply, check if any rule applies
+          matched = matchesRules(category.rules, pr, false)
         }
       }
-
-      if (category.rules !== undefined) {
-        if (matchesRules(category.rules, pr, category.exhaustive === true)) {
-          pullRequests.push(body)
-          matched = true
-        }
+      if (matched) {
+        pullRequests.push(body) // if matched add the PR to the list
       }
     }
 
     if (!matched) {
       // we allow to have pull requests included in an "uncategorized" category
       for (const [category, pullRequests] of categorized) {
-        if (
-          (category.labels === undefined || category.labels.length === 0) &&
-          category.rules === undefined &&
-          category.exclude_labels === undefined
-        ) {
+        if ((category.labels === undefined || category.labels.length === 0) && category.rules === undefined) {
           pullRequests.push(body)
           break
         }
       }
-
       uncategorizedPrs.push(body)
     } else {
       categorizedPrs.push(body)

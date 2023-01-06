@@ -166,10 +166,10 @@ export function createOrSet<T>(map: Map<string, T[]>, key: string, value: T): vo
   }
 }
 
-export function haveCommonElements(arr1: string[], arr2: Set<string>): Boolean {
+export function haveCommonElements(arr1: string[], arr2: Set<string>): boolean {
   return arr1.some(item => arr2.has(item))
 }
 
-export function haveEveryElements(arr1: string[], arr2: Set<string>): Boolean {
+export function haveEveryElements(arr1: string[], arr2: Set<string>): boolean {
   return arr1.every(item => arr2.has(item))
 }

@@ -5,7 +5,7 @@ import {PullRequestInfo, retrieveProperty} from './pullRequests'
 /**
  * Checks if any of the rules match the given PR
  */
-export function matchesRules(rules: Rule[], pr: PullRequestInfo, exhaustive: Boolean): Boolean {
+export function matchesRules(rules: Rule[], pr: PullRequestInfo, exhaustive: Boolean): boolean {
   const transformers: RegexTransformer[] = rules.map(rule => validateTransformer(rule)).filter(t => t !== null) as RegexTransformer[]
   if (exhaustive) {
     return transformers.every(transformer => {
