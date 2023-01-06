@@ -395,18 +395,19 @@ function run() {
             // read in path specification, resolve github workspace, and repo path
             const inputPath = core.getInput('path');
             const repositoryPath = (0, utils_1.retrieveRepositoryPath)(inputPath);
-            // read in configuration file if possible
-            let configuration = undefined;
+            // read in configuration from json if possible
+            let configJson = undefined;
             const configurationJson = core.getInput('configurationJson', {
                 trimWhitespace: true
             });
             if (configurationJson) {
-                configuration = (0, utils_1.parseConfiguration)(configurationJson);
+                configJson = (0, utils_1.parseConfiguration)(configurationJson);
             }
-            if (!configuration) {
-                const configurationFile = core.getInput('configuration');
-                configuration = (0, utils_1.resolveConfiguration)(repositoryPath, configurationFile);
-            }
+            // read in the configuration from the file if possible
+            const configurationFile = core.getInput('configuration');
+            const configFile = (0, utils_1.resolveConfiguration)(repositoryPath, configurationFile);
+            // merge configs, use default values from DefaultConfig on missing definition
+            const configuration = (0, utils_1.mergeConfiguration)(configJson, configFile);
             // read in repository inputs
             const baseUrl = core.getInput('baseUrl');
             const token = core.getInput('token');
@@ -490,7 +491,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.compare = exports.sortPullRequests = exports.PullRequests = exports.EMPTY_COMMENT_INFO = void 0;
+exports.retrieveProperty = exports.compare = exports.sortPullRequests = exports.PullRequests = exports.EMPTY_COMMENT_INFO = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const moment_1 = __importDefault(__nccwpck_require__(9623));
 exports.EMPTY_COMMENT_INFO = {
@@ -737,6 +738,24 @@ function compare(a, b, sort) {
     }
 }
 exports.compare = compare;
+/**
+ * Helper function to retrieve a property from the PullRequestInfo
+ */
+function retrieveProperty(pr, property, useCase) {
+    let value = pr[property];
+    if (value === undefined) {
+        core.warning(`⚠️ the provided property '${property}' for \`${useCase}\` is not valid. Fallback to 'body'`);
+        value = pr['body'];
+    }
+    else if (value instanceof Set) {
+        value = Array.from(value).join(','); // join into single string
+    }
+    else if (Array.isArray(value)) {
+        value = value.join(','); // join into single string
+    }
+    return value;
+}
+exports.retrieveProperty = retrieveProperty;
 // helper function to add a special open label to prs not merged.
 function attachSpeciaLabels(status, labels) {
     labels.add(`--rcba-${status}`);
@@ -776,6 +795,127 @@ const mapComment = (comment) => {
         state: comment.state
     });
 };
+
+
+/***/ }),
+
+/***/ 2364:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.buildRegex = exports.validateTransformer = exports.matchesRules = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const pullRequests_1 = __nccwpck_require__(4217);
+/**
+ * Checks if any of the rules match the given PR
+ */
+function matchesRules(rules, pr, exhaustive) {
+    const transformers = rules.map(rule => validateTransformer(rule)).filter(t => t !== null);
+    if (exhaustive) {
+        return transformers.every(transformer => {
+            return matches(pr, transformer, 'rule');
+        });
+    }
+    else {
+        return transformers.some(transformer => {
+            return matches(pr, transformer, 'rule');
+        });
+    }
+}
+exports.matchesRules = matchesRules;
+/**
+ * Checks if the configured property results in a positive `test` with the regex.
+ */
+function matches(pr, extractor, extractor_usecase) {
+    if (extractor.pattern == null) {
+        return false;
+    }
+    if (extractor.onProperty !== undefined && extractor.onProperty.length === 1) {
+        const prop = extractor.onProperty[0];
+        const value = (0, pullRequests_1.retrieveProperty)(pr, prop, extractor_usecase);
+        return extractor.pattern.test(value);
+    }
+    return false;
+}
+function validateTransformer(transformer) {
+    if (transformer === undefined) {
+        return null;
+    }
+    try {
+        let target = undefined;
+        if (transformer.hasOwnProperty('target')) {
+            target = transformer.target;
+        }
+        let onProperty = undefined;
+        let method = undefined;
+        let onEmpty = undefined;
+        if (transformer.hasOwnProperty('method')) {
+            method = transformer.method;
+            onEmpty = transformer.on_empty;
+            onProperty = transformer.on_property;
+        }
+        else if (transformer.hasOwnProperty('on_property')) {
+            onProperty = transformer.on_property;
+        }
+        // legacy handling, transform single value input to array
+        if (!Array.isArray(onProperty)) {
+            if (onProperty !== undefined) {
+                onProperty = [onProperty];
+            }
+        }
+        return buildRegex(transformer, target, onProperty, method, onEmpty);
+    }
+    catch (e) {
+        core.warning(`⚠️ Failed to validate transformer: ${transformer.pattern}`);
+        return null;
+    }
+}
+exports.validateTransformer = validateTransformer;
+/**
+ * Constructs the RegExp, providing the configured Regex and additional values
+ */
+function buildRegex(regex, target, onProperty, method, onEmpty) {
+    var _a;
+    try {
+        return {
+            pattern: new RegExp(regex.pattern.replace('\\\\', '\\'), (_a = regex.flags) !== null && _a !== void 0 ? _a : 'gu'),
+            target: target || '',
+            onProperty,
+            method,
+            onEmpty
+        };
+    }
+    catch (e) {
+        core.warning(`⚠️ Bad replacer regex: ${regex.pattern}`);
+        return null;
+    }
+}
+exports.buildRegex = buildRegex;
 
 
 /***/ }),
@@ -821,7 +961,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ReleaseNotes = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const commits_1 = __nccwpck_require__(3916);
-const configuration_1 = __nccwpck_require__(5527);
 const pullRequests_1 = __nccwpck_require__(4217);
 const transform_1 = __nccwpck_require__(1644);
 const utils_1 = __nccwpck_require__(918);
@@ -862,7 +1001,7 @@ class ReleaseNotes {
             core.setOutput('commits', diffInfo.commits);
             if (mergedPullRequests.length === 0) {
                 core.warning(`⚠️ No pull requests found`);
-                return (0, transform_1.replaceEmptyTemplate)(this.options.configuration.empty_template || configuration_1.DefaultConfiguration.empty_template, this.options);
+                return (0, transform_1.replaceEmptyTemplate)(this.options.configuration.empty_template, this.options);
             }
             core.startGroup('📦 Build changelog');
             const resultChangelog = (0, transform_1.buildChangelog)(diffInfo, mergedPullRequests, this.options);
@@ -903,7 +1042,7 @@ class ReleaseNotes {
             const lastCommit = commits[commits.length - 1];
             let fromDate = firstCommit.date;
             const toDate = lastCommit.date;
-            const maxDays = configuration.max_back_track_time_days || configuration_1.DefaultConfiguration.max_back_track_time_days;
+            const maxDays = configuration.max_back_track_time_days;
             const maxFromDate = toDate.clone().subtract(maxDays, 'days');
             if (maxFromDate.isAfter(fromDate)) {
                 core.info(`⚠️ Adjusted 'fromDate' to go max ${maxDays} back`);
@@ -911,9 +1050,9 @@ class ReleaseNotes {
             }
             core.info(`ℹ️ Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`);
             const pullRequestsApi = new pullRequests_1.PullRequests(octokit);
-            const pullRequests = yield pullRequestsApi.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests || configuration_1.DefaultConfiguration.max_pull_requests);
+            const pullRequests = yield pullRequestsApi.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests);
             core.info(`ℹ️ Retrieved ${pullRequests.length} PRs for ${owner}/${repo} in date range from API`);
-            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches || configuration_1.DefaultConfiguration.exclude_merge_branches);
+            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches);
             core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`);
             // create array of commits for this release
             const releaseCommitHashes = prCommits.map(commmit => {
@@ -927,14 +1066,14 @@ class ReleaseNotes {
             let allPullRequests = mergedPullRequests;
             if (includeOpen) {
                 // retrieve all open pull requests
-                const openPullRequests = yield pullRequestsApi.getOpen(owner, repo, configuration.max_pull_requests || configuration_1.DefaultConfiguration.max_pull_requests);
+                const openPullRequests = yield pullRequestsApi.getOpen(owner, repo, configuration.max_pull_requests);
                 core.info(`ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`);
                 // all pull requests
                 allPullRequests = allPullRequests.concat(openPullRequests);
                 core.info(`ℹ️ Retrieved ${allPullRequests.length} total PRs for ${owner}/${repo}`);
             }
             // retrieve base branches we allow
-            const baseBranches = configuration.base_branches || configuration_1.DefaultConfiguration.base_branches;
+            const baseBranches = configuration.base_branches;
             const baseBranchPatterns = baseBranches.map(baseBranch => {
                 return new RegExp(baseBranch.replace('\\\\', '\\'), 'gu');
             });
@@ -987,7 +1126,7 @@ class ReleaseNotes {
             if (commits.length === 0) {
                 return [diffInfo, []];
             }
-            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches || configuration_1.DefaultConfiguration.exclude_merge_branches);
+            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches);
             core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`);
             const prs = prCommits.map(function (commit) {
                 return {
@@ -1058,7 +1197,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ReleaseNotesBuilder = void 0;
 const core = __importStar(__nccwpck_require__(2186));
-const configuration_1 = __nccwpck_require__(5527);
 const rest_1 = __nccwpck_require__(5375);
 const releaseNotes_1 = __nccwpck_require__(5882);
 const tags_1 = __nccwpck_require__(7532);
@@ -1125,7 +1263,7 @@ class ReleaseNotesBuilder {
             // ensure proper from <-> to tag range
             core.startGroup(`🔖 Resolve tags`);
             const tagsApi = new tags_1.Tags(octokit);
-            const tagRange = yield tagsApi.retrieveRange(this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.ignorePreReleases, this.configuration.max_tags_to_fetch || configuration_1.DefaultConfiguration.max_tags_to_fetch, this.configuration.tag_resolver || configuration_1.DefaultConfiguration.tag_resolver);
+            const tagRange = yield tagsApi.retrieveRange(this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.ignorePreReleases, this.configuration.max_tags_to_fetch, this.configuration.tag_resolver);
             let thisTag = tagRange.to;
             if (!thisTag) {
                 (0, utils_1.failOrError)(`💥 Missing or couldn't resolve 'toTag'`, this.failOnError);
@@ -1229,8 +1367,8 @@ const github = __importStar(__nccwpck_require__(5438));
 const semver = __importStar(__nccwpck_require__(1383));
 const semver_1 = __nccwpck_require__(1383);
 const gitHelper_1 = __nccwpck_require__(353);
-const transform_1 = __nccwpck_require__(1644);
 const moment_1 = __importDefault(__nccwpck_require__(9623));
+const regexUtils_1 = __nccwpck_require__(2364);
 class Tags {
     constructor(octokit) {
         this.octokit = octokit;
@@ -1354,7 +1492,7 @@ class Tags {
             // retrieve the tags from the API
             yield this.getTags(owner, repo, maxTagsToFetch), tagResolver);
             // check if a transformer was defined
-            const tagTransformer = (0, transform_1.validateTransformer)(tagResolver.transformer);
+            const tagTransformer = (0, regexUtils_1.validateTransformer)(tagResolver.transformer);
             let transformedTags;
             if (tagTransformer != null) {
                 core.debug(`ℹ️ Using configured tagTransformer`);
@@ -1567,21 +1705,21 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.validateTransformer = exports.replaceEmptyTemplate = exports.buildChangelog = void 0;
+exports.replaceEmptyTemplate = exports.buildChangelog = void 0;
 const core = __importStar(__nccwpck_require__(2186));
-const configuration_1 = __nccwpck_require__(5527);
 const pullRequests_1 = __nccwpck_require__(4217);
 const utils_1 = __nccwpck_require__(918);
+const regexUtils_1 = __nccwpck_require__(2364);
 const EMPTY_MAP = new Map();
 function buildChangelog(diffInfo, prs, options) {
     // sort to target order
     const config = options.configuration;
-    const sort = config.sort || configuration_1.DefaultConfiguration.sort;
+    const sort = config.sort;
     prs = (0, pullRequests_1.sortPullRequests)(prs, sort);
     core.info(`ℹ️ Sorted all pull requests ascending: ${JSON.stringify(sort)}`);
     // drop duplicate pull requests
     if (config.duplicate_filter !== undefined) {
-        const extractor = validateTransformer(config.duplicate_filter);
+        const extractor = (0, regexUtils_1.validateTransformer)(config.duplicate_filter);
         if (extractor != null) {
             core.info(`ℹ️ Remove duplicated pull requests using \`duplicate_filter\``);
             const deduplicatedMap = new Map();
@@ -1628,14 +1766,14 @@ function buildChangelog(diffInfo, prs, options) {
     const transformedMap = new Map();
     // convert PRs to their text representation
     for (const pr of prs) {
-        transformedMap.set(pr, transform(fillPrTemplate(pr, config.pr_template || configuration_1.DefaultConfiguration.pr_template, placeholders, placeholderPrMap, config), validatedTransformers));
+        transformedMap.set(pr, transform(fillPrTemplate(pr, config.pr_template, placeholders, placeholderPrMap, config), validatedTransformers));
     }
     core.info(`ℹ️ Used ${validatedTransformers.length} transformers to adjust message`);
     core.info(`✒️ Wrote messages for ${prs.length} pull requests`);
     // bring PRs into the order of categories
     const categorized = new Map();
-    const categories = config.categories || configuration_1.DefaultConfiguration.categories;
-    const ignoredLabels = config.ignore_labels || configuration_1.DefaultConfiguration.ignore_labels;
+    const categories = config.categories;
+    const ignoredLabels = config.ignore_labels;
     for (const category of categories) {
         categorized.set(category, []);
     }
@@ -1652,8 +1790,9 @@ function buildChangelog(diffInfo, prs, options) {
         if (pr.status === 'open') {
             openPrs.push(body);
         }
-        let matched = false;
+        let matchedOnce = false; // in case we matched once at least, the PR can't be uncategorized
         for (const [category, pullRequests] of categorized) {
+            let matched = false; // check if we matched within the given category
             // check if any exclude label matches
             if (category.exclude_labels !== undefined) {
                 if ((0, utils_1.haveCommonElements)(category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
@@ -1666,23 +1805,36 @@ function buildChangelog(diffInfo, prs, options) {
                     continue; // one of the exclude labels matched, skip the PR for this category
                 }
             }
-            if (category.exhaustive === true) {
-                if ((0, utils_1.haveEveryElements)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
-                    pullRequests.push(body);
-                    matched = true;
+            // in case we have exhaustive matching enabled, and have labels and/or rules
+            // validate for an exhaustive match (e.g. every provided rule applies)
+            if (category.exhaustive === true && (category.labels !== undefined || category.rules !== undefined)) {
+                if (category.labels !== undefined) {
+                    matched = (0, utils_1.haveEveryElements)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels);
+                }
+                if (matched && category.rules !== undefined) {
+                    matched = (0, regexUtils_1.matchesRules)(category.rules, pr, true);
                 }
             }
             else {
-                if ((0, utils_1.haveCommonElements)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
-                    pullRequests.push(body);
-                    matched = true;
+                // if not exhaustive, do individual matches
+                if (category.labels !== undefined) {
+                    // check if either any of the labels applies
+                    matched = (0, utils_1.haveCommonElements)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels);
+                }
+                if (!matched && category.rules !== undefined) {
+                    // if no label did apply, check if any rule applies
+                    matched = (0, regexUtils_1.matchesRules)(category.rules, pr, false);
                 }
             }
+            if (matched) {
+                pullRequests.push(body); // if matched add the PR to the list
+            }
+            matchedOnce = matchedOnce || matched;
         }
-        if (!matched) {
+        if (!matchedOnce) {
             // we allow to have pull requests included in an "uncategorized" category
             for (const [category, pullRequests] of categorized) {
-                if (category.labels.length === 0) {
+                if ((category.labels === undefined || category.labels.length === 0) && category.rules === undefined) {
                     pullRequests.push(body);
                     break;
                 }
@@ -1768,7 +1920,7 @@ function buildChangelog(diffInfo, prs, options) {
     placeholderMap.set('CHANGES', diffInfo.changes.toString());
     placeholderMap.set('COMMITS', diffInfo.commits.toString());
     fillAdditionalPlaceholders(options, placeholderMap);
-    let transformedChangelog = config.template || configuration_1.DefaultConfiguration.template;
+    let transformedChangelog = config.template;
     transformedChangelog = replacePlaceholders(transformedChangelog, EMPTY_MAP, placeholderMap, placeholders, placeholderPrMap, config);
     transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap, config);
     transformedChangelog = cleanupPrPlaceholders(transformedChangelog, placeholders);
@@ -1848,7 +2000,7 @@ function handlePlaceholder(template, key, value, placeholders /* placeholders to
     const phs = placeholders.get(key);
     if (phs) {
         for (const placeholder of phs) {
-            const transformer = validateTransformer(placeholder.transformer);
+            const transformer = (0, regexUtils_1.validateTransformer)(placeholder.transformer);
             if (transformer === null || transformer === void 0 ? void 0 : transformer.pattern) {
                 const extractedValue = value.replace(transformer.pattern, transformer.target);
                 // note: `.replace` will return the full string again if there was no match
@@ -1917,50 +2069,16 @@ function transform(filled, transformers) {
     return transformed;
 }
 function validateTransformers(specifiedTransformers) {
-    const transformers = specifiedTransformers || configuration_1.DefaultConfiguration.transformers;
+    const transformers = specifiedTransformers;
     return transformers
         .map(transformer => {
-        return validateTransformer(transformer);
+        return (0, regexUtils_1.validateTransformer)(transformer);
     })
         .filter(transformer => (transformer === null || transformer === void 0 ? void 0 : transformer.pattern) != null)
         .map(transformer => {
         return transformer;
     });
 }
-function validateTransformer(transformer) {
-    var _a;
-    if (transformer === undefined) {
-        return null;
-    }
-    try {
-        let onProperty = undefined;
-        let method = undefined;
-        let onEmpty = undefined;
-        if (transformer.hasOwnProperty('on_property')) {
-            onProperty = transformer.on_property;
-            method = transformer.method;
-            onEmpty = transformer.on_empty;
-        }
-        // legacy handling, transform single value input to array
-        if (!Array.isArray(onProperty)) {
-            if (onProperty !== undefined) {
-                onProperty = [onProperty];
-            }
-        }
-        return {
-            pattern: new RegExp(transformer.pattern.replace('\\\\', '\\'), (_a = transformer.flags) !== null && _a !== void 0 ? _a : 'gu'),
-            target: transformer.target || '',
-            onProperty,
-            method,
-            onEmpty
-        };
-    }
-    catch (e) {
-        core.warning(`⚠️ Bad replacer regex: ${transformer.pattern}`);
-        return null;
-    }
-}
-exports.validateTransformer = validateTransformer;
 function extractValues(pr, extractor, extractor_usecase) {
     if (extractor.pattern == null) {
         return null;
@@ -1971,11 +2089,7 @@ function extractValues(pr, extractor, extractor_usecase) {
         // eslint-disable-next-line @typescript-eslint/prefer-for-of
         for (let i = 0; i < list.length; i++) {
             const prop = list[i];
-            let value = pr[prop];
-            if (value === undefined) {
-                core.warning(`⚠️ the provided property '${extractor.onProperty}' for \`${extractor_usecase}\` is not valid`);
-                value = pr['body'];
-            }
+            const value = (0, pullRequests_1.retrieveProperty)(pr, prop, extractor_usecase);
             const values = extractValuesFromString(value, extractor);
             if (values !== null) {
                 results = results.concat(values);
@@ -2041,7 +2155,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.haveEveryElements = exports.haveCommonElements = exports.createOrSet = exports.writeOutput = exports.directoryExistsSync = exports.parseConfiguration = exports.resolveConfiguration = exports.failOrError = exports.retrieveRepositoryPath = void 0;
+exports.haveEveryElements = exports.haveCommonElements = exports.createOrSet = exports.writeOutput = exports.directoryExistsSync = exports.mergeConfiguration = exports.parseConfiguration = exports.resolveConfiguration = exports.failOrError = exports.retrieveRepositoryPath = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
@@ -2130,6 +2244,31 @@ function parseConfiguration(config) {
     }
 }
 exports.parseConfiguration = parseConfiguration;
+/**
+ * Merges the configurations, will fallback to the DefaultConfiguration value
+ */
+function mergeConfiguration(jc, fc) {
+    return {
+        max_tags_to_fetch: (jc === null || jc === void 0 ? void 0 : jc.max_tags_to_fetch) || (fc === null || fc === void 0 ? void 0 : fc.max_tags_to_fetch) || configuration_1.DefaultConfiguration.max_tags_to_fetch,
+        max_pull_requests: (jc === null || jc === void 0 ? void 0 : jc.max_pull_requests) || (fc === null || fc === void 0 ? void 0 : fc.max_pull_requests) || configuration_1.DefaultConfiguration.max_pull_requests,
+        max_back_track_time_days: (jc === null || jc === void 0 ? void 0 : jc.max_back_track_time_days) || (fc === null || fc === void 0 ? void 0 : fc.max_back_track_time_days) || configuration_1.DefaultConfiguration.max_back_track_time_days,
+        exclude_merge_branches: (jc === null || jc === void 0 ? void 0 : jc.exclude_merge_branches) || (fc === null || fc === void 0 ? void 0 : fc.exclude_merge_branches) || configuration_1.DefaultConfiguration.exclude_merge_branches,
+        sort: (jc === null || jc === void 0 ? void 0 : jc.sort) || (fc === null || fc === void 0 ? void 0 : fc.sort) || configuration_1.DefaultConfiguration.sort,
+        template: (jc === null || jc === void 0 ? void 0 : jc.template) || (fc === null || fc === void 0 ? void 0 : fc.template) || configuration_1.DefaultConfiguration.template,
+        pr_template: (jc === null || jc === void 0 ? void 0 : jc.pr_template) || (fc === null || fc === void 0 ? void 0 : fc.pr_template) || configuration_1.DefaultConfiguration.pr_template,
+        empty_template: (jc === null || jc === void 0 ? void 0 : jc.empty_template) || (fc === null || fc === void 0 ? void 0 : fc.empty_template) || configuration_1.DefaultConfiguration.empty_template,
+        categories: (jc === null || jc === void 0 ? void 0 : jc.categories) || (fc === null || fc === void 0 ? void 0 : fc.categories) || configuration_1.DefaultConfiguration.categories,
+        ignore_labels: (jc === null || jc === void 0 ? void 0 : jc.ignore_labels) || (fc === null || fc === void 0 ? void 0 : fc.ignore_labels) || configuration_1.DefaultConfiguration.ignore_labels,
+        label_extractor: (jc === null || jc === void 0 ? void 0 : jc.label_extractor) || (fc === null || fc === void 0 ? void 0 : fc.label_extractor) || configuration_1.DefaultConfiguration.label_extractor,
+        duplicate_filter: (jc === null || jc === void 0 ? void 0 : jc.duplicate_filter) || (fc === null || fc === void 0 ? void 0 : fc.duplicate_filter) || configuration_1.DefaultConfiguration.duplicate_filter,
+        transformers: (jc === null || jc === void 0 ? void 0 : jc.transformers) || (fc === null || fc === void 0 ? void 0 : fc.transformers) || configuration_1.DefaultConfiguration.transformers,
+        tag_resolver: (jc === null || jc === void 0 ? void 0 : jc.tag_resolver) || (fc === null || fc === void 0 ? void 0 : fc.tag_resolver) || configuration_1.DefaultConfiguration.tag_resolver,
+        base_branches: (jc === null || jc === void 0 ? void 0 : jc.base_branches) || (fc === null || fc === void 0 ? void 0 : fc.base_branches) || configuration_1.DefaultConfiguration.base_branches,
+        custom_placeholders: (jc === null || jc === void 0 ? void 0 : jc.custom_placeholders) || (fc === null || fc === void 0 ? void 0 : fc.custom_placeholders) || configuration_1.DefaultConfiguration.custom_placeholders,
+        trim_values: (jc === null || jc === void 0 ? void 0 : jc.trim_values) || (fc === null || fc === void 0 ? void 0 : fc.trim_values) || configuration_1.DefaultConfiguration.trim_values
+    };
+}
+exports.mergeConfiguration = mergeConfiguration;
 /**
  * Checks if a given directory exists
  */

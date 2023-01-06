@@ -5,8 +5,8 @@ import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import {SemVer} from 'semver'
 import {TagResolver} from './configuration'
 import {createCommandManager} from './gitHelper'
-import {RegexTransformer, validateTransformer} from './transform'
 import moment from 'moment'
+import {RegexTransformer, validateTransformer} from './regexUtils'
 
 export interface TagResult {
   from: TagInfo | null

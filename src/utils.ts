@@ -2,7 +2,6 @@ import * as core from '@actions/core'
 import * as fs from 'fs'
 import * as path from 'path'
 import {Configuration, DefaultConfiguration} from './configuration'
-
 /**
  * Resolves the repository path, relatively to the GITHUB_WORKSPACE
  */
@@ -85,6 +84,31 @@ export function parseConfiguration(config: string): Configuration | undefined {
 }
 
 /**
+ * Merges the configurations, will fallback to the DefaultConfiguration value
+ */
+export function mergeConfiguration(jc?: Configuration, fc?: Configuration): Configuration {
+  return {
+    max_tags_to_fetch: jc?.max_tags_to_fetch || fc?.max_tags_to_fetch || DefaultConfiguration.max_tags_to_fetch,
+    max_pull_requests: jc?.max_pull_requests || fc?.max_pull_requests || DefaultConfiguration.max_pull_requests,
+    max_back_track_time_days: jc?.max_back_track_time_days || fc?.max_back_track_time_days || DefaultConfiguration.max_back_track_time_days,
+    exclude_merge_branches: jc?.exclude_merge_branches || fc?.exclude_merge_branches || DefaultConfiguration.exclude_merge_branches,
+    sort: jc?.sort || fc?.sort || DefaultConfiguration.sort,
+    template: jc?.template || fc?.template || DefaultConfiguration.template,
+    pr_template: jc?.pr_template || fc?.pr_template || DefaultConfiguration.pr_template,
+    empty_template: jc?.empty_template || fc?.empty_template || DefaultConfiguration.empty_template,
+    categories: jc?.categories || fc?.categories || DefaultConfiguration.categories,
+    ignore_labels: jc?.ignore_labels || fc?.ignore_labels || DefaultConfiguration.ignore_labels,
+    label_extractor: jc?.label_extractor || fc?.label_extractor || DefaultConfiguration.label_extractor,
+    duplicate_filter: jc?.duplicate_filter || fc?.duplicate_filter || DefaultConfiguration.duplicate_filter,
+    transformers: jc?.transformers || fc?.transformers || DefaultConfiguration.transformers,
+    tag_resolver: jc?.tag_resolver || fc?.tag_resolver || DefaultConfiguration.tag_resolver,
+    base_branches: jc?.base_branches || fc?.base_branches || DefaultConfiguration.base_branches,
+    custom_placeholders: jc?.custom_placeholders || fc?.custom_placeholders || DefaultConfiguration.custom_placeholders,
+    trim_values: jc?.trim_values || fc?.trim_values || DefaultConfiguration.trim_values
+  }
+}
+
+/**
  * Checks if a given directory exists
  */
 export function directoryExistsSync(inputPath: string, required?: boolean): boolean {
@@ -133,7 +157,7 @@ export function writeOutput(githubWorkspacePath: string, outputFile: string, cha
 
 export type Unpacked<T> = T extends (infer U)[] ? U : T
 
-export function createOrSet<T>(map: Map<String, T[]>, key: string, value: T): void {
+export function createOrSet<T>(map: Map<string, T[]>, key: string, value: T): void {
   const entry = map.get(key)
   if (!entry) {
     map.set(key, [value])
@@ -142,10 +166,10 @@ export function createOrSet<T>(map: Map<String, T[]>, key: string, value: T): vo
   }
 }
 
-export function haveCommonElements(arr1: string[], arr2: Set<string>): Boolean {
+export function haveCommonElements(arr1: string[], arr2: Set<string>): boolean {
   return arr1.some(item => arr2.has(item))
 }
 
-export function haveEveryElements(arr1: string[], arr2: Set<string>): Boolean {
+export function haveEveryElements(arr1: string[], arr2: Set<string>): boolean {
   return arr1.every(item => arr2.has(item))
 }

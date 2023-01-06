@@ -20,10 +20,30 @@ export interface Configuration {
 
 export interface Category {
   title: string // the title of this category
-  labels: string[] // labels to associate PRs to this category
+  labels?: string[] // labels to associate PRs to this category
   exclude_labels?: string[] // if an exclude label is detected, the PR will be excluded from this category
-  exhaustive?: boolean // requires all labels to be present in the PR
+  rules?: Rule[] // rules to associate PRs to this category
+  exhaustive?: boolean // requires all labels AND/OR rules to be present in the PR
   empty_content?: string // if the category has no matching PRs, this content will be used. If not set, the category will be skipped in the changelog.
+}
+
+/**
+ * Defines the properties of the PullRequestInfo useable in different configurations
+ */
+export type Property =
+  | 'title'
+  | 'branch'
+  | 'author'
+  | 'labels'
+  | 'milestone'
+  | 'body'
+  | 'assignees'
+  | 'requestedReviewers'
+  | 'approvedReviewers'
+  | 'status'
+
+export interface Rule extends Regex {
+  on_property?: Property // retrieve the property to apply the rule on
 }
 
 export interface Sort {
@@ -41,7 +61,7 @@ export interface Transformer extends Regex {
 }
 
 export interface Extractor extends Transformer {
-  on_property?: ('title' | 'author' | 'milestone' | 'body' | 'branch')[] | 'title' | 'author' | 'milestone' | 'body' | 'branch' | undefined // retrieve the property to extract the value from
+  on_property?: Property[] | Property | undefined // retrieve the property to extract the value from
   method?: 'replace' | 'match' | undefined // the method to use to extract the value, `match` will not use the `target` property
   on_empty?: string | undefined // in case the regex results in an empty string, this value is gonna be used instead (only for label_extractor currently)
 }

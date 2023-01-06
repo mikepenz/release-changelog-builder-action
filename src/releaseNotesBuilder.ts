@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import {Configuration, DefaultConfiguration} from './configuration'
+import {Configuration} from './configuration'
 import {Octokit} from '@octokit/rest'
 import {ReleaseNotes} from './releaseNotes'
 import {Tags} from './tags'
@@ -77,8 +77,8 @@ export class ReleaseNotesBuilder {
       this.fromTag,
       this.toTag,
       this.ignorePreReleases,
-      this.configuration.max_tags_to_fetch || DefaultConfiguration.max_tags_to_fetch,
-      this.configuration.tag_resolver || DefaultConfiguration.tag_resolver
+      this.configuration.max_tags_to_fetch,
+      this.configuration.tag_resolver
     )
 
     let thisTag = tagRange.to

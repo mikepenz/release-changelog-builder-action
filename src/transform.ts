@@ -1,24 +1,17 @@
 import * as core from '@actions/core'
-import {Category, Configuration, DefaultConfiguration, Extractor, Placeholder, Transformer} from './configuration'
-import {CommentInfo, EMPTY_COMMENT_INFO, PullRequestInfo, sortPullRequests} from './pullRequests'
+import {Category, Configuration, Placeholder, Property, Transformer} from './configuration'
+import {CommentInfo, EMPTY_COMMENT_INFO, PullRequestInfo, retrieveProperty, sortPullRequests} from './pullRequests'
 import {ReleaseNotesOptions} from './releaseNotes'
 import {DiffInfo} from './commits'
 import {createOrSet, haveCommonElements, haveEveryElements} from './utils'
-
-export interface RegexTransformer {
-  pattern: RegExp | null
-  target: string
-  onProperty?: ('title' | 'author' | 'milestone' | 'body' | 'status' | 'branch')[] | undefined
-  method?: 'replace' | 'match' | undefined
-  onEmpty?: string | undefined
-}
+import {matchesRules, RegexTransformer, validateTransformer} from './regexUtils'
 
 const EMPTY_MAP = new Map<string, string>()
 
 export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], options: ReleaseNotesOptions): string {
   // sort to target order
   const config = options.configuration
-  const sort = config.sort || DefaultConfiguration.sort
+  const sort = config.sort
   prs = sortPullRequests(prs, sort)
   core.info(`ℹ️ Sorted all pull requests ascending: ${JSON.stringify(sort)}`)
 
@@ -73,21 +66,15 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
   const transformedMap = new Map<PullRequestInfo, string>()
   // convert PRs to their text representation
   for (const pr of prs) {
-    transformedMap.set(
-      pr,
-      transform(
-        fillPrTemplate(pr, config.pr_template || DefaultConfiguration.pr_template, placeholders, placeholderPrMap, config),
-        validatedTransformers
-      )
-    )
+    transformedMap.set(pr, transform(fillPrTemplate(pr, config.pr_template, placeholders, placeholderPrMap, config), validatedTransformers))
   }
   core.info(`ℹ️ Used ${validatedTransformers.length} transformers to adjust message`)
   core.info(`✒️ Wrote messages for ${prs.length} pull requests`)
 
   // bring PRs into the order of categories
   const categorized = new Map<Category, string[]>()
-  const categories = config.categories || DefaultConfiguration.categories
-  const ignoredLabels = config.ignore_labels || DefaultConfiguration.ignore_labels
+  const categories = config.categories
+  const ignoredLabels = config.ignore_labels
 
   for (const category of categories) {
     categorized.set(category, [])
@@ -114,8 +101,9 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
       openPrs.push(body)
     }
 
-    let matched = false
+    let matchedOnce = false // in case we matched once at least, the PR can't be uncategorized
     for (const [category, pullRequests] of categorized) {
+      let matched = false // check if we matched within the given category
       // check if any exclude label matches
       if (category.exclude_labels !== undefined) {
         if (
@@ -134,38 +122,46 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
         }
       }
 
-      if (category.exhaustive === true) {
-        if (
-          haveEveryElements(
+      // in case we have exhaustive matching enabled, and have labels and/or rules
+      // validate for an exhaustive match (e.g. every provided rule applies)
+      if (category.exhaustive === true && (category.labels !== undefined || category.rules !== undefined)) {
+        if (category.labels !== undefined) {
+          matched = haveEveryElements(
             category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
             pr.labels
           )
-        ) {
-          pullRequests.push(body)
-          matched = true
+        }
+        if (matched && category.rules !== undefined) {
+          matched = matchesRules(category.rules, pr, true)
         }
       } else {
-        if (
-          haveCommonElements(
+        // if not exhaustive, do individual matches
+        if (category.labels !== undefined) {
+          // check if either any of the labels applies
+          matched = haveCommonElements(
             category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
             pr.labels
           )
-        ) {
-          pullRequests.push(body)
-          matched = true
+        }
+        if (!matched && category.rules !== undefined) {
+          // if no label did apply, check if any rule applies
+          matched = matchesRules(category.rules, pr, false)
         }
       }
+      if (matched) {
+        pullRequests.push(body) // if matched add the PR to the list
+      }
+      matchedOnce = matchedOnce || matched
     }
 
-    if (!matched) {
+    if (!matchedOnce) {
       // we allow to have pull requests included in an "uncategorized" category
       for (const [category, pullRequests] of categorized) {
-        if (category.labels.length === 0) {
+        if ((category.labels === undefined || category.labels.length === 0) && category.rules === undefined) {
           pullRequests.push(body)
           break
         }
       }
-
       uncategorizedPrs.push(body)
     } else {
       categorizedPrs.push(body)
@@ -252,7 +248,7 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
   placeholderMap.set('COMMITS', diffInfo.commits.toString())
   fillAdditionalPlaceholders(options, placeholderMap)
 
-  let transformedChangelog = config.template || DefaultConfiguration.template
+  let transformedChangelog = config.template
   transformedChangelog = replacePlaceholders(transformedChangelog, EMPTY_MAP, placeholderMap, placeholders, placeholderPrMap, config)
   transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap, config)
   transformedChangelog = cleanupPrPlaceholders(transformedChangelog, placeholders)
@@ -453,7 +449,7 @@ function transform(filled: string, transformers: RegexTransformer[]): string {
 }
 
 function validateTransformers(specifiedTransformers: Transformer[]): RegexTransformer[] {
-  const transformers = specifiedTransformers || DefaultConfiguration.transformers
+  const transformers = specifiedTransformers
   return transformers
     .map(transformer => {
       return validateTransformer(transformer)
@@ -464,40 +460,6 @@ function validateTransformers(specifiedTransformers: Transformer[]): RegexTransf
     })
 }
 
-export function validateTransformer(transformer?: Transformer): RegexTransformer | null {
-  if (transformer === undefined) {
-    return null
-  }
-  try {
-    let onProperty = undefined
-    let method = undefined
-    let onEmpty = undefined
-    if (transformer.hasOwnProperty('on_property')) {
-      onProperty = (transformer as Extractor).on_property
-      method = (transformer as Extractor).method
-      onEmpty = (transformer as Extractor).on_empty
-    }
-
-    // legacy handling, transform single value input to array
-    if (!Array.isArray(onProperty)) {
-      if (onProperty !== undefined) {
-        onProperty = [onProperty]
-      }
-    }
-
-    return {
-      pattern: new RegExp(transformer.pattern.replace('\\\\', '\\'), transformer.flags ?? 'gu'),
-      target: transformer.target || '',
-      onProperty,
-      method,
-      onEmpty
-    }
-  } catch (e) {
-    core.warning(`⚠️ Bad replacer regex: ${transformer.pattern}`)
-    return null
-  }
-}
-
 function extractValues(pr: PullRequestInfo, extractor: RegexTransformer, extractor_usecase: string): string[] | null {
   if (extractor.pattern == null) {
     return null
@@ -505,16 +467,11 @@ function extractValues(pr: PullRequestInfo, extractor: RegexTransformer, extract
 
   if (extractor.onProperty !== undefined) {
     let results: string[] = []
-    const list: ('title' | 'author' | 'milestone' | 'body' | 'status' | 'branch')[] = extractor.onProperty
+    const list: Property[] = extractor.onProperty
     // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < list.length; i++) {
       const prop = list[i]
-      let value: string | undefined = pr[prop]
-      if (value === undefined) {
-        core.warning(`⚠️ the provided property '${extractor.onProperty}' for \`${extractor_usecase}\` is not valid`)
-        value = pr['body']
-      }
-
+      const value = retrieveProperty(pr, prop, extractor_usecase)
       const values = extractValuesFromString(value, extractor)
       if (values !== null) {
         results = results.concat(values)
