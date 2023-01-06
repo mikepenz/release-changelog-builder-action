@@ -219,7 +219,14 @@ This configuration is a `JSON` in the following format. (The below shocases *exa
         "labels": ["test", "magic"],
         "exclude_labels": ["no-magic"],
         "exhaustive": true,
-        "empty_content": "- no matching PRs"
+        "empty_content": "- no matching PRs",
+        "rules": [
+          {
+            "pattern": "open",
+            "on_property": "status",
+            "flags": "gu"
+          }
+        ]
       }
     ],
     "ignore_labels": [
@@ -381,10 +388,14 @@ Table of descriptions for the `configuration.json` options to configure the resu
 |-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | categories                  | An array of `category` specifications, offering a flexible way to group changes into categories.                                                                                                                                   |
 | category.title              | The display name of a category in the changelog.                                                                                                                                                                                   |
-| category.labels             | An array of labels, to match pull request labels against. If any PR label matches any category label, the pull request will show up under this category.                                                                           |
+| category.labels             | An array of labels, to match pull request labels against. If any PR label matches any category label, the pull request will show up under this category. (See `exhaustive` to change this)                                                                          |
 | category.exclude_labels     | Similar to `labels`, an array of labels to match PRs against, but if a match occurs the PR is excluded from this category.                                                                                                         |
 | category.exhaustive         | Will require all labels defined within this category to be present on the matching PR.                                                                                                                                             |
 | category.empty_content         |  If the category has no matching PRs, this content will be used. When not set, the category will be skipped in the changelog.                                                                                                   |
+| category.rules         |  An array of `rules` used to match PRs against. Any match will include the PR. (See `exhaustive` to change this)                                                                |
+| category.rules.pattern         |  A `regex` pattern to match the property value towards. Uses `RegExp.test("val")`                                              |
+| category.rules.flags         |  Defines the regex flags specified for the pattern. Default: `gu`.                                        |
+| category.rules.on_property         | The PR property to match against. [Possible values](https://github.com/mikepenz/release-changelog-builder-action/blob/feature/category_rules/src/configuration.ts#L33-L43).                                                               |
 | ignore_labels               | An array of labels, to match pull request labels against. If any PR label overlaps, the pull request will be ignored from the changelog. This takes precedence over category labels                                                |
 | sort                        | A `sort` specification, offering the ability to define sort order and property.                                                                                                                                                    |
 | sort.order                  | The sort order. Allowed values: `ASC`, `DESC`                                                                                                                                                                                      |
@@ -397,7 +408,7 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | label_extractor.target      | The result pattern. The result text will be used as label. If empty, no label is created. (Unused for `match` method)                                                                                                              |
 | label_extractor.on_property | The property to retrieve the text from. This is optional. Defaults to: `body`. Alternative values: `title`, `author`, `milestone`.                                                                                                 |
 | label_extractor.method      | The extraction method used. Defaults to: `replace`. Alternative value: `match`. The method specified references the JavaScript String method.                                                                                      |
-| label_extractor.flags       | Defines the regex flags specified for the pattern. Default: `gu`                                                                                                                                                                   |
+| label_extractor.flags       | Defines the regex flags specified for the pattern. Default: `gu`.                                                                                                                                                                   |
 | label_extractor.on_empty    | Defines the placeholder to be filled in, if the regex does not lead to a result.                                                                                                                                                   |
 | duplicate_filter            | Defines the `Extractor` to use for retrieving the identifier for a PR. In case of duplicates will keep the last matching pull request (depends on `sort`). See `label_extractor` for details on `Extractor` properties.            |
 | transformers                | An array of `transform` specifications, offering a flexible API to modify the text per pull request. This is applied on the change text created with `pr_template`. `transformers` are executed per change, in the order specified |
