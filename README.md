@@ -197,7 +197,7 @@ The action supports flexible configuration options to modify vast areas of its b
 
 > **Note** It is possible to provide the configuration as file and as json via the yml file. The order of config values used: `configurationJson` > `configuration` > `DefaultConfiguration`. 
 
-This configuration is a `JSON` in the following format. (The below shocases *example* configurations for all possible options. In most scenarios most of the settings will not be needed, and the defaults will be appropiate.)
+This configuration is a `JSON` in the following format. (The below showcases *example* configurations for all possible options. In most scenarios most of the settings will not be needed, and the defaults will be appropiate.)
 
 ```json
 {
