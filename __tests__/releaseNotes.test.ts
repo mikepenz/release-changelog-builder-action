@@ -232,7 +232,7 @@ it('Should ignore PRs not merged into develop branch', async () => {
 
   const changeLog = await releaseNotes.pull()
   console.log(changeLog)
-  expect(changeLog).toStrictEqual(`\n\n150\n\n`)
+  expect(changeLog).toStrictEqual(`150\n\n`)
 })
 
 it('Should ignore PRs not merged into main branch', async () => {
@@ -253,5 +253,5 @@ it('Should ignore PRs not merged into main branch', async () => {
 
   const changeLog = await releaseNotes.pull()
   console.log(changeLog)
-  expect(changeLog).toStrictEqual(`\n\n153\n\n`)
+  expect(changeLog).toStrictEqual(`153\n\n`)
 })
