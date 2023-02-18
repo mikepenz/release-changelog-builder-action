@@ -1850,14 +1850,18 @@ function buildChangelog(diffInfo, prs, options) {
     let changelog = '';
     for (const [category, pullRequests] of categorized) {
         if (pullRequests.length > 0) {
-            changelog = `${changelog + category.title}\n\n`;
+            if (category.title) {
+                changelog = `${changelog + category.title}\n\n`;
+            }
             for (const pr of pullRequests) {
                 changelog = `${changelog + pr}\n`;
             }
             changelog = `${changelog}\n`; // add space between sections
         }
         else if (category.empty_content !== undefined) {
-            changelog = `${changelog + category.title}\n\n`;
+            if (category.title) {
+                changelog = `${changelog + category.title}\n\n`;
+            }
             changelog = `${changelog + category.empty_content}\n\n`;
         }
     }
