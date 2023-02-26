@@ -858,7 +858,11 @@ function matches(pr, extractor, extractor_usecase) {
     if (extractor.onProperty !== undefined && extractor.onProperty.length === 1) {
         const prop = extractor.onProperty[0];
         const value = (0, pullRequests_1.retrieveProperty)(pr, prop, extractor_usecase);
-        return extractor.pattern.test(value);
+        const matched = extractor.pattern.test(value);
+        if (core.isDebug()) {
+            core.debug(`    Pattern ${extractor.pattern} resulted in ${matched} for ${value}  on PR ${pr.number} (usecase: ${extractor_usecase})`);
+        }
+        return matched;
     }
     return false;
 }
@@ -1753,6 +1757,9 @@ function buildChangelog(diffInfo, prs, options) {
                 for (const label of extracted) {
                     pr.labels.add(label);
                 }
+                if (core.isDebug()) {
+                    core.debug(`    Extracted the following labels (${JSON.stringify(extracted)}) for PR ${pr.number}`);
+                }
             }
         }
     }
@@ -1797,10 +1804,8 @@ function buildChangelog(diffInfo, prs, options) {
             if (category.exclude_labels !== undefined) {
                 if ((0, utils_1.haveCommonElements)(category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
                     if (core.isDebug()) {
-                        const prNum = pr.number;
-                        const prLabels = pr.labels;
                         const excludeLabels = JSON.stringify(category.exclude_labels);
-                        core.debug(`PR ${prNum} with labels: ${prLabels} excluded from category via exclude label: ${excludeLabels}`);
+                        core.debug(`    PR ${pr.number} with labels: ${pr.labels} excluded from category via exclude label: ${excludeLabels}`);
                     }
                     continue; // one of the exclude labels matched, skip the PR for this category
                 }
