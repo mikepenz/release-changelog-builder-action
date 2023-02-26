@@ -269,7 +269,7 @@ export function replaceEmptyTemplate(template: string, options: ReleaseNotesOpti
   }
   const placeholderMap = new Map<string, string>()
   fillAdditionalPlaceholders(options, placeholderMap)
-  return replacePlaceholders(template, new Map<string, string>(), placeholderMap, placeholders, undefined, options.configuration)
+  return replacePlaceholders(template, EMPTY_MAP, placeholderMap, placeholders, undefined, options.configuration)
 }
 
 function fillAdditionalPlaceholders(
@@ -394,9 +394,9 @@ function fillArrayPlaceholders(
   values: string[]
 ): void {
   for (let i = 0; i < values.length; i++) {
-    placeholderMap.set(`\${{${key}[${i}]}}`, values[i])
+    placeholderMap.set(`${key}[${i}]`, values[i])
   }
-  placeholderMap.set(`\${{${key}[*]}}`, values.join(', '))
+  placeholderMap.set(`${key}[*]`, values.join(', '))
 }
 
 function fillReviewPlaceholders(
@@ -407,10 +407,10 @@ function fillReviewPlaceholders(
   // retrieve the keys from the CommentInfo object
   for (const childKey of Object.keys(EMPTY_COMMENT_INFO)) {
     for (let i = 0; i < values.length; i++) {
-      placeholderMap.set(`\${{${parentKey}[${i}].${childKey}}}`, values[i][childKey as keyof CommentInfo]?.toLocaleString('en') || '')
+      placeholderMap.set(`${parentKey}[${i}].${childKey}`, values[i][childKey as keyof CommentInfo]?.toLocaleString('en') || '')
     }
     placeholderMap.set(
-      `\${{${parentKey}[*].${childKey}}}`,
+      `${parentKey}[*].${childKey}`,
       values.map(value => value[childKey as keyof CommentInfo]?.toLocaleString('en') || '').join(', ')
     )
   }
