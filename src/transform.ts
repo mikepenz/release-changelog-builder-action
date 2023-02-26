@@ -51,6 +51,10 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
         for (const label of extracted) {
           pr.labels.add(label)
         }
+
+        if (core.isDebug()) {
+          core.debug(`    Extracted the following labels (${JSON.stringify(extracted)}) for PR ${pr.number}`)
+        }
       }
     }
   }
@@ -113,10 +117,8 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
           )
         ) {
           if (core.isDebug()) {
-            const prNum = pr.number
-            const prLabels = pr.labels
             const excludeLabels = JSON.stringify(category.exclude_labels)
-            core.debug(`PR ${prNum} with labels: ${prLabels} excluded from category via exclude label: ${excludeLabels}`)
+            core.debug(`    PR ${pr.number} with labels: ${pr.labels} excluded from category via exclude label: ${excludeLabels}`)
           }
           continue // one of the exclude labels matched, skip the PR for this category
         }
