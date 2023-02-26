@@ -51,6 +51,10 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
         for (const label of extracted) {
           pr.labels.add(label)
         }
+
+        if (core.isDebug()) {
+          core.debug(`    Extracted the following labels (${JSON.stringify(extracted)}) for PR ${pr.number}`)
+        }
       }
     }
   }
@@ -113,10 +117,8 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
           )
         ) {
           if (core.isDebug()) {
-            const prNum = pr.number
-            const prLabels = pr.labels
             const excludeLabels = JSON.stringify(category.exclude_labels)
-            core.debug(`PR ${prNum} with labels: ${prLabels} excluded from category via exclude label: ${excludeLabels}`)
+            core.debug(`    PR ${pr.number} with labels: ${pr.labels} excluded from category via exclude label: ${excludeLabels}`)
           }
           continue // one of the exclude labels matched, skip the PR for this category
         }
@@ -267,7 +269,7 @@ export function replaceEmptyTemplate(template: string, options: ReleaseNotesOpti
   }
   const placeholderMap = new Map<string, string>()
   fillAdditionalPlaceholders(options, placeholderMap)
-  return replacePlaceholders(template, new Map<string, string>(), placeholderMap, placeholders, undefined, options.configuration)
+  return replacePlaceholders(template, EMPTY_MAP, placeholderMap, placeholders, undefined, options.configuration)
 }
 
 function fillAdditionalPlaceholders(
@@ -392,9 +394,9 @@ function fillArrayPlaceholders(
   values: string[]
 ): void {
   for (let i = 0; i < values.length; i++) {
-    placeholderMap.set(`\${{${key}[${i}]}}`, values[i])
+    placeholderMap.set(`${key}[${i}]`, values[i])
   }
-  placeholderMap.set(`\${{${key}[*]}}`, values.join(', '))
+  placeholderMap.set(`${key}[*]`, values.join(', '))
 }
 
 function fillReviewPlaceholders(
@@ -405,10 +407,10 @@ function fillReviewPlaceholders(
   // retrieve the keys from the CommentInfo object
   for (const childKey of Object.keys(EMPTY_COMMENT_INFO)) {
     for (let i = 0; i < values.length; i++) {
-      placeholderMap.set(`\${{${parentKey}[${i}].${childKey}}}`, values[i][childKey as keyof CommentInfo]?.toLocaleString('en') || '')
+      placeholderMap.set(`${parentKey}[${i}].${childKey}`, values[i][childKey as keyof CommentInfo]?.toLocaleString('en') || '')
     }
     placeholderMap.set(
-      `\${{${parentKey}[*].${childKey}}}`,
+      `${parentKey}[*].${childKey}`,
       values.map(value => value[childKey as keyof CommentInfo]?.toLocaleString('en') || '').join(', ')
     )
   }

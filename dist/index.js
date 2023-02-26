@@ -402,10 +402,19 @@ function run() {
             });
             if (configurationJson) {
                 configJson = (0, utils_1.parseConfiguration)(configurationJson);
+                if (configJson) {
+                    core.info(`ℹ️ Retreived configuration via 'configurationJson'.`);
+                }
             }
             // read in the configuration from the file if possible
             const configurationFile = core.getInput('configuration');
             const configFile = (0, utils_1.resolveConfiguration)(repositoryPath, configurationFile);
+            if (configFile) {
+                core.info(`ℹ️ Retreived configuration via 'configuration' (via file).`);
+            }
+            if (!configurationFile && !configFile) {
+                core.info(`ℹ️ No configuration provided. Using Defaults.`);
+            }
             // merge configs, use default values from DefaultConfig on missing definition
             const configuration = (0, utils_1.mergeConfiguration)(configJson, configFile);
             // read in repository inputs
@@ -616,42 +625,8 @@ class PullRequests {
             return sortPrs(openPrs);
         });
     }
-    getReviewers(owner, repo, pr) {
-        var _a, e_3, _b, _c;
-        return __awaiter(this, void 0, void 0, function* () {
-            const options = this.octokit.pulls.listReviews.endpoint.merge({
-                owner,
-                repo,
-                pull_number: pr.number
-            });
-            try {
-                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a;) {
-                    _c = _f.value;
-                    _d = false;
-                    try {
-                        const response = _c;
-                        const reviews = response.data;
-                        pr.approvedReviewers = reviews
-                            .filter(r => r.state === 'APPROVED')
-                            .map(r => { var _a; return (_a = r.user) === null || _a === void 0 ? void 0 : _a.login; })
-                            .filter(r => !!r);
-                    }
-                    finally {
-                        _d = true;
-                    }
-                }
-            }
-            catch (e_3_1) { e_3 = { error: e_3_1 }; }
-            finally {
-                try {
-                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
-                }
-                finally { if (e_3) throw e_3.error; }
-            }
-        });
-    }
     getReviews(owner, repo, pr) {
-        var _a, e_4, _b, _c;
+        var _a, e_3, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const options = this.octokit.pulls.listReviews.endpoint.merge({
                 owner,
@@ -677,12 +652,12 @@ class PullRequests {
                     }
                 }
             }
-            catch (e_4_1) { e_4 = { error: e_4_1 }; }
+            catch (e_3_1) { e_3 = { error: e_3_1 }; }
             finally {
                 try {
                     if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
                 }
-                finally { if (e_4) throw e_4.error; }
+                finally { if (e_3) throw e_3.error; }
             }
             pr.reviews = prReviews;
         });
@@ -858,7 +833,11 @@ function matches(pr, extractor, extractor_usecase) {
     if (extractor.onProperty !== undefined && extractor.onProperty.length === 1) {
         const prop = extractor.onProperty[0];
         const value = (0, pullRequests_1.retrieveProperty)(pr, prop, extractor_usecase);
-        return extractor.pattern.test(value);
+        const matched = extractor.pattern.test(value);
+        if (core.isDebug()) {
+            core.debug(`    Pattern ${extractor.pattern} resulted in ${matched} for ${value}  on PR ${pr.number} (usecase: ${extractor_usecase})`);
+        }
+        return matched;
     }
     return false;
 }
@@ -1030,7 +1009,6 @@ class ReleaseNotes {
         });
     }
     getMergedPullRequests(octokit) {
-        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             const { owner, repo, includeOpen, fetchReviewers, fetchReviews, configuration } = this.options;
             const diffInfo = yield this.getCommitHistory(octokit);
@@ -1087,33 +1065,27 @@ class ReleaseNotes {
                 return true;
             });
             if (baseBranches.length !== 0) {
-                core.info(`ℹ️ Retrieved ${mergedPullRequests.length} PRs for ${owner}/${repo} filtered by the 'base_branches' configuration.`);
+                core.info(`ℹ️ Retrieved ${finalPrs.length} PRs for ${owner}/${repo} filtered by the 'base_branches' configuration.`);
             }
-            if (fetchReviewers) {
-                core.info(`ℹ️ Fetching reviewers was enabled`);
-                // update PR information with reviewers who approved
-                for (const pr of finalPrs) {
-                    yield pullRequestsApi.getReviewers(owner, repo, pr);
-                    if (pr.approvedReviewers.length > 0) {
-                        core.info(`ℹ️ Retrieved ${pr.approvedReviewers.length} reviewer(s) for PR ${owner}/${repo}/#${pr.number}`);
-                    }
-                }
-            }
-            else {
-                core.debug(`ℹ️ Fetching reviewers was disabled`);
-            }
-            if (fetchReviews) {
-                core.info(`ℹ️ Fetching reviews was enabled`);
+            // fetch reviewers only if enabled (requires an additional API request per PR)
+            if (fetchReviews || fetchReviewers) {
+                core.info(`ℹ️ Fetching reviews (or reviewers) was enabled`);
                 // update PR information with reviewers who approved
                 for (const pr of finalPrs) {
                     yield pullRequestsApi.getReviews(owner, repo, pr);
-                    if ((((_a = pr.reviews) === null || _a === void 0 ? void 0 : _a.length) || 0) > 0) {
-                        core.info(`ℹ️ Retrieved ${((_b = pr.reviews) === null || _b === void 0 ? void 0 : _b.length) || 0} review(s) for PR ${owner}/${repo}/#${pr.number}`);
+                    const reviews = pr.reviews;
+                    if (reviews && ((reviews === null || reviews === void 0 ? void 0 : reviews.length) || 0) > 0) {
+                        core.info(`ℹ️ Retrieved ${reviews.length || 0} review(s) for PR ${owner}/${repo}/#${pr.number}`);
+                        // backwards compatiblity
+                        pr.approvedReviewers = reviews.filter(r => r.state === 'APPROVED').map(r => r.author);
+                    }
+                    else {
+                        core.debug(`No reviewer(s) for PR ${owner}/${repo}/#${pr.number}`);
                     }
                 }
             }
             else {
-                core.debug(`ℹ️ Fetching reviews was disabled`);
+                core.debug(`ℹ️ Fetching reviews (or reviewers) was disabled`);
             }
             return [diffInfo, finalPrs];
         });
@@ -1753,6 +1725,9 @@ function buildChangelog(diffInfo, prs, options) {
                 for (const label of extracted) {
                     pr.labels.add(label);
                 }
+                if (core.isDebug()) {
+                    core.debug(`    Extracted the following labels (${JSON.stringify(extracted)}) for PR ${pr.number}`);
+                }
             }
         }
     }
@@ -1797,10 +1772,8 @@ function buildChangelog(diffInfo, prs, options) {
             if (category.exclude_labels !== undefined) {
                 if ((0, utils_1.haveCommonElements)(category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
                     if (core.isDebug()) {
-                        const prNum = pr.number;
-                        const prLabels = pr.labels;
                         const excludeLabels = JSON.stringify(category.exclude_labels);
-                        core.debug(`PR ${prNum} with labels: ${prLabels} excluded from category via exclude label: ${excludeLabels}`);
+                        core.debug(`    PR ${pr.number} with labels: ${pr.labels} excluded from category via exclude label: ${excludeLabels}`);
                     }
                     continue; // one of the exclude labels matched, skip the PR for this category
                 }
@@ -1939,7 +1912,7 @@ function replaceEmptyTemplate(template, options) {
     }
     const placeholderMap = new Map();
     fillAdditionalPlaceholders(options, placeholderMap);
-    return replacePlaceholders(template, new Map(), placeholderMap, placeholders, undefined, options.configuration);
+    return replacePlaceholders(template, EMPTY_MAP, placeholderMap, placeholders, undefined, options.configuration);
 }
 exports.replaceEmptyTemplate = replaceEmptyTemplate;
 function fillAdditionalPlaceholders(options, placeholderMap /* placeholderKey and original value */) {
@@ -2027,18 +2000,18 @@ function handlePlaceholder(template, key, value, placeholders /* placeholders to
 }
 function fillArrayPlaceholders(placeholderMap /* placeholderKey and original value */, key, values) {
     for (let i = 0; i < values.length; i++) {
-        placeholderMap.set(`\${{${key}[${i}]}}`, values[i]);
+        placeholderMap.set(`${key}[${i}]`, values[i]);
     }
-    placeholderMap.set(`\${{${key}[*]}}`, values.join(', '));
+    placeholderMap.set(`${key}[*]`, values.join(', '));
 }
 function fillReviewPlaceholders(placeholderMap /* placeholderKey and original value */, parentKey, values) {
     var _a;
     // retrieve the keys from the CommentInfo object
     for (const childKey of Object.keys(pullRequests_1.EMPTY_COMMENT_INFO)) {
         for (let i = 0; i < values.length; i++) {
-            placeholderMap.set(`\${{${parentKey}[${i}].${childKey}}}`, ((_a = values[i][childKey]) === null || _a === void 0 ? void 0 : _a.toLocaleString('en')) || '');
+            placeholderMap.set(`${parentKey}[${i}].${childKey}`, ((_a = values[i][childKey]) === null || _a === void 0 ? void 0 : _a.toLocaleString('en')) || '');
         }
-        placeholderMap.set(`\${{${parentKey}[*].${childKey}}}`, values.map(value => { var _a; return ((_a = value[childKey]) === null || _a === void 0 ? void 0 : _a.toLocaleString('en')) || ''; }).join(', '));
+        placeholderMap.set(`${parentKey}[*].${childKey}`, values.map(value => { var _a; return ((_a = value[childKey]) === null || _a === void 0 ? void 0 : _a.toLocaleString('en')) || ''; }).join(', '));
     }
 }
 function replacePrPlaceholders(template, placeholderPrMap /* map with all pr related custom placeholder values */, configuration) {
@@ -2198,23 +2171,26 @@ exports.failOrError = failOrError;
  * Retrieves the configuration given the file path, if not found it will fallback to the `DefaultConfiguration`
  */
 function resolveConfiguration(githubWorkspacePath, configurationFile) {
-    let configuration = configuration_1.DefaultConfiguration;
     if (configurationFile) {
         const configurationPath = path.resolve(githubWorkspacePath, configurationFile);
         core.debug(`configurationPath = '${configurationPath}'`);
         const providedConfiguration = readConfiguration(configurationPath);
         if (providedConfiguration) {
-            configuration = providedConfiguration;
+            const configuration = providedConfiguration;
             core.info(`ℹ️ Configuration successfully loaded.`);
             if (core.isDebug()) {
                 core.debug(`configuration = ${JSON.stringify(configuration)}`);
             }
+            return configuration;
+        }
+        else {
+            core.debug(`Configuration file could not be read.`);
         }
     }
     else {
-        core.info(`ℹ️ Configuration not provided. Using Defaults.`);
+        core.debug(`Configuration file not provided.`);
     }
-    return configuration;
+    return undefined;
 }
 exports.resolveConfiguration = resolveConfiguration;
 /**

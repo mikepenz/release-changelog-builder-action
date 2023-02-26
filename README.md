@@ -309,25 +309,25 @@ For advanced use cases additional settings can be provided to the action
 
 > **Note**: All input values are optional. It is only required to provide the `token` either via the input, or as `env` variable.
 
-| **Input**         | **Description**                                                                                                                                                               |
-|-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `configurationJson` | Provide the configuration directly via the build `yml` file. Please note that `${{}}`  has to be written as `#{{}}` within the `yml` file.                                  |
-| `configuration`     | Relative path, to the `configuration.json` file, providing additional configurations                                                                                        |
-| `outputFile`        | Optional relative path to a file to store the resulting changelog in.                                                                                                       |
-| `owner`             | The owner of the repository to generate the changelog for                                                                                                                   |
-| `repo`              | Name of the repository we want to process                                                                                                                                   |
-| `fromTag`           | Defines the 'start' from where the changelog will consider merged pull requests (can be a tag or a valid git ref)                                                           |
-| `toTag`             | Defines until which tag the changelog will consider merged pull requests  (can be a tag or a valid git ref)                                                                 |
-| `path`              | Allows to specify an alternative sub directory, to use as base                                                                                                              |
-| `token`             | Alternative config to specify token. You should prefer `env.GITHUB_TOKEN` instead though                                                                                    |
-| `baseUrl`           | Alternative config to specify base url for GitHub Enterprise authentication. Default value set to `https://api.github.com`                                                  |
-| `includeOpen`       | Enables to also fetch currently open PRs. Default: false                                                                                                                    |
-| `ignorePreReleases` | Allows to ignore pre-releases for changelog generation (E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick). Only used if `fromTag` was not specified. Default: false    |
-| `failOnError`       | Defines if the action will result in a build failure if problems occurred. Default: false                                                                                   |
-| `fetchReviewers`    | Will enable fetching the users/reviewers who approved the PR. Default: false                                                                                                |
-| `fetchReleaseInformation` | Will enable fetching additional release information from tags. Default: false |
-| `fetchReviews`      | Will enable fetching the reviews on of the PR. Default: false                                                                                                |
-| `commitMode`        | Special configuration for projects which work without PRs. Uses commit messages as changelog. This mode looses access to information only available for PRs. Default: false |
+| **Input**                 | **Description**                                                                                                                                                             |
+|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `configurationJson`       | Provide the configuration directly via the build `yml` file. Please note that `${{}}`  has to be written as `#{{}}` within the `yml` file.                                  |
+| `configuration`           | Relative path, to the `configuration.json` file, providing additional configurations                                                                                        |
+| `outputFile`              | Optional relative path to a file to store the resulting changelog in.                                                                                                       |
+| `owner`                   | The owner of the repository to generate the changelog for                                                                                                                   |
+| `repo`                    | Name of the repository we want to process                                                                                                                                   |
+| `fromTag`                 | Defines the 'start' from where the changelog will consider merged pull requests (can be a tag or a valid git ref)                                                           |
+| `toTag`                   | Defines until which tag the changelog will consider merged pull requests  (can be a tag or a valid git ref)                                                                 |
+| `path`                    | Allows to specify an alternative sub directory, to use as base                                                                                                              |
+| `token`                   | Alternative config to specify token. You should prefer `env.GITHUB_TOKEN` instead though                                                                                    |
+| `baseUrl`                 | Alternative config to specify base url for GitHub Enterprise authentication. Default value set to `https://api.github.com`                                                  |
+| `includeOpen`             | Enables to also fetch currently open PRs. Default: false                                                                                                                    |
+| `ignorePreReleases`       | Allows to ignore pre-releases for changelog generation (E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick). Only used if `fromTag` was not specified. Default: false    |
+| `failOnError`             | Defines if the action will result in a build failure if problems occurred. Default: false                                                                                   |
+| `fetchReviewers`          | Will enable fetching the users/reviewers who approved the PR. Default: false                                                                                                |
+| `fetchReleaseInformation` | Will enable fetching additional release information from tags. Default: false                                                                                               |
+| `fetchReviews`            | Will enable fetching the reviews on of the PR. Default: false                                                                                                               |
+| `commitMode`              | Special configuration for projects which work without PRs. Uses commit messages as changelog. This mode looses access to information only available for PRs. Default: false |
 
 > **Warning**: `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repositories please use a PAT (Personal Access Token).
 
@@ -335,22 +335,53 @@ For advanced use cases additional settings can be provided to the action
 
 Table of supported placeholders allowed to be used in the `pr_template` configuration, which will be included in the release notes / changelog.
 
-| **Placeholder**   | **Description**                                                   |
-|-------------------|-------------------------------------------------------------------|
-| `${{NUMBER}}`     | The number referencing this pull request. E.g. 13                 |
-| `${{TITLE}}`      | Specified title of the merged pull request                        |
-| `${{URL}}`        | Url linking to the pull request on GitHub                         |
-| `${{STATUS}}`     | Status of the PR. Usually always `merged`. Possibly `Open` if `includeOpen` is configured. |
-| `${{CREATED_AT}}` | The ISO time, the pull request was created at                     |
-| `${{MERGED_AT}}`  | The ISO time, the pull request was merged at                      |
-| `${{MERGE_SHA}}`  | The commit SHA, the pull request was merged with                  |
-| `${{AUTHOR}}`     | Author creating and opening the pull request                      |
-| `${{LABELS}}`     | The labels associated with this pull request, joined by `,`       |
-| `${{MILESTONE}}`  | Milestone this PR was part of, as assigned on GitHub              |
-| `${{BODY}}`       | Description/Body of the pull request as specified on GitHub       |
-| `${{ASSIGNEES}}`  | Login names of assigned GitHub users, joined by `,`               |
+| **Placeholder**   | **Description**                                                                                    |
+|-------------------|----------------------------------------------------------------------------------------------------|
+| `${{NUMBER}}`     | The number referencing this pull request. E.g. 13.                                                 |
+| `${{TITLE}}`      | Specified title of the merged pull request.                                                        |
+| `${{URL}}`        | Url linking to the pull request on GitHub.                                                         |
+| `${{STATUS}}`     | Status of the PR. Usually always `merged`. Possibly `Open` if `includeOpen` is configured.         |
+| `${{CREATED_AT}}` | The ISO time, the pull request was created at.                                                     |
+| `${{MERGED_AT}}`  | The ISO time, the pull request was merged at.                                                      |
+| `${{MERGE_SHA}}`  | The commit SHA, the pull request was merged with.                                                  |
+| `${{AUTHOR}}`     | Author creating and opening the pull request.                                                      |
+| `${{LABELS}}`     | The labels associated with this pull request, joined by `,`.                                       |
+| `${{MILESTONE}}`  | Milestone this PR was part of, as assigned on GitHub.                                              |
+| `${{BODY}}`       | Description/Body of the pull request as specified on GitHub.                                       |
+| `${{ASSIGNEES}}`  | Login names of assigned GitHub users, joined by `,`.                                               |
 | `${{REVIEWERS}}`  | GitHub Login names of specified reviewers, joined by `,`. Requires `fetchReviewers` to be enabled. |
-| `${{APPROVERS}}`  | GitHub Login names of users who approved the PR, joined by `,`    |
+| `${{APPROVERS}}`  | GitHub Login names of users who approved the PR, joined by `,`.                                    |
+
+
+<details><summary><b>Array Placeholders</b></summary>
+<p>
+
+Table of special array placeholders allowed to be used in the `pr_template` configuration.
+
+Array placeholders follow the following format: `(KEY)[(*/index)]` for example: `ASSIGNEES[*]` or `ASSIGNEES[0]`.
+When using `*` values are joined by `,`.
+
+| **Placeholder**     | **Description**                                                                     |
+|---------------------|-------------------------------------------------------------------------------------|
+| `${{ASSIGNEES[*]}}` | Login names of assigned GitHub users.                                               |
+| `${{REVIEWERS[*]}}` | GitHub Login names of specified reviewers. Requires `fetchReviewers` to be enabled. |
+| `${{APPROVERS[*]}}` | GitHub Login names of users who approved the PR.                                    |
+
+Additionally there is a special array placeholder `REVIEWS` which allows access to it's properties:
+`(KEY)[(*/index)].(property)` for example: `REVIEWS[*].author` or `REVIEWS[*].body`
+
+| **Placeholder**               | **Description**                            |
+|-------------------------------|--------------------------------------------|
+| `${{REVIEWS[*].author}}`      | GitHub Login names of specified reviewers. |
+| `${{REVIEWS[*].body}}`        | The body of the review.                    |
+| `${{REVIEWS[*].htmlURL}}`     | The URL to the given review.               |
+| `${{REVIEWS[*].submittedAt}}` | The date whent he review was submitted.    |
+| `${{REVIEWS[*].state}}`       | The state of the given review.             |
+
+</p>
+</details>
+
+
 
 ### Template placeholders
 
@@ -388,14 +419,14 @@ Table of descriptions for the `configuration.json` options to configure the resu
 |-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | categories                  | An array of `category` specifications, offering a flexible way to group changes into categories.                                                                                                                                   |
 | category.title              | The display name of a category in the changelog.                                                                                                                                                                                   |
-| category.labels             | An array of labels, to match pull request labels against. If any PR label matches any category label, the pull request will show up under this category. (See `exhaustive` to change this)                                                                          |
+| category.labels             | An array of labels, to match pull request labels against. If any PR label matches any category label, the pull request will show up under this category. (See `exhaustive` to change this)                                         |
 | category.exclude_labels     | Similar to `labels`, an array of labels to match PRs against, but if a match occurs the PR is excluded from this category.                                                                                                         |
 | category.exhaustive         | Will require all labels defined within this category to be present on the matching PR.                                                                                                                                             |
-| category.empty_content         |  If the category has no matching PRs, this content will be used. When not set, the category will be skipped in the changelog.                                                                                                   |
-| category.rules         |  An array of `rules` used to match PRs against. Any match will include the PR. (See `exhaustive` to change this)                                                                |
-| category.rules.pattern         |  A `regex` pattern to match the property value towards. Uses `RegExp.test("val")`                                              |
-| category.rules.flags         |  Defines the regex flags specified for the pattern. Default: `gu`.                                        |
-| category.rules.on_property         | The PR property to match against. [Possible values](https://github.com/mikepenz/release-changelog-builder-action/blob/feature/category_rules/src/configuration.ts#L33-L43).                                                               |
+| category.empty_content      | If the category has no matching PRs, this content will be used. When not set, the category will be skipped in the changelog.                                                                                                       |
+| category.rules              | An array of `rules` used to match PRs against. Any match will include the PR. (See `exhaustive` to change this)                                                                                                                    |
+| category.rules.pattern      | A `regex` pattern to match the property value towards. Uses `RegExp.test("val")`                                                                                                                                                   |
+| category.rules.flags        | Defines the regex flags specified for the pattern. Default: `gu`.                                                                                                                                                                  |
+| category.rules.on_property  | The PR property to match against. [Possible values](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts#L33-L43).                                                        |
 | ignore_labels               | An array of labels, to match pull request labels against. If any PR label overlaps, the pull request will be ignored from the changelog. This takes precedence over category labels                                                |
 | sort                        | A `sort` specification, offering the ability to define sort order and property.                                                                                                                                                    |
 | sort.order                  | The sort order. Allowed values: `ASC`, `DESC`                                                                                                                                                                                      |
@@ -408,7 +439,7 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | label_extractor.target      | The result pattern. The result text will be used as label. If empty, no label is created. (Unused for `match` method)                                                                                                              |
 | label_extractor.on_property | The property to retrieve the text from. This is optional. Defaults to: `body`. Alternative values: `title`, `author`, `milestone`.                                                                                                 |
 | label_extractor.method      | The extraction method used. Defaults to: `replace`. Alternative value: `match`. The method specified references the JavaScript String method.                                                                                      |
-| label_extractor.flags       | Defines the regex flags specified for the pattern. Default: `gu`.                                                                                                                                                                   |
+| label_extractor.flags       | Defines the regex flags specified for the pattern. Default: `gu`.                                                                                                                                                                  |
 | label_extractor.on_empty    | Defines the placeholder to be filled in, if the regex does not lead to a result.                                                                                                                                                   |
 | duplicate_filter            | Defines the `Extractor` to use for retrieving the identifier for a PR. In case of duplicates will keep the last matching pull request (depends on `sort`). See `label_extractor` for details on `Extractor` properties.            |
 | transformers                | An array of `transform` specifications, offering a flexible API to modify the text per pull request. This is applied on the change text created with `pr_template`. `transformers` are executed per change, in the order specified |
@@ -423,7 +454,7 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | tag_resolver.filter         | Defines a regex which is used to filter out tags not matching.                                                                                                                                                                     |
 | tag_resolver.transformer    | Defines a regex transformer used to optionally transform the tag after the filter was applied. Allows to adjust the format to e.g. semver.                                                                                         |
 | base_branches               | The target branches for the merged PR, ingnores PRs with different target branch. Values can be a `regex`. Default: allow all base branches                                                                                        |
-| trim_values                 | Defines if all values inserted in templates are `trimmed`. Default: false                                                                                        |
+| trim_values                 | Defines if all values inserted in templates are `trimmed`. Default: false                                                                                                                                                          |
 
 ## Experimental 🧪
 
@@ -454,12 +485,12 @@ Custom placeholders can be defined via the `configuration.json` as `custom_place
 
 This example will look for JIRA tickets in the EPIC project, and extract all of these tickets. The exciting part for that case is, that the ticket is PR bound, but can be used in the global TEMPLATE, but equally also in the PR template. This is unique for CUSTOM PLACEHOLDERS as standard palceholders do not offer this functionality. 
 
-| **Input**                   | **Description**                                                                                                                                                                                                                    |
-|-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| custom_placeholders               |    An array of `Placeholder` specifications, offering a flexible API to extract custom placeholders from existing placeholders.     |
-| custom_placeholders.name               |   The name of the custom placeholder. Will be used within the template.     |
-| custom_placeholders.source               |   The source PLACEHOLDER, requires to be one of the existing Template or PR Template placeholders.     |
-| custom_placeholders.transformer               |   The transformer specification used to extract the value from the original source PLACEHOLDER.     |
+| **Input**                       | **Description**                                                                                                              |
+|---------------------------------|------------------------------------------------------------------------------------------------------------------------------|
+| custom_placeholders             | An array of `Placeholder` specifications, offering a flexible API to extract custom placeholders from existing placeholders. |
+| custom_placeholders.name        | The name of the custom placeholder. Will be used within the template.                                                        |
+| custom_placeholders.source      | The source PLACEHOLDER, requires to be one of the existing Template or PR Template placeholders.                             |
+| custom_placeholders.transformer | The transformer specification used to extract the value from the original source PLACEHOLDER.                                |
 
 A placeholder with the name as `CUSTOM_PLACEHOLDER` can be used as `${{CUSTOM_PLACEHOLDER}}` in the target template. 
 By default the same restriction applies as for PR vs template placeholder. E.g. a global placeholder can only be used in the global template (and not in the PR template).

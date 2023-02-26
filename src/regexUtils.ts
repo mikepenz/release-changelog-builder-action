@@ -29,7 +29,11 @@ function matches(pr: PullRequestInfo, extractor: RegexTransformer, extractor_use
   if (extractor.onProperty !== undefined && extractor.onProperty.length === 1) {
     const prop = extractor.onProperty[0]
     const value = retrieveProperty(pr, prop, extractor_usecase)
-    return extractor.pattern.test(value)
+    const matched = extractor.pattern.test(value)
+    if (core.isDebug()) {
+      core.debug(`    Pattern ${extractor.pattern} resulted in ${matched} for ${value}  on PR ${pr.number} (usecase: ${extractor_usecase})`)
+    }
+    return matched
   }
   return false
 }

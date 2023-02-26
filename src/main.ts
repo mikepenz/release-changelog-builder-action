@@ -20,10 +20,20 @@ async function run(): Promise<void> {
     })
     if (configurationJson) {
       configJson = parseConfiguration(configurationJson)
+      if (configJson) {
+        core.info(`ℹ️ Retreived configuration via 'configurationJson'.`)
+      }
     }
     // read in the configuration from the file if possible
     const configurationFile: string = core.getInput('configuration')
     const configFile = resolveConfiguration(repositoryPath, configurationFile)
+    if (configFile) {
+      core.info(`ℹ️ Retreived configuration via 'configuration' (via file).`)
+    }
+
+    if (!configurationFile && !configFile) {
+      core.info(`ℹ️ No configuration provided. Using Defaults.`)
+    }
 
     // merge configs, use default values from DefaultConfig on missing definition
     const configuration = mergeConfiguration(configJson, configFile)

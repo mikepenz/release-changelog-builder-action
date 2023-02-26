@@ -35,23 +35,25 @@ export function failOrError(message: string | Error, failOnError: boolean): void
 /**
  * Retrieves the configuration given the file path, if not found it will fallback to the `DefaultConfiguration`
  */
-export function resolveConfiguration(githubWorkspacePath: string, configurationFile: string): Configuration {
-  let configuration = DefaultConfiguration
+export function resolveConfiguration(githubWorkspacePath: string, configurationFile: string): Configuration | undefined {
   if (configurationFile) {
     const configurationPath = path.resolve(githubWorkspacePath, configurationFile)
     core.debug(`configurationPath = '${configurationPath}'`)
     const providedConfiguration = readConfiguration(configurationPath)
     if (providedConfiguration) {
-      configuration = providedConfiguration
+      const configuration = providedConfiguration
       core.info(`ℹ️ Configuration successfully loaded.`)
       if (core.isDebug()) {
         core.debug(`configuration = ${JSON.stringify(configuration)}`)
       }
+      return configuration
+    } else {
+      core.debug(`Configuration file could not be read.`)
     }
   } else {
-    core.info(`ℹ️ Configuration not provided. Using Defaults.`)
+    core.debug(`Configuration file not provided.`)
   }
-  return configuration
+  return undefined
 }
 
 /**
