@@ -165,33 +165,28 @@ export class ReleaseNotes {
     })
 
     if (baseBranches.length !== 0) {
-      core.info(`ℹ️ Retrieved ${mergedPullRequests.length} PRs for ${owner}/${repo} filtered by the 'base_branches' configuration.`)
+      core.info(`ℹ️ Retrieved ${finalPrs.length} PRs for ${owner}/${repo} filtered by the 'base_branches' configuration.`)
     }
 
-    if (fetchReviewers) {
-      core.info(`ℹ️ Fetching reviewers was enabled`)
-      // update PR information with reviewers who approved
-      for (const pr of finalPrs) {
-        await pullRequestsApi.getReviewers(owner, repo, pr)
-        if (pr.approvedReviewers.length > 0) {
-          core.info(`ℹ️ Retrieved ${pr.approvedReviewers.length} reviewer(s) for PR ${owner}/${repo}/#${pr.number}`)
-        }
-      }
-    } else {
-      core.debug(`ℹ️ Fetching reviewers was disabled`)
-    }
-
-    if (fetchReviews) {
-      core.info(`ℹ️ Fetching reviews was enabled`)
+    // fetch reviewers only if enabled (requires an additional API request per PR)
+    if (fetchReviews || fetchReviewers) {
+      core.info(`ℹ️ Fetching reviews (or reviewers) was enabled`)
       // update PR information with reviewers who approved
       for (const pr of finalPrs) {
         await pullRequestsApi.getReviews(owner, repo, pr)
-        if ((pr.reviews?.length || 0) > 0) {
-          core.info(`ℹ️ Retrieved ${pr.reviews?.length || 0} review(s) for PR ${owner}/${repo}/#${pr.number}`)
+
+        const reviews = pr.reviews
+        if (reviews && (reviews?.length || 0) > 0) {
+          core.info(`ℹ️ Retrieved ${reviews.length || 0} review(s) for PR ${owner}/${repo}/#${pr.number}`)
+
+          // backwards compatiblity
+          pr.approvedReviewers = reviews.filter(r => r.state === 'APPROVED').map(r => r.author)
+        } else {
+          core.debug(`No reviewer(s) for PR ${owner}/${repo}/#${pr.number}`)
         }
       }
     } else {
-      core.debug(`ℹ️ Fetching reviews was disabled`)
+      core.debug(`ℹ️ Fetching reviews (or reviewers) was disabled`)
     }
 
     return [diffInfo, finalPrs]

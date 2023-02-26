@@ -47,8 +47,6 @@ type PullData = RestEndpointMethodTypes['pulls']['get']['response']['data']
 
 type PullsListData = RestEndpointMethodTypes['pulls']['list']['response']['data']
 
-type PullReviewData = RestEndpointMethodTypes['pulls']['listReviews']['response']['data']
-
 type PullReviewsData = RestEndpointMethodTypes['pulls']['listReviews']['response']['data']
 
 export class PullRequests {
@@ -141,22 +139,6 @@ export class PullRequests {
     }
 
     return sortPrs(openPrs)
-  }
-
-  async getReviewers(owner: string, repo: string, pr: PullRequestInfo): Promise<void> {
-    const options = this.octokit.pulls.listReviews.endpoint.merge({
-      owner,
-      repo,
-      pull_number: pr.number
-    })
-
-    for await (const response of this.octokit.paginate.iterator(options)) {
-      const reviews: PullReviewData = response.data as PullReviewData
-      pr.approvedReviewers = reviews
-        .filter(r => r.state === 'APPROVED')
-        .map(r => r.user?.login)
-        .filter(r => !!r) as string[]
-    }
   }
 
   async getReviews(owner: string, repo: string, pr: PullRequestInfo): Promise<void> {
