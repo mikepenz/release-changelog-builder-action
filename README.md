@@ -1,3 +1,54 @@
+# release-changelog-builder-action
+**Table Of Contents**
+
+**release-changelog-builder-action**
+
+│
+
+├──    [What’s included](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#What%E2%80%99s%20included%20%F0%9F%9A%80) 🚀
+
+├──    [Setup](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#Setup)
+
+│      ├──  [Configure the workflow](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#Configure%20the%20workflow)
+
+│      └──  [Action outputs](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#Action%20outputs)
+
+├──    [Full Sample](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#Full%20Sample%20%F0%9F%96%A5%EF%B8%8F) 🖥️
+
+├──    [Customization](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#Customization%20%F0%9F%96%8D%EF%B8%8F) 🖍️
+
+│      ├──  [Note](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#Note)
+
+│      ├──  [Configuration](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#Configuration)
+
+│      ├──  [Advanced workflow specification](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#Advanced%20workflow%20specification)
+
+│      ├──  [PR Template placeholders](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#PR%20Template%20placeholders)
+
+│      ├──  [Template placeholders](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#Template%20placeholders)
+
+│      └──  [Configuration Specification](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#Configuration%20Specification)
+
+├──    [Experimental](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#Experimental%20%F0%9F%A7%AA) 🧪
+
+├──    [Contribute](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#Contribute%20%F0%9F%A7%AC) 🧬
+
+├──    [Local Testing](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#Local%20Testing%20%F0%9F%A7%AA) 🧪
+
+├──    [Developed By](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#Developed%20By)
+
+├──    [Credits](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#Credits)
+
+├──    [Other actions](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#Other%20actions)
+
+├──    [License](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#License)
+
+├──    [Fork License](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#Fork%20License)
+
+└──    [Sample result release notes / changelog](https://github.com/mikepenz/release-changelog-builder-action/edit/develop/README.md#Sample%20result%20release%20notes%20/%20changelog)
+
+-------
+
 <div align="center">
   :octocat:📄🔖📦
 </div>
