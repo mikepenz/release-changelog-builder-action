@@ -577,7 +577,7 @@ it('Use Rules to get all open PRs in a Category.', async () => {
 
 it('Use Rules to get current open PR and merged categorised.', async () => {
   let prs = Array.from(pullRequestsWithLabels)
-  prs.concat(Array.from(openPullRequestsWithLabels))
+  prs = prs.concat(Array.from(openPullRequestsWithLabels))
 
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.categories = [
@@ -594,7 +594,8 @@ it('Use Rules to get current open PR and merged categorised.', async () => {
           on_property: 'status'
         }
       ],
-      exhaustive: true
+      exhaustive: true,
+      exclusive_rules: false
     },{
       title: '## 🐛 Issues',
       labels: ['Issue'],
@@ -608,10 +609,8 @@ it('Use Rules to get current open PR and merged categorised.', async () => {
     }
   ]
 
-  console.log(buildChangelogTest(customConfig, prs))
-
   expect(buildChangelogTest(customConfig, prs)).toStrictEqual(
-    `## 🚀 Features\n\n- [ABC-1234] - this is a PR 1 title message\n   - PR: #1\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n- Still pending open pull request\n   - PR: #6\n\n## 🐛 Issues\n\n- [ABC-4321] - this is a PR 2 title message\n   - PR: #2\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n`
+    `## 🚀 Features\n\n- [ABC-1234] - this is a PR 1 title message\n   - PR: #1\n- Still pending open pull request (Current)\n   - PR: #6\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Issues\n\n- [ABC-4321] - this is a PR 2 title message\n   - PR: #2\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
 
