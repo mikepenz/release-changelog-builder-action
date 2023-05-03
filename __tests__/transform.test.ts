@@ -598,7 +598,7 @@ it('Use Rules to get current open PR and merged categorised.', async () => {
         }
       ],
       exhaustive: true,
-      exclusive_rules: false
+      exhaustive_rules: false
     },{
       title: '## 🐛 Issues',
       labels: ['Issue'],

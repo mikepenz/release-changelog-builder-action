@@ -133,12 +133,12 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
             pr.labels
           )
         }
-        let exclusive_rules = true
-        if (category.exclusive_rules !== undefined) {
-          exclusive_rules = category.exclusive_rules
+        let exhaustive_rules = true
+        if (category.exhaustive_rules !== undefined) {
+          exhaustive_rules = category.exhaustive_rules
         }
         if (matched && category.rules !== undefined) {
-          matched = matchesRules(category.rules, pr, exclusive_rules)
+          matched = matchesRules(category.rules, pr, exhaustive_rules)
         }
       } else {
         // if not exhaustive, do individual matches
@@ -149,13 +149,13 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
             pr.labels
           )
         }
-        let exclusive_rules = false
-        if (category.exclusive_rules !== undefined) {
-          exclusive_rules = category.exclusive_rules
+        let exhaustive_rules = false
+        if (category.exhaustive_rules !== undefined) {
+          exhaustive_rules = category.exhaustive_rules
         }
         if (!matched && category.rules !== undefined) {
           // if no label did apply, check if any rule applies
-          matched = matchesRules(category.rules, pr, exclusive_rules)
+          matched = matchesRules(category.rules, pr, exhaustive_rules)
         }
       }
       if (matched) {

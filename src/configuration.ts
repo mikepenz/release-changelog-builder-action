@@ -24,7 +24,7 @@ export interface Category {
   exclude_labels?: string[] // if an exclude label is detected, the PR will be excluded from this category
   rules?: Rule[] // rules to associate PRs to this category
   exhaustive?: boolean // requires all labels to be present in the PR
-  exclusive_rules?: boolean // requires all rules to be present in the PR (if not set, defaults to exhaustive value)
+  exhaustive_rules?: boolean // requires all rules to be present in the PR (if not set, defaults to exhaustive value)
   empty_content?: string // if the category has no matching PRs, this content will be used. If not set, the category will be skipped in the changelog.
 }
 
