@@ -31,6 +31,7 @@ export interface Category {
  * Defines the properties of the PullRequestInfo useable in different configurations
  */
 export type Property =
+  | 'number'
   | 'title'
   | 'branch'
   | 'author'
