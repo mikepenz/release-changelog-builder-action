@@ -728,6 +728,9 @@ function retrieveProperty(pr, property, useCase) {
     else if (Array.isArray(value)) {
         value = value.join(','); // join into single string
     }
+    else {
+        value = value.toString();
+    }
     return value;
 }
 exports.retrieveProperty = retrieveProperty;
