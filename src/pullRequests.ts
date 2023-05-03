@@ -212,7 +212,7 @@ export function compare(a: PullRequestInfo, b: PullRequestInfo, sort: Sort): num
  * Helper function to retrieve a property from the PullRequestInfo
  */
 export function retrieveProperty(pr: PullRequestInfo, property: Property, useCase: string): string {
-  let value: string | Set<string> | string[] | undefined = pr[property]
+  let value: string | number | Set<string> | string[] | undefined = pr[property]
   if (value === undefined) {
     core.warning(`⚠️ the provided property '${property}' for \`${useCase}\` is not valid. Fallback to 'body'`)
     value = pr['body']
@@ -220,6 +220,8 @@ export function retrieveProperty(pr: PullRequestInfo, property: Property, useCas
     value = Array.from(value).join(',') // join into single string
   } else if (Array.isArray(value)) {
     value = value.join(',') // join into single string
+  } else {
+    value = value.toString()
   }
   return value
 }
