@@ -457,7 +457,9 @@ it('Release Diff', async () => {
     configuration: customConfig
   })
 
-  expect(resultChangelog).toStrictEqual(`https://github.com/mikepenz/release-changelog-builder-action/compare/v2.8.0...v2.8.1\n`)
+  expect(resultChangelog).toStrictEqual(
+    `https://github.com/mikepenz/release-changelog-builder-action/compare/v2.8.0...v2.8.1\n`
+  )
 })
 
 it('Use exclude labels to not include a PR within a category.', async () => {
@@ -530,6 +532,7 @@ it('Extract custom placeholder from PR body and replace in global template', asy
   )
 })
 
+
 it('Use Rules to include a PR within a Category.', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.categories = [
@@ -539,12 +542,12 @@ it('Use Rules to include a PR within a Category.', async () => {
       exclude_labels: ['Fix'],
       rules: [
         {
-          pattern: '[ABC-1234]',
-          on_property: 'title'
+          pattern: "\[ABC-1234\]",
+          on_property: "title"
         },
         {
-          pattern: 'merged',
-          on_property: 'status'
+          pattern: "merged",
+          on_property: "status"
         }
       ],
       exhaustive: true
@@ -565,8 +568,8 @@ it('Use Rules to get all open PRs in a Category.', async () => {
       title: '## Open PRs only',
       rules: [
         {
-          pattern: 'open',
-          on_property: 'status'
+          pattern: "open",
+          on_property: "status"
         }
       ]
     }
@@ -624,8 +627,8 @@ it('Use Rules to get all open PRs in one Category and merged categorised.', asyn
       title: '## Open PRs only',
       rules: [
         {
-          pattern: 'open',
-          on_property: 'status'
+          pattern: "open",
+          on_property: "status"
         }
       ]
     },
@@ -634,11 +637,11 @@ it('Use Rules to get all open PRs in one Category and merged categorised.', asyn
       labels: ['Feature', 'Issue'],
       rules: [
         {
-          pattern: 'merged',
-          on_property: 'status'
+          pattern: "merged",
+          on_property: "status"
         }
       ],
-      exhaustive: true
+      exhaustive: true,
     }
   ]
   expect(buildChangelogTest(customConfig, prs)).toStrictEqual(
