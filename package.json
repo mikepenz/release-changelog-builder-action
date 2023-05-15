@@ -35,7 +35,7 @@
     "@actions/core": "^1.10.0",
     "@actions/exec": "^1.1.1",
     "@actions/github": "^5.1.1",
-    "@octokit/rest": "^19.0.7",
+    "@octokit/rest": "^19.0.8",
     "https-proxy-agent": "^6.1.0",
     "moment": "^2.29.4",
     "semver": "^7.5.0",
