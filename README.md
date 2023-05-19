@@ -90,7 +90,7 @@ A full set list of possible output values for this action.
 | `outputs.deletions`         | Count of code deletions in this release (lines).                                                                          |
 | `outputs.changes`           | Total count of changes in this release (lines).                                                                           |
 | `outputs.commits`           | Count of commits which have been added in this release.                                                                   |
-
+| `outputs.categorized`       | The categorized pull requests used to build the changelog as serialized JSON.                                                           |
 
 ## Full Sample 🖥️
 
