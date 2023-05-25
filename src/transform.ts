@@ -180,7 +180,9 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
   core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`)
 
   // serialize and provide the categorized content as json
-  const transformedCategorized = Array.from(categorized).reduce((obj, [key, value]) => Object.assign(obj, {[key.title]: value}), {})
+  const transformedCategorized = Array.from(categorized).reduce(
+    (obj, [key, value]) => Object.assign(obj, {[key.key || key.title]: value}), {}
+  )
   core.setOutput('categorized', JSON.stringify(transformedCategorized))
 
   // construct final changelog
