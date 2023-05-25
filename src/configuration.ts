@@ -19,6 +19,7 @@ export interface Configuration {
 }
 
 export interface Category {
+  key?: string // a key for this category. This is currently only used for the json output
   title: string // the title of this category
   labels?: string[] // labels to associate PRs to this category
   exclude_labels?: string[] // if an exclude label is detected, the PR will be excluded from this category

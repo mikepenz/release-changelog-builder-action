@@ -1830,6 +1830,9 @@ function buildChangelog(diffInfo, prs, options) {
         }
     }
     core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`);
+    // serialize and provide the categorized content as json
+    const transformedCategorized = Array.from(categorized).reduce((obj, [key, value]) => Object.assign(obj, { [key.key || key.title]: value }), {});
+    core.setOutput('categorized', JSON.stringify(transformedCategorized));
     // construct final changelog
     let changelog = '';
     for (const [category, pullRequests] of categorized) {

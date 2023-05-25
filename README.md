@@ -90,7 +90,7 @@ A full set list of possible output values for this action.
 | `outputs.deletions`         | Count of code deletions in this release (lines).                                                                          |
 | `outputs.changes`           | Total count of changes in this release (lines).                                                                           |
 | `outputs.commits`           | Count of commits which have been added in this release.                                                                   |
-
+| `outputs.categorized`       | The categorized pull requests used to build the changelog as serialized JSON.                                                           |
 
 ## Full Sample 🖥️
 
@@ -211,6 +211,7 @@ This configuration is a `JSON` in the following format. (The below showcases *ex
         "labels": ["fix"]
       },
       {
+        "key": "tests",
         "title": "## 🧪 Tests",
         "labels": ["test"]
       },
@@ -419,6 +420,7 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | **Input**                   | **Description**                                                                                                                                                                                                                    |
 |-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | categories                  | An array of `category` specifications, offering a flexible way to group changes into categories.                                                                                                                                   |
+| category.key                | Optional key used for the `categorized` json output.                                                                                                                                                                                    |
 | category.title              | The display name of a category in the changelog.                                                                                                                                                                                   |
 | category.labels             | An array of labels, to match pull request labels against. If any PR label matches any category label, the pull request will show up under this category. (See `exhaustive` to change this)                                         |
 | category.exclude_labels     | Similar to `labels`, an array of labels to match PRs against, but if a match occurs the PR is excluded from this category.                                                                                                         |
