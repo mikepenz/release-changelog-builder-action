@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import {Category, Configuration, Placeholder, Property, Transformer} from './configuration'
 import {CommentInfo, EMPTY_COMMENT_INFO, PullRequestInfo, retrieveProperty, sortPullRequests} from './pullRequests'
-import {ReleaseNotesOptions} from './releaseNotes'
+import {ReleaseNotesOptions} from './releaseNotesBuilder'
 import {DiffInfo} from './commits'
 import {createOrSet, haveCommonElements, haveEveryElements} from './utils'
 import {matchesRules, RegexTransformer, validateTransformer} from './regexUtils'
@@ -9,6 +9,14 @@ import {matchesRules, RegexTransformer, validateTransformer} from './regexUtils'
 const EMPTY_MAP = new Map<string, string>()
 
 export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], options: ReleaseNotesOptions): string {
+  core.startGroup('📦 Build changelog')
+  if (prs.length === 0) {
+    core.warning(`⚠️ No pull requests found`)
+    const result = replaceEmptyTemplate(options.configuration.empty_template, options)
+    core.endGroup()
+    return result
+  }
+
   // sort to target order
   const config = options.configuration
   const sort = config.sort
@@ -181,7 +189,8 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
 
   // serialize and provide the categorized content as json
   const transformedCategorized = Array.from(categorized).reduce(
-    (obj, [key, value]) => Object.assign(obj, {[key.key || key.title]: value}), {}
+    (obj, [key, value]) => Object.assign(obj, {[key.key || key.title]: value}),
+    {}
   )
   core.setOutput('categorized', JSON.stringify(transformedCategorized))
 
@@ -273,6 +282,7 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
   transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap, config)
   transformedChangelog = cleanupPrPlaceholders(transformedChangelog, placeholders)
   core.info(`ℹ️ Filled template`)
+  core.endGroup()
   return transformedChangelog
 }
 

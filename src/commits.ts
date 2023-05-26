@@ -1,6 +1,9 @@
 import * as core from '@actions/core'
 import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import moment from 'moment'
+import {failOrError} from './utils'
+import {ReleaseNotesOptions} from './releaseNotesBuilder'
+import {PullRequestInfo} from './pullRequests'
 
 export interface DiffInfo {
   changedFiles: number
@@ -116,6 +119,62 @@ export class Commits {
     })
 
     return commitsResult
+  }
+
+  async getCommitHistory(options: ReleaseNotesOptions): Promise<DiffInfo> {
+    const {owner, repo, fromTag, toTag, failOnError} = options
+    core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag.name}...${toTag.name}'`)
+
+    const commitsApi = new Commits(this.octokit)
+    let diffInfo: DiffInfo
+    try {
+      diffInfo = await commitsApi.getDiff(owner, repo, fromTag.name, toTag.name)
+    } catch (error) {
+      failOrError(`💥 Failed to retrieve - Invalid tag? - Because of: ${error}`, failOnError)
+      return DefaultDiffInfo
+    }
+    if (diffInfo.commitInfo.length === 0) {
+      core.warning(`⚠️ No commits found between - ${fromTag.name}...${toTag.name}`)
+      return DefaultDiffInfo
+    }
+
+    return diffInfo
+  }
+
+  async generateCommitPRs(options: ReleaseNotesOptions): Promise<[DiffInfo, PullRequestInfo[]]> {
+    const {owner, repo, configuration} = options
+
+    const diffInfo = await this.getCommitHistory(options)
+    const commits = diffInfo.commitInfo
+    if (commits.length === 0) {
+      return [diffInfo, []]
+    }
+
+    const prCommits = filterCommits(commits, configuration.exclude_merge_branches)
+
+    core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`)
+
+    const prs = prCommits.map(function (commit): PullRequestInfo {
+      return {
+        number: 0,
+        title: commit.summary,
+        htmlURL: '',
+        baseBranch: '',
+        createdAt: commit.date,
+        mergedAt: commit.date,
+        mergeCommitSha: commit.sha,
+        author: commit.author || '',
+        repoName: '',
+        labels: new Set(),
+        milestone: '',
+        body: commit.message || '',
+        assignees: [],
+        requestedReviewers: [],
+        approvedReviewers: [],
+        status: 'merged'
+      }
+    })
+    return [diffInfo, prs]
   }
 }
 

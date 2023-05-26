@@ -45,6 +45,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.filterCommits = exports.Commits = exports.DefaultDiffInfo = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const moment_1 = __importDefault(__nccwpck_require__(9623));
+const utils_1 = __nccwpck_require__(918);
 exports.DefaultDiffInfo = {
     changedFiles: 0,
     additions: 0,
@@ -143,6 +144,59 @@ class Commits {
             return 0;
         });
         return commitsResult;
+    }
+    getCommitHistory(options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { owner, repo, fromTag, toTag, failOnError } = options;
+            core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag.name}...${toTag.name}'`);
+            const commitsApi = new Commits(this.octokit);
+            let diffInfo;
+            try {
+                diffInfo = yield commitsApi.getDiff(owner, repo, fromTag.name, toTag.name);
+            }
+            catch (error) {
+                (0, utils_1.failOrError)(`💥 Failed to retrieve - Invalid tag? - Because of: ${error}`, failOnError);
+                return exports.DefaultDiffInfo;
+            }
+            if (diffInfo.commitInfo.length === 0) {
+                core.warning(`⚠️ No commits found between - ${fromTag.name}...${toTag.name}`);
+                return exports.DefaultDiffInfo;
+            }
+            return diffInfo;
+        });
+    }
+    generateCommitPRs(options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { owner, repo, configuration } = options;
+            const diffInfo = yield this.getCommitHistory(options);
+            const commits = diffInfo.commitInfo;
+            if (commits.length === 0) {
+                return [diffInfo, []];
+            }
+            const prCommits = filterCommits(commits, configuration.exclude_merge_branches);
+            core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`);
+            const prs = prCommits.map(function (commit) {
+                return {
+                    number: 0,
+                    title: commit.summary,
+                    htmlURL: '',
+                    baseBranch: '',
+                    createdAt: commit.date,
+                    mergedAt: commit.date,
+                    mergeCommitSha: commit.sha,
+                    author: commit.author || '',
+                    repoName: '',
+                    labels: new Set(),
+                    milestone: '',
+                    body: commit.message || '',
+                    assignees: [],
+                    requestedReviewers: [],
+                    approvedReviewers: [],
+                    status: 'merged'
+                };
+            });
+            return [diffInfo, prs];
+        });
     }
 }
 exports.Commits = Commits;
@@ -503,6 +557,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.retrieveProperty = exports.compare = exports.sortPullRequests = exports.PullRequests = exports.EMPTY_COMMENT_INFO = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const moment_1 = __importDefault(__nccwpck_require__(9623));
+const commits_1 = __nccwpck_require__(3916);
 exports.EMPTY_COMMENT_INFO = {
     id: 0,
     htmlURL: '',
@@ -512,8 +567,9 @@ exports.EMPTY_COMMENT_INFO = {
     state: undefined
 };
 class PullRequests {
-    constructor(octokit) {
+    constructor(octokit, commits) {
         this.octokit = octokit;
+        this.commits = commits;
     }
     getSingle(owner, repo, prNumber) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -660,6 +716,87 @@ class PullRequests {
                 finally { if (e_3) throw e_3.error; }
             }
             pr.reviews = prReviews;
+        });
+    }
+    getMergedPullRequests(options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { owner, repo, includeOpen, fetchReviewers, fetchReviews, configuration } = options;
+            const diffInfo = yield this.commits.getCommitHistory(options);
+            const commits = diffInfo.commitInfo;
+            if (commits.length === 0) {
+                return [diffInfo, []];
+            }
+            const firstCommit = commits[0];
+            const lastCommit = commits[commits.length - 1];
+            let fromDate = firstCommit.date;
+            const toDate = lastCommit.date;
+            const maxDays = configuration.max_back_track_time_days;
+            const maxFromDate = toDate.clone().subtract(maxDays, 'days');
+            if (maxFromDate.isAfter(fromDate)) {
+                core.info(`⚠️ Adjusted 'fromDate' to go max ${maxDays} back`);
+                fromDate = maxFromDate;
+            }
+            core.info(`ℹ️ Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`);
+            const pullRequests = yield this.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests);
+            core.info(`ℹ️ Retrieved ${pullRequests.length} PRs for ${owner}/${repo} in date range from API`);
+            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches);
+            core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`);
+            // create array of commits for this release
+            const releaseCommitHashes = prCommits.map(commmit => {
+                return commmit.sha;
+            });
+            // filter out pull requests not associated with this release
+            const mergedPullRequests = pullRequests.filter(pr => {
+                return releaseCommitHashes.includes(pr.mergeCommitSha);
+            });
+            core.info(`ℹ️ Retrieved ${mergedPullRequests.length} merged PRs for ${owner}/${repo}`);
+            let allPullRequests = mergedPullRequests;
+            if (includeOpen) {
+                // retrieve all open pull requests
+                const openPullRequests = yield this.getOpen(owner, repo, configuration.max_pull_requests);
+                core.info(`ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`);
+                // all pull requests
+                allPullRequests = allPullRequests.concat(openPullRequests);
+                core.info(`ℹ️ Retrieved ${allPullRequests.length} total PRs for ${owner}/${repo}`);
+            }
+            // retrieve base branches we allow
+            const baseBranches = configuration.base_branches;
+            const baseBranchPatterns = baseBranches.map(baseBranch => {
+                return new RegExp(baseBranch.replace('\\\\', '\\'), 'gu');
+            });
+            // return only prs if the baseBranch is matching the configuration
+            const finalPrs = allPullRequests.filter(pr => {
+                if (baseBranches.length !== 0) {
+                    return baseBranchPatterns.some(pattern => {
+                        return pr.baseBranch.match(pattern) !== null;
+                    });
+                }
+                return true;
+            });
+            if (baseBranches.length !== 0) {
+                core.info(`ℹ️ Retrieved ${finalPrs.length} PRs for ${owner}/${repo} filtered by the 'base_branches' configuration.`);
+            }
+            // fetch reviewers only if enabled (requires an additional API request per PR)
+            if (fetchReviews || fetchReviewers) {
+                core.info(`ℹ️ Fetching reviews (or reviewers) was enabled`);
+                // update PR information with reviewers who approved
+                for (const pr of finalPrs) {
+                    yield this.getReviews(owner, repo, pr);
+                    const reviews = pr.reviews;
+                    if (reviews && ((reviews === null || reviews === void 0 ? void 0 : reviews.length) || 0) > 0) {
+                        core.info(`ℹ️ Retrieved ${reviews.length || 0} review(s) for PR ${owner}/${repo}/#${pr.number}`);
+                        // backwards compatiblity
+                        pr.approvedReviewers = reviews.filter(r => r.state === 'APPROVED').map(r => r.author);
+                    }
+                    else {
+                        core.debug(`No reviewer(s) for PR ${owner}/${repo}/#${pr.number}`);
+                    }
+                }
+            }
+            else {
+                core.debug(`ℹ️ Fetching reviews (or reviewers) was disabled`);
+            }
+            return [diffInfo, finalPrs];
         });
     }
 }
@@ -902,236 +1039,6 @@ exports.buildRegex = buildRegex;
 
 /***/ }),
 
-/***/ 5882:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ReleaseNotes = void 0;
-const core = __importStar(__nccwpck_require__(2186));
-const commits_1 = __nccwpck_require__(3916);
-const pullRequests_1 = __nccwpck_require__(4217);
-const transform_1 = __nccwpck_require__(1644);
-const utils_1 = __nccwpck_require__(918);
-class ReleaseNotes {
-    constructor(octokit, options) {
-        this.octokit = octokit;
-        this.options = options;
-    }
-    pull() {
-        return __awaiter(this, void 0, void 0, function* () {
-            let mergedPullRequests;
-            let diffInfo;
-            if (!this.options.commitMode) {
-                core.startGroup(`🚀 Load pull requests`);
-                const [info, prs] = yield this.getMergedPullRequests(this.octokit);
-                mergedPullRequests = prs;
-                diffInfo = info;
-                // define the included PRs within this release as output
-                core.setOutput('pull_requests', mergedPullRequests
-                    .map(pr => {
-                    return pr.number;
-                })
-                    .join(','));
-                core.endGroup();
-            }
-            else {
-                core.startGroup(`🚀 Load commit history`);
-                core.info(`⚠️ Executing experimental commit mode`);
-                const [info, prs] = yield this.generateCommitPRs(this.octokit);
-                mergedPullRequests = prs;
-                diffInfo = info;
-                core.endGroup();
-            }
-            core.setOutput('changed_files', diffInfo.changedFiles);
-            core.setOutput('additions', diffInfo.additions);
-            core.setOutput('deletions', diffInfo.deletions);
-            core.setOutput('changes', diffInfo.changes);
-            core.setOutput('commits', diffInfo.commits);
-            if (mergedPullRequests.length === 0) {
-                core.warning(`⚠️ No pull requests found`);
-                return (0, transform_1.replaceEmptyTemplate)(this.options.configuration.empty_template, this.options);
-            }
-            core.startGroup('📦 Build changelog');
-            const resultChangelog = (0, transform_1.buildChangelog)(diffInfo, mergedPullRequests, this.options);
-            core.endGroup();
-            return resultChangelog;
-        });
-    }
-    getCommitHistory(octokit) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const { owner, repo, fromTag, toTag, failOnError } = this.options;
-            core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag.name}...${toTag.name}'`);
-            const commitsApi = new commits_1.Commits(octokit);
-            let diffInfo;
-            try {
-                diffInfo = yield commitsApi.getDiff(owner, repo, fromTag.name, toTag.name);
-            }
-            catch (error) {
-                (0, utils_1.failOrError)(`💥 Failed to retrieve - Invalid tag? - Because of: ${error}`, failOnError);
-                return commits_1.DefaultDiffInfo;
-            }
-            if (diffInfo.commitInfo.length === 0) {
-                core.warning(`⚠️ No commits found between - ${fromTag.name}...${toTag.name}`);
-                return commits_1.DefaultDiffInfo;
-            }
-            return diffInfo;
-        });
-    }
-    getMergedPullRequests(octokit) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const { owner, repo, includeOpen, fetchReviewers, fetchReviews, configuration } = this.options;
-            const diffInfo = yield this.getCommitHistory(octokit);
-            const commits = diffInfo.commitInfo;
-            if (commits.length === 0) {
-                return [diffInfo, []];
-            }
-            const firstCommit = commits[0];
-            const lastCommit = commits[commits.length - 1];
-            let fromDate = firstCommit.date;
-            const toDate = lastCommit.date;
-            const maxDays = configuration.max_back_track_time_days;
-            const maxFromDate = toDate.clone().subtract(maxDays, 'days');
-            if (maxFromDate.isAfter(fromDate)) {
-                core.info(`⚠️ Adjusted 'fromDate' to go max ${maxDays} back`);
-                fromDate = maxFromDate;
-            }
-            core.info(`ℹ️ Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`);
-            const pullRequestsApi = new pullRequests_1.PullRequests(octokit);
-            const pullRequests = yield pullRequestsApi.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests);
-            core.info(`ℹ️ Retrieved ${pullRequests.length} PRs for ${owner}/${repo} in date range from API`);
-            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches);
-            core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`);
-            // create array of commits for this release
-            const releaseCommitHashes = prCommits.map(commmit => {
-                return commmit.sha;
-            });
-            // filter out pull requests not associated with this release
-            const mergedPullRequests = pullRequests.filter(pr => {
-                return releaseCommitHashes.includes(pr.mergeCommitSha);
-            });
-            core.info(`ℹ️ Retrieved ${mergedPullRequests.length} merged PRs for ${owner}/${repo}`);
-            let allPullRequests = mergedPullRequests;
-            if (includeOpen) {
-                // retrieve all open pull requests
-                const openPullRequests = yield pullRequestsApi.getOpen(owner, repo, configuration.max_pull_requests);
-                core.info(`ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`);
-                // all pull requests
-                allPullRequests = allPullRequests.concat(openPullRequests);
-                core.info(`ℹ️ Retrieved ${allPullRequests.length} total PRs for ${owner}/${repo}`);
-            }
-            // retrieve base branches we allow
-            const baseBranches = configuration.base_branches;
-            const baseBranchPatterns = baseBranches.map(baseBranch => {
-                return new RegExp(baseBranch.replace('\\\\', '\\'), 'gu');
-            });
-            // return only prs if the baseBranch is matching the configuration
-            const finalPrs = allPullRequests.filter(pr => {
-                if (baseBranches.length !== 0) {
-                    return baseBranchPatterns.some(pattern => {
-                        return pr.baseBranch.match(pattern) !== null;
-                    });
-                }
-                return true;
-            });
-            if (baseBranches.length !== 0) {
-                core.info(`ℹ️ Retrieved ${finalPrs.length} PRs for ${owner}/${repo} filtered by the 'base_branches' configuration.`);
-            }
-            // fetch reviewers only if enabled (requires an additional API request per PR)
-            if (fetchReviews || fetchReviewers) {
-                core.info(`ℹ️ Fetching reviews (or reviewers) was enabled`);
-                // update PR information with reviewers who approved
-                for (const pr of finalPrs) {
-                    yield pullRequestsApi.getReviews(owner, repo, pr);
-                    const reviews = pr.reviews;
-                    if (reviews && ((reviews === null || reviews === void 0 ? void 0 : reviews.length) || 0) > 0) {
-                        core.info(`ℹ️ Retrieved ${reviews.length || 0} review(s) for PR ${owner}/${repo}/#${pr.number}`);
-                        // backwards compatiblity
-                        pr.approvedReviewers = reviews.filter(r => r.state === 'APPROVED').map(r => r.author);
-                    }
-                    else {
-                        core.debug(`No reviewer(s) for PR ${owner}/${repo}/#${pr.number}`);
-                    }
-                }
-            }
-            else {
-                core.debug(`ℹ️ Fetching reviews (or reviewers) was disabled`);
-            }
-            return [diffInfo, finalPrs];
-        });
-    }
-    generateCommitPRs(octokit) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const { owner, repo, configuration } = this.options;
-            const diffInfo = yield this.getCommitHistory(octokit);
-            const commits = diffInfo.commitInfo;
-            if (commits.length === 0) {
-                return [diffInfo, []];
-            }
-            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches);
-            core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`);
-            const prs = prCommits.map(function (commit) {
-                return {
-                    number: 0,
-                    title: commit.summary,
-                    htmlURL: '',
-                    baseBranch: '',
-                    createdAt: commit.date,
-                    mergedAt: commit.date,
-                    mergeCommitSha: commit.sha,
-                    author: commit.author || '',
-                    repoName: '',
-                    labels: new Set(),
-                    milestone: '',
-                    body: commit.message || '',
-                    assignees: [],
-                    requestedReviewers: [],
-                    approvedReviewers: [],
-                    status: 'merged'
-                };
-            });
-            return [diffInfo, prs];
-        });
-    }
-}
-exports.ReleaseNotes = ReleaseNotes;
-
-
-/***/ }),
-
 /***/ 4883:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -1170,13 +1077,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ReleaseNotesBuilder = void 0;
+exports.pullData = exports.ReleaseNotesBuilder = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const rest_1 = __nccwpck_require__(5375);
-const releaseNotes_1 = __nccwpck_require__(5882);
 const tags_1 = __nccwpck_require__(7532);
 const utils_1 = __nccwpck_require__(918);
 const https_proxy_agent_1 = __nccwpck_require__(7219);
+const pullRequests_1 = __nccwpck_require__(4217);
+const commits_1 = __nccwpck_require__(3916);
+const transform_1 = __nccwpck_require__(1644);
 class ReleaseNotesBuilder {
     constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode, configuration) {
         this.baseUrl = baseUrl;
@@ -1278,12 +1187,58 @@ class ReleaseNotesBuilder {
                 commitMode: this.commitMode,
                 configuration: this.configuration
             };
-            const releaseNotes = new releaseNotes_1.ReleaseNotes(octokit, options);
-            return yield releaseNotes.pull();
+            const releaseNotesData = yield pullData(octokit, options);
+            return (0, transform_1.buildChangelog)(releaseNotesData.diffInfo, releaseNotesData.mergedPullRequests, releaseNotesData.options);
         });
     }
 }
 exports.ReleaseNotesBuilder = ReleaseNotesBuilder;
+function pullData(octokit, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let mergedPullRequests;
+        let diffInfo;
+        const commitsApi = new commits_1.Commits(octokit);
+        if (!options.commitMode) {
+            core.startGroup(`🚀 Load pull requests`);
+            const pullRequestsApi = new pullRequests_1.PullRequests(octokit, commitsApi);
+            const [info, prs] = yield pullRequestsApi.getMergedPullRequests(options);
+            mergedPullRequests = prs;
+            diffInfo = info;
+        }
+        else {
+            core.startGroup(`🚀 Load commit history`);
+            core.info(`⚠️ Executing experimental commit mode`);
+            const [info, prs] = yield commitsApi.generateCommitPRs(options);
+            mergedPullRequests = prs;
+            diffInfo = info;
+        }
+        // define the included PRs within this release as output
+        core.setOutput('pull_requests', mergedPullRequests
+            .map(pr => {
+            return pr.number;
+        })
+            .join(','));
+        core.setOutput('changed_files', diffInfo.changedFiles);
+        core.setOutput('additions', diffInfo.additions);
+        core.setOutput('deletions', diffInfo.deletions);
+        core.setOutput('changes', diffInfo.changes);
+        core.setOutput('commits', diffInfo.commits);
+        const collectAndExport = true;
+        if (collectAndExport) {
+            core.info('📦 Exporting collected data');
+            core.exportVariable('_diffInfo', JSON.stringify(diffInfo));
+            core.exportVariable('_mergedPullRequests', JSON.stringify(mergedPullRequests));
+            core.exportVariable('_options', JSON.stringify(options));
+        }
+        core.endGroup();
+        return {
+            diffInfo,
+            mergedPullRequests,
+            options
+        };
+    });
+}
+exports.pullData = pullData;
 
 
 /***/ }),
@@ -1687,6 +1642,13 @@ const utils_1 = __nccwpck_require__(918);
 const regexUtils_1 = __nccwpck_require__(2364);
 const EMPTY_MAP = new Map();
 function buildChangelog(diffInfo, prs, options) {
+    core.startGroup('📦 Build changelog');
+    if (prs.length === 0) {
+        core.warning(`⚠️ No pull requests found`);
+        const result = replaceEmptyTemplate(options.configuration.empty_template, options);
+        core.endGroup();
+        return result;
+    }
     // sort to target order
     const config = options.configuration;
     const sort = config.sort;
@@ -1916,6 +1878,7 @@ function buildChangelog(diffInfo, prs, options) {
     transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap, config);
     transformedChangelog = cleanupPrPlaceholders(transformedChangelog, placeholders);
     core.info(`ℹ️ Filled template`);
+    core.endGroup();
     return transformedChangelog;
 }
 exports.buildChangelog = buildChangelog;

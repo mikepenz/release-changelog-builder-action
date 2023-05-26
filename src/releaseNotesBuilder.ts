@@ -1,10 +1,32 @@
 import * as core from '@actions/core'
 import {Configuration} from './configuration'
 import {Octokit} from '@octokit/rest'
-import {ReleaseNotes} from './releaseNotes'
-import {Tags} from './tags'
+import {TagInfo, Tags} from './tags'
 import {failOrError} from './utils'
 import {HttpsProxyAgent} from 'https-proxy-agent'
+import {PullRequestInfo, PullRequests} from './pullRequests'
+import {Commits, DiffInfo} from './commits'
+import {buildChangelog} from './transform'
+
+export interface ReleaseNotesOptions {
+  owner: string // the owner of the repository
+  repo: string // the repository
+  fromTag: TagInfo // the tag/ref to start from
+  toTag: TagInfo // the tag/ref up to
+  includeOpen: boolean // defines if we should also fetch open pull requests
+  failOnError: boolean // defines if we should fail the action in case of an error
+  fetchReviewers: boolean // defines if the action should fetch the reviewers for PRs - approved reviewers are not included in the default PR listing
+  fetchReleaseInformation: boolean // defines if the action should fetch the release information for the from and to tag - e.g. the creation date for the associated release
+  fetchReviews: boolean // defines if the action should fetch the reviews for the PR.
+  commitMode: boolean // defines if we use the alternative commit based mode. note: this is only partially supported
+  configuration: Configuration // the configuration as defined in `configuration.ts`
+}
+
+export interface ReleaseNotesData {
+  diffInfo: DiffInfo
+  mergedPullRequests: PullRequestInfo[]
+  options: ReleaseNotesOptions
+}
 
 export class ReleaseNotesBuilder {
   constructor(
@@ -122,8 +144,59 @@ export class ReleaseNotesBuilder {
       commitMode: this.commitMode,
       configuration: this.configuration
     }
-    const releaseNotes = new ReleaseNotes(octokit, options)
 
-    return await releaseNotes.pull()
+    const releaseNotesData = await pullData(octokit, options)
+    return buildChangelog(releaseNotesData.diffInfo, releaseNotesData.mergedPullRequests, releaseNotesData.options)
+  }
+}
+
+export async function pullData(octokit: Octokit, options: ReleaseNotesOptions): Promise<ReleaseNotesData> {
+  let mergedPullRequests: PullRequestInfo[]
+  let diffInfo: DiffInfo
+
+  const commitsApi = new Commits(octokit)
+  if (!options.commitMode) {
+    core.startGroup(`🚀 Load pull requests`)
+    const pullRequestsApi = new PullRequests(octokit, commitsApi)
+    const [info, prs] = await pullRequestsApi.getMergedPullRequests(options)
+    mergedPullRequests = prs
+    diffInfo = info
+  } else {
+    core.startGroup(`🚀 Load commit history`)
+    core.info(`⚠️ Executing experimental commit mode`)
+    const [info, prs] = await commitsApi.generateCommitPRs(options)
+    mergedPullRequests = prs
+    diffInfo = info
+  }
+
+  // define the included PRs within this release as output
+  core.setOutput(
+    'pull_requests',
+    mergedPullRequests
+      .map(pr => {
+        return pr.number
+      })
+      .join(',')
+  )
+  core.setOutput('changed_files', diffInfo.changedFiles)
+  core.setOutput('additions', diffInfo.additions)
+  core.setOutput('deletions', diffInfo.deletions)
+  core.setOutput('changes', diffInfo.changes)
+  core.setOutput('commits', diffInfo.commits)
+
+  const collectAndExport = true
+  if (collectAndExport) {
+    core.info('📦 Exporting collected data')
+    core.exportVariable('_diffInfo', JSON.stringify(diffInfo))
+    core.exportVariable('_mergedPullRequests', JSON.stringify(mergedPullRequests))
+    core.exportVariable('_options', JSON.stringify(options))
+  }
+
+  core.endGroup()
+
+  return {
+    diffInfo,
+    mergedPullRequests,
+    options
   }
 }
