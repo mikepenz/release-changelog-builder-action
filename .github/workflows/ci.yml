@@ -147,10 +147,10 @@ jobs:
           CHANGELOG: ${{ steps.external_changelog.outputs.changelog }}
           CHANGELOG_SECOND: ${{ steps.external_changelog_second.outputs.changelog }}
         run: |
-          echor "First:"
+          echo "First:"
           echo "$CHANGELOG"
 
-          echor "Second:"
+          echo "Second:"
           echo "$CHANGELOG_SECOND"
 
   release:
