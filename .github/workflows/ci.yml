@@ -141,7 +141,7 @@ jobs:
           configurationJson: |
             {
               "template": "#{{CHANGELOG}}",
-              "pr_template": "PR: #${{NUMBER}}",
+              "pr_template": "PR: ##{{NUMBER}}",
               "categories": [
                 {
                     "title": "## Everything",
