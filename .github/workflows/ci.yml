@@ -138,7 +138,17 @@ jobs:
         id: external_changelog_second
         uses: ./
         with:
-          configuration: "configs/configuration.json"
+          configurationJson: |
+            {
+              "template": "#{{CHANGELOG}}",
+              "pr_template": "PR: #${{NUMBER}}",
+              "categories": [
+                {
+                    "title": "## Everything",
+                    "labels": []
+                }
+              ]
+            }
           owner: "mikepenz"
           repo: "MaterialDrawer"
 

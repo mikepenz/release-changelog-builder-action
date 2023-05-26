@@ -7,8 +7,6 @@ import {HttpsProxyAgent} from 'https-proxy-agent'
 import {PullRequestInfo, PullRequests} from './pullRequests'
 import {Commits, DiffInfo} from './commits'
 import {buildChangelog} from './transform'
-import * as fs from 'fs'
-import path from 'path'
 
 export interface ReleaseNotesOptions {
   owner: string // the owner of the repository
