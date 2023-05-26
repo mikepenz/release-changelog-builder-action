@@ -25,9 +25,9 @@ it('Should have empty changelog (tags)', async () => {
     fetchReviews: false,
     commitMode: false,
     configuration
-  })
+  }, false, false)
 
-  const changeLog = buildChangelog(data.diffInfo, data.mergedPullRequests, data.options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, data!.options)
   console.log(changeLog)
   expect(changeLog).toStrictEqual('- no changes')
 })
@@ -46,9 +46,9 @@ it('Should match generated changelog (tags)', async () => {
     fetchReviews: false,
     commitMode: false,
     configuration
-  })
+  }, false, false)
 
-  const changeLog = buildChangelog(data.diffInfo, data.mergedPullRequests, data.options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, data!.options)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 🧪 Tests
 
@@ -72,9 +72,9 @@ it('Should match generated changelog (refs)', async () => {
     fetchReviews: false,
     commitMode: false,
     configuration
-  })
+  }, false, false)
 
-  const changeLog = buildChangelog(data.diffInfo, data.mergedPullRequests, data.options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, data!.options)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 🧪 Tests
 
@@ -106,9 +106,9 @@ it('Should match generated changelog and replace all occurrences (refs)', async 
     fetchReviews: false,
     commitMode: false,
     configuration
-  })
+  }, false, false)
 
-  const changeLog = buildChangelog(data.diffInfo, data.mergedPullRequests, data.options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, data!.options)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 🧪 Tests
 
@@ -142,9 +142,9 @@ it('Should match ordered ASC', async () => {
     fetchReviews: false,
     commitMode: false,
     configuration
-  })
+  }, false, false)
 
-  const changeLog = buildChangelog(data.diffInfo, data.mergedPullRequests, data.options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, data!.options)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 🚀 Features\n\n22\n24\n25\n26\n28\n\n## 🐛 Fixes\n\n23\n\n`)
 })
@@ -163,9 +163,9 @@ it('Should match ordered DESC', async () => {
     fetchReviews: false,
     commitMode: false,
     configuration
-  })
+  }, false, false)
 
-  const changeLog = buildChangelog(data.diffInfo, data.mergedPullRequests, data.options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, data!.options)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 🚀 Features\n\n28\n26\n25\n24\n22\n\n## 🐛 Fixes\n\n23\n\n`)
 })
@@ -184,9 +184,9 @@ it('Should match ordered by title ASC', async () => {
     fetchReviews: false,
     commitMode: false,
     configuration
-  })
+  }, false, false)
 
-  const changeLog = buildChangelog(data.diffInfo, data.mergedPullRequests, data.options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, data!.options)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(
     `## 🚀 Features\n\nEnhanced action logs\nImprove README\nImproved configuration failure handling\nImproved defaults if no configuration is provided\nIntroduce additional placeholders [milestone, labels, assignees, reviewers]\n\n## 🐛 Fixes\n\nImproved handling for non existing tags\n\n`
@@ -207,9 +207,9 @@ it('Should match ordered by title DESC', async () => {
     fetchReviews: false,
     commitMode: false,
     configuration
-  })
+  }, false, false)
 
-  const changeLog = buildChangelog(data.diffInfo, data.mergedPullRequests, data.options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, data!.options)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(
     `## 🚀 Features\n\nIntroduce additional placeholders [milestone, labels, assignees, reviewers]\nImproved defaults if no configuration is provided\nImproved configuration failure handling\nImprove README\nEnhanced action logs\n\n## 🐛 Fixes\n\nImproved handling for non existing tags\n\n`
@@ -230,9 +230,9 @@ it('Should ignore PRs not merged into develop branch', async () => {
     fetchReviews: false,
     commitMode: false,
     configuration
-  })
+  }, false, false)
 
-  const changeLog = buildChangelog(data.diffInfo, data.mergedPullRequests, data.options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, data!.options)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`150\n\n`)
 })
@@ -251,9 +251,9 @@ it('Should ignore PRs not merged into main branch', async () => {
     fetchReviews: false,
     commitMode: false,
     configuration
-  })
+  }, false, false)
 
-  const changeLog = buildChangelog(data.diffInfo, data.mergedPullRequests, data.options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, data!.options)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`153\n\n`)
 })

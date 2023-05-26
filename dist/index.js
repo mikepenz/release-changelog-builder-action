@@ -186,7 +186,7 @@ class Commits {
                     mergeCommitSha: commit.sha,
                     author: commit.author || '',
                     repoName: '',
-                    labels: new Set(),
+                    labels: [],
                     milestone: '',
                     body: commit.message || '',
                     assignees: [],
@@ -487,7 +487,9 @@ function run() {
             const fetchReleaseInformation = core.getInput('fetchReleaseInformation') === 'true';
             const fetchReviews = core.getInput('fetchReviews') === 'true';
             const commitMode = core.getInput('commitMode') === 'true';
-            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchReviewers, fetchReleaseInformation, fetchReviews, commitMode, configuration).build();
+            const exportCollected = core.getInput('exportCollected') === 'true';
+            const exportOnly = core.getInput('exportOnly') === 'true';
+            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchReviewers, fetchReleaseInformation, fetchReviews, commitMode, exportCollected, exportOnly, configuration).build();
             core.setOutput('changelog', result);
             // write the result in changelog to file if possible
             const outputFile = core.getInput('outputFile');
@@ -873,7 +875,7 @@ function retrieveProperty(pr, property, useCase) {
 exports.retrieveProperty = retrieveProperty;
 // helper function to add a special open label to prs not merged.
 function attachSpeciaLabels(status, labels) {
-    labels.add(`--rcba-${status}`);
+    labels.push(`--rcba-${status}`);
     return labels;
 }
 const mapPullRequest = (pr, status = 'open') => {
@@ -889,7 +891,7 @@ const mapPullRequest = (pr, status = 'open') => {
         mergeCommitSha: pr.merge_commit_sha || '',
         author: ((_a = pr.user) === null || _a === void 0 ? void 0 : _a.login) || '',
         repoName: pr.base.repo.full_name,
-        labels: attachSpeciaLabels(status, new Set(((_b = pr.labels) === null || _b === void 0 ? void 0 : _b.map(lbl => { var _a; return ((_a = lbl.name) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase('en')) || ''; })) || [])),
+        labels: attachSpeciaLabels(status, ((_b = pr.labels) === null || _b === void 0 ? void 0 : _b.map(lbl => { var _a; return ((_a = lbl.name) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase('en')) || ''; })) || []),
         milestone: ((_c = pr.milestone) === null || _c === void 0 ? void 0 : _c.title) || '',
         body: pr.body || '',
         assignees: ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.map(asignee => (asignee === null || asignee === void 0 ? void 0 : asignee.login) || '')) || [],
@@ -1087,7 +1089,7 @@ const pullRequests_1 = __nccwpck_require__(4217);
 const commits_1 = __nccwpck_require__(3916);
 const transform_1 = __nccwpck_require__(1644);
 class ReleaseNotesBuilder {
-    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode, configuration) {
+    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode = false, exportCollected = false, exportOnly = false, configuration) {
         this.baseUrl = baseUrl;
         this.token = token;
         this.repositoryPath = repositoryPath;
@@ -1102,98 +1104,143 @@ class ReleaseNotesBuilder {
         this.fetchReleaseInformation = fetchReleaseInformation;
         this.fetchReviews = fetchReviews;
         this.commitMode = commitMode;
+        this.exportCollected = exportCollected;
+        this.exportOnly = exportOnly;
         this.configuration = configuration;
     }
     build() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this.owner) {
-                (0, utils_1.failOrError)(`💥 Missing or couldn't resolve 'owner'`, this.failOnError);
-                return null;
-            }
-            else {
-                core.setOutput('owner', this.owner);
-                core.debug(`Resolved 'owner' as ${this.owner}`);
-            }
-            if (!this.repo) {
-                (0, utils_1.failOrError)(`💥 Missing or couldn't resolve 'owner'`, this.failOnError);
-                return null;
-            }
-            else {
-                core.setOutput('repo', this.repo);
-                core.debug(`Resolved 'repo' as ${this.repo}`);
-            }
-            core.endGroup();
-            // check proxy setup for GHES environments
-            const proxy = process.env.https_proxy || process.env.HTTPS_PROXY;
-            const noProxy = process.env.no_proxy || process.env.NO_PROXY;
-            let noProxyArray = [];
-            if (noProxy) {
-                noProxyArray = noProxy.split(',');
-            }
-            // load octokit instance
-            const octokit = new rest_1.Octokit({
-                auth: `token ${this.token || process.env.GITHUB_TOKEN}`,
-                baseUrl: `${this.baseUrl || 'https://api.github.com'}`
-            });
-            if (proxy) {
-                const agent = new https_proxy_agent_1.HttpsProxyAgent(proxy);
-                octokit.hook.before('request', options => {
-                    if (noProxyArray.includes(options.request.hostname)) {
-                        return;
-                    }
-                    options.request.agent = agent;
+            let releaseNotesData = (0, utils_1.checkExportedData)();
+            if (releaseNotesData == null) {
+                if (!this.owner) {
+                    (0, utils_1.failOrError)(`💥 Missing or couldn't resolve 'owner'`, this.failOnError);
+                    return null;
+                }
+                else {
+                    core.setOutput('owner', this.owner);
+                    core.debug(`Resolved 'owner' as ${this.owner}`);
+                }
+                if (!this.repo) {
+                    (0, utils_1.failOrError)(`💥 Missing or couldn't resolve 'owner'`, this.failOnError);
+                    return null;
+                }
+                else {
+                    core.setOutput('repo', this.repo);
+                    core.debug(`Resolved 'repo' as ${this.repo}`);
+                }
+                core.endGroup();
+                // check proxy setup for GHES environments
+                const proxy = process.env.https_proxy || process.env.HTTPS_PROXY;
+                const noProxy = process.env.no_proxy || process.env.NO_PROXY;
+                let noProxyArray = [];
+                if (noProxy) {
+                    noProxyArray = noProxy.split(',');
+                }
+                // load octokit instance
+                const octokit = new rest_1.Octokit({
+                    auth: `token ${this.token || process.env.GITHUB_TOKEN}`,
+                    baseUrl: `${this.baseUrl || 'https://api.github.com'}`
                 });
-            }
-            // ensure proper from <-> to tag range
-            core.startGroup(`🔖 Resolve tags`);
-            const tagsApi = new tags_1.Tags(octokit);
-            const tagRange = yield tagsApi.retrieveRange(this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.ignorePreReleases, this.configuration.max_tags_to_fetch, this.configuration.tag_resolver);
-            let thisTag = tagRange.to;
-            if (!thisTag) {
-                (0, utils_1.failOrError)(`💥 Missing or couldn't resolve 'toTag'`, this.failOnError);
-                return null;
+                if (proxy) {
+                    const agent = new https_proxy_agent_1.HttpsProxyAgent(proxy);
+                    octokit.hook.before('request', options => {
+                        if (noProxyArray.includes(options.request.hostname)) {
+                            return;
+                        }
+                        options.request.agent = agent;
+                    });
+                }
+                // ensure proper from <-> to tag range
+                core.startGroup(`🔖 Resolve tags`);
+                const tagsApi = new tags_1.Tags(octokit);
+                const tagRange = yield tagsApi.retrieveRange(this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.ignorePreReleases, this.configuration.max_tags_to_fetch, this.configuration.tag_resolver);
+                let thisTag = tagRange.to;
+                if (!thisTag) {
+                    (0, utils_1.failOrError)(`💥 Missing or couldn't resolve 'toTag'`, this.failOnError);
+                    return null;
+                }
+                else {
+                    core.setOutput('toTag', thisTag.name);
+                    core.debug(`Resolved 'toTag' as ${thisTag.name}`);
+                }
+                let previousTag = tagRange.from;
+                if (previousTag == null) {
+                    (0, utils_1.failOrError)(`💥 Unable to retrieve previous tag given ${this.toTag}`, this.failOnError);
+                    return null;
+                }
+                core.setOutput('fromTag', previousTag.name);
+                core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`);
+                if (this.fetchReleaseInformation) {
+                    // load release information from the GitHub API
+                    core.info(`ℹ️ Fetching release information was enabled`);
+                    thisTag = yield tagsApi.fillTagInformation(this.repositoryPath, this.owner, this.repo, thisTag);
+                    previousTag = yield tagsApi.fillTagInformation(this.repositoryPath, this.owner, this.repo, previousTag);
+                }
+                else {
+                    core.debug(`ℹ️ Fetching release information was disabled`);
+                }
+                core.endGroup();
+                const options = {
+                    owner: this.owner,
+                    repo: this.repo,
+                    fromTag: previousTag,
+                    toTag: thisTag,
+                    includeOpen: this.includeOpen,
+                    failOnError: this.failOnError,
+                    fetchReviewers: this.fetchReviewers,
+                    fetchReleaseInformation: this.fetchReleaseInformation,
+                    fetchReviews: this.fetchReviews,
+                    commitMode: this.commitMode,
+                    configuration: this.configuration
+                };
+                releaseNotesData = yield pullData(octokit, options, this.exportCollected, this.exportOnly);
             }
             else {
-                core.setOutput('toTag', thisTag.name);
-                core.debug(`Resolved 'toTag' as ${thisTag.name}`);
+                core.info(`ℹ️ Retrieved previously exported collected data`);
+                // merge input with options (in case some data was updated)
+                const diffInfo = releaseNotesData.diffInfo;
+                const mergedPullRequests = releaseNotesData.mergedPullRequests;
+                const orgOptions = releaseNotesData.options;
+                // merge fromTag info with provided info || otherwise use cached info
+                const fromTag = orgOptions.fromTag;
+                if (this.fromTag != null) {
+                    fromTag.name = this.fromTag;
+                }
+                const toTag = orgOptions.toTag;
+                if (this.toTag != null) {
+                    toTag.name = this.toTag;
+                }
+                // merge provided values with previous options (prefer provided)
+                const options = {
+                    owner: this.owner || orgOptions.owner,
+                    repo: this.repo || orgOptions.repo,
+                    fromTag,
+                    toTag,
+                    includeOpen: this.includeOpen || orgOptions.includeOpen,
+                    failOnError: this.failOnError || orgOptions.failOnError,
+                    fetchReviewers: this.fetchReviewers || orgOptions.fetchReviewers,
+                    fetchReleaseInformation: this.fetchReleaseInformation || orgOptions.fetchReleaseInformation,
+                    fetchReviews: this.fetchReviews || orgOptions.fetchReviews,
+                    commitMode: this.commitMode || orgOptions.commitMode,
+                    configuration: this.configuration || orgOptions.configuration
+                };
+                releaseNotesData = {
+                    diffInfo,
+                    mergedPullRequests,
+                    options
+                };
             }
-            let previousTag = tagRange.from;
-            if (previousTag == null) {
-                (0, utils_1.failOrError)(`💥 Unable to retrieve previous tag given ${this.toTag}`, this.failOnError);
-                return null;
-            }
-            core.setOutput('fromTag', previousTag.name);
-            core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`);
-            if (this.fetchReleaseInformation) {
-                // load release information from the GitHub API
-                core.info(`ℹ️ Fetching release information was enabled`);
-                thisTag = yield tagsApi.fillTagInformation(this.repositoryPath, this.owner, this.repo, thisTag);
-                previousTag = yield tagsApi.fillTagInformation(this.repositoryPath, this.owner, this.repo, previousTag);
+            if (releaseNotesData != null) {
+                return (0, transform_1.buildChangelog)(releaseNotesData.diffInfo, releaseNotesData.mergedPullRequests, releaseNotesData.options);
             }
             else {
-                core.debug(`ℹ️ Fetching release information was disabled`);
+                return null;
             }
-            core.endGroup();
-            const options = {
-                owner: this.owner,
-                repo: this.repo,
-                fromTag: previousTag,
-                toTag: thisTag,
-                includeOpen: this.includeOpen,
-                failOnError: this.failOnError,
-                fetchReviewers: this.fetchReviewers,
-                fetchReleaseInformation: this.fetchReleaseInformation,
-                fetchReviews: this.fetchReviews,
-                commitMode: this.commitMode,
-                configuration: this.configuration
-            };
-            const releaseNotesData = yield pullData(octokit, options);
-            return (0, transform_1.buildChangelog)(releaseNotesData.diffInfo, releaseNotesData.mergedPullRequests, releaseNotesData.options);
         });
     }
 }
 exports.ReleaseNotesBuilder = ReleaseNotesBuilder;
-function pullData(octokit, options) {
+function pullData(octokit, options, exportCollected, exportOnly) {
     return __awaiter(this, void 0, void 0, function* () {
         let mergedPullRequests;
         let diffInfo;
@@ -1223,12 +1270,18 @@ function pullData(octokit, options) {
         core.setOutput('deletions', diffInfo.deletions);
         core.setOutput('changes', diffInfo.changes);
         core.setOutput('commits', diffInfo.commits);
-        const collectAndExport = true;
-        if (collectAndExport) {
+        if (exportCollected) {
             core.info('📦 Exporting collected data');
-            core.exportVariable('_diffInfo', JSON.stringify(diffInfo));
-            core.exportVariable('_mergedPullRequests', JSON.stringify(mergedPullRequests));
-            core.exportVariable('_options', JSON.stringify(options));
+            core.exportVariable(`RCBA_EXPORT_diffInfo`, JSON.stringify(diffInfo));
+            //fs.writeFileSync(path.resolve('diffInfo.json'), JSON.stringify(diffInfo))
+            core.exportVariable(`RCBA_EXPORT_mergedPullRequests`, JSON.stringify(mergedPullRequests));
+            //fs.writeFileSync(path.resolve('mergedPullRequests.json'), JSON.stringify(mergedPullRequests))
+            core.exportVariable(`RCBA_EXPORT_options`, JSON.stringify(options));
+            //fs.writeFileSync(path.resolve('options.json'), JSON.stringify(options))
+            if (exportOnly) {
+                core.endGroup();
+                return null;
+            }
         }
         core.endGroup();
         return {
@@ -1688,7 +1741,7 @@ function buildChangelog(diffInfo, prs, options) {
             const extracted = extractValues(pr, extractor, 'label_extractor');
             if (extracted !== null) {
                 for (const label of extracted) {
-                    pr.labels.add(label);
+                    pr.labels.push(label);
                 }
                 if (core.isDebug()) {
                     core.debug(`    Extracted the following labels (${JSON.stringify(extracted)}) for PR ${pr.number}`);
@@ -1723,7 +1776,7 @@ function buildChangelog(diffInfo, prs, options) {
     const uncategorizedPrs = [];
     // bring elements in order
     for (const [pr, body] of transformedMap) {
-        if ((0, utils_1.haveCommonElements)(ignoredLabels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
+        if ((0, utils_1.haveCommonElementsArr)(ignoredLabels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
             ignoredPrs.push(body);
             continue;
         }
@@ -1735,7 +1788,7 @@ function buildChangelog(diffInfo, prs, options) {
             let matched = false; // check if we matched within the given category
             // check if any exclude label matches
             if (category.exclude_labels !== undefined) {
-                if ((0, utils_1.haveCommonElements)(category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
+                if ((0, utils_1.haveCommonElementsArr)(category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
                     if (core.isDebug()) {
                         const excludeLabels = JSON.stringify(category.exclude_labels);
                         core.debug(`    PR ${pr.number} with labels: ${pr.labels} excluded from category via exclude label: ${excludeLabels}`);
@@ -1747,7 +1800,7 @@ function buildChangelog(diffInfo, prs, options) {
             // validate for an exhaustive match (e.g. every provided rule applies)
             if (category.exhaustive === true && (category.labels !== undefined || category.rules !== undefined)) {
                 if (category.labels !== undefined) {
-                    matched = (0, utils_1.haveEveryElements)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels);
+                    matched = (0, utils_1.haveEveryElementsArr)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels);
                 }
                 let exhaustive_rules = true;
                 if (category.exhaustive_rules !== undefined) {
@@ -1761,7 +1814,7 @@ function buildChangelog(diffInfo, prs, options) {
                 // if not exhaustive, do individual matches
                 if (category.labels !== undefined) {
                     // check if either any of the labels applies
-                    matched = (0, utils_1.haveCommonElements)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels);
+                    matched = (0, utils_1.haveCommonElementsArr)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels);
                 }
                 let exhaustive_rules = false;
                 if (category.exhaustive_rules !== undefined) {
@@ -2108,12 +2161,16 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.haveEveryElements = exports.haveCommonElements = exports.createOrSet = exports.writeOutput = exports.directoryExistsSync = exports.mergeConfiguration = exports.parseConfiguration = exports.resolveConfiguration = exports.failOrError = exports.retrieveRepositoryPath = void 0;
+exports.haveEveryElementsArr = exports.haveEveryElements = exports.haveCommonElementsArr = exports.haveCommonElements = exports.createOrSet = exports.writeOutput = exports.directoryExistsSync = exports.mergeConfiguration = exports.parseConfiguration = exports.resolveConfiguration = exports.checkExportedData = exports.failOrError = exports.retrieveRepositoryPath = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
 const configuration_1 = __nccwpck_require__(5527);
+const moment_1 = __importDefault(__nccwpck_require__(9623));
 /**
  * Resolves the repository path, relatively to the GITHUB_WORKSPACE
  */
@@ -2144,6 +2201,42 @@ function failOrError(message, failOnError) {
     }
 }
 exports.failOrError = failOrError;
+/**
+ * Retrieves the exported information from a previous run of the `release-changelog-builder-action`.
+ * If available, return a [ReleaseNotesData].
+ */
+function checkExportedData() {
+    const rawDiffInfo = process.env[`RCBA_EXPORT_diffInfo`];
+    const rawMergedPullRequests = process.env[`RCBA_EXPORT_mergedPullRequests`];
+    const rawOptions = process.env[`RCBA_EXPORT_options`];
+    if (rawDiffInfo && rawMergedPullRequests && rawOptions) {
+        const diffInfo = JSON.parse(rawDiffInfo);
+        const mergedPullRequests = JSON.parse(rawMergedPullRequests);
+        for (const pr of mergedPullRequests) {
+            pr.createdAt = (0, moment_1.default)(pr.createdAt);
+            if (pr.mergedAt) {
+                pr.mergedAt = (0, moment_1.default)(pr.mergedAt);
+            }
+            if (pr.reviews) {
+                for (const review of pr.reviews) {
+                    if (review.submittedAt) {
+                        review.submittedAt = (0, moment_1.default)(review.submittedAt);
+                    }
+                }
+            }
+        }
+        const options = JSON.parse(rawOptions);
+        return {
+            diffInfo,
+            mergedPullRequests,
+            options
+        };
+    }
+    else {
+        return null;
+    }
+}
+exports.checkExportedData = checkExportedData;
 /**
  * Retrieves the configuration given the file path, if not found it will fallback to the `DefaultConfiguration`
  */
@@ -2285,10 +2378,18 @@ function haveCommonElements(arr1, arr2) {
     return arr1.some(item => arr2.has(item));
 }
 exports.haveCommonElements = haveCommonElements;
+function haveCommonElementsArr(arr1, arr2) {
+    return haveCommonElements(arr1, new Set(arr2));
+}
+exports.haveCommonElementsArr = haveCommonElementsArr;
 function haveEveryElements(arr1, arr2) {
     return arr1.every(item => arr2.has(item));
 }
 exports.haveEveryElements = haveEveryElements;
+function haveEveryElementsArr(arr1, arr2) {
+    return haveEveryElements(arr1, new Set(arr2));
+}
+exports.haveEveryElementsArr = haveEveryElementsArr;
 
 
 /***/ }),

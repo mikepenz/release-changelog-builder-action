@@ -113,6 +113,19 @@ jobs:
         run: echo "CHANGELOG"
 
         # Showcases the capability to generate the changelog for an external repository provided
+        # Showcase ability to only fetch data first, and then continue with exported data later
+      - name: "External Repo Configuration Collect Report"
+        id: external_changelog_collect
+        uses: ./
+        with:
+          owner: "mikepenz"
+          repo: "MaterialDrawer"
+          fromTag: "v8.1.0"
+          toTag: "v8.1.6"
+          token: ${{ secrets.PERSONAL_TOKEN }}
+          exportCollected: true
+          exportOnly: true
+      
       - name: "External Repo Configuration"
         id: external_changelog
         uses: ./
@@ -120,14 +133,25 @@ jobs:
           configuration: "configs/configuration_complex.json"
           owner: "mikepenz"
           repo: "MaterialDrawer"
-          fromTag: "v8.1.0"
-          toTag: "v8.1.6"
-          token: ${{ secrets.PERSONAL_TOKEN }}
+
+      - name: "External Repo Configuration Second"
+        id: external_changelog_second
+        uses: ./
+        with:
+          configuration: "configs/configuration.json"
+          owner: "mikepenz"
+          repo: "MaterialDrawer"
 
       - name: Echo External Repo Configuration Changelog
         env:
           CHANGELOG: ${{ steps.external_changelog.outputs.changelog }}
-        run: echo "$CHANGELOG"
+          CHANGELOG_SECOND: ${{ steps.external_changelog_second.outputs.changelog }}
+        run: |
+          echor "First:"
+          echo "$CHANGELOG"
+
+          echor "Second:"
+          echo "$CHANGELOG_SECOND"
 
   release:
     if: startsWith(github.ref, 'refs/tags/')

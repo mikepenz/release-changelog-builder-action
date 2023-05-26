@@ -3,7 +3,7 @@ import {Category, Configuration, Placeholder, Property, Transformer} from './con
 import {CommentInfo, EMPTY_COMMENT_INFO, PullRequestInfo, retrieveProperty, sortPullRequests} from './pullRequests'
 import {ReleaseNotesOptions} from './releaseNotesBuilder'
 import {DiffInfo} from './commits'
-import {createOrSet, haveCommonElements, haveEveryElements} from './utils'
+import {createOrSet, haveCommonElementsArr, haveEveryElementsArr} from './utils'
 import {matchesRules, RegexTransformer, validateTransformer} from './regexUtils'
 
 const EMPTY_MAP = new Map<string, string>()
@@ -57,7 +57,7 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
       const extracted = extractValues(pr, extractor, 'label_extractor')
       if (extracted !== null) {
         for (const label of extracted) {
-          pr.labels.add(label)
+          pr.labels.push(label)
         }
 
         if (core.isDebug()) {
@@ -100,7 +100,7 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
   // bring elements in order
   for (const [pr, body] of transformedMap) {
     if (
-      haveCommonElements(
+      haveCommonElementsArr(
         ignoredLabels.map(lbl => lbl.toLocaleLowerCase('en')),
         pr.labels
       )
@@ -119,7 +119,7 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
       // check if any exclude label matches
       if (category.exclude_labels !== undefined) {
         if (
-          haveCommonElements(
+          haveCommonElementsArr(
             category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')),
             pr.labels
           )
@@ -136,7 +136,7 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
       // validate for an exhaustive match (e.g. every provided rule applies)
       if (category.exhaustive === true && (category.labels !== undefined || category.rules !== undefined)) {
         if (category.labels !== undefined) {
-          matched = haveEveryElements(
+          matched = haveEveryElementsArr(
             category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
             pr.labels
           )
@@ -152,7 +152,7 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
         // if not exhaustive, do individual matches
         if (category.labels !== undefined) {
           // check if either any of the labels applies
-          matched = haveCommonElements(
+          matched = haveCommonElementsArr(
             category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
             pr.labels
           )

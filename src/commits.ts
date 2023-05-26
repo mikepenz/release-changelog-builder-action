@@ -165,7 +165,7 @@ export class Commits {
         mergeCommitSha: commit.sha,
         author: commit.author || '',
         repoName: '',
-        labels: new Set(),
+        labels: [],
         milestone: '',
         body: commit.message || '',
         assignees: [],

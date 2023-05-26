@@ -17,7 +17,7 @@ export interface PullRequestInfo {
   mergeCommitSha: string
   author: string
   repoName: string
-  labels: Set<string>
+  labels: string[]
   milestone: string
   body: string
   assignees: string[]
@@ -329,8 +329,8 @@ export function retrieveProperty(pr: PullRequestInfo, property: Property, useCas
 }
 
 // helper function to add a special open label to prs not merged.
-function attachSpeciaLabels(status: 'open' | 'merged', labels: Set<string>): Set<string> {
-  labels.add(`--rcba-${status}`)
+function attachSpeciaLabels(status: 'open' | 'merged', labels: string[]): string[] {
+  labels.push(`--rcba-${status}`)
   return labels
 }
 
@@ -345,7 +345,7 @@ const mapPullRequest = (pr: PullData | Unpacked<PullsListData>, status: 'open' |
   mergeCommitSha: pr.merge_commit_sha || '',
   author: pr.user?.login || '',
   repoName: pr.base.repo.full_name,
-  labels: attachSpeciaLabels(status, new Set(pr.labels?.map(lbl => lbl.name?.toLocaleLowerCase('en') || '') || [])),
+  labels: attachSpeciaLabels(status, pr.labels?.map(lbl => lbl.name?.toLocaleLowerCase('en') || '') || []),
   milestone: pr.milestone?.title || '',
   body: pr.body || '',
   assignees: pr.assignees?.map(asignee => asignee?.login || '') || [],
