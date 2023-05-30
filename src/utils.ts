@@ -2,6 +2,10 @@ import * as core from '@actions/core'
 import * as fs from 'fs'
 import * as path from 'path'
 import {Configuration, DefaultConfiguration} from './configuration'
+import {ReleaseNotesData, ReleaseNotesOptions} from './releaseNotesBuilder'
+import {DiffInfo} from './commits'
+import {PullRequestInfo} from './pullRequests'
+import moment from 'moment'
 /**
  * Resolves the repository path, relatively to the GITHUB_WORKSPACE
  */
@@ -29,6 +33,45 @@ export function failOrError(message: string | Error, failOnError: boolean): void
     core.setFailed(message)
   } else {
     core.error(message)
+  }
+}
+
+/**
+ * Retrieves the exported information from a previous run of the `release-changelog-builder-action`.
+ * If available, return a [ReleaseNotesData].
+ */
+export function checkExportedData(): ReleaseNotesData | null {
+  const rawDiffInfo = process.env[`RCBA_EXPORT_diffInfo`]
+  const rawMergedPullRequests = process.env[`RCBA_EXPORT_mergedPullRequests`]
+  const rawOptions = process.env[`RCBA_EXPORT_options`]
+
+  if (rawDiffInfo && rawMergedPullRequests && rawOptions) {
+    const diffInfo: DiffInfo = JSON.parse(rawDiffInfo)
+    const mergedPullRequests: PullRequestInfo[] = JSON.parse(rawMergedPullRequests)
+
+    for (const pr of mergedPullRequests) {
+      pr.createdAt = moment(pr.createdAt)
+      if (pr.mergedAt) {
+        pr.mergedAt = moment(pr.mergedAt)
+      }
+
+      if (pr.reviews) {
+        for (const review of pr.reviews) {
+          if (review.submittedAt) {
+            review.submittedAt = moment(review.submittedAt)
+          }
+        }
+      }
+    }
+
+    const options: ReleaseNotesOptions = JSON.parse(rawOptions)
+    return {
+      diffInfo,
+      mergedPullRequests,
+      options
+    }
+  } else {
+    return null
   }
 }
 
@@ -172,6 +215,14 @@ export function haveCommonElements(arr1: string[], arr2: Set<string>): boolean {
   return arr1.some(item => arr2.has(item))
 }
 
+export function haveCommonElementsArr(arr1: string[], arr2: string[]): boolean {
+  return haveCommonElements(arr1, new Set(arr2))
+}
+
 export function haveEveryElements(arr1: string[], arr2: Set<string>): boolean {
   return arr1.every(item => arr2.has(item))
+}
+
+export function haveEveryElementsArr(arr1: string[], arr2: string[]): boolean {
+  return haveEveryElements(arr1, new Set(arr2))
 }

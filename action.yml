@@ -40,6 +40,12 @@ inputs:
   commitMode:
     description: 'Enables a `light` commit based mode. This mode generates changelogs based on the commits. Please note that this is not officially supported, and lacks a lot of features only possible with PRs.'
     default: "false"
+  exportCollected:
+    description: 'Enables the export of all collected PR information to an environment variable'
+    default: "false"
+  exportOnly:
+    description: 'If enabled, the action will only collect the data and terminate afterwards. Data can then be consumed by steps afterwards'
+    default: "false"
   outputFile:
     description: 'If defined, the changelog will get written to this file. (relative to the checkout dir)'
   token:

@@ -3,6 +3,8 @@ import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import {Unpacked} from './utils'
 import moment from 'moment'
 import {Property, Sort} from './configuration'
+import {Commits, DiffInfo, filterCommits} from './commits'
+import {ReleaseNotesOptions} from './releaseNotesBuilder'
 
 export interface PullRequestInfo {
   number: number
@@ -15,7 +17,7 @@ export interface PullRequestInfo {
   mergeCommitSha: string
   author: string
   repoName: string
-  labels: Set<string>
+  labels: string[]
   milestone: string
   body: string
   assignees: string[]
@@ -50,7 +52,7 @@ type PullsListData = RestEndpointMethodTypes['pulls']['list']['response']['data'
 type PullReviewsData = RestEndpointMethodTypes['pulls']['listReviews']['response']['data']
 
 export class PullRequests {
-  constructor(private octokit: Octokit) {}
+  constructor(private octokit: Octokit, private commits: Commits) {}
 
   async getSingle(owner: string, repo: string, prNumber: number): Promise<PullRequestInfo | null> {
     try {
@@ -159,6 +161,106 @@ export class PullRequests {
     }
     pr.reviews = prReviews
   }
+
+  async getMergedPullRequests(options: ReleaseNotesOptions): Promise<[DiffInfo, PullRequestInfo[]]> {
+    const {owner, repo, includeOpen, fetchReviewers, fetchReviews, configuration} = options
+
+    const diffInfo = await this.commits.getCommitHistory(options)
+    const commits = diffInfo.commitInfo
+    if (commits.length === 0) {
+      return [diffInfo, []]
+    }
+
+    const firstCommit = commits[0]
+    const lastCommit = commits[commits.length - 1]
+    let fromDate = firstCommit.date
+    const toDate = lastCommit.date
+
+    const maxDays = configuration.max_back_track_time_days
+    const maxFromDate = toDate.clone().subtract(maxDays, 'days')
+    if (maxFromDate.isAfter(fromDate)) {
+      core.info(`⚠️ Adjusted 'fromDate' to go max ${maxDays} back`)
+      fromDate = maxFromDate
+    }
+
+    core.info(`ℹ️ Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`)
+
+    const pullRequests = await this.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests)
+
+    core.info(`ℹ️ Retrieved ${pullRequests.length} PRs for ${owner}/${repo} in date range from API`)
+
+    const prCommits = filterCommits(commits, configuration.exclude_merge_branches)
+
+    core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`)
+
+    // create array of commits for this release
+    const releaseCommitHashes = prCommits.map(commmit => {
+      return commmit.sha
+    })
+
+    // filter out pull requests not associated with this release
+    const mergedPullRequests = pullRequests.filter(pr => {
+      return releaseCommitHashes.includes(pr.mergeCommitSha)
+    })
+
+    core.info(`ℹ️ Retrieved ${mergedPullRequests.length} merged PRs for ${owner}/${repo}`)
+
+    let allPullRequests = mergedPullRequests
+    if (includeOpen) {
+      // retrieve all open pull requests
+      const openPullRequests = await this.getOpen(owner, repo, configuration.max_pull_requests)
+
+      core.info(`ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`)
+
+      // all pull requests
+      allPullRequests = allPullRequests.concat(openPullRequests)
+
+      core.info(`ℹ️ Retrieved ${allPullRequests.length} total PRs for ${owner}/${repo}`)
+    }
+
+    // retrieve base branches we allow
+    const baseBranches = configuration.base_branches
+    const baseBranchPatterns = baseBranches.map(baseBranch => {
+      return new RegExp(baseBranch.replace('\\\\', '\\'), 'gu')
+    })
+
+    // return only prs if the baseBranch is matching the configuration
+    const finalPrs = allPullRequests.filter(pr => {
+      if (baseBranches.length !== 0) {
+        return baseBranchPatterns.some(pattern => {
+          return pr.baseBranch.match(pattern) !== null
+        })
+      }
+      return true
+    })
+
+    if (baseBranches.length !== 0) {
+      core.info(`ℹ️ Retrieved ${finalPrs.length} PRs for ${owner}/${repo} filtered by the 'base_branches' configuration.`)
+    }
+
+    // fetch reviewers only if enabled (requires an additional API request per PR)
+    if (fetchReviews || fetchReviewers) {
+      core.info(`ℹ️ Fetching reviews (or reviewers) was enabled`)
+      // update PR information with reviewers who approved
+      for (const pr of finalPrs) {
+        await this.getReviews(owner, repo, pr)
+
+        const reviews = pr.reviews
+        if (reviews && (reviews?.length || 0) > 0) {
+          core.info(`ℹ️ Retrieved ${reviews.length || 0} review(s) for PR ${owner}/${repo}/#${pr.number}`)
+
+          // backwards compatiblity
+          pr.approvedReviewers = reviews.filter(r => r.state === 'APPROVED').map(r => r.author)
+        } else {
+          core.debug(`No reviewer(s) for PR ${owner}/${repo}/#${pr.number}`)
+        }
+      }
+    } else {
+      core.debug(`ℹ️ Fetching reviews (or reviewers) was disabled`)
+    }
+
+    return [diffInfo, finalPrs]
+  }
 }
 
 function sortPrs(pullRequests: PullRequestInfo[]): PullRequestInfo[] {
@@ -227,8 +329,8 @@ export function retrieveProperty(pr: PullRequestInfo, property: Property, useCas
 }
 
 // helper function to add a special open label to prs not merged.
-function attachSpeciaLabels(status: 'open' | 'merged', labels: Set<string>): Set<string> {
-  labels.add(`--rcba-${status}`)
+function attachSpeciaLabels(status: 'open' | 'merged', labels: string[]): string[] {
+  labels.push(`--rcba-${status}`)
   return labels
 }
 
@@ -243,7 +345,7 @@ const mapPullRequest = (pr: PullData | Unpacked<PullsListData>, status: 'open' |
   mergeCommitSha: pr.merge_commit_sha || '',
   author: pr.user?.login || '',
   repoName: pr.base.repo.full_name,
-  labels: attachSpeciaLabels(status, new Set(pr.labels?.map(lbl => lbl.name?.toLocaleLowerCase('en') || '') || [])),
+  labels: attachSpeciaLabels(status, pr.labels?.map(lbl => lbl.name?.toLocaleLowerCase('en') || '') || []),
   milestone: pr.milestone?.title || '',
   body: pr.body || '',
   assignees: pr.assignees?.map(asignee => asignee?.login || '') || [],
