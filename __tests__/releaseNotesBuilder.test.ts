@@ -221,7 +221,7 @@ it('Verify commit based changelog', async () => {
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false, // enable commitMode
+    true, // enable commitMode
     false, // enable exportCollected
     false, // enable exportOnly
     configuration
@@ -250,7 +250,7 @@ it('Verify commit based changelog, with emoji categorisation', async () => {
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false, // enable commitMode
+    true, // enable commitMode
     false, // enable exportCollected
     false, // enable exportOnly
     configuration
