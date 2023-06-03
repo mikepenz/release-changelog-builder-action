@@ -602,28 +602,23 @@ class PullRequests {
                 direction: 'desc'
             });
             try {
-                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a;) {
+                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
                     _c = _f.value;
                     _d = false;
-                    try {
-                        const response = _c;
-                        const prs = response.data;
-                        for (const pr of prs.filter(p => !!p.merged_at)) {
-                            mergedPRs.push(mapPullRequest(pr, 'merged'));
-                        }
-                        const firstPR = prs[0];
-                        if (firstPR === undefined ||
-                            (firstPR.merged_at && fromDate.isAfter((0, moment_1.default)(firstPR.merged_at))) ||
-                            mergedPRs.length >= maxPullRequests) {
-                            if (mergedPRs.length >= maxPullRequests) {
-                                core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
-                            }
-                            // bail out early to not keep iterating on PRs super old
-                            return sortPrs(mergedPRs);
-                        }
+                    const response = _c;
+                    const prs = response.data;
+                    for (const pr of prs.filter(p => !!p.merged_at)) {
+                        mergedPRs.push(mapPullRequest(pr, 'merged'));
                     }
-                    finally {
-                        _d = true;
+                    const firstPR = prs[0];
+                    if (firstPR === undefined ||
+                        (firstPR.merged_at && fromDate.isAfter((0, moment_1.default)(firstPR.merged_at))) ||
+                        mergedPRs.length >= maxPullRequests) {
+                        if (mergedPRs.length >= maxPullRequests) {
+                            core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
+                        }
+                        // bail out early to not keep iterating on PRs super old
+                        return sortPrs(mergedPRs);
                     }
                 }
             }
@@ -650,26 +645,21 @@ class PullRequests {
                 direction: 'desc'
             });
             try {
-                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a;) {
+                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
                     _c = _f.value;
                     _d = false;
-                    try {
-                        const response = _c;
-                        const prs = response.data;
-                        for (const pr of prs) {
-                            openPrs.push(mapPullRequest(pr, 'open'));
-                        }
-                        const firstPR = prs[0];
-                        if (firstPR === undefined || openPrs.length >= maxPullRequests) {
-                            if (openPrs.length >= maxPullRequests) {
-                                core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
-                            }
-                            // bail out early to not keep iterating on PRs super old
-                            return sortPrs(openPrs);
-                        }
+                    const response = _c;
+                    const prs = response.data;
+                    for (const pr of prs) {
+                        openPrs.push(mapPullRequest(pr, 'open'));
                     }
-                    finally {
-                        _d = true;
+                    const firstPR = prs[0];
+                    if (firstPR === undefined || openPrs.length >= maxPullRequests) {
+                        if (openPrs.length >= maxPullRequests) {
+                            core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
+                        }
+                        // bail out early to not keep iterating on PRs super old
+                        return sortPrs(openPrs);
                     }
                 }
             }
@@ -695,18 +685,13 @@ class PullRequests {
             });
             const prReviews = [];
             try {
-                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a;) {
+                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
                     _c = _f.value;
                     _d = false;
-                    try {
-                        const response = _c;
-                        const comments = response.data;
-                        for (const comment of comments) {
-                            prReviews.push(mapComment(comment));
-                        }
-                    }
-                    finally {
-                        _d = true;
+                    const response = _c;
+                    const comments = response.data;
+                    for (const comment of comments) {
+                        prReviews.push(mapComment(comment));
                     }
                 }
             }
@@ -1367,25 +1352,20 @@ class Tags {
                 per_page: 100
             });
             try {
-                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a;) {
+                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
                     _c = _f.value;
                     _d = false;
-                    try {
-                        const response = _c;
-                        const tags = response.data;
-                        for (const tag of tags) {
-                            tagsInfo.push({
-                                name: tag.name,
-                                commit: tag.commit.sha
-                            });
-                        }
-                        // for performance only fetch newest maxTagsToFetch tags!!
-                        if (tagsInfo.length >= maxTagsToFetch) {
-                            break;
-                        }
+                    const response = _c;
+                    const tags = response.data;
+                    for (const tag of tags) {
+                        tagsInfo.push({
+                            name: tag.name,
+                            commit: tag.commit.sha
+                        });
                     }
-                    finally {
-                        _d = true;
+                    // for performance only fetch newest maxTagsToFetch tags!!
+                    if (tagsInfo.length >= maxTagsToFetch) {
+                        break;
                     }
                 }
             }
