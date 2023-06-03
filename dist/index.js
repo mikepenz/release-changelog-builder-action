@@ -1,232 +1,6 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 3916:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.filterCommits = exports.Commits = exports.DefaultDiffInfo = void 0;
-const core = __importStar(__nccwpck_require__(2186));
-const moment_1 = __importDefault(__nccwpck_require__(9623));
-const utils_1 = __nccwpck_require__(918);
-exports.DefaultDiffInfo = {
-    changedFiles: 0,
-    additions: 0,
-    deletions: 0,
-    changes: 0,
-    commits: 0,
-    commitInfo: []
-};
-class Commits {
-    constructor(octokit) {
-        this.octokit = octokit;
-    }
-    getDiff(owner, repo, base, head) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const diff = yield this.getDiffRemote(owner, repo, base, head);
-            diff.commitInfo = this.sortCommits(diff.commitInfo);
-            return diff;
-        });
-    }
-    getDiffRemote(owner, repo, base, head) {
-        var _a, _b;
-        return __awaiter(this, void 0, void 0, function* () {
-            let changedFilesCount = 0;
-            let additionCount = 0;
-            let deletionCount = 0;
-            let changeCount = 0;
-            let commitCount = 0;
-            // Fetch comparisons recursively until we don't find any commits
-            // This is because the GitHub API limits the number of commits returned in a single response.
-            let commits = [];
-            let compareHead = head;
-            // eslint-disable-next-line no-constant-condition
-            while (true) {
-                const compareResult = yield this.octokit.repos.compareCommits({
-                    owner,
-                    repo,
-                    base,
-                    head: compareHead
-                });
-                if (compareResult.data.total_commits === 0) {
-                    break;
-                }
-                changedFilesCount += (_b = (_a = compareResult.data.files) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : 0;
-                const files = compareResult.data.files;
-                if (files !== undefined) {
-                    for (const file of files) {
-                        additionCount += file.additions;
-                        deletionCount += file.deletions;
-                        changeCount += file.changes;
-                    }
-                }
-                commitCount += compareResult.data.commits.length;
-                commits = compareResult.data.commits.concat(commits);
-                compareHead = `${commits[0].sha}^`;
-            }
-            core.info(`ℹ️ Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`);
-            return {
-                changedFiles: changedFilesCount,
-                additions: additionCount,
-                deletions: deletionCount,
-                changes: changeCount,
-                commits: commitCount,
-                commitInfo: commits
-                    .filter(commit => commit.sha)
-                    .map(commit => {
-                    var _a, _b;
-                    return ({
-                        sha: commit.sha || '',
-                        summary: commit.commit.message.split('\n')[0],
-                        message: commit.commit.message,
-                        date: (0, moment_1.default)((_a = commit.commit.committer) === null || _a === void 0 ? void 0 : _a.date),
-                        author: ((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.name) || '',
-                        prNumber: undefined
-                    });
-                })
-            };
-        });
-    }
-    sortCommits(commits) {
-        const commitsResult = [];
-        const shas = {};
-        for (const commit of commits) {
-            if (shas[commit.sha]) {
-                continue;
-            }
-            shas[commit.sha] = true;
-            commitsResult.push(commit);
-        }
-        commitsResult.sort((a, b) => {
-            if (a.date.isBefore(b.date)) {
-                return -1;
-            }
-            else if (b.date.isBefore(a.date)) {
-                return 1;
-            }
-            return 0;
-        });
-        return commitsResult;
-    }
-    getCommitHistory(options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const { owner, repo, fromTag, toTag, failOnError } = options;
-            core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag.name}...${toTag.name}'`);
-            const commitsApi = new Commits(this.octokit);
-            let diffInfo;
-            try {
-                diffInfo = yield commitsApi.getDiff(owner, repo, fromTag.name, toTag.name);
-            }
-            catch (error) {
-                (0, utils_1.failOrError)(`💥 Failed to retrieve - Invalid tag? - Because of: ${error}`, failOnError);
-                return exports.DefaultDiffInfo;
-            }
-            if (diffInfo.commitInfo.length === 0) {
-                core.warning(`⚠️ No commits found between - ${fromTag.name}...${toTag.name}`);
-                return exports.DefaultDiffInfo;
-            }
-            return diffInfo;
-        });
-    }
-    generateCommitPRs(options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const { owner, repo, configuration } = options;
-            const diffInfo = yield this.getCommitHistory(options);
-            const commits = diffInfo.commitInfo;
-            if (commits.length === 0) {
-                return [diffInfo, []];
-            }
-            const prCommits = filterCommits(commits, configuration.exclude_merge_branches);
-            core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`);
-            const prs = prCommits.map(function (commit) {
-                return {
-                    number: 0,
-                    title: commit.summary,
-                    htmlURL: '',
-                    baseBranch: '',
-                    createdAt: commit.date,
-                    mergedAt: commit.date,
-                    mergeCommitSha: commit.sha,
-                    author: commit.author || '',
-                    repoName: '',
-                    labels: [],
-                    milestone: '',
-                    body: commit.message || '',
-                    assignees: [],
-                    requestedReviewers: [],
-                    approvedReviewers: [],
-                    status: 'merged'
-                };
-            });
-            return [diffInfo, prs];
-        });
-    }
-}
-exports.Commits = Commits;
-/**
- * Filters out all commits which match the exclude pattern
- */
-function filterCommits(commits, excludeMergeBranches) {
-    const filteredCommits = [];
-    for (const commit of commits) {
-        if (excludeMergeBranches) {
-            let matched = false;
-            for (const excludeMergeBranch of excludeMergeBranches) {
-                if (commit.summary.includes(excludeMergeBranch)) {
-                    matched = true;
-                    break;
-                }
-            }
-            if (matched) {
-                continue;
-            }
-        }
-        filteredCommits.push(commit);
-    }
-    return filteredCommits;
-}
-exports.filterCommits = filterCommits;
-
-
-/***/ }),
-
 /***/ 5527:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -275,126 +49,6 @@ exports.DefaultConfiguration = {
     custom_placeholders: [],
     trim_values: false // defines if values are being trimmed prior to inserting
 };
-
-
-/***/ }),
-
-/***/ 353:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createCommandManager = void 0;
-const exec = __importStar(__nccwpck_require__(1514));
-const io = __importStar(__nccwpck_require__(7436));
-const utils_1 = __nccwpck_require__(918);
-function createCommandManager(workingDirectory) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return yield GitCommandManager.createCommandManager(workingDirectory);
-    });
-}
-exports.createCommandManager = createCommandManager;
-class GitCommandManager {
-    // Private constructor; use createCommandManager()
-    constructor() {
-        this.gitPath = '';
-        this.workingDirectory = '';
-    }
-    getWorkingDirectory() {
-        return this.workingDirectory;
-    }
-    latestTag() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const revListOutput = yield this.execGit(['rev-list', '--tags', '--skip=0', '--max-count=1']);
-            const output = yield this.execGit(['describe', '--abbrev=0', '--tags', revListOutput.stdout.trim()]);
-            return output.stdout.trim();
-        });
-    }
-    initialCommit() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const revListOutput = yield this.execGit(['rev-list', '--max-parents=0', 'HEAD']);
-            return revListOutput.stdout.trim();
-        });
-    }
-    tagCreation(tagName) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const creationDate = yield this.execGit(['for-each-ref', '--format="%(creatordate:rfc)"', `refs/tags/${tagName}`]);
-            return creationDate.stdout.trim().replace(/"/g, '');
-        });
-    }
-    static createCommandManager(workingDirectory) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const result = new GitCommandManager();
-            yield result.initializeCommandManager(workingDirectory);
-            return result;
-        });
-    }
-    execGit(args, allowAllExitCodes = false, silent = false) {
-        return __awaiter(this, void 0, void 0, function* () {
-            (0, utils_1.directoryExistsSync)(this.workingDirectory, true);
-            const result = new GitOutput();
-            const stdout = [];
-            const options = {
-                cwd: this.workingDirectory,
-                silent,
-                ignoreReturnCode: allowAllExitCodes,
-                listeners: {
-                    stdout: (data) => {
-                        stdout.push(data.toString());
-                    }
-                }
-            };
-            result.exitCode = yield exec.exec(`"${this.gitPath}"`, args, options);
-            result.stdout = stdout.join('');
-            return result;
-        });
-    }
-    initializeCommandManager(workingDirectory) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.workingDirectory = workingDirectory;
-            this.gitPath = yield io.which('git', true);
-        });
-    }
-}
-class GitOutput {
-    constructor() {
-        this.stdout = '';
-        this.exitCode = 0;
-    }
-}
 
 
 /***/ }),
@@ -508,524 +162,6 @@ run();
 
 /***/ }),
 
-/***/ 4217:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __asyncValues = (this && this.__asyncValues) || function (o) {
-    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
-    var m = o[Symbol.asyncIterator], i;
-    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
-    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
-    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.retrieveProperty = exports.compare = exports.sortPullRequests = exports.PullRequests = exports.EMPTY_COMMENT_INFO = void 0;
-const core = __importStar(__nccwpck_require__(2186));
-const moment_1 = __importDefault(__nccwpck_require__(9623));
-const commits_1 = __nccwpck_require__(3916);
-exports.EMPTY_COMMENT_INFO = {
-    id: 0,
-    htmlURL: '',
-    submittedAt: undefined,
-    author: '',
-    body: '',
-    state: undefined
-};
-class PullRequests {
-    constructor(octokit, commits) {
-        this.octokit = octokit;
-        this.commits = commits;
-    }
-    getSingle(owner, repo, prNumber) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { data } = yield this.octokit.pulls.get({
-                    owner,
-                    repo,
-                    pull_number: prNumber
-                });
-                return mapPullRequest(data);
-            }
-            catch (e /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
-                core.warning(`⚠️ Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`);
-                return null;
-            }
-        });
-    }
-    getBetweenDates(owner, repo, fromDate, toDate, maxPullRequests) {
-        var _a, e_1, _b, _c;
-        return __awaiter(this, void 0, void 0, function* () {
-            const mergedPRs = [];
-            const options = this.octokit.pulls.list.endpoint.merge({
-                owner,
-                repo,
-                state: 'closed',
-                sort: 'merged',
-                per_page: `${Math.min(100, maxPullRequests)}`,
-                direction: 'desc'
-            });
-            try {
-                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
-                    _c = _f.value;
-                    _d = false;
-                    const response = _c;
-                    const prs = response.data;
-                    for (const pr of prs.filter(p => !!p.merged_at)) {
-                        mergedPRs.push(mapPullRequest(pr, 'merged'));
-                    }
-                    const firstPR = prs[0];
-                    if (firstPR === undefined ||
-                        (firstPR.merged_at && fromDate.isAfter((0, moment_1.default)(firstPR.merged_at))) ||
-                        mergedPRs.length >= maxPullRequests) {
-                        if (mergedPRs.length >= maxPullRequests) {
-                            core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
-                        }
-                        // bail out early to not keep iterating on PRs super old
-                        return sortPrs(mergedPRs);
-                    }
-                }
-            }
-            catch (e_1_1) { e_1 = { error: e_1_1 }; }
-            finally {
-                try {
-                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
-                }
-                finally { if (e_1) throw e_1.error; }
-            }
-            return sortPrs(mergedPRs);
-        });
-    }
-    getOpen(owner, repo, maxPullRequests) {
-        var _a, e_2, _b, _c;
-        return __awaiter(this, void 0, void 0, function* () {
-            const openPrs = [];
-            const options = this.octokit.pulls.list.endpoint.merge({
-                owner,
-                repo,
-                state: 'open',
-                sort: 'created',
-                per_page: '100',
-                direction: 'desc'
-            });
-            try {
-                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
-                    _c = _f.value;
-                    _d = false;
-                    const response = _c;
-                    const prs = response.data;
-                    for (const pr of prs) {
-                        openPrs.push(mapPullRequest(pr, 'open'));
-                    }
-                    const firstPR = prs[0];
-                    if (firstPR === undefined || openPrs.length >= maxPullRequests) {
-                        if (openPrs.length >= maxPullRequests) {
-                            core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
-                        }
-                        // bail out early to not keep iterating on PRs super old
-                        return sortPrs(openPrs);
-                    }
-                }
-            }
-            catch (e_2_1) { e_2 = { error: e_2_1 }; }
-            finally {
-                try {
-                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
-                }
-                finally { if (e_2) throw e_2.error; }
-            }
-            return sortPrs(openPrs);
-        });
-    }
-    getReviews(owner, repo, pr) {
-        var _a, e_3, _b, _c;
-        return __awaiter(this, void 0, void 0, function* () {
-            const options = this.octokit.pulls.listReviews.endpoint.merge({
-                owner,
-                repo,
-                pull_number: pr.number,
-                sort: 'created',
-                direction: 'desc'
-            });
-            const prReviews = [];
-            try {
-                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
-                    _c = _f.value;
-                    _d = false;
-                    const response = _c;
-                    const comments = response.data;
-                    for (const comment of comments) {
-                        prReviews.push(mapComment(comment));
-                    }
-                }
-            }
-            catch (e_3_1) { e_3 = { error: e_3_1 }; }
-            finally {
-                try {
-                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
-                }
-                finally { if (e_3) throw e_3.error; }
-            }
-            pr.reviews = prReviews;
-        });
-    }
-    getMergedPullRequests(options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const { owner, repo, includeOpen, fetchReviewers, fetchReviews, configuration } = options;
-            const diffInfo = yield this.commits.getCommitHistory(options);
-            const commits = diffInfo.commitInfo;
-            if (commits.length === 0) {
-                return [diffInfo, []];
-            }
-            const firstCommit = commits[0];
-            const lastCommit = commits[commits.length - 1];
-            let fromDate = firstCommit.date;
-            const toDate = lastCommit.date;
-            const maxDays = configuration.max_back_track_time_days;
-            const maxFromDate = toDate.clone().subtract(maxDays, 'days');
-            if (maxFromDate.isAfter(fromDate)) {
-                core.info(`⚠️ Adjusted 'fromDate' to go max ${maxDays} back`);
-                fromDate = maxFromDate;
-            }
-            core.info(`ℹ️ Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`);
-            const pullRequests = yield this.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests);
-            core.info(`ℹ️ Retrieved ${pullRequests.length} PRs for ${owner}/${repo} in date range from API`);
-            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches);
-            core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`);
-            // create array of commits for this release
-            const releaseCommitHashes = prCommits.map(commmit => {
-                return commmit.sha;
-            });
-            // filter out pull requests not associated with this release
-            const mergedPullRequests = pullRequests.filter(pr => {
-                return releaseCommitHashes.includes(pr.mergeCommitSha);
-            });
-            core.info(`ℹ️ Retrieved ${mergedPullRequests.length} merged PRs for ${owner}/${repo}`);
-            let allPullRequests = mergedPullRequests;
-            if (includeOpen) {
-                // retrieve all open pull requests
-                const openPullRequests = yield this.getOpen(owner, repo, configuration.max_pull_requests);
-                core.info(`ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`);
-                // all pull requests
-                allPullRequests = allPullRequests.concat(openPullRequests);
-                core.info(`ℹ️ Retrieved ${allPullRequests.length} total PRs for ${owner}/${repo}`);
-            }
-            // retrieve base branches we allow
-            const baseBranches = configuration.base_branches;
-            const baseBranchPatterns = baseBranches.map(baseBranch => {
-                return new RegExp(baseBranch.replace('\\\\', '\\'), 'gu');
-            });
-            // return only prs if the baseBranch is matching the configuration
-            const finalPrs = allPullRequests.filter(pr => {
-                if (baseBranches.length !== 0) {
-                    return baseBranchPatterns.some(pattern => {
-                        return pr.baseBranch.match(pattern) !== null;
-                    });
-                }
-                return true;
-            });
-            if (baseBranches.length !== 0) {
-                core.info(`ℹ️ Retrieved ${finalPrs.length} PRs for ${owner}/${repo} filtered by the 'base_branches' configuration.`);
-            }
-            // fetch reviewers only if enabled (requires an additional API request per PR)
-            if (fetchReviews || fetchReviewers) {
-                core.info(`ℹ️ Fetching reviews (or reviewers) was enabled`);
-                // update PR information with reviewers who approved
-                for (const pr of finalPrs) {
-                    yield this.getReviews(owner, repo, pr);
-                    const reviews = pr.reviews;
-                    if (reviews && ((reviews === null || reviews === void 0 ? void 0 : reviews.length) || 0) > 0) {
-                        core.info(`ℹ️ Retrieved ${reviews.length || 0} review(s) for PR ${owner}/${repo}/#${pr.number}`);
-                        // backwards compatiblity
-                        pr.approvedReviewers = reviews.filter(r => r.state === 'APPROVED').map(r => r.author);
-                    }
-                    else {
-                        core.debug(`No reviewer(s) for PR ${owner}/${repo}/#${pr.number}`);
-                    }
-                }
-            }
-            else {
-                core.debug(`ℹ️ Fetching reviews (or reviewers) was disabled`);
-            }
-            return [diffInfo, finalPrs];
-        });
-    }
-}
-exports.PullRequests = PullRequests;
-function sortPrs(pullRequests) {
-    return sortPullRequests(pullRequests, {
-        order: 'ASC',
-        on_property: 'mergedAt'
-    });
-}
-function sortPullRequests(pullRequests, sort) {
-    let sortConfig;
-    // legacy handling to support string sort config
-    if (typeof sort === 'string') {
-        let order = 'ASC';
-        if (sort.toUpperCase() === 'DESC')
-            order = 'DESC';
-        sortConfig = { order, on_property: 'mergedAt' };
-    }
-    else {
-        sortConfig = sort;
-    }
-    if (sortConfig.order === 'ASC') {
-        pullRequests.sort((a, b) => {
-            return compare(a, b, sortConfig);
-        });
-    }
-    else {
-        pullRequests.sort((b, a) => {
-            return compare(a, b, sortConfig);
-        });
-    }
-    return pullRequests;
-}
-exports.sortPullRequests = sortPullRequests;
-function compare(a, b, sort) {
-    if (sort.on_property === 'mergedAt') {
-        const aa = a.mergedAt || a.createdAt;
-        const bb = b.mergedAt || b.createdAt;
-        if (aa.isBefore(bb)) {
-            return -1;
-        }
-        else if (bb.isBefore(aa)) {
-            return 1;
-        }
-        return 0;
-    }
-    else {
-        // only else for now `label`
-        return a.title.localeCompare(b.title);
-    }
-}
-exports.compare = compare;
-/**
- * Helper function to retrieve a property from the PullRequestInfo
- */
-function retrieveProperty(pr, property, useCase) {
-    let value = pr[property];
-    if (value === undefined) {
-        core.warning(`⚠️ the provided property '${property}' for \`${useCase}\` is not valid. Fallback to 'body'`);
-        value = pr['body'];
-    }
-    else if (value instanceof Set) {
-        value = Array.from(value).join(','); // join into single string
-    }
-    else if (Array.isArray(value)) {
-        value = value.join(','); // join into single string
-    }
-    else {
-        value = value.toString();
-    }
-    return value;
-}
-exports.retrieveProperty = retrieveProperty;
-// helper function to add a special open label to prs not merged.
-function attachSpeciaLabels(status, labels) {
-    labels.push(`--rcba-${status}`);
-    return labels;
-}
-const mapPullRequest = (pr, status = 'open') => {
-    var _a, _b, _c, _d, _e;
-    return ({
-        number: pr.number,
-        title: pr.title,
-        htmlURL: pr.html_url,
-        baseBranch: pr.base.ref,
-        branch: pr.head.ref,
-        createdAt: (0, moment_1.default)(pr.created_at),
-        mergedAt: pr.merged_at ? (0, moment_1.default)(pr.merged_at) : undefined,
-        mergeCommitSha: pr.merge_commit_sha || '',
-        author: ((_a = pr.user) === null || _a === void 0 ? void 0 : _a.login) || '',
-        repoName: pr.base.repo.full_name,
-        labels: attachSpeciaLabels(status, ((_b = pr.labels) === null || _b === void 0 ? void 0 : _b.map(lbl => { var _a; return ((_a = lbl.name) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase('en')) || ''; })) || []),
-        milestone: ((_c = pr.milestone) === null || _c === void 0 ? void 0 : _c.title) || '',
-        body: pr.body || '',
-        assignees: ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.map(asignee => (asignee === null || asignee === void 0 ? void 0 : asignee.login) || '')) || [],
-        requestedReviewers: ((_e = pr.requested_reviewers) === null || _e === void 0 ? void 0 : _e.map(reviewer => (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '')) || [],
-        approvedReviewers: [],
-        reviews: undefined,
-        status
-    });
-};
-const mapComment = (comment) => {
-    var _a;
-    return ({
-        id: comment.id,
-        htmlURL: comment.html_url,
-        submittedAt: comment.submitted_at ? (0, moment_1.default)(comment.submitted_at) : undefined,
-        author: ((_a = comment.user) === null || _a === void 0 ? void 0 : _a.login) || '',
-        body: comment.body,
-        state: comment.state
-    });
-};
-
-
-/***/ }),
-
-/***/ 2364:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.buildRegex = exports.validateTransformer = exports.matchesRules = void 0;
-const core = __importStar(__nccwpck_require__(2186));
-const pullRequests_1 = __nccwpck_require__(4217);
-/**
- * Checks if any of the rules match the given PR
- */
-function matchesRules(rules, pr, exhaustive) {
-    const transformers = rules.map(rule => validateTransformer(rule)).filter(t => t !== null);
-    if (exhaustive) {
-        return transformers.every(transformer => {
-            return matches(pr, transformer, 'rule');
-        });
-    }
-    else {
-        return transformers.some(transformer => {
-            return matches(pr, transformer, 'rule');
-        });
-    }
-}
-exports.matchesRules = matchesRules;
-/**
- * Checks if the configured property results in a positive `test` with the regex.
- */
-function matches(pr, extractor, extractor_usecase) {
-    if (extractor.pattern == null) {
-        return false;
-    }
-    if (extractor.onProperty !== undefined && extractor.onProperty.length === 1) {
-        const prop = extractor.onProperty[0];
-        const value = (0, pullRequests_1.retrieveProperty)(pr, prop, extractor_usecase);
-        const matched = extractor.pattern.test(value);
-        if (core.isDebug()) {
-            core.debug(`    Pattern ${extractor.pattern} resulted in ${matched} for ${value}  on PR ${pr.number} (usecase: ${extractor_usecase})`);
-        }
-        return matched;
-    }
-    return false;
-}
-function validateTransformer(transformer) {
-    if (transformer === undefined) {
-        return null;
-    }
-    try {
-        let target = undefined;
-        if (transformer.hasOwnProperty('target')) {
-            target = transformer.target;
-        }
-        let onProperty = undefined;
-        let method = undefined;
-        let onEmpty = undefined;
-        if (transformer.hasOwnProperty('method')) {
-            method = transformer.method;
-            onEmpty = transformer.on_empty;
-            onProperty = transformer.on_property;
-        }
-        else if (transformer.hasOwnProperty('on_property')) {
-            onProperty = transformer.on_property;
-        }
-        // legacy handling, transform single value input to array
-        if (!Array.isArray(onProperty)) {
-            if (onProperty !== undefined) {
-                onProperty = [onProperty];
-            }
-        }
-        return buildRegex(transformer, target, onProperty, method, onEmpty);
-    }
-    catch (e) {
-        core.warning(`⚠️ Failed to validate transformer: ${transformer.pattern}`);
-        return null;
-    }
-}
-exports.validateTransformer = validateTransformer;
-/**
- * Constructs the RegExp, providing the configured Regex and additional values
- */
-function buildRegex(regex, target, onProperty, method, onEmpty) {
-    var _a;
-    try {
-        return {
-            pattern: new RegExp(regex.pattern.replace('\\\\', '\\'), (_a = regex.flags) !== null && _a !== void 0 ? _a : 'gu'),
-            target: target || '',
-            onProperty,
-            method,
-            onEmpty
-        };
-    }
-    catch (e) {
-        core.warning(`⚠️ Bad replacer regex: ${regex.pattern}`);
-        return null;
-    }
-}
-exports.buildRegex = buildRegex;
-
-
-/***/ }),
-
 /***/ 4883:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -1064,15 +200,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pullData = exports.ReleaseNotesBuilder = void 0;
+exports.ReleaseNotesBuilder = void 0;
 const core = __importStar(__nccwpck_require__(2186));
-const rest_1 = __nccwpck_require__(5375);
-const tags_1 = __nccwpck_require__(7532);
 const utils_1 = __nccwpck_require__(918);
-const https_proxy_agent_1 = __nccwpck_require__(7219);
-const pullRequests_1 = __nccwpck_require__(4217);
-const commits_1 = __nccwpck_require__(3916);
 const transform_1 = __nccwpck_require__(1644);
+const github_pr_collector_1 = __nccwpck_require__(3196);
+const utils_2 = __nccwpck_require__(853);
 class ReleaseNotesBuilder {
     constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode = false, exportCollected = false, exportOnly = false, configuration) {
         this.baseUrl = baseUrl;
@@ -1098,7 +231,7 @@ class ReleaseNotesBuilder {
             let releaseNotesData = (0, utils_1.checkExportedData)();
             if (releaseNotesData == null) {
                 if (!this.owner) {
-                    (0, utils_1.failOrError)(`💥 Missing or couldn't resolve 'owner'`, this.failOnError);
+                    (0, utils_2.failOrError)(`💥 Missing or couldn't resolve 'owner'`, this.failOnError);
                     return null;
                 }
                 else {
@@ -1106,7 +239,7 @@ class ReleaseNotesBuilder {
                     core.debug(`Resolved 'owner' as ${this.owner}`);
                 }
                 if (!this.repo) {
-                    (0, utils_1.failOrError)(`💥 Missing or couldn't resolve 'owner'`, this.failOnError);
+                    (0, utils_2.failOrError)(`💥 Missing or couldn't resolve 'owner'`, this.failOnError);
                     return null;
                 }
                 else {
@@ -1114,62 +247,13 @@ class ReleaseNotesBuilder {
                     core.debug(`Resolved 'repo' as ${this.repo}`);
                 }
                 core.endGroup();
-                // check proxy setup for GHES environments
-                const proxy = process.env.https_proxy || process.env.HTTPS_PROXY;
-                const noProxy = process.env.no_proxy || process.env.NO_PROXY;
-                let noProxyArray = [];
-                if (noProxy) {
-                    noProxyArray = noProxy.split(',');
-                }
-                // load octokit instance
-                const octokit = new rest_1.Octokit({
-                    auth: `token ${this.token || process.env.GITHUB_TOKEN}`,
-                    baseUrl: `${this.baseUrl || 'https://api.github.com'}`
-                });
-                if (proxy) {
-                    const agent = new https_proxy_agent_1.HttpsProxyAgent(proxy);
-                    octokit.hook.before('request', options => {
-                        if (noProxyArray.includes(options.request.hostname)) {
-                            return;
-                        }
-                        options.request.agent = agent;
-                    });
-                }
-                // ensure proper from <-> to tag range
-                core.startGroup(`🔖 Resolve tags`);
-                const tagsApi = new tags_1.Tags(octokit);
-                const tagRange = yield tagsApi.retrieveRange(this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.ignorePreReleases, this.configuration.max_tags_to_fetch, this.configuration.tag_resolver);
-                let thisTag = tagRange.to;
-                if (!thisTag) {
-                    (0, utils_1.failOrError)(`💥 Missing or couldn't resolve 'toTag'`, this.failOnError);
-                    return null;
-                }
-                else {
-                    core.setOutput('toTag', thisTag.name);
-                    core.debug(`Resolved 'toTag' as ${thisTag.name}`);
-                }
-                let previousTag = tagRange.from;
-                if (previousTag == null) {
-                    (0, utils_1.failOrError)(`💥 Unable to retrieve previous tag given ${this.toTag}`, this.failOnError);
-                    return null;
-                }
-                core.setOutput('fromTag', previousTag.name);
-                core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`);
-                if (this.fetchReleaseInformation) {
-                    // load release information from the GitHub API
-                    core.info(`ℹ️ Fetching release information was enabled`);
-                    thisTag = yield tagsApi.fillTagInformation(this.repositoryPath, this.owner, this.repo, thisTag);
-                    previousTag = yield tagsApi.fillTagInformation(this.repositoryPath, this.owner, this.repo, previousTag);
-                }
-                else {
-                    core.debug(`ℹ️ Fetching release information was disabled`);
-                }
-                core.endGroup();
+                const prData = yield new github_pr_collector_1.PullRequestCollector(this.baseUrl, this.token, this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.includeOpen, this.failOnError, this.ignorePreReleases, this.fetchReviewers, this.fetchReleaseInformation, this.fetchReviews, this.commitMode, this.configuration).build();
+                const resolvedOptions = prData.options;
                 const options = {
                     owner: this.owner,
                     repo: this.repo,
-                    fromTag: previousTag,
-                    toTag: thisTag,
+                    fromTag: resolvedOptions.fromTag,
+                    toTag: resolvedOptions.toTag,
                     includeOpen: this.includeOpen,
                     failOnError: this.failOnError,
                     fetchReviewers: this.fetchReviewers,
@@ -1178,7 +262,37 @@ class ReleaseNotesBuilder {
                     commitMode: this.commitMode,
                     configuration: this.configuration
                 };
-                releaseNotesData = yield pullData(octokit, options, this.exportCollected, this.exportOnly);
+                const mergedPullRequests = prData.mergedPullRequests;
+                const diffInfo = prData.diffInfo;
+                // define the included PRs within this release as output
+                core.setOutput('pull_requests', mergedPullRequests
+                    .map(pr => {
+                    return pr.number;
+                })
+                    .join(','));
+                core.setOutput('changed_files', diffInfo.changedFiles);
+                core.setOutput('additions', diffInfo.additions);
+                core.setOutput('deletions', diffInfo.deletions);
+                core.setOutput('changes', diffInfo.changes);
+                core.setOutput('commits', diffInfo.commits);
+                if (this.exportCollected) {
+                    core.info('📦 Exporting collected data');
+                    core.exportVariable(`RCBA_EXPORT_diffInfo`, JSON.stringify(diffInfo));
+                    //fs.writeFileSync(path.resolve('diffInfo.json'), JSON.stringify(diffInfo))
+                    core.exportVariable(`RCBA_EXPORT_mergedPullRequests`, JSON.stringify(mergedPullRequests));
+                    //fs.writeFileSync(path.resolve('mergedPullRequests.json'), JSON.stringify(mergedPullRequests))
+                    core.exportVariable(`RCBA_EXPORT_options`, JSON.stringify(options));
+                    //fs.writeFileSync(path.resolve('options.json'), JSON.stringify(options))
+                    if (this.exportOnly) {
+                        core.endGroup();
+                        return null;
+                    }
+                }
+                releaseNotesData = {
+                    mergedPullRequests,
+                    diffInfo,
+                    options
+                };
             }
             else {
                 core.info(`ℹ️ Retrieved previously exported collected data`);
@@ -1225,416 +339,6 @@ class ReleaseNotesBuilder {
     }
 }
 exports.ReleaseNotesBuilder = ReleaseNotesBuilder;
-function pullData(octokit, options, exportCollected, exportOnly) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let mergedPullRequests;
-        let diffInfo;
-        const commitsApi = new commits_1.Commits(octokit);
-        if (!options.commitMode) {
-            core.startGroup(`🚀 Load pull requests`);
-            const pullRequestsApi = new pullRequests_1.PullRequests(octokit, commitsApi);
-            const [info, prs] = yield pullRequestsApi.getMergedPullRequests(options);
-            mergedPullRequests = prs;
-            diffInfo = info;
-        }
-        else {
-            core.startGroup(`🚀 Load commit history`);
-            core.info(`⚠️ Executing experimental commit mode`);
-            const [info, prs] = yield commitsApi.generateCommitPRs(options);
-            mergedPullRequests = prs;
-            diffInfo = info;
-        }
-        // define the included PRs within this release as output
-        core.setOutput('pull_requests', mergedPullRequests
-            .map(pr => {
-            return pr.number;
-        })
-            .join(','));
-        core.setOutput('changed_files', diffInfo.changedFiles);
-        core.setOutput('additions', diffInfo.additions);
-        core.setOutput('deletions', diffInfo.deletions);
-        core.setOutput('changes', diffInfo.changes);
-        core.setOutput('commits', diffInfo.commits);
-        if (exportCollected) {
-            core.info('📦 Exporting collected data');
-            core.exportVariable(`RCBA_EXPORT_diffInfo`, JSON.stringify(diffInfo));
-            //fs.writeFileSync(path.resolve('diffInfo.json'), JSON.stringify(diffInfo))
-            core.exportVariable(`RCBA_EXPORT_mergedPullRequests`, JSON.stringify(mergedPullRequests));
-            //fs.writeFileSync(path.resolve('mergedPullRequests.json'), JSON.stringify(mergedPullRequests))
-            core.exportVariable(`RCBA_EXPORT_options`, JSON.stringify(options));
-            //fs.writeFileSync(path.resolve('options.json'), JSON.stringify(options))
-            if (exportOnly) {
-                core.endGroup();
-                return null;
-            }
-        }
-        core.endGroup();
-        return {
-            diffInfo,
-            mergedPullRequests,
-            options
-        };
-    });
-}
-exports.pullData = pullData;
-
-
-/***/ }),
-
-/***/ 7532:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __asyncValues = (this && this.__asyncValues) || function (o) {
-    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
-    var m = o[Symbol.asyncIterator], i;
-    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
-    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
-    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.sortTags = exports.filterTags = exports.Tags = void 0;
-const core = __importStar(__nccwpck_require__(2186));
-const github = __importStar(__nccwpck_require__(5438));
-const semver = __importStar(__nccwpck_require__(1383));
-const semver_1 = __nccwpck_require__(1383);
-const gitHelper_1 = __nccwpck_require__(353);
-const moment_1 = __importDefault(__nccwpck_require__(9623));
-const regexUtils_1 = __nccwpck_require__(2364);
-class Tags {
-    constructor(octokit) {
-        this.octokit = octokit;
-    }
-    getTags(owner, repo, maxTagsToFetch) {
-        var _a, e_1, _b, _c;
-        return __awaiter(this, void 0, void 0, function* () {
-            const tagsInfo = [];
-            const options = this.octokit.repos.listTags.endpoint.merge({
-                owner,
-                repo,
-                direction: 'desc',
-                per_page: 100
-            });
-            try {
-                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
-                    _c = _f.value;
-                    _d = false;
-                    const response = _c;
-                    const tags = response.data;
-                    for (const tag of tags) {
-                        tagsInfo.push({
-                            name: tag.name,
-                            commit: tag.commit.sha
-                        });
-                    }
-                    // for performance only fetch newest maxTagsToFetch tags!!
-                    if (tagsInfo.length >= maxTagsToFetch) {
-                        break;
-                    }
-                }
-            }
-            catch (e_1_1) { e_1 = { error: e_1_1 }; }
-            finally {
-                try {
-                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
-                }
-                finally { if (e_1) throw e_1.error; }
-            }
-            core.info(`ℹ️ Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`);
-            return tagsInfo;
-        });
-    }
-    fillTagInformation(repositoryPath, owner, repo, tagInfo) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const options = this.octokit.repos.getReleaseByTag.endpoint.merge({
-                owner,
-                repo,
-                tag: tagInfo.name
-            });
-            try {
-                const response = yield this.octokit.request(options);
-                const release = response.data;
-                tagInfo.date = (0, moment_1.default)(release.created_at);
-                core.info(`ℹ️ Retrieved information about the release associated with ${tagInfo.name} from the GitHub API`);
-            }
-            catch (error) {
-                core.info(`⚠️ No release information found for ${tagInfo.name}, trying to retrieve tag creation time as fallback.`);
-                const gitHelper = yield (0, gitHelper_1.createCommandManager)(repositoryPath);
-                const creationTimeString = yield gitHelper.tagCreation(tagInfo.name);
-                const creationTime = (0, moment_1.default)(creationTimeString);
-                if (creationTimeString !== null && creationTime.isValid()) {
-                    tagInfo.date = creationTime;
-                    core.info(`ℹ️ Resolved tag creation time (${creationTimeString}) from 'git for-each-ref --format="%(creatordate:rfc)" "refs/tags/${tagInfo.name}`);
-                }
-                else {
-                    core.info(`⚠️ Could not retrieve tag creation time via git cli 'git for-each-ref --format="%(creatordate:rfc)" "refs/tags/${tagInfo.name}'`);
-                }
-            }
-            return tagInfo;
-        });
-    }
-    findPredecessorTag(sortedTags, repositoryPath, tag, ignorePreReleases) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const tags = sortedTags;
-            try {
-                const length = tags.length;
-                if (tags.length > 1) {
-                    for (let i = 0; i < length; i++) {
-                        if (tags[i].name.toLocaleLowerCase('en') === tag.toLocaleLowerCase('en')) {
-                            if (ignorePreReleases) {
-                                core.info(`ℹ️ Enabled 'ignorePreReleases', searching for the closest release`);
-                                for (let ii = i + 1; ii < length; ii++) {
-                                    if (!tags[ii].name.includes('-')) {
-                                        return tags[ii];
-                                    }
-                                }
-                            }
-                            return tags[i + 1];
-                        }
-                    }
-                }
-                else {
-                    core.info(`ℹ️ Only one tag found for the given repository. Usually this is the case for the initial release.`);
-                    // if not specified try to retrieve tag from git
-                    const gitHelper = yield (0, gitHelper_1.createCommandManager)(repositoryPath);
-                    const initialCommit = yield gitHelper.initialCommit();
-                    core.info(`🔖 Resolved initial commit (${initialCommit}) from 'git rev-list --max-parents=0 HEAD'`);
-                    return { name: initialCommit, commit: initialCommit };
-                }
-                return tags[0];
-            }
-            catch (error) {
-                if (tags.length <= 0) {
-                    core.warning(`⚠️ No tag found for the given repository`);
-                }
-                return null;
-            }
-        });
-    }
-    retrieveRange(repositoryPath, owner, repo, fromTag, toTag, ignorePreReleases, maxTagsToFetch, tagResolver) {
-        var _a;
-        return __awaiter(this, void 0, void 0, function* () {
-            // filter out tags not matching the specified filter
-            const filteredTags = filterTags(
-            // retrieve the tags from the API
-            yield this.getTags(owner, repo, maxTagsToFetch), tagResolver);
-            // check if a transformer was defined
-            const tagTransformer = (0, regexUtils_1.validateTransformer)(tagResolver.transformer);
-            let transformedTags;
-            if (tagTransformer != null) {
-                core.debug(`ℹ️ Using configured tagTransformer`);
-                transformedTags = transformTags(filteredTags, tagTransformer);
-            }
-            else {
-                transformedTags = filteredTags;
-            }
-            let tags = sortTags(transformedTags, tagResolver);
-            if (tagTransformer != null) {
-                // restore the original name, after sorting
-                tags = filteredTags.map(function (tag) {
-                    if (tag.hasOwnProperty('tmp')) {
-                        return { name: tag.tmp, commit: tag.commit };
-                    }
-                    else {
-                        return tag;
-                    }
-                });
-            }
-            let resultToTag;
-            let resultFromTag;
-            // ensure to resolve the toTag if it was not provided
-            if (!toTag) {
-                // if not specified try to retrieve tag from github.context.ref
-                if (((_a = github.context.ref) === null || _a === void 0 ? void 0 : _a.startsWith('refs/tags/')) === true) {
-                    toTag = github.context.ref.replace('refs/tags/', '');
-                    core.info(`🔖 Resolved current tag (${toTag}) from the 'github.context.ref'`);
-                    resultToTag = {
-                        name: toTag,
-                        commit: toTag
-                    };
-                }
-                else if (tags.length > 1) {
-                    resultToTag = tags[0];
-                    core.info(`🔖 Resolved current tag (${resultToTag.name}) from the tags git API`);
-                }
-                else {
-                    // if not specified try to retrieve tag from git
-                    const gitHelper = yield (0, gitHelper_1.createCommandManager)(repositoryPath);
-                    const latestTag = yield gitHelper.latestTag();
-                    core.info(`🔖 Resolved current tag (${latestTag}) from 'git rev-list --tags --skip=0 --max-count=1'`);
-                    resultToTag = {
-                        name: latestTag,
-                        commit: latestTag
-                    };
-                }
-            }
-            else {
-                resultToTag = {
-                    name: toTag,
-                    commit: toTag
-                };
-            }
-            // ensure toTag is specified
-            toTag = resultToTag.name;
-            // resolve the fromTag if not defined
-            if (!fromTag) {
-                core.debug(`fromTag undefined, trying to resolve via API`);
-                resultFromTag = yield this.findPredecessorTag(tags, repositoryPath, toTag, ignorePreReleases);
-                if (resultFromTag != null) {
-                    core.info(`🔖 Resolved previous tag (${resultFromTag.name}) from the tags git API`);
-                }
-            }
-            else {
-                resultFromTag = {
-                    name: fromTag,
-                    commit: fromTag
-                };
-            }
-            return {
-                from: resultFromTag,
-                to: resultToTag
-            };
-        });
-    }
-}
-exports.Tags = Tags;
-/*
- * Uses the provided filter (if available) to filter out any tags not currently relevant.
- * https://github.com/mikepenz/release-changelog-builder-action/issues/566
- */
-function filterTags(tags, tagResolver) {
-    var _a;
-    const filter = tagResolver.filter;
-    if (filter !== undefined) {
-        const regex = new RegExp(filter.pattern.replace('\\\\', '\\'), (_a = filter.flags) !== null && _a !== void 0 ? _a : 'gu');
-        const filteredTags = tags.filter(tag => tag.name.match(regex) !== null);
-        core.debug(`ℹ️ Filtered tags count: ${filteredTags.length}, original count: ${tags.length}`);
-        return filteredTags;
-    }
-    else {
-        return tags;
-    }
-}
-exports.filterTags = filterTags;
-/**
- * Helper function to transform the tag name given the transformer
- */
-function transformTags(tags, transformer) {
-    return tags.map(function (tag) {
-        if (transformer.pattern) {
-            const transformedName = tag.name.replace(transformer.pattern, transformer.target);
-            core.debug(`ℹ️ Transformed ${tag.name} to ${transformedName}`);
-            return {
-                tmp: tag.name,
-                name: transformedName,
-                commit: tag.commit
-            };
-        }
-        else {
-            return tag;
-        }
-    });
-}
-/*
-  Sorts an array of tags as shown below:
-  
-  2020.4.0
-  2020.4.0-rc02
-  2020.3.2
-  2020.3.1
-  2020.3.1-rc03
-  2020.3.1-rc02
-  2020.3.1-rc01
-  2020.3.1-b01
-  2020.3.1-a01
-  2020.3.0
-  */
-function sortTags(tags, tagResolver) {
-    if (tagResolver.method === 'sort') {
-        return stringSorting(tags);
-    }
-    else {
-        return semVerSorting(tags);
-    }
-}
-exports.sortTags = sortTags;
-function semVerSorting(tags) {
-    // filter out tags which do not follow semver
-    const validatedTags = tags.filter(tag => {
-        const isValid = semver.valid(tag.name, {
-            loose: true
-        }) !== null;
-        if (!isValid) {
-            core.debug(`⚠️ dropped tag ${tag.name} because it is not a valid semver tag`);
-        }
-        return isValid;
-    });
-    // sort using semver
-    validatedTags.sort((b, a) => {
-        return new semver_1.SemVer(a.name, {
-            includePrerelease: true,
-            loose: true
-        }).compare(b.name);
-    });
-    return validatedTags;
-}
-function stringSorting(tags) {
-    return tags.sort((b, a) => {
-        const partsA = a.name.replace(/^v/, '').split('-');
-        const partsB = b.name.replace(/^v/, '').split('-');
-        const versionCompare = partsA[0].localeCompare(partsB[0]);
-        if (versionCompare !== 0) {
-            return versionCompare;
-        }
-        else {
-            if (partsA.length === 1) {
-                return 0;
-            }
-            else if (partsB.length === 1) {
-                return 1;
-            }
-            else {
-                return partsA[1].localeCompare(partsB[1]);
-            }
-        }
-    });
-}
 
 
 /***/ }),
@@ -1670,9 +374,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.replaceEmptyTemplate = exports.buildChangelog = void 0;
 const core = __importStar(__nccwpck_require__(2186));
-const pullRequests_1 = __nccwpck_require__(4217);
 const utils_1 = __nccwpck_require__(918);
-const regexUtils_1 = __nccwpck_require__(2364);
+const pullRequests_1 = __nccwpck_require__(1948);
+const regexUtils_1 = __nccwpck_require__(3078);
 const EMPTY_MAP = new Map();
 function buildChangelog(diffInfo, prs, options) {
     core.startGroup('📦 Build changelog');
@@ -2145,7 +849,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.haveEveryElementsArr = exports.haveEveryElements = exports.haveCommonElementsArr = exports.haveCommonElements = exports.createOrSet = exports.writeOutput = exports.directoryExistsSync = exports.mergeConfiguration = exports.parseConfiguration = exports.resolveConfiguration = exports.checkExportedData = exports.failOrError = exports.retrieveRepositoryPath = void 0;
+exports.haveEveryElementsArr = exports.haveEveryElements = exports.haveCommonElementsArr = exports.haveCommonElements = exports.createOrSet = exports.writeOutput = exports.mergeConfiguration = exports.parseConfiguration = exports.resolveConfiguration = exports.checkExportedData = exports.retrieveRepositoryPath = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
@@ -2167,20 +871,6 @@ function retrieveRepositoryPath(providedPath) {
     return repositoryPath;
 }
 exports.retrieveRepositoryPath = retrieveRepositoryPath;
-/**
- * Will automatically either report the message to the log, or mark the action as failed. Additionally defining the output failed, allowing it to be read in by other actions
- */
-function failOrError(message, failOnError) {
-    // if we report any failure, consider the action to have failed, may not make the build fail
-    core.setOutput('failed', true);
-    if (failOnError) {
-        core.setFailed(message);
-    }
-    else {
-        core.error(message);
-    }
-}
-exports.failOrError = failOrError;
 /**
  * Retrieves the exported information from a previous run of the `release-changelog-builder-action`.
  * If available, return a [ReleaseNotesData].
@@ -2299,35 +989,6 @@ function mergeConfiguration(jc, fc) {
     };
 }
 exports.mergeConfiguration = mergeConfiguration;
-/**
- * Checks if a given directory exists
- */
-function directoryExistsSync(inputPath, required) {
-    if (!inputPath) {
-        throw new Error("Arg 'path' must not be empty");
-    }
-    let stats;
-    try {
-        stats = fs.statSync(inputPath);
-    }
-    catch (error /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
-        if (error.code === 'ENOENT') {
-            if (!required) {
-                return false;
-            }
-            throw new Error(`Directory '${inputPath}' does not exist`);
-        }
-        throw new Error(`Encountered an error when checking whether path '${inputPath}' exists: ${error.message}`);
-    }
-    if (stats.isDirectory()) {
-        return true;
-    }
-    else if (!required) {
-        return false;
-    }
-    throw new Error(`Directory '${inputPath}' does not exist`);
-}
-exports.directoryExistsSync = directoryExistsSync;
 /**
  * Writes the changelog to the given the file
  */
@@ -26388,6 +25049,1474 @@ function wrappy (fn, cb) {
     return ret
   }
 }
+
+
+/***/ }),
+
+/***/ 5789:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.filterCommits = exports.Commits = exports.DefaultDiffInfo = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const moment_1 = __importDefault(__nccwpck_require__(9623));
+const utils_1 = __nccwpck_require__(853);
+exports.DefaultDiffInfo = {
+    changedFiles: 0,
+    additions: 0,
+    deletions: 0,
+    changes: 0,
+    commits: 0,
+    commitInfo: []
+};
+class Commits {
+    constructor(octokit) {
+        this.octokit = octokit;
+    }
+    getDiff(owner, repo, base, head) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const diff = yield this.getDiffRemote(owner, repo, base, head);
+            diff.commitInfo = this.sortCommits(diff.commitInfo);
+            return diff;
+        });
+    }
+    getDiffRemote(owner, repo, base, head) {
+        var _a, _b;
+        return __awaiter(this, void 0, void 0, function* () {
+            let changedFilesCount = 0;
+            let additionCount = 0;
+            let deletionCount = 0;
+            let changeCount = 0;
+            let commitCount = 0;
+            // Fetch comparisons recursively until we don't find any commits
+            // This is because the GitHub API limits the number of commits returned in a single response.
+            let commits = [];
+            let compareHead = head;
+            // eslint-disable-next-line no-constant-condition
+            while (true) {
+                const compareResult = yield this.octokit.repos.compareCommits({
+                    owner,
+                    repo,
+                    base,
+                    head: compareHead
+                });
+                if (compareResult.data.total_commits === 0) {
+                    break;
+                }
+                changedFilesCount += (_b = (_a = compareResult.data.files) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : 0;
+                const files = compareResult.data.files;
+                if (files !== undefined) {
+                    for (const file of files) {
+                        additionCount += file.additions;
+                        deletionCount += file.deletions;
+                        changeCount += file.changes;
+                    }
+                }
+                commitCount += compareResult.data.commits.length;
+                commits = compareResult.data.commits.concat(commits);
+                compareHead = `${commits[0].sha}^`;
+            }
+            core.info(`ℹ️ Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`);
+            return {
+                changedFiles: changedFilesCount,
+                additions: additionCount,
+                deletions: deletionCount,
+                changes: changeCount,
+                commits: commitCount,
+                commitInfo: commits
+                    .filter(commit => commit.sha)
+                    .map(commit => {
+                    var _a, _b;
+                    return ({
+                        sha: commit.sha || '',
+                        summary: commit.commit.message.split('\n')[0],
+                        message: commit.commit.message,
+                        date: (0, moment_1.default)((_a = commit.commit.committer) === null || _a === void 0 ? void 0 : _a.date),
+                        author: ((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.name) || '',
+                        prNumber: undefined
+                    });
+                })
+            };
+        });
+    }
+    sortCommits(commits) {
+        const commitsResult = [];
+        const shas = {};
+        for (const commit of commits) {
+            if (shas[commit.sha]) {
+                continue;
+            }
+            shas[commit.sha] = true;
+            commitsResult.push(commit);
+        }
+        commitsResult.sort((a, b) => {
+            if (a.date.isBefore(b.date)) {
+                return -1;
+            }
+            else if (b.date.isBefore(a.date)) {
+                return 1;
+            }
+            return 0;
+        });
+        return commitsResult;
+    }
+    getCommitHistory(options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { owner, repo, fromTag, toTag, failOnError } = options;
+            core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag.name}...${toTag.name}'`);
+            const commitsApi = new Commits(this.octokit);
+            let diffInfo;
+            try {
+                diffInfo = yield commitsApi.getDiff(owner, repo, fromTag.name, toTag.name);
+            }
+            catch (error) {
+                (0, utils_1.failOrError)(`💥 Failed to retrieve - Invalid tag? - Because of: ${error}`, failOnError);
+                return exports.DefaultDiffInfo;
+            }
+            if (diffInfo.commitInfo.length === 0) {
+                core.warning(`⚠️ No commits found between - ${fromTag.name}...${toTag.name}`);
+                return exports.DefaultDiffInfo;
+            }
+            return diffInfo;
+        });
+    }
+    generateCommitPRs(options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { owner, repo, configuration } = options;
+            const diffInfo = yield this.getCommitHistory(options);
+            const commits = diffInfo.commitInfo;
+            if (commits.length === 0) {
+                return [diffInfo, []];
+            }
+            const prCommits = filterCommits(commits, configuration.exclude_merge_branches);
+            core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`);
+            const prs = prCommits.map(function (commit) {
+                return {
+                    number: 0,
+                    title: commit.summary,
+                    htmlURL: '',
+                    baseBranch: '',
+                    createdAt: commit.date,
+                    mergedAt: commit.date,
+                    mergeCommitSha: commit.sha,
+                    author: commit.author || '',
+                    repoName: '',
+                    labels: [],
+                    milestone: '',
+                    body: commit.message || '',
+                    assignees: [],
+                    requestedReviewers: [],
+                    approvedReviewers: [],
+                    status: 'merged'
+                };
+            });
+            return [diffInfo, prs];
+        });
+    }
+}
+exports.Commits = Commits;
+/**
+ * Filters out all commits which match the exclude pattern
+ */
+function filterCommits(commits, excludeMergeBranches) {
+    const filteredCommits = [];
+    for (const commit of commits) {
+        if (excludeMergeBranches) {
+            let matched = false;
+            for (const excludeMergeBranch of excludeMergeBranches) {
+                if (commit.summary.includes(excludeMergeBranch)) {
+                    matched = true;
+                    break;
+                }
+            }
+            if (matched) {
+                continue;
+            }
+        }
+        filteredCommits.push(commit);
+    }
+    return filteredCommits;
+}
+exports.filterCommits = filterCommits;
+
+
+/***/ }),
+
+/***/ 5096:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createCommandManager = void 0;
+const exec = __importStar(__nccwpck_require__(1514));
+const io = __importStar(__nccwpck_require__(7436));
+const utils_1 = __nccwpck_require__(853);
+function createCommandManager(workingDirectory) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return yield GitCommandManager.createCommandManager(workingDirectory);
+    });
+}
+exports.createCommandManager = createCommandManager;
+class GitCommandManager {
+    // Private constructor; use createCommandManager()
+    constructor() {
+        this.gitPath = '';
+        this.workingDirectory = '';
+    }
+    getWorkingDirectory() {
+        return this.workingDirectory;
+    }
+    latestTag() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const revListOutput = yield this.execGit(['rev-list', '--tags', '--skip=0', '--max-count=1']);
+            const output = yield this.execGit(['describe', '--abbrev=0', '--tags', revListOutput.stdout.trim()]);
+            return output.stdout.trim();
+        });
+    }
+    initialCommit() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const revListOutput = yield this.execGit(['rev-list', '--max-parents=0', 'HEAD']);
+            return revListOutput.stdout.trim();
+        });
+    }
+    tagCreation(tagName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const creationDate = yield this.execGit(['for-each-ref', '--format="%(creatordate:rfc)"', `refs/tags/${tagName}`]);
+            return creationDate.stdout.trim().replace(/"/g, '');
+        });
+    }
+    static createCommandManager(workingDirectory) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const result = new GitCommandManager();
+            yield result.initializeCommandManager(workingDirectory);
+            return result;
+        });
+    }
+    execGit(args, allowAllExitCodes = false, silent = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            (0, utils_1.directoryExistsSync)(this.workingDirectory, true);
+            const result = new GitOutput();
+            const stdout = [];
+            const options = {
+                cwd: this.workingDirectory,
+                silent,
+                ignoreReturnCode: allowAllExitCodes,
+                listeners: {
+                    stdout: (data) => {
+                        stdout.push(data.toString());
+                    }
+                }
+            };
+            result.exitCode = yield exec.exec(`"${this.gitPath}"`, args, options);
+            result.stdout = stdout.join('');
+            return result;
+        });
+    }
+    initializeCommandManager(workingDirectory) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.workingDirectory = workingDirectory;
+            this.gitPath = yield io.which('git', true);
+        });
+    }
+}
+class GitOutput {
+    constructor() {
+        this.stdout = '';
+        this.exitCode = 0;
+    }
+}
+
+
+/***/ }),
+
+/***/ 3196:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.pullData = exports.PullRequestCollector = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const rest_1 = __nccwpck_require__(5375);
+const tags_1 = __nccwpck_require__(7774);
+const utils_1 = __nccwpck_require__(853);
+const https_proxy_agent_1 = __nccwpck_require__(7219);
+const pullRequests_1 = __nccwpck_require__(1948);
+const commits_1 = __nccwpck_require__(5789);
+class PullRequestCollector {
+    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode = false, configuration) {
+        this.baseUrl = baseUrl;
+        this.token = token;
+        this.repositoryPath = repositoryPath;
+        this.owner = owner;
+        this.repo = repo;
+        this.fromTag = fromTag;
+        this.toTag = toTag;
+        this.includeOpen = includeOpen;
+        this.failOnError = failOnError;
+        this.ignorePreReleases = ignorePreReleases;
+        this.fetchReviewers = fetchReviewers;
+        this.fetchReleaseInformation = fetchReleaseInformation;
+        this.fetchReviews = fetchReviews;
+        this.commitMode = commitMode;
+        this.configuration = configuration;
+    }
+    build() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // check proxy setup for GHES environments
+            const proxy = process.env.https_proxy || process.env.HTTPS_PROXY;
+            const noProxy = process.env.no_proxy || process.env.NO_PROXY;
+            let noProxyArray = [];
+            if (noProxy) {
+                noProxyArray = noProxy.split(',');
+            }
+            // load octokit instance
+            const octokit = new rest_1.Octokit({
+                auth: `token ${this.token || process.env.GITHUB_TOKEN}`,
+                baseUrl: `${this.baseUrl || 'https://api.github.com'}`
+            });
+            if (proxy) {
+                const agent = new https_proxy_agent_1.HttpsProxyAgent(proxy);
+                octokit.hook.before('request', options => {
+                    if (noProxyArray.includes(options.request.hostname)) {
+                        return;
+                    }
+                    options.request.agent = agent;
+                });
+            }
+            // ensure proper from <-> to tag range
+            core.startGroup(`🔖 Resolve tags`);
+            const tagsApi = new tags_1.Tags(octokit);
+            const tagRange = yield tagsApi.retrieveRange(this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.ignorePreReleases, this.configuration.max_tags_to_fetch, this.configuration.tag_resolver);
+            let thisTag = tagRange.to;
+            if (!thisTag) {
+                (0, utils_1.failOrError)(`💥 Missing or couldn't resolve 'toTag'`, this.failOnError);
+                return null;
+            }
+            else {
+                core.setOutput('toTag', thisTag.name);
+                core.debug(`Resolved 'toTag' as ${thisTag.name}`);
+            }
+            let previousTag = tagRange.from;
+            if (previousTag == null) {
+                (0, utils_1.failOrError)(`💥 Unable to retrieve previous tag given ${this.toTag}`, this.failOnError);
+                return null;
+            }
+            core.setOutput('fromTag', previousTag.name);
+            core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`);
+            if (this.fetchReleaseInformation) {
+                // load release information from the GitHub API
+                core.info(`ℹ️ Fetching release information was enabled`);
+                thisTag = yield tagsApi.fillTagInformation(this.repositoryPath, this.owner, this.repo, thisTag);
+                previousTag = yield tagsApi.fillTagInformation(this.repositoryPath, this.owner, this.repo, previousTag);
+            }
+            else {
+                core.debug(`ℹ️ Fetching release information was disabled`);
+            }
+            core.endGroup();
+            const options = {
+                owner: this.owner,
+                repo: this.repo,
+                fromTag: previousTag,
+                toTag: thisTag,
+                includeOpen: this.includeOpen,
+                failOnError: this.failOnError,
+                fetchReviewers: this.fetchReviewers,
+                fetchReleaseInformation: this.fetchReleaseInformation,
+                fetchReviews: this.fetchReviews,
+                commitMode: this.commitMode,
+                configuration: this.configuration
+            };
+            return yield pullData(octokit, options);
+        });
+    }
+}
+exports.PullRequestCollector = PullRequestCollector;
+function pullData(octokit, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let mergedPullRequests;
+        let diffInfo;
+        const commitsApi = new commits_1.Commits(octokit);
+        if (!options.commitMode) {
+            core.startGroup(`🚀 Load pull requests`);
+            const pullRequestsApi = new pullRequests_1.PullRequests(octokit, commitsApi);
+            const [info, prs] = yield pullRequestsApi.getMergedPullRequests(options);
+            mergedPullRequests = prs;
+            diffInfo = info;
+        }
+        else {
+            core.startGroup(`🚀 Load commit history`);
+            core.info(`⚠️ Executing experimental commit mode`);
+            const [info, prs] = yield commitsApi.generateCommitPRs(options);
+            mergedPullRequests = prs;
+            diffInfo = info;
+        }
+        core.endGroup();
+        return {
+            diffInfo,
+            mergedPullRequests,
+            options
+        };
+    });
+}
+exports.pullData = pullData;
+
+
+/***/ }),
+
+/***/ 1948:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.retrieveProperty = exports.compare = exports.sortPullRequests = exports.PullRequests = exports.EMPTY_COMMENT_INFO = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const moment_1 = __importDefault(__nccwpck_require__(9623));
+const commits_1 = __nccwpck_require__(5789);
+exports.EMPTY_COMMENT_INFO = {
+    id: 0,
+    htmlURL: '',
+    submittedAt: undefined,
+    author: '',
+    body: '',
+    state: undefined
+};
+class PullRequests {
+    constructor(octokit, commits) {
+        this.octokit = octokit;
+        this.commits = commits;
+    }
+    getSingle(owner, repo, prNumber) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { data } = yield this.octokit.pulls.get({
+                    owner,
+                    repo,
+                    pull_number: prNumber
+                });
+                return mapPullRequest(data);
+            }
+            catch (e /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
+                core.warning(`⚠️ Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`);
+                return null;
+            }
+        });
+    }
+    getBetweenDates(owner, repo, fromDate, toDate, maxPullRequests) {
+        var _a, e_1, _b, _c;
+        return __awaiter(this, void 0, void 0, function* () {
+            const mergedPRs = [];
+            const options = this.octokit.pulls.list.endpoint.merge({
+                owner,
+                repo,
+                state: 'closed',
+                sort: 'merged',
+                per_page: `${Math.min(100, maxPullRequests)}`,
+                direction: 'desc'
+            });
+            try {
+                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
+                    _c = _f.value;
+                    _d = false;
+                    const response = _c;
+                    const prs = response.data;
+                    for (const pr of prs.filter(p => !!p.merged_at)) {
+                        mergedPRs.push(mapPullRequest(pr, 'merged'));
+                    }
+                    const firstPR = prs[0];
+                    if (firstPR === undefined ||
+                        (firstPR.merged_at && fromDate.isAfter((0, moment_1.default)(firstPR.merged_at))) ||
+                        mergedPRs.length >= maxPullRequests) {
+                        if (mergedPRs.length >= maxPullRequests) {
+                            core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
+                        }
+                        // bail out early to not keep iterating on PRs super old
+                        return sortPrs(mergedPRs);
+                    }
+                }
+            }
+            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            finally {
+                try {
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
+                }
+                finally { if (e_1) throw e_1.error; }
+            }
+            return sortPrs(mergedPRs);
+        });
+    }
+    getOpen(owner, repo, maxPullRequests) {
+        var _a, e_2, _b, _c;
+        return __awaiter(this, void 0, void 0, function* () {
+            const openPrs = [];
+            const options = this.octokit.pulls.list.endpoint.merge({
+                owner,
+                repo,
+                state: 'open',
+                sort: 'created',
+                per_page: '100',
+                direction: 'desc'
+            });
+            try {
+                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
+                    _c = _f.value;
+                    _d = false;
+                    const response = _c;
+                    const prs = response.data;
+                    for (const pr of prs) {
+                        openPrs.push(mapPullRequest(pr, 'open'));
+                    }
+                    const firstPR = prs[0];
+                    if (firstPR === undefined || openPrs.length >= maxPullRequests) {
+                        if (openPrs.length >= maxPullRequests) {
+                            core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
+                        }
+                        // bail out early to not keep iterating on PRs super old
+                        return sortPrs(openPrs);
+                    }
+                }
+            }
+            catch (e_2_1) { e_2 = { error: e_2_1 }; }
+            finally {
+                try {
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
+                }
+                finally { if (e_2) throw e_2.error; }
+            }
+            return sortPrs(openPrs);
+        });
+    }
+    getReviews(owner, repo, pr) {
+        var _a, e_3, _b, _c;
+        return __awaiter(this, void 0, void 0, function* () {
+            const options = this.octokit.pulls.listReviews.endpoint.merge({
+                owner,
+                repo,
+                pull_number: pr.number,
+                sort: 'created',
+                direction: 'desc'
+            });
+            const prReviews = [];
+            try {
+                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
+                    _c = _f.value;
+                    _d = false;
+                    const response = _c;
+                    const comments = response.data;
+                    for (const comment of comments) {
+                        prReviews.push(mapComment(comment));
+                    }
+                }
+            }
+            catch (e_3_1) { e_3 = { error: e_3_1 }; }
+            finally {
+                try {
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
+                }
+                finally { if (e_3) throw e_3.error; }
+            }
+            pr.reviews = prReviews;
+        });
+    }
+    getMergedPullRequests(options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { owner, repo, includeOpen, fetchReviewers, fetchReviews, configuration } = options;
+            const diffInfo = yield this.commits.getCommitHistory(options);
+            const commits = diffInfo.commitInfo;
+            if (commits.length === 0) {
+                return [diffInfo, []];
+            }
+            const firstCommit = commits[0];
+            const lastCommit = commits[commits.length - 1];
+            let fromDate = firstCommit.date;
+            const toDate = lastCommit.date;
+            const maxDays = configuration.max_back_track_time_days;
+            const maxFromDate = toDate.clone().subtract(maxDays, 'days');
+            if (maxFromDate.isAfter(fromDate)) {
+                core.info(`⚠️ Adjusted 'fromDate' to go max ${maxDays} back`);
+                fromDate = maxFromDate;
+            }
+            core.info(`ℹ️ Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`);
+            const pullRequests = yield this.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests);
+            core.info(`ℹ️ Retrieved ${pullRequests.length} PRs for ${owner}/${repo} in date range from API`);
+            const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches);
+            core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`);
+            // create array of commits for this release
+            const releaseCommitHashes = prCommits.map(commmit => {
+                return commmit.sha;
+            });
+            // filter out pull requests not associated with this release
+            const mergedPullRequests = pullRequests.filter(pr => {
+                return releaseCommitHashes.includes(pr.mergeCommitSha);
+            });
+            core.info(`ℹ️ Retrieved ${mergedPullRequests.length} merged PRs for ${owner}/${repo}`);
+            let allPullRequests = mergedPullRequests;
+            if (includeOpen) {
+                // retrieve all open pull requests
+                const openPullRequests = yield this.getOpen(owner, repo, configuration.max_pull_requests);
+                core.info(`ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`);
+                // all pull requests
+                allPullRequests = allPullRequests.concat(openPullRequests);
+                core.info(`ℹ️ Retrieved ${allPullRequests.length} total PRs for ${owner}/${repo}`);
+            }
+            // retrieve base branches we allow
+            const baseBranches = configuration.base_branches;
+            const baseBranchPatterns = baseBranches.map(baseBranch => {
+                return new RegExp(baseBranch.replace('\\\\', '\\'), 'gu');
+            });
+            // return only prs if the baseBranch is matching the configuration
+            const finalPrs = allPullRequests.filter(pr => {
+                if (baseBranches.length !== 0) {
+                    return baseBranchPatterns.some(pattern => {
+                        return pr.baseBranch.match(pattern) !== null;
+                    });
+                }
+                return true;
+            });
+            if (baseBranches.length !== 0) {
+                core.info(`ℹ️ Retrieved ${finalPrs.length} PRs for ${owner}/${repo} filtered by the 'base_branches' configuration.`);
+            }
+            // fetch reviewers only if enabled (requires an additional API request per PR)
+            if (fetchReviews || fetchReviewers) {
+                core.info(`ℹ️ Fetching reviews (or reviewers) was enabled`);
+                // update PR information with reviewers who approved
+                for (const pr of finalPrs) {
+                    yield this.getReviews(owner, repo, pr);
+                    const reviews = pr.reviews;
+                    if (reviews && ((reviews === null || reviews === void 0 ? void 0 : reviews.length) || 0) > 0) {
+                        core.info(`ℹ️ Retrieved ${reviews.length || 0} review(s) for PR ${owner}/${repo}/#${pr.number}`);
+                        // backwards compatiblity
+                        pr.approvedReviewers = reviews.filter(r => r.state === 'APPROVED').map(r => r.author);
+                    }
+                    else {
+                        core.debug(`No reviewer(s) for PR ${owner}/${repo}/#${pr.number}`);
+                    }
+                }
+            }
+            else {
+                core.debug(`ℹ️ Fetching reviews (or reviewers) was disabled`);
+            }
+            return [diffInfo, finalPrs];
+        });
+    }
+}
+exports.PullRequests = PullRequests;
+function sortPrs(pullRequests) {
+    return sortPullRequests(pullRequests, {
+        order: 'ASC',
+        on_property: 'mergedAt'
+    });
+}
+function sortPullRequests(pullRequests, sort) {
+    let sortConfig;
+    // legacy handling to support string sort config
+    if (typeof sort === 'string') {
+        let order = 'ASC';
+        if (sort.toUpperCase() === 'DESC')
+            order = 'DESC';
+        sortConfig = { order, on_property: 'mergedAt' };
+    }
+    else {
+        sortConfig = sort;
+    }
+    if (sortConfig.order === 'ASC') {
+        pullRequests.sort((a, b) => {
+            return compare(a, b, sortConfig);
+        });
+    }
+    else {
+        pullRequests.sort((b, a) => {
+            return compare(a, b, sortConfig);
+        });
+    }
+    return pullRequests;
+}
+exports.sortPullRequests = sortPullRequests;
+function compare(a, b, sort) {
+    if (sort.on_property === 'mergedAt') {
+        const aa = a.mergedAt || a.createdAt;
+        const bb = b.mergedAt || b.createdAt;
+        if (aa.isBefore(bb)) {
+            return -1;
+        }
+        else if (bb.isBefore(aa)) {
+            return 1;
+        }
+        return 0;
+    }
+    else {
+        // only else for now `label`
+        return a.title.localeCompare(b.title);
+    }
+}
+exports.compare = compare;
+/**
+ * Helper function to retrieve a property from the PullRequestInfo
+ */
+function retrieveProperty(pr, property, useCase) {
+    let value = pr[property];
+    if (value === undefined) {
+        core.warning(`⚠️ the provided property '${property}' for \`${useCase}\` is not valid. Fallback to 'body'`);
+        value = pr['body'];
+    }
+    else if (value instanceof Set) {
+        value = Array.from(value).join(','); // join into single string
+    }
+    else if (Array.isArray(value)) {
+        value = value.join(','); // join into single string
+    }
+    else {
+        value = value.toString();
+    }
+    return value;
+}
+exports.retrieveProperty = retrieveProperty;
+// helper function to add a special open label to prs not merged.
+function attachSpeciaLabels(status, labels) {
+    labels.push(`--rcba-${status}`);
+    return labels;
+}
+const mapPullRequest = (pr, status = 'open') => {
+    var _a, _b, _c, _d, _e;
+    return ({
+        number: pr.number,
+        title: pr.title,
+        htmlURL: pr.html_url,
+        baseBranch: pr.base.ref,
+        branch: pr.head.ref,
+        createdAt: (0, moment_1.default)(pr.created_at),
+        mergedAt: pr.merged_at ? (0, moment_1.default)(pr.merged_at) : undefined,
+        mergeCommitSha: pr.merge_commit_sha || '',
+        author: ((_a = pr.user) === null || _a === void 0 ? void 0 : _a.login) || '',
+        repoName: pr.base.repo.full_name,
+        labels: attachSpeciaLabels(status, ((_b = pr.labels) === null || _b === void 0 ? void 0 : _b.map(lbl => { var _a; return ((_a = lbl.name) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase('en')) || ''; })) || []),
+        milestone: ((_c = pr.milestone) === null || _c === void 0 ? void 0 : _c.title) || '',
+        body: pr.body || '',
+        assignees: ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.map(asignee => (asignee === null || asignee === void 0 ? void 0 : asignee.login) || '')) || [],
+        requestedReviewers: ((_e = pr.requested_reviewers) === null || _e === void 0 ? void 0 : _e.map(reviewer => (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '')) || [],
+        approvedReviewers: [],
+        reviews: undefined,
+        status
+    });
+};
+const mapComment = (comment) => {
+    var _a;
+    return ({
+        id: comment.id,
+        htmlURL: comment.html_url,
+        submittedAt: comment.submitted_at ? (0, moment_1.default)(comment.submitted_at) : undefined,
+        author: ((_a = comment.user) === null || _a === void 0 ? void 0 : _a.login) || '',
+        body: comment.body,
+        state: comment.state
+    });
+};
+
+
+/***/ }),
+
+/***/ 3078:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.buildRegex = exports.validateTransformer = exports.matchesRules = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const pullRequests_1 = __nccwpck_require__(1948);
+/**
+ * Checks if any of the rules match the given PR
+ */
+function matchesRules(rules, pr, exhaustive) {
+    const transformers = rules.map(rule => validateTransformer(rule)).filter(t => t !== null);
+    if (exhaustive) {
+        return transformers.every(transformer => {
+            return matches(pr, transformer, 'rule');
+        });
+    }
+    else {
+        return transformers.some(transformer => {
+            return matches(pr, transformer, 'rule');
+        });
+    }
+}
+exports.matchesRules = matchesRules;
+/**
+ * Checks if the configured property results in a positive `test` with the regex.
+ */
+function matches(pr, extractor, extractor_usecase) {
+    if (extractor.pattern == null) {
+        return false;
+    }
+    if (extractor.onProperty !== undefined && extractor.onProperty.length === 1) {
+        const prop = extractor.onProperty[0];
+        const value = (0, pullRequests_1.retrieveProperty)(pr, prop, extractor_usecase);
+        const matched = extractor.pattern.test(value);
+        if (core.isDebug()) {
+            core.debug(`    Pattern ${extractor.pattern} resulted in ${matched} for ${value}  on PR ${pr.number} (usecase: ${extractor_usecase})`);
+        }
+        return matched;
+    }
+    return false;
+}
+function validateTransformer(transformer) {
+    if (transformer === undefined) {
+        return null;
+    }
+    try {
+        let target = undefined;
+        if (transformer.hasOwnProperty('target')) {
+            target = transformer.target;
+        }
+        let onProperty = undefined;
+        let method = undefined;
+        let onEmpty = undefined;
+        if (transformer.hasOwnProperty('method')) {
+            method = transformer.method;
+            onEmpty = transformer.on_empty;
+            onProperty = transformer.on_property;
+        }
+        else if (transformer.hasOwnProperty('on_property')) {
+            onProperty = transformer.on_property;
+        }
+        // legacy handling, transform single value input to array
+        if (!Array.isArray(onProperty)) {
+            if (onProperty !== undefined) {
+                onProperty = [onProperty];
+            }
+        }
+        return buildRegex(transformer, target, onProperty, method, onEmpty);
+    }
+    catch (e) {
+        core.warning(`⚠️ Failed to validate transformer: ${transformer.pattern}`);
+        return null;
+    }
+}
+exports.validateTransformer = validateTransformer;
+/**
+ * Constructs the RegExp, providing the configured Regex and additional values
+ */
+function buildRegex(regex, target, onProperty, method, onEmpty) {
+    var _a;
+    try {
+        return {
+            pattern: new RegExp(regex.pattern.replace('\\\\', '\\'), (_a = regex.flags) !== null && _a !== void 0 ? _a : 'gu'),
+            target: target || '',
+            onProperty,
+            method,
+            onEmpty
+        };
+    }
+    catch (e) {
+        core.warning(`⚠️ Bad replacer regex: ${regex.pattern}`);
+        return null;
+    }
+}
+exports.buildRegex = buildRegex;
+
+
+/***/ }),
+
+/***/ 7774:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.sortTags = exports.filterTags = exports.Tags = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const github = __importStar(__nccwpck_require__(5438));
+const semver = __importStar(__nccwpck_require__(1383));
+const semver_1 = __nccwpck_require__(1383);
+const gitHelper_1 = __nccwpck_require__(5096);
+const moment_1 = __importDefault(__nccwpck_require__(9623));
+const regexUtils_1 = __nccwpck_require__(3078);
+class Tags {
+    constructor(octokit) {
+        this.octokit = octokit;
+    }
+    getTags(owner, repo, maxTagsToFetch) {
+        var _a, e_1, _b, _c;
+        return __awaiter(this, void 0, void 0, function* () {
+            const tagsInfo = [];
+            const options = this.octokit.repos.listTags.endpoint.merge({
+                owner,
+                repo,
+                direction: 'desc',
+                per_page: 100
+            });
+            try {
+                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
+                    _c = _f.value;
+                    _d = false;
+                    const response = _c;
+                    const tags = response.data;
+                    for (const tag of tags) {
+                        tagsInfo.push({
+                            name: tag.name,
+                            commit: tag.commit.sha
+                        });
+                    }
+                    // for performance only fetch newest maxTagsToFetch tags!!
+                    if (tagsInfo.length >= maxTagsToFetch) {
+                        break;
+                    }
+                }
+            }
+            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            finally {
+                try {
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
+                }
+                finally { if (e_1) throw e_1.error; }
+            }
+            core.info(`ℹ️ Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`);
+            return tagsInfo;
+        });
+    }
+    fillTagInformation(repositoryPath, owner, repo, tagInfo) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const options = this.octokit.repos.getReleaseByTag.endpoint.merge({
+                owner,
+                repo,
+                tag: tagInfo.name
+            });
+            try {
+                const response = yield this.octokit.request(options);
+                const release = response.data;
+                tagInfo.date = (0, moment_1.default)(release.created_at);
+                core.info(`ℹ️ Retrieved information about the release associated with ${tagInfo.name} from the GitHub API`);
+            }
+            catch (error) {
+                core.info(`⚠️ No release information found for ${tagInfo.name}, trying to retrieve tag creation time as fallback.`);
+                const gitHelper = yield (0, gitHelper_1.createCommandManager)(repositoryPath);
+                const creationTimeString = yield gitHelper.tagCreation(tagInfo.name);
+                const creationTime = (0, moment_1.default)(creationTimeString);
+                if (creationTimeString !== null && creationTime.isValid()) {
+                    tagInfo.date = creationTime;
+                    core.info(`ℹ️ Resolved tag creation time (${creationTimeString}) from 'git for-each-ref --format="%(creatordate:rfc)" "refs/tags/${tagInfo.name}`);
+                }
+                else {
+                    core.info(`⚠️ Could not retrieve tag creation time via git cli 'git for-each-ref --format="%(creatordate:rfc)" "refs/tags/${tagInfo.name}'`);
+                }
+            }
+            return tagInfo;
+        });
+    }
+    findPredecessorTag(sortedTags, repositoryPath, tag, ignorePreReleases) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const tags = sortedTags;
+            try {
+                const length = tags.length;
+                if (tags.length > 1) {
+                    for (let i = 0; i < length; i++) {
+                        if (tags[i].name.toLocaleLowerCase('en') === tag.toLocaleLowerCase('en')) {
+                            if (ignorePreReleases) {
+                                core.info(`ℹ️ Enabled 'ignorePreReleases', searching for the closest release`);
+                                for (let ii = i + 1; ii < length; ii++) {
+                                    if (!tags[ii].name.includes('-')) {
+                                        return tags[ii];
+                                    }
+                                }
+                            }
+                            return tags[i + 1];
+                        }
+                    }
+                }
+                else {
+                    core.info(`ℹ️ Only one tag found for the given repository. Usually this is the case for the initial release.`);
+                    // if not specified try to retrieve tag from git
+                    const gitHelper = yield (0, gitHelper_1.createCommandManager)(repositoryPath);
+                    const initialCommit = yield gitHelper.initialCommit();
+                    core.info(`🔖 Resolved initial commit (${initialCommit}) from 'git rev-list --max-parents=0 HEAD'`);
+                    return { name: initialCommit, commit: initialCommit };
+                }
+                return tags[0];
+            }
+            catch (error) {
+                if (tags.length <= 0) {
+                    core.warning(`⚠️ No tag found for the given repository`);
+                }
+                return null;
+            }
+        });
+    }
+    retrieveRange(repositoryPath, owner, repo, fromTag, toTag, ignorePreReleases, maxTagsToFetch, tagResolver) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            // filter out tags not matching the specified filter
+            const filteredTags = filterTags(
+            // retrieve the tags from the API
+            yield this.getTags(owner, repo, maxTagsToFetch), tagResolver);
+            // check if a transformer was defined
+            const tagTransformer = (0, regexUtils_1.validateTransformer)(tagResolver.transformer);
+            let transformedTags;
+            if (tagTransformer != null) {
+                core.debug(`ℹ️ Using configured tagTransformer`);
+                transformedTags = transformTags(filteredTags, tagTransformer);
+            }
+            else {
+                transformedTags = filteredTags;
+            }
+            let tags = sortTags(transformedTags, tagResolver);
+            if (tagTransformer != null) {
+                // restore the original name, after sorting
+                tags = filteredTags.map(function (tag) {
+                    if (tag.hasOwnProperty('tmp')) {
+                        return { name: tag.tmp, commit: tag.commit };
+                    }
+                    else {
+                        return tag;
+                    }
+                });
+            }
+            let resultToTag;
+            let resultFromTag;
+            // ensure to resolve the toTag if it was not provided
+            if (!toTag) {
+                // if not specified try to retrieve tag from github.context.ref
+                if (((_a = github.context.ref) === null || _a === void 0 ? void 0 : _a.startsWith('refs/tags/')) === true) {
+                    toTag = github.context.ref.replace('refs/tags/', '');
+                    core.info(`🔖 Resolved current tag (${toTag}) from the 'github.context.ref'`);
+                    resultToTag = {
+                        name: toTag,
+                        commit: toTag
+                    };
+                }
+                else if (tags.length > 1) {
+                    resultToTag = tags[0];
+                    core.info(`🔖 Resolved current tag (${resultToTag.name}) from the tags git API`);
+                }
+                else {
+                    // if not specified try to retrieve tag from git
+                    const gitHelper = yield (0, gitHelper_1.createCommandManager)(repositoryPath);
+                    const latestTag = yield gitHelper.latestTag();
+                    core.info(`🔖 Resolved current tag (${latestTag}) from 'git rev-list --tags --skip=0 --max-count=1'`);
+                    resultToTag = {
+                        name: latestTag,
+                        commit: latestTag
+                    };
+                }
+            }
+            else {
+                resultToTag = {
+                    name: toTag,
+                    commit: toTag
+                };
+            }
+            // ensure toTag is specified
+            toTag = resultToTag.name;
+            // resolve the fromTag if not defined
+            if (!fromTag) {
+                core.debug(`fromTag undefined, trying to resolve via API`);
+                resultFromTag = yield this.findPredecessorTag(tags, repositoryPath, toTag, ignorePreReleases);
+                if (resultFromTag != null) {
+                    core.info(`🔖 Resolved previous tag (${resultFromTag.name}) from the tags git API`);
+                }
+            }
+            else {
+                resultFromTag = {
+                    name: fromTag,
+                    commit: fromTag
+                };
+            }
+            return {
+                from: resultFromTag,
+                to: resultToTag
+            };
+        });
+    }
+}
+exports.Tags = Tags;
+/*
+ * Uses the provided filter (if available) to filter out any tags not currently relevant.
+ * https://github.com/mikepenz/release-changelog-builder-action/issues/566
+ */
+function filterTags(tags, tagResolver) {
+    var _a;
+    const filter = tagResolver.filter;
+    if (filter !== undefined) {
+        const regex = new RegExp(filter.pattern.replace('\\\\', '\\'), (_a = filter.flags) !== null && _a !== void 0 ? _a : 'gu');
+        const filteredTags = tags.filter(tag => tag.name.match(regex) !== null);
+        core.debug(`ℹ️ Filtered tags count: ${filteredTags.length}, original count: ${tags.length}`);
+        return filteredTags;
+    }
+    else {
+        return tags;
+    }
+}
+exports.filterTags = filterTags;
+/**
+ * Helper function to transform the tag name given the transformer
+ */
+function transformTags(tags, transformer) {
+    return tags.map(function (tag) {
+        if (transformer.pattern) {
+            const transformedName = tag.name.replace(transformer.pattern, transformer.target);
+            core.debug(`ℹ️ Transformed ${tag.name} to ${transformedName}`);
+            return {
+                tmp: tag.name,
+                name: transformedName,
+                commit: tag.commit
+            };
+        }
+        else {
+            return tag;
+        }
+    });
+}
+/*
+  Sorts an array of tags as shown below:
+  
+  2020.4.0
+  2020.4.0-rc02
+  2020.3.2
+  2020.3.1
+  2020.3.1-rc03
+  2020.3.1-rc02
+  2020.3.1-rc01
+  2020.3.1-b01
+  2020.3.1-a01
+  2020.3.0
+  */
+function sortTags(tags, tagResolver) {
+    if (tagResolver.method === 'sort') {
+        return stringSorting(tags);
+    }
+    else {
+        return semVerSorting(tags);
+    }
+}
+exports.sortTags = sortTags;
+function semVerSorting(tags) {
+    // filter out tags which do not follow semver
+    const validatedTags = tags.filter(tag => {
+        const isValid = semver.valid(tag.name, {
+            loose: true
+        }) !== null;
+        if (!isValid) {
+            core.debug(`⚠️ dropped tag ${tag.name} because it is not a valid semver tag`);
+        }
+        return isValid;
+    });
+    // sort using semver
+    validatedTags.sort((b, a) => {
+        return new semver_1.SemVer(a.name, {
+            includePrerelease: true,
+            loose: true
+        }).compare(b.name);
+    });
+    return validatedTags;
+}
+function stringSorting(tags) {
+    return tags.sort((b, a) => {
+        const partsA = a.name.replace(/^v/, '').split('-');
+        const partsB = b.name.replace(/^v/, '').split('-');
+        const versionCompare = partsA[0].localeCompare(partsB[0]);
+        if (versionCompare !== 0) {
+            return versionCompare;
+        }
+        else {
+            if (partsA.length === 1) {
+                return 0;
+            }
+            else if (partsB.length === 1) {
+                return 1;
+            }
+            else {
+                return partsA[1].localeCompare(partsB[1]);
+            }
+        }
+    });
+}
+
+
+/***/ }),
+
+/***/ 853:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.directoryExistsSync = exports.failOrError = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const fs = __importStar(__nccwpck_require__(7147));
+/**
+ * Will automatically either report the message to the log, or mark the action as failed. Additionally defining the output failed, allowing it to be read in by other actions
+ */
+function failOrError(message, failOnError) {
+    // if we report any failure, consider the action to have failed, may not make the build fail
+    core.setOutput('failed', true);
+    if (failOnError) {
+        core.setFailed(message);
+    }
+    else {
+        core.error(message);
+    }
+}
+exports.failOrError = failOrError;
+/**
+ * Checks if a given directory exists
+ */
+function directoryExistsSync(inputPath, required) {
+    if (!inputPath) {
+        throw new Error("Arg 'path' must not be empty");
+    }
+    let stats;
+    try {
+        stats = fs.statSync(inputPath);
+    }
+    catch (error /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
+        if (error.code === 'ENOENT') {
+            if (!required) {
+                return false;
+            }
+            throw new Error(`Directory '${inputPath}' does not exist`);
+        }
+        throw new Error(`Encountered an error when checking whether path '${inputPath}' exists: ${error.message}`);
+    }
+    if (stats.isDirectory()) {
+        return true;
+    }
+    else if (!required) {
+        return false;
+    }
+    throw new Error(`Directory '${inputPath}' does not exist`);
+}
+exports.directoryExistsSync = directoryExistsSync;
 
 
 /***/ }),

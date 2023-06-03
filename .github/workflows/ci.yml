@@ -28,6 +28,10 @@ jobs:
           
       - name: Run NPM
         run: |
+          cd pr-collector 
+          npm run all
+
+          cd ..
           npm run all
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

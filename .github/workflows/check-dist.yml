@@ -33,10 +33,20 @@ jobs:
           node-version: 16.x
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          cd pr-collector 
+          npm ci
+          
+          cd ..
+          npm ci
 
       - name: Rebuild the dist/ directory
         run: |
+          cd pr-collector 
+          npm run build
+          npm run package
+
+          cd ..
           npm run build
           npm run package
 
