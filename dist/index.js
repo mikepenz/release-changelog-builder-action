@@ -248,6 +248,9 @@ class ReleaseNotesBuilder {
                 }
                 core.endGroup();
                 const prData = yield new github_pr_collector_1.PullRequestCollector(this.baseUrl, this.token, this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.includeOpen, this.failOnError, this.ignorePreReleases, this.fetchReviewers, this.fetchReleaseInformation, this.fetchReviews, this.commitMode, this.configuration).build();
+                if (prData == null) {
+                    return null;
+                }
                 const resolvedOptions = prData.options;
                 const options = {
                     owner: this.owner,
