@@ -91,6 +91,7 @@ A full set list of possible output values for this action.
 | `outputs.changes`           | Total count of changes in this release (lines).                                                                           |
 | `outputs.commits`           | Count of commits which have been added in this release.                                                                   |
 | `outputs.categorized`       | The categorized pull requests used to build the changelog as serialized JSON.                                                           |
+| `outputs.cache`             | The cache for the current fetched data. Can be provided to another action step.                                                           |
 
 ## Full Sample 🖥️
 
@@ -330,6 +331,7 @@ For advanced use cases additional settings can be provided to the action
 | `fetchReleaseInformation` | Will enable fetching additional release information from tags. Default: false                                                                                               |
 | `fetchReviews`            | Will enable fetching the reviews on of the PR. Default: false                                                                                                               |
 | `commitMode`              | Special configuration for projects which work without PRs. Uses commit messages as changelog. This mode looses access to information only available for PRs. Default: false |
+| `cache`                  | Cached data from a previous run. Will skip fetching PR information |
 
 > **Warning**: `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repositories please use a PAT (Personal Access Token).
 

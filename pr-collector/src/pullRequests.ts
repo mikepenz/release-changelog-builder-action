@@ -2,9 +2,9 @@ import * as core from '@actions/core'
 import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import {Unpacked} from './utils'
 import moment from 'moment'
-import {Property, Sort} from './configuration'
+import {Property, Sort} from './types'
 import {Commits, DiffInfo, filterCommits} from './commits'
-import {ReleaseNotesOptions} from './releaseNotesBuilder'
+import {Options} from './prCollector'
 
 export interface PullRequestInfo {
   number: number
@@ -162,7 +162,7 @@ export class PullRequests {
     pr.reviews = prReviews
   }
 
-  async getMergedPullRequests(options: ReleaseNotesOptions): Promise<[DiffInfo, PullRequestInfo[]]> {
+  async getMergedPullRequests(options: Options): Promise<[DiffInfo, PullRequestInfo[]]> {
     const {owner, repo, includeOpen, fetchReviewers, fetchReviews, configuration} = options
 
     const diffInfo = await this.commits.getCommitHistory(options)

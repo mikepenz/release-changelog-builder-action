@@ -2,8 +2,8 @@ import * as core from '@actions/core'
 import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import moment from 'moment'
 import {failOrError} from './utils'
-import {ReleaseNotesOptions} from './releaseNotesBuilder'
 import {PullRequestInfo} from './pullRequests'
+import {Options} from './prCollector'
 
 export interface DiffInfo {
   changedFiles: number
@@ -121,7 +121,7 @@ export class Commits {
     return commitsResult
   }
 
-  async getCommitHistory(options: ReleaseNotesOptions): Promise<DiffInfo> {
+  async getCommitHistory(options: Options): Promise<DiffInfo> {
     const {owner, repo, fromTag, toTag, failOnError} = options
     core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag.name}...${toTag.name}'`)
 
@@ -141,7 +141,7 @@ export class Commits {
     return diffInfo
   }
 
-  async generateCommitPRs(options: ReleaseNotesOptions): Promise<[DiffInfo, PullRequestInfo[]]> {
+  async generateCommitPRs(options: Options): Promise<[DiffInfo, PullRequestInfo[]]> {
     const {owner, repo, configuration} = options
 
     const diffInfo = await this.getCommitHistory(options)

@@ -1,10 +1,12 @@
 import * as core from '@actions/core'
-import {Category, Configuration, Placeholder, Property, Transformer} from './configuration'
-import {CommentInfo, EMPTY_COMMENT_INFO, PullRequestInfo, retrieveProperty, sortPullRequests} from './pullRequests'
-import {ReleaseNotesOptions} from './releaseNotesBuilder'
-import {DiffInfo} from './commits'
+import {Category, Configuration, Placeholder, Property} from './configuration'
 import {createOrSet, haveCommonElementsArr, haveEveryElementsArr} from './utils'
-import {matchesRules, RegexTransformer, validateTransformer} from './regexUtils'
+import {CommentInfo, EMPTY_COMMENT_INFO, PullRequestInfo, retrieveProperty, sortPullRequests} from 'github-pr-collector/lib/pullRequests'
+import {DiffInfo} from 'github-pr-collector/lib/commits'
+import {validateTransformer} from 'github-pr-collector/lib/regexUtils'
+import {Transformer, RegexTransformer} from 'github-pr-collector/lib/types'
+import {ReleaseNotesOptions} from './releaseNotesBuilder'
+import {matchesRules} from './regexUtils'
 
 const EMPTY_MAP = new Map<string, string>()
 

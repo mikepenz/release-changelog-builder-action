@@ -1,8 +1,8 @@
 import {buildChangelog} from '../src/transform'
-import {PullRequestInfo} from '../src/pullRequests'
 import moment from 'moment'
 import {Configuration, DefaultConfiguration} from '../src/configuration'
-import {DefaultDiffInfo} from '../src/commits'
+import { PullRequestInfo } from 'github-pr-collector/lib/pullRequests'
+import { DefaultDiffInfo } from 'github-pr-collector/lib/commits'
 
 jest.setTimeout(180000)
 
@@ -313,41 +313,41 @@ pullRequestsWithLabels.push(
 const openPullRequestsWithLabels: PullRequestInfo[] = []
 openPullRequestsWithLabels.push(
   {
-  number: 6,
-  title: 'Still pending open pull request (Current)',
-  htmlURL: '',
-  baseBranch: '',
-  createdAt: moment(),
-  mergedAt: moment(),
-  mergeCommitSha: 'sha1',
-  author: 'Mike',
-  repoName: 'test-repo',
-  labels: ['feature'],
-  milestone: '',
-  body: 'Some fancy body message',
-  assignees: [],
-  requestedReviewers: [],
-  approvedReviewers: [],
-  status: 'open'
-},
-{
-  number: 7,
-  title: 'Still pending open pull request',
-  htmlURL: '',
-  baseBranch: '',
-  createdAt: moment(),
-  mergedAt: moment(),
-  mergeCommitSha: 'sha1',
-  author: 'Mike',
-  repoName: 'test-repo',
-  labels: [],
-  milestone: '',
-  body: 'Some fancy body message',
-  assignees: [],
-  requestedReviewers: [],
-  approvedReviewers: [],
-  status: 'open'
-}
+    number: 6,
+    title: 'Still pending open pull request (Current)',
+    htmlURL: '',
+    baseBranch: '',
+    createdAt: moment(),
+    mergedAt: moment(),
+    mergeCommitSha: 'sha1',
+    author: 'Mike',
+    repoName: 'test-repo',
+    labels: ['feature'],
+    milestone: '',
+    body: 'Some fancy body message',
+    assignees: [],
+    requestedReviewers: [],
+    approvedReviewers: [],
+    status: 'open'
+  },
+  {
+    number: 7,
+    title: 'Still pending open pull request',
+    htmlURL: '',
+    baseBranch: '',
+    createdAt: moment(),
+    mergedAt: moment(),
+    mergeCommitSha: 'sha1',
+    author: 'Mike',
+    repoName: 'test-repo',
+    labels: [],
+    milestone: '',
+    body: 'Some fancy body message',
+    assignees: [],
+    requestedReviewers: [],
+    approvedReviewers: [],
+    status: 'open'
+  }
 )
 
 it('Match multiple labels exhaustive for category', async () => {
@@ -457,9 +457,7 @@ it('Release Diff', async () => {
     configuration: customConfig
   })
 
-  expect(resultChangelog).toStrictEqual(
-    `https://github.com/mikepenz/release-changelog-builder-action/compare/v2.8.0...v2.8.1\n`
-  )
+  expect(resultChangelog).toStrictEqual(`https://github.com/mikepenz/release-changelog-builder-action/compare/v2.8.0...v2.8.1\n`)
 })
 
 it('Use exclude labels to not include a PR within a category.', async () => {
@@ -532,7 +530,6 @@ it('Extract custom placeholder from PR body and replace in global template', asy
   )
 })
 
-
 it('Use Rules to include a PR within a Category.', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.categories = [
@@ -542,12 +539,12 @@ it('Use Rules to include a PR within a Category.', async () => {
       exclude_labels: ['Fix'],
       rules: [
         {
-          pattern: "\[ABC-1234\]",
-          on_property: "title"
+          pattern: '[ABC-1234]',
+          on_property: 'title'
         },
         {
-          pattern: "merged",
-          on_property: "status"
+          pattern: 'merged',
+          on_property: 'status'
         }
       ],
       exhaustive: true
@@ -568,15 +565,14 @@ it('Use Rules to get all open PRs in a Category.', async () => {
       title: '## Open PRs only',
       rules: [
         {
-          pattern: "open",
-          on_property: "status"
+          pattern: 'open',
+          on_property: 'status'
         }
       ]
     }
   ]
   expect(buildChangelogTest(customConfig, prs)).toStrictEqual(`## Open PRs only\n\n- Still pending open pull request\n   - PR: #6\n\n`)
 })
-
 
 it('Use Rules to get current open PR and merged categorised.', async () => {
   let prs = Array.from(pullRequestsWithLabels)
@@ -599,7 +595,8 @@ it('Use Rules to get current open PR and merged categorised.', async () => {
       ],
       exhaustive: true,
       exhaustive_rules: false
-    },{
+    },
+    {
       title: '## 🐛 Issues',
       labels: ['Issue'],
       rules: [
@@ -627,8 +624,8 @@ it('Use Rules to get all open PRs in one Category and merged categorised.', asyn
       title: '## Open PRs only',
       rules: [
         {
-          pattern: "open",
-          on_property: "status"
+          pattern: 'open',
+          on_property: 'status'
         }
       ]
     },
@@ -637,18 +634,17 @@ it('Use Rules to get all open PRs in one Category and merged categorised.', asyn
       labels: ['Feature', 'Issue'],
       rules: [
         {
-          pattern: "merged",
-          on_property: "status"
+          pattern: 'merged',
+          on_property: 'status'
         }
       ],
-      exhaustive: true,
+      exhaustive: true
     }
   ]
   expect(buildChangelogTest(customConfig, prs)).toStrictEqual(
     `## Open PRs only\n\n- Still pending open pull request\n   - PR: #6\n\n## 🚀 Features and 🐛 Issues\n\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
-
 
 function buildChangelogTest(config: Configuration, prs: PullRequestInfo[]): string {
   return buildChangelog(DefaultDiffInfo, prs, {

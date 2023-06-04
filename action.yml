@@ -40,9 +40,6 @@ inputs:
   commitMode:
     description: 'Enables a `light` commit based mode. This mode generates changelogs based on the commits. Please note that this is not officially supported, and lacks a lot of features only possible with PRs.'
     default: "false"
-  exportCollected:
-    description: 'Enables the export of all collected PR information to an environment variable'
-    default: "false"
   exportOnly:
     description: 'If enabled, the action will only collect the data and terminate afterwards. Data can then be consumed by steps afterwards'
     default: "false"
@@ -53,6 +50,8 @@ inputs:
     default: ${{ github.token }}
   baseUrl:
     description: 'Defines the base url for GitHub Enterprise authentication, uses `https://api.github.com` by default'
+  cache:
+    description: 'Provide the cache of a previous run. Allows to re-use collected information multiple times to generate different release notes.'
 outputs:
   changelog:
     description: The built release changelog built from the merged pull requests
@@ -74,6 +73,8 @@ outputs:
     description: Count of uncategorized pull requests
   open_prs:
     description: Count of open pull requests. Only fetched if `includeOpen` is enabled.
+  cache:
+    description: 'Cache containing this runs data. Allows to re-use collected information multiple times to generate different release notes.'
 runs:
   using: 'node16'
   main: 'dist/index.js'

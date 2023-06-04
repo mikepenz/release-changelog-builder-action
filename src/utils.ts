@@ -2,10 +2,10 @@ import * as core from '@actions/core'
 import * as fs from 'fs'
 import * as path from 'path'
 import {Configuration, DefaultConfiguration} from './configuration'
-import {ReleaseNotesData, ReleaseNotesOptions} from './releaseNotesBuilder'
-import {DiffInfo} from './commits'
-import {PullRequestInfo} from './pullRequests'
 import moment from 'moment'
+import {DiffInfo} from 'github-pr-collector/lib/commits'
+import {PullRequestInfo} from 'github-pr-collector/lib/pullRequests'
+import {Data, ReleaseNotesOptions} from './releaseNotesBuilder'
 /**
  * Resolves the repository path, relatively to the GITHUB_WORKSPACE
  */
@@ -24,30 +24,16 @@ export function retrieveRepositoryPath(providedPath: string): string {
 }
 
 /**
- * Will automatically either report the message to the log, or mark the action as failed. Additionally defining the output failed, allowing it to be read in by other actions
- */
-export function failOrError(message: string | Error, failOnError: boolean): void {
-  // if we report any failure, consider the action to have failed, may not make the build fail
-  core.setOutput('failed', true)
-  if (failOnError) {
-    core.setFailed(message)
-  } else {
-    core.error(message)
-  }
-}
-
-/**
  * Retrieves the exported information from a previous run of the `release-changelog-builder-action`.
  * If available, return a [ReleaseNotesData].
  */
-export function checkExportedData(): ReleaseNotesData | null {
-  const rawDiffInfo = process.env[`RCBA_EXPORT_diffInfo`]
-  const rawMergedPullRequests = process.env[`RCBA_EXPORT_mergedPullRequests`]
-  const rawOptions = process.env[`RCBA_EXPORT_options`]
+export function checkExportedData(): Data | null {
+  const rawCache = core.getInput(`cache`)
 
-  if (rawDiffInfo && rawMergedPullRequests && rawOptions) {
-    const diffInfo: DiffInfo = JSON.parse(rawDiffInfo)
-    const mergedPullRequests: PullRequestInfo[] = JSON.parse(rawMergedPullRequests)
+  if (rawCache) {
+    const cache: Data = JSON.parse(rawCache)
+    const diffInfo: DiffInfo = cache.diffInfo
+    const mergedPullRequests: PullRequestInfo[] = cache.mergedPullRequests
 
     for (const pr of mergedPullRequests) {
       pr.createdAt = moment(pr.createdAt)
@@ -64,7 +50,7 @@ export function checkExportedData(): ReleaseNotesData | null {
       }
     }
 
-    const options: ReleaseNotesOptions = JSON.parse(rawOptions)
+    const options: ReleaseNotesOptions = cache.options
     return {
       diffInfo,
       mergedPullRequests,
@@ -154,38 +140,6 @@ export function mergeConfiguration(jc?: Configuration, fc?: Configuration): Conf
 }
 
 /**
- * Checks if a given directory exists
- */
-export function directoryExistsSync(inputPath: string, required?: boolean): boolean {
-  if (!inputPath) {
-    throw new Error("Arg 'path' must not be empty")
-  }
-
-  let stats: fs.Stats
-  try {
-    stats = fs.statSync(inputPath)
-  } catch (error: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
-    if (error.code === 'ENOENT') {
-      if (!required) {
-        return false
-      }
-
-      throw new Error(`Directory '${inputPath}' does not exist`)
-    }
-
-    throw new Error(`Encountered an error when checking whether path '${inputPath}' exists: ${error.message}`)
-  }
-
-  if (stats.isDirectory()) {
-    return true
-  } else if (!required) {
-    return false
-  }
-
-  throw new Error(`Directory '${inputPath}' does not exist`)
-}
-
-/**
  * Writes the changelog to the given the file
  */
 export function writeOutput(githubWorkspacePath: string, outputFile: string, changelog: string | null): void {
@@ -199,8 +153,6 @@ export function writeOutput(githubWorkspacePath: string, outputFile: string, cha
     }
   }
 }
-
-export type Unpacked<T> = T extends (infer U)[] ? U : T
 
 export function createOrSet<T>(map: Map<string, T[]>, key: string, value: T): void {
   const entry = map.get(key)
