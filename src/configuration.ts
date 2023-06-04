@@ -1,5 +1,4 @@
-import {Extractor, Regex, Rule, Sort, Transformer} from 'github-pr-collector/lib/configuration'
-import {PullConfiguration} from 'github-pr-collector/lib/types'
+import {Rule, Extractor, Regex, Transformer, Sort, PullConfiguration} from 'github-pr-collector/lib/types'
 
 export interface Configuration extends PullConfiguration {
   max_tags_to_fetch: number

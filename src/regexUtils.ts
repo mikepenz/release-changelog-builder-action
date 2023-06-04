@@ -1,8 +1,7 @@
 import * as core from '@actions/core'
-import {Rule} from 'github-pr-collector/lib/configuration'
+import {Rule, RegexTransformer} from 'github-pr-collector/lib/types'
 import {PullRequestInfo, retrieveProperty} from 'github-pr-collector/lib/pullRequests'
 import {validateTransformer} from 'github-pr-collector/lib/regexUtils'
-import {RegexTransformer} from 'github-pr-collector/lib/types'
 
 /**
  * Checks if any of the rules match the given PR
