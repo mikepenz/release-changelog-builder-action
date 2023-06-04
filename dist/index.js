@@ -436,8 +436,9 @@ const pullRequests_1 = __nccwpck_require__(1948);
 const regexUtils_1 = __nccwpck_require__(3078);
 const regexUtils_2 = __nccwpck_require__(2364);
 const EMPTY_MAP = new Map();
-function buildChangelog(diffInfo, prs, options) {
+function buildChangelog(diffInfo, origPrs, options) {
     core.startGroup('📦 Build changelog');
+    let prs = origPrs;
     if (prs.length === 0) {
         core.warning(`⚠️ No pull requests found`);
         const result = replaceEmptyTemplate(options.configuration.empty_template, options);
@@ -449,10 +450,48 @@ function buildChangelog(diffInfo, prs, options) {
     const sort = config.sort;
     prs = (0, pullRequests_1.sortPullRequests)(prs, sort);
     core.info(`ℹ️ Sorted all pull requests ascending: ${JSON.stringify(sort)}`);
+    // establish parent child PR relations
+    if (config.reference !== undefined) {
+        const reference = (0, regexUtils_1.validateTransformer)(config.reference);
+        if (reference !== null) {
+            core.info(`ℹ️ Identifying PR references using \`reference\``);
+            const mapped = new Map();
+            for (const pr of prs) {
+                mapped.set(pr.number, pr);
+            }
+            const remappedPrs = [];
+            for (const pr of prs) {
+                const extracted = extractValues(pr, reference, 'reference');
+                if (extracted !== null && extracted.length > 0) {
+                    const foundNumber = parseInt(extracted[0]);
+                    const valid = !isNaN(foundNumber);
+                    const parent = mapped.get(foundNumber);
+                    if (valid && parent !== undefined) {
+                        if (parent.childPrs === undefined) {
+                            parent.childPrs = [];
+                        }
+                        parent.childPrs.push(pr);
+                    }
+                    else {
+                        if (!valid)
+                            core.warning(`⚠️ Extracted reference 'isNaN': ${extracted}`);
+                        remappedPrs.push(pr);
+                    }
+                }
+                else {
+                    remappedPrs.push(pr);
+                }
+            }
+            prs = remappedPrs;
+        }
+        else {
+            core.warning(`⚠️ Configured \`reference\` invalid.`);
+        }
+    }
     // drop duplicate pull requests
     if (config.duplicate_filter !== undefined) {
         const extractor = (0, regexUtils_1.validateTransformer)(config.duplicate_filter);
-        if (extractor != null) {
+        if (extractor !== null) {
             core.info(`ℹ️ Remove duplicated pull requests using \`duplicate_filter\``);
             const deduplicatedMap = new Map();
             const unmatched = [];
@@ -672,6 +711,7 @@ function buildChangelog(diffInfo, prs, options) {
     transformedChangelog = replacePlaceholders(transformedChangelog, EMPTY_MAP, placeholderMap, placeholders, placeholderPrMap, config);
     transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap, config);
     transformedChangelog = cleanupPrPlaceholders(transformedChangelog, placeholders);
+    transformedChangelog = cleanupPlaceholders(transformedChangelog);
     core.info(`ℹ️ Filled template`);
     core.endGroup();
     return transformedChangelog;
@@ -709,6 +749,7 @@ function fillPrTemplate(pr, template, placeholders /* placeholders to apply */, 
     var _a, _b, _c, _d, _e, _f;
     const arrayPlaceholderMap = new Map();
     fillReviewPlaceholders(arrayPlaceholderMap, 'REVIEWS', pr.reviews || []);
+    fillChildPrPlaceholders(arrayPlaceholderMap, 'REFERENCED', pr.childPrs || []);
     const placeholderMap = new Map();
     placeholderMap.set('NUMBER', pr.number.toString());
     placeholderMap.set('TITLE', pr.title);
@@ -771,6 +812,8 @@ function handlePlaceholder(template, key, value, placeholders /* placeholders to
     return transformed;
 }
 function fillArrayPlaceholders(placeholderMap /* placeholderKey and original value */, key, values) {
+    if (values.length === 0)
+        return;
     for (let i = 0; i < values.length; i++) {
         placeholderMap.set(`${key}[${i}]`, values[i]);
     }
@@ -778,8 +821,22 @@ function fillArrayPlaceholders(placeholderMap /* placeholderKey and original val
 }
 function fillReviewPlaceholders(placeholderMap /* placeholderKey and original value */, parentKey, values) {
     var _a;
+    if (values.length === 0)
+        return;
     // retrieve the keys from the CommentInfo object
     for (const childKey of Object.keys(pullRequests_1.EMPTY_COMMENT_INFO)) {
+        for (let i = 0; i < values.length; i++) {
+            placeholderMap.set(`${parentKey}[${i}].${childKey}`, ((_a = values[i][childKey]) === null || _a === void 0 ? void 0 : _a.toLocaleString('en')) || '');
+        }
+        placeholderMap.set(`${parentKey}[*].${childKey}`, values.map(value => { var _a; return ((_a = value[childKey]) === null || _a === void 0 ? void 0 : _a.toLocaleString('en')) || ''; }).join(', '));
+    }
+}
+function fillChildPrPlaceholders(placeholderMap /* placeholderKey and original value */, parentKey, values) {
+    var _a;
+    if (values.length === 0)
+        return;
+    // retrieve the keys from the PullRequestInfo object
+    for (const childKey of Object.keys(pullRequests_1.EMPTY_PULL_REQUEST_INFO)) {
         for (let i = 0; i < values.length; i++) {
             placeholderMap.set(`${parentKey}[${i}].${childKey}`, ((_a = values[i][childKey]) === null || _a === void 0 ? void 0 : _a.toLocaleString('en')) || '');
         }
@@ -802,6 +859,13 @@ function cleanupPrPlaceholders(template, placeholders) {
         for (const ph of phs) {
             transformed = transformed.replaceAll(new RegExp(`\\$\\{\\{${ph.name}(?:\\[.+?\\])?\\}\\}`, 'gu'), '');
         }
+    }
+    return transformed;
+}
+function cleanupPlaceholders(template) {
+    let transformed = template;
+    for (const phs of ['REVIEWS', 'REFERENCED', 'ASSIGNEES', 'REVIEWERS', 'APPROVERS']) {
+        transformed = transformed.replaceAll(new RegExp(`\\$\\{\\{${phs}\\[.+?\\]\\..*?\\}\\}`, 'gu'), '');
     }
     return transformed;
 }
@@ -17115,10 +17179,28 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.retrieveProperty = exports.compare = exports.sortPullRequests = exports.PullRequests = exports.EMPTY_COMMENT_INFO = void 0;
+exports.retrieveProperty = exports.compare = exports.sortPullRequests = exports.PullRequests = exports.EMPTY_COMMENT_INFO = exports.EMPTY_PULL_REQUEST_INFO = void 0;
 const core = __importStar(__nccwpck_require__(2242));
 const moment_1 = __importDefault(__nccwpck_require__(8985));
 const commits_1 = __nccwpck_require__(5789);
+exports.EMPTY_PULL_REQUEST_INFO = {
+    number: 0,
+    title: "",
+    htmlURL: "",
+    baseBranch: "",
+    mergedAt: undefined,
+    createdAt: (0, moment_1.default)(),
+    mergeCommitSha: "",
+    author: "",
+    repoName: "",
+    labels: [],
+    milestone: "",
+    body: "",
+    assignees: [],
+    requestedReviewers: [],
+    approvedReviewers: [],
+    status: 'open'
+};
 exports.EMPTY_COMMENT_INFO = {
     id: 0,
     htmlURL: '',

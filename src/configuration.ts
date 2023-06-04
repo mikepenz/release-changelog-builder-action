@@ -13,6 +13,7 @@ export interface Configuration extends PullConfiguration {
   ignore_labels: string[]
   label_extractor: Extractor[]
   duplicate_filter?: Extractor // extract an identifier from a PR used to detect duplicates, will keep the last match (depends on `sort`)
+  reference?: Extractor // extracts a reference from a PR, used to establish parent child relations. This will remove the child from the main PR list.
   transformers: Transformer[]
   tag_resolver: TagResolver
   base_branches: string[]

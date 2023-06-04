@@ -1,7 +1,14 @@
 import * as core from '@actions/core'
 import {Category, Configuration, Placeholder, Property} from './configuration'
 import {createOrSet, haveCommonElementsArr, haveEveryElementsArr} from './utils'
-import {CommentInfo, EMPTY_COMMENT_INFO, PullRequestInfo, retrieveProperty, sortPullRequests} from 'github-pr-collector/lib/pullRequests'
+import {
+  CommentInfo,
+  EMPTY_COMMENT_INFO,
+  EMPTY_PULL_REQUEST_INFO,
+  PullRequestInfo,
+  retrieveProperty,
+  sortPullRequests
+} from 'github-pr-collector/lib/pullRequests'
 import {DiffInfo} from 'github-pr-collector/lib/commits'
 import {validateTransformer} from 'github-pr-collector/lib/regexUtils'
 import {Transformer, RegexTransformer} from 'github-pr-collector/lib/types'
@@ -10,8 +17,14 @@ import {matchesRules} from './regexUtils'
 
 const EMPTY_MAP = new Map<string, string>()
 
-export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], options: ReleaseNotesOptions): string {
+export interface PullRequestData extends PullRequestInfo {
+  childPrs?: PullRequestInfo[]
+}
+
+export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], options: ReleaseNotesOptions): string {
   core.startGroup('📦 Build changelog')
+
+  let prs: PullRequestData[] = origPrs
   if (prs.length === 0) {
     core.warning(`⚠️ No pull requests found`)
     const result = replaceEmptyTemplate(options.configuration.empty_template, options)
@@ -25,10 +38,47 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
   prs = sortPullRequests(prs, sort)
   core.info(`ℹ️ Sorted all pull requests ascending: ${JSON.stringify(sort)}`)
 
+  // establish parent child PR relations
+  if (config.reference !== undefined) {
+    const reference = validateTransformer(config.reference)
+    if (reference !== null) {
+      core.info(`ℹ️ Identifying PR references using \`reference\``)
+
+      const mapped = new Map<number, PullRequestData>()
+      for (const pr of prs) {
+        mapped.set(pr.number, pr)
+      }
+
+      const remappedPrs: PullRequestData[] = []
+      for (const pr of prs) {
+        const extracted = extractValues(pr, reference, 'reference')
+        if (extracted !== null && extracted.length > 0) {
+          const foundNumber = parseInt(extracted[0])
+          const valid = !isNaN(foundNumber)
+          const parent = mapped.get(foundNumber)
+          if (valid && parent !== undefined) {
+            if (parent.childPrs === undefined) {
+              parent.childPrs = []
+            }
+            parent.childPrs.push(pr)
+          } else {
+            if (!valid) core.warning(`⚠️ Extracted reference 'isNaN': ${extracted}`)
+            remappedPrs.push(pr)
+          }
+        } else {
+          remappedPrs.push(pr)
+        }
+      }
+      prs = remappedPrs
+    } else {
+      core.warning(`⚠️ Configured \`reference\` invalid.`)
+    }
+  }
+
   // drop duplicate pull requests
   if (config.duplicate_filter !== undefined) {
     const extractor = validateTransformer(config.duplicate_filter)
-    if (extractor != null) {
+    if (extractor !== null) {
       core.info(`ℹ️ Remove duplicated pull requests using \`duplicate_filter\``)
 
       const deduplicatedMap = new Map<string, PullRequestInfo>()
@@ -283,6 +333,7 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
   transformedChangelog = replacePlaceholders(transformedChangelog, EMPTY_MAP, placeholderMap, placeholders, placeholderPrMap, config)
   transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap, config)
   transformedChangelog = cleanupPrPlaceholders(transformedChangelog, placeholders)
+  transformedChangelog = cleanupPlaceholders(transformedChangelog)
   core.info(`ℹ️ Filled template`)
   core.endGroup()
   return transformedChangelog
@@ -322,7 +373,7 @@ function fillAdditionalPlaceholders(
 }
 
 function fillPrTemplate(
-  pr: PullRequestInfo,
+  pr: PullRequestData,
   template: string,
   placeholders: Map<string, Placeholder[]> /* placeholders to apply */,
   placeholderPrMap: Map<string, string[]> /* map to keep replaced placeholder values with their key */,
@@ -330,6 +381,7 @@ function fillPrTemplate(
 ): string {
   const arrayPlaceholderMap = new Map<string, string>()
   fillReviewPlaceholders(arrayPlaceholderMap, 'REVIEWS', pr.reviews || [])
+  fillChildPrPlaceholders(arrayPlaceholderMap, 'REFERENCED', pr.childPrs || [])
   const placeholderMap = new Map<string, string>()
   placeholderMap.set('NUMBER', pr.number.toString())
   placeholderMap.set('TITLE', pr.title)
@@ -419,6 +471,7 @@ function fillArrayPlaceholders(
   key: string,
   values: string[]
 ): void {
+  if (values.length === 0) return
   for (let i = 0; i < values.length; i++) {
     placeholderMap.set(`${key}[${i}]`, values[i])
   }
@@ -430,6 +483,7 @@ function fillReviewPlaceholders(
   parentKey: string,
   values: CommentInfo[]
 ): void {
+  if (values.length === 0) return
   // retrieve the keys from the CommentInfo object
   for (const childKey of Object.keys(EMPTY_COMMENT_INFO)) {
     for (let i = 0; i < values.length; i++) {
@@ -438,6 +492,24 @@ function fillReviewPlaceholders(
     placeholderMap.set(
       `${parentKey}[*].${childKey}`,
       values.map(value => value[childKey as keyof CommentInfo]?.toLocaleString('en') || '').join(', ')
+    )
+  }
+}
+
+function fillChildPrPlaceholders(
+  placeholderMap: Map<string, string> /* placeholderKey and original value */,
+  parentKey: string,
+  values: PullRequestInfo[]
+): void {
+  if (values.length === 0) return
+  // retrieve the keys from the PullRequestInfo object
+  for (const childKey of Object.keys(EMPTY_PULL_REQUEST_INFO)) {
+    for (let i = 0; i < values.length; i++) {
+      placeholderMap.set(`${parentKey}[${i}].${childKey}`, values[i][childKey as keyof PullRequestInfo]?.toLocaleString('en') || '')
+    }
+    placeholderMap.set(
+      `${parentKey}[*].${childKey}`,
+      values.map(value => value[childKey as keyof PullRequestInfo]?.toLocaleString('en') || '').join(', ')
     )
   }
 }
@@ -463,6 +535,14 @@ function cleanupPrPlaceholders(template: string, placeholders: Map<string, Place
     for (const ph of phs) {
       transformed = transformed.replaceAll(new RegExp(`\\$\\{\\{${ph.name}(?:\\[.+?\\])?\\}\\}`, 'gu'), '')
     }
+  }
+  return transformed
+}
+
+function cleanupPlaceholders(template: string): string {
+  let transformed = template
+  for (const phs of ['REVIEWS', 'REFERENCED', 'ASSIGNEES', 'REVIEWERS', 'APPROVERS']) {
+    transformed = transformed.replaceAll(new RegExp(`\\$\\{\\{${phs}\\[.+?\\]\\..*?\\}\\}`, 'gu'), '')
   }
   return transformed
 }

@@ -259,6 +259,12 @@ This configuration is a `JSON` in the following format. (The below showcases *ex
       "on_property": "title",
       "method": "match"
     },
+    "reference": {
+      "pattern": ".*\\ \\#(.).*",
+      "on_property": "body",
+      "method": "replace",
+      "target": "$1"
+    },
     "transformers": [
       {
         "pattern": "[\\-\\*] (\\[(...|TEST|CI|SKIP)\\])( )?(.+?)\n(.+?[\\-\\*] )(.+)",
@@ -371,8 +377,10 @@ When using `*` values are joined by `,`.
 | `${{REVIEWERS[*]}}` | GitHub Login names of specified reviewers. Requires `fetchReviewers` to be enabled. |
 | `${{APPROVERS[*]}}` | GitHub Login names of users who approved the PR.                                    |
 
-Additionally there is a special array placeholder `REVIEWS` which allows access to it's properties:
-`(KEY)[(*/index)].(property)` for example: `REVIEWS[*].author` or `REVIEWS[*].body`
+Additionally there are special array placeholders like `REVIEWS` which allows access to it's properties via
+`(KEY)[(*/index)].(property)`.
+
+For example: `REVIEWS[*].author` or `REVIEWS[*].body`
 
 | **Placeholder**               | **Description**                            |
 |-------------------------------|--------------------------------------------|
@@ -381,6 +389,14 @@ Additionally there is a special array placeholder `REVIEWS` which allows access 
 | `${{REVIEWS[*].htmlURL}}`     | The URL to the given review.               |
 | `${{REVIEWS[*].submittedAt}}` | The date whent he review was submitted.    |
 | `${{REVIEWS[*].state}}`       | The state of the given review.             |
+
+Similar to `REVIEWS`, `REFERENCED` PRs also offer special placeholders. 
+
+| **Placeholder**               | **Description**                                                           |
+|-------------------------------|---------------------------------------------------------------------------|
+| `${{REFERENCED[*].number}}`   | The PR number of the referenced PR.                                       |
+| `${{REFERENCED[*].title}}`    | The title of the referenced PR.                                           |
+| `${{REFERENCED[*]."..."}}`    | Allows to use most other PR properties as placeholder.                    |
 
 </p>
 </details>
@@ -448,6 +464,7 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | label_extractor.flags       | Defines the regex flags specified for the pattern. Default: `gu`.                                                                                                                                                                  |
 | label_extractor.on_empty    | Defines the placeholder to be filled in, if the regex does not lead to a result.                                                                                                                                                   |
 | duplicate_filter            | Defines the `Extractor` to use for retrieving the identifier for a PR. In case of duplicates will keep the last matching pull request (depends on `sort`). See `label_extractor` for details on `Extractor` properties.            |
+| reference                   | Defines the `Extractor` to use for resolving the "PR-number" for a parent PR. In case of a match, the child PR will not be included in the release notes. See `label_extractor` for details on `Extractor` properties.            |
 | transformers                | An array of `transform` specifications, offering a flexible API to modify the text per pull request. This is applied on the change text created with `pr_template`. `transformers` are executed per change, in the order specified |
 | transformer.pattern         | A `regex` pattern, extracting values of the change message.                                                                                                                                                                        |
 | transformer.target          | The result pattern, the regex groups will be filled into. Allows for full transformation of a pull request message. Including potentially specified texts                                                                          |

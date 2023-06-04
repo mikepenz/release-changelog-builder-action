@@ -36,6 +36,25 @@ export interface CommentInfo {
   state: string | undefined
 }
 
+export const EMPTY_PULL_REQUEST_INFO: PullRequestInfo = {
+  number: 0,
+  title: "",
+  htmlURL: "",
+  baseBranch: "",
+  mergedAt: undefined,
+  createdAt: moment(),
+  mergeCommitSha: "",
+  author: "",
+  repoName: "",
+  labels: [],
+  milestone: "",
+  body: "",
+  assignees: [],
+  requestedReviewers: [],
+  approvedReviewers: [],
+  status: 'open'
+}
+
 export const EMPTY_COMMENT_INFO: CommentInfo = {
   id: 0,
   htmlURL: '',
