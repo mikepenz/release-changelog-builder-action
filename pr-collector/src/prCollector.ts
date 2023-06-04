@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import {Configuration} from './configuration'
+import {PullConfiguration} from './types'
 import {Octokit} from '@octokit/rest'
 import {TagInfo, Tags} from './tags'
 import {failOrError} from './utils'
@@ -18,13 +18,14 @@ export interface Options {
   fetchReleaseInformation: boolean // defines if the action should fetch the release information for the from and to tag - e.g. the creation date for the associated release
   fetchReviews: boolean // defines if the action should fetch the reviews for the PR.
   commitMode: boolean // defines if we use the alternative commit based mode. note: this is only partially supported
-  configuration: Configuration // the configuration as defined in `configuration.ts`
+  configuration: PullConfiguration // the configuration as defined in `configuration.ts`
 }
 
 export interface Data {
   diffInfo: DiffInfo
   mergedPullRequests: PullRequestInfo[]
-  options: Options
+  fromTag: TagInfo
+  toTag: TagInfo
 }
 
 export class PullRequestCollector {
@@ -43,7 +44,7 @@ export class PullRequestCollector {
     private fetchReleaseInformation: boolean = false,
     private fetchReviews: boolean = false,
     private commitMode: boolean = false,
-    private configuration: Configuration
+    private configuration: PullConfiguration
   ) {}
 
   async build(): Promise<Data | null> {
@@ -113,7 +114,7 @@ export class PullRequestCollector {
 
     core.endGroup()
 
-    const options = {
+    return await pullData(octokit, {
       owner: this.owner,
       repo: this.repo,
       fromTag: previousTag,
@@ -125,9 +126,7 @@ export class PullRequestCollector {
       fetchReviews: this.fetchReviews,
       commitMode: this.commitMode,
       configuration: this.configuration
-    }
-
-    return await pullData(octokit, options)
+    })
   }
 }
 
@@ -154,6 +153,7 @@ export async function pullData(octokit: Octokit, options: Options): Promise<Data
   return {
     diffInfo,
     mergedPullRequests,
-    options
+    fromTag: options.fromTag,
+    toTag: options.toTag
   }
 }

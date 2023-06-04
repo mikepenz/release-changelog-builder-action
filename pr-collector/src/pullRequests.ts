@@ -2,7 +2,7 @@ import * as core from '@actions/core'
 import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import {Unpacked} from './utils'
 import moment from 'moment'
-import {Property, Sort} from './configuration'
+import {Property, Sort} from './types'
 import {Commits, DiffInfo, filterCommits} from './commits'
 import {Options} from './prCollector'
 

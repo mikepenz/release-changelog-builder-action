@@ -90,12 +90,11 @@ export class ReleaseNotesBuilder {
         return null
       }
 
-      const resolvedOptions = prData.options
       const options: ReleaseNotesOptions = {
         owner: this.owner,
         repo: this.repo,
-        fromTag: resolvedOptions.fromTag,
-        toTag: resolvedOptions.toTag,
+        fromTag: prData.fromTag,
+        toTag: prData.toTag,
         includeOpen: this.includeOpen,
         failOnError: this.failOnError,
         fetchReviewers: this.fetchReviewers,

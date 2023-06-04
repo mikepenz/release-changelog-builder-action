@@ -1,4 +1,4 @@
-export interface Configuration {
+export interface PullConfiguration {
   max_tags_to_fetch: number
   max_pull_requests: number
   max_back_track_time_days: number
@@ -52,4 +52,12 @@ export interface Extractor extends Transformer {
   on_property?: Property[] | Property | undefined // retrieve the property to extract the value from
   method?: 'replace' | 'match' | undefined // the method to use to extract the value, `match` will not use the `target` property
   on_empty?: string | undefined // in case the regex results in an empty string, this value is gonna be used instead (only for label_extractor currently)
+}
+
+export interface RegexTransformer {
+  pattern: RegExp | null
+  target: string
+  onProperty?: Property[]
+  method?: 'replace' | 'match'
+  onEmpty?: string
 }

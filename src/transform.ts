@@ -3,9 +3,11 @@ import {Category, Configuration, Placeholder, Property} from './configuration'
 import {createOrSet, haveCommonElementsArr, haveEveryElementsArr} from './utils'
 import {CommentInfo, EMPTY_COMMENT_INFO, PullRequestInfo, retrieveProperty, sortPullRequests} from 'github-pr-collector/lib/pullRequests'
 import {DiffInfo} from 'github-pr-collector/lib/commits'
-import {RegexTransformer, matchesRules, validateTransformer} from 'github-pr-collector/lib/regexUtils'
+import {validateTransformer} from 'github-pr-collector/lib/regexUtils'
 import {Transformer} from 'github-pr-collector/lib/configuration'
 import {ReleaseNotesOptions} from './releaseNotesBuilder'
+import {matchesRules} from './regexUtils'
+import {RegexTransformer} from 'github-pr-collector/lib/types'
 
 const EMPTY_MAP = new Map<string, string>()
 

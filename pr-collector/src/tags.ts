@@ -3,10 +3,10 @@ import * as github from '@actions/github'
 import * as semver from 'semver'
 import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import {SemVer} from 'semver'
-import {TagResolver} from './configuration'
+import {RegexTransformer, TagResolver} from './types'
 import {createCommandManager} from './gitHelper'
 import moment from 'moment'
-import {RegexTransformer, validateTransformer} from './regexUtils'
+import {validateTransformer} from './regexUtils'
 
 export interface TagResult {
   from: TagInfo | null
