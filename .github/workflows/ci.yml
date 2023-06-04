@@ -25,7 +25,7 @@ jobs:
       - name: Install NPM
         run: |
           cd pr-collector 
-          npm run all
+          npm install
           
           cd ..
           npm install
