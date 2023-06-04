@@ -409,7 +409,7 @@ it('Reference PRs', async () => {
   ]
   customConfig.pr_template = "${{NUMBER}} -- ${{REFERENCED[*].number}}"
   customConfig.reference = {
-    pattern: '.*\ \#(.).*',
+    pattern: '.*\ \#(.).*', // matches the 1 from "abcdefg #1 adfasdf"
     on_property: 'body',
     method: 'replace',
     target: '$1'
