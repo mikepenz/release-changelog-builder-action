@@ -31,7 +31,7 @@ async function run(): Promise<void> {
       core.info(`ℹ️ Retreived configuration via 'configuration' (via file).`)
     }
 
-    if (!configurationFile && !configFile) {
+    if (!configJson && !configFile) {
       core.info(`ℹ️ No configuration provided. Using Defaults.`)
     }
 

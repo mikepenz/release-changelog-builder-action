@@ -120,7 +120,7 @@ function run() {
             if (configFile) {
                 core.info(`ℹ️ Retreived configuration via 'configuration' (via file).`);
             }
-            if (!configurationFile && !configFile) {
+            if (!configJson && !configFile) {
                 core.info(`ℹ️ No configuration provided. Using Defaults.`);
             }
             // merge configs, use default values from DefaultConfig on missing definition
