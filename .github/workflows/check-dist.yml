@@ -32,21 +32,18 @@ jobs:
         with:
           node-version: 16.x
 
-      - name: Install dependencies
+      - name: Build PR-Collector
         run: |
           cd pr-collector 
           npm ci
-          
-          cd ..
-          npm ci
-
-      - name: Rebuild the dist/ directory
-        run: |
-          cd pr-collector 
           npm run build
           npm run package
 
-          cd ..
+      - name: Build Action
+        run: |
+          cd pr-collector 
+
+          npm ci
           npm run build
           npm run package
 
@@ -54,7 +51,7 @@ jobs:
         run: |
           if [ "$(git diff --ignore-space-at-eol dist/ | wc -l)" -gt "0" ]; then
             echo "Detected uncommitted changes after build.  See status below:"
-            git diff
+            git diff -a
             exit 1
           fi
         id: diff
