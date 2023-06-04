@@ -1,6 +1,6 @@
 {
   "name": "github-pr-collector",
-  "version": "v1.0.0",
+  "version": "v1.0.1",
   "description": "Library to fetch GitHub pull request between 2 tags/sha1 hashes.",
   "main": "lib/prCollector.js",
   "types": "lib/prCollector.d.ts",
