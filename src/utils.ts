@@ -28,13 +28,12 @@ export function retrieveRepositoryPath(providedPath: string): string {
  * If available, return a [ReleaseNotesData].
  */
 export function checkExportedData(): Data | null {
-  const rawDiffInfo = process.env[`RCBA_EXPORT_diffInfo`]
-  const rawMergedPullRequests = process.env[`RCBA_EXPORT_mergedPullRequests`]
-  const rawOptions = process.env[`RCBA_EXPORT_options`]
+  const rawCache = core.getInput(`cache`)
 
-  if (rawDiffInfo && rawMergedPullRequests && rawOptions) {
-    const diffInfo: DiffInfo = JSON.parse(rawDiffInfo)
-    const mergedPullRequests: PullRequestInfo[] = JSON.parse(rawMergedPullRequests)
+  if (rawCache) {
+    const cache: Data = JSON.parse(rawCache)
+    const diffInfo: DiffInfo = cache.diffInfo
+    const mergedPullRequests: PullRequestInfo[] = cache.mergedPullRequests
 
     for (const pr of mergedPullRequests) {
       pr.createdAt = moment(pr.createdAt)
@@ -51,7 +50,7 @@ export function checkExportedData(): Data | null {
       }
     }
 
-    const options: ReleaseNotesOptions = JSON.parse(rawOptions)
+    const options: ReleaseNotesOptions = cache.options
     return {
       diffInfo,
       mergedPullRequests,

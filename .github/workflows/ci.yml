@@ -24,6 +24,10 @@ jobs:
 
       - name: Install NPM
         run: |
+          cd pr-collector 
+          npm run all
+          
+          cd ..
           npm install
           
       - name: Run NPM
@@ -127,7 +131,6 @@ jobs:
           fromTag: "v8.1.0"
           toTag: "v8.1.6"
           token: ${{ secrets.PERSONAL_TOKEN }}
-          exportCollected: true
           exportOnly: true
       
       - name: "External Repo Configuration"
@@ -137,6 +140,7 @@ jobs:
           configuration: "configs/configuration_complex.json"
           owner: "mikepenz"
           repo: "MaterialDrawer"
+          cache: ${{ steps.external_changelog_collect.outputs.cache }}
 
       - name: "External Repo Configuration Second"
         id: external_changelog_second
@@ -155,6 +159,7 @@ jobs:
             }
           owner: "mikepenz"
           repo: "MaterialDrawer"
+          cache: ${{ steps.external_changelog_collect.outputs.cache }}
 
       - name: Echo External Repo Configuration Changelog
         env:

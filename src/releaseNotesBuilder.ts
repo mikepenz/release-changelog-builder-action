@@ -27,6 +27,7 @@ export interface Data {
   mergedPullRequests: PullRequestInfo[]
   options: ReleaseNotesOptions
 }
+
 export class ReleaseNotesBuilder {
   constructor(
     private baseUrl: string | null,
@@ -43,13 +44,12 @@ export class ReleaseNotesBuilder {
     private fetchReleaseInformation: boolean = false,
     private fetchReviews: boolean = false,
     private commitMode: boolean = false,
-    private exportCollected: boolean = false,
     private exportOnly: boolean = false,
     private configuration: Configuration
   ) {}
 
   async build(): Promise<string | null> {
-    let releaseNotesData = checkExportedData()
+    const releaseNotesData = checkExportedData()
     if (releaseNotesData == null) {
       if (!this.owner) {
         failOrError(`💥 Missing or couldn't resolve 'owner'`, this.failOnError)
@@ -121,28 +121,23 @@ export class ReleaseNotesBuilder {
       core.setOutput('changes', diffInfo.changes)
       core.setOutput('commits', diffInfo.commits)
 
-      if (this.exportCollected) {
-        core.info('📦 Exporting collected data')
-        core.exportVariable(`RCBA_EXPORT_diffInfo`, JSON.stringify(diffInfo))
-        //fs.writeFileSync(path.resolve('diffInfo.json'), JSON.stringify(diffInfo))
-        core.exportVariable(`RCBA_EXPORT_mergedPullRequests`, JSON.stringify(mergedPullRequests))
-        //fs.writeFileSync(path.resolve('mergedPullRequests.json'), JSON.stringify(mergedPullRequests))
-        core.exportVariable(`RCBA_EXPORT_options`, JSON.stringify(options))
-        //fs.writeFileSync(path.resolve('options.json'), JSON.stringify(options))
-
-        if (this.exportOnly) {
-          core.endGroup()
-          return null
-        }
-      }
-
-      releaseNotesData = {
+      const cache = {
         mergedPullRequests,
         diffInfo,
         options
       }
+      core.setOutput(`cache`, JSON.stringify(cache))
+      //fs.writeFileSync(path.resolve('cache.json'), JSON.stringify(cache))
+
+      if (this.exportOnly) {
+        core.info(`ℹ️ Enabled 'exportOnly' will not generate changelog`)
+        core.endGroup()
+        return null
+      }
+
+      return buildChangelog(diffInfo, mergedPullRequests, options)
     } else {
-      core.info(`ℹ️ Retrieved previously exported collected data`)
+      core.info(`ℹ️ Retrieved previously cache data`)
 
       // merge input with options (in case some data was updated)
       const diffInfo = releaseNotesData.diffInfo
@@ -173,17 +168,7 @@ export class ReleaseNotesBuilder {
         commitMode: this.commitMode || orgOptions.commitMode,
         configuration: this.configuration || orgOptions.configuration
       }
-
-      releaseNotesData = {
-        diffInfo,
-        mergedPullRequests,
-        options
-      }
-    }
-    if (releaseNotesData != null) {
-      return buildChangelog(releaseNotesData.diffInfo, releaseNotesData.mergedPullRequests, releaseNotesData.options)
-    } else {
-      return null
+      return buildChangelog(diffInfo, mergedPullRequests, options)
     }
   }
 }

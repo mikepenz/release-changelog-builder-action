@@ -141,9 +141,8 @@ function run() {
             const fetchReleaseInformation = core.getInput('fetchReleaseInformation') === 'true';
             const fetchReviews = core.getInput('fetchReviews') === 'true';
             const commitMode = core.getInput('commitMode') === 'true';
-            const exportCollected = core.getInput('exportCollected') === 'true';
             const exportOnly = core.getInput('exportOnly') === 'true';
-            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchReviewers, fetchReleaseInformation, fetchReviews, commitMode, exportCollected, exportOnly, configuration).build();
+            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchReviewers, fetchReleaseInformation, fetchReviews, commitMode, exportOnly, configuration).build();
             core.setOutput('changelog', result);
             // write the result in changelog to file if possible
             const outputFile = core.getInput('outputFile');
@@ -279,7 +278,7 @@ const transform_1 = __nccwpck_require__(1644);
 const github_pr_collector_1 = __nccwpck_require__(3196);
 const utils_2 = __nccwpck_require__(853);
 class ReleaseNotesBuilder {
-    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode = false, exportCollected = false, exportOnly = false, configuration) {
+    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode = false, exportOnly = false, configuration) {
         this.baseUrl = baseUrl;
         this.token = token;
         this.repositoryPath = repositoryPath;
@@ -294,13 +293,12 @@ class ReleaseNotesBuilder {
         this.fetchReleaseInformation = fetchReleaseInformation;
         this.fetchReviews = fetchReviews;
         this.commitMode = commitMode;
-        this.exportCollected = exportCollected;
         this.exportOnly = exportOnly;
         this.configuration = configuration;
     }
     build() {
         return __awaiter(this, void 0, void 0, function* () {
-            let releaseNotesData = (0, utils_1.checkExportedData)();
+            const releaseNotesData = (0, utils_1.checkExportedData)();
             if (releaseNotesData == null) {
                 if (!this.owner) {
                     (0, utils_2.failOrError)(`💥 Missing or couldn't resolve 'owner'`, this.failOnError);
@@ -349,27 +347,22 @@ class ReleaseNotesBuilder {
                 core.setOutput('deletions', diffInfo.deletions);
                 core.setOutput('changes', diffInfo.changes);
                 core.setOutput('commits', diffInfo.commits);
-                if (this.exportCollected) {
-                    core.info('📦 Exporting collected data');
-                    core.exportVariable(`RCBA_EXPORT_diffInfo`, JSON.stringify(diffInfo));
-                    //fs.writeFileSync(path.resolve('diffInfo.json'), JSON.stringify(diffInfo))
-                    core.exportVariable(`RCBA_EXPORT_mergedPullRequests`, JSON.stringify(mergedPullRequests));
-                    //fs.writeFileSync(path.resolve('mergedPullRequests.json'), JSON.stringify(mergedPullRequests))
-                    core.exportVariable(`RCBA_EXPORT_options`, JSON.stringify(options));
-                    //fs.writeFileSync(path.resolve('options.json'), JSON.stringify(options))
-                    if (this.exportOnly) {
-                        core.endGroup();
-                        return null;
-                    }
-                }
-                releaseNotesData = {
+                const cache = {
                     mergedPullRequests,
                     diffInfo,
                     options
                 };
+                core.setOutput(`cache`, JSON.stringify(cache));
+                //fs.writeFileSync(path.resolve('cache.json'), JSON.stringify(cache))
+                if (this.exportOnly) {
+                    core.info(`ℹ️ Enabled 'exportOnly' will not generate changelog`);
+                    core.endGroup();
+                    return null;
+                }
+                return (0, transform_1.buildChangelog)(diffInfo, mergedPullRequests, options);
             }
             else {
-                core.info(`ℹ️ Retrieved previously exported collected data`);
+                core.info(`ℹ️ Retrieved previously cache data`);
                 // merge input with options (in case some data was updated)
                 const diffInfo = releaseNotesData.diffInfo;
                 const mergedPullRequests = releaseNotesData.mergedPullRequests;
@@ -397,17 +390,7 @@ class ReleaseNotesBuilder {
                     commitMode: this.commitMode || orgOptions.commitMode,
                     configuration: this.configuration || orgOptions.configuration
                 };
-                releaseNotesData = {
-                    diffInfo,
-                    mergedPullRequests,
-                    options
-                };
-            }
-            if (releaseNotesData != null) {
-                return (0, transform_1.buildChangelog)(releaseNotesData.diffInfo, releaseNotesData.mergedPullRequests, releaseNotesData.options);
-            }
-            else {
-                return null;
+                return (0, transform_1.buildChangelog)(diffInfo, mergedPullRequests, options);
             }
         });
     }
@@ -951,12 +934,11 @@ exports.retrieveRepositoryPath = retrieveRepositoryPath;
  * If available, return a [ReleaseNotesData].
  */
 function checkExportedData() {
-    const rawDiffInfo = process.env[`RCBA_EXPORT_diffInfo`];
-    const rawMergedPullRequests = process.env[`RCBA_EXPORT_mergedPullRequests`];
-    const rawOptions = process.env[`RCBA_EXPORT_options`];
-    if (rawDiffInfo && rawMergedPullRequests && rawOptions) {
-        const diffInfo = JSON.parse(rawDiffInfo);
-        const mergedPullRequests = JSON.parse(rawMergedPullRequests);
+    const rawCache = core.getInput(`cache`);
+    if (rawCache) {
+        const cache = JSON.parse(rawCache);
+        const diffInfo = cache.diffInfo;
+        const mergedPullRequests = cache.mergedPullRequests;
         for (const pr of mergedPullRequests) {
             pr.createdAt = (0, moment_1.default)(pr.createdAt);
             if (pr.mergedAt) {
@@ -970,7 +952,7 @@ function checkExportedData() {
                 }
             }
         }
-        const options = JSON.parse(rawOptions);
+        const options = cache.options;
         return {
             diffInfo,
             mergedPullRequests,

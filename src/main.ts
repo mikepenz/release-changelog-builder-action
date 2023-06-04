@@ -54,7 +54,6 @@ async function run(): Promise<void> {
     const fetchReleaseInformation = core.getInput('fetchReleaseInformation') === 'true'
     const fetchReviews = core.getInput('fetchReviews') === 'true'
     const commitMode = core.getInput('commitMode') === 'true'
-    const exportCollected = core.getInput('exportCollected') === 'true'
     const exportOnly = core.getInput('exportOnly') === 'true'
 
     const result = await new ReleaseNotesBuilder(
@@ -72,7 +71,6 @@ async function run(): Promise<void> {
       fetchReleaseInformation,
       fetchReviews,
       commitMode,
-      exportCollected,
       exportOnly,
       configuration
     ).build()
