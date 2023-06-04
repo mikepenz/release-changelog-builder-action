@@ -266,7 +266,7 @@ pullRequestsWithLabels.push(
     repoName: 'test-repo',
     labels: ['issue', 'fix'],
     milestone: '',
-    body: 'no magic body for this matter',
+    body: 'no magic body for this matter - #1',
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
@@ -396,6 +396,26 @@ it('Deduplicate duplicated PRs DESC', async () => {
   }
   expect(buildChangelogTest(customConfig, pullRequestsWithLabels)).toStrictEqual(
     `## 🚀 Features\n\n- [ABC-1234] - this is a PR 1 title message\n   - PR: #1\n\n## 🐛 Fixes\n\n- [ABC-4321] - this is a PR 2 title message\n   - PR: #2\n\n`
+  )
+})
+
+it('Reference PRs', async () => {
+  const customConfig = Object.assign({}, DefaultConfiguration)
+  customConfig.categories = [
+    {
+      title: '',
+      labels: []
+    }
+  ]
+  customConfig.pr_template = "${{NUMBER}} -- ${{REFERENCED[*].number}}"
+  customConfig.reference = {
+    pattern: '.*\ \#(.).*',
+    on_property: 'body',
+    method: 'replace',
+    target: '$1'
+  }
+  expect(buildChangelogTest(customConfig, pullRequestsWithLabels)).toStrictEqual(
+    `1 -- 2\n4 -- \n3 -- \n\n`
   )
 })
 
