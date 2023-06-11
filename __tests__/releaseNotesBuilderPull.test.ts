@@ -133,6 +133,7 @@ nhoelzl
 
 it('Should match ordered ASC', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_asc.json'))
+  configuration.categories.pop() // drop `uncategorized` category
   const options = {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -155,6 +156,7 @@ it('Should match ordered ASC', async () => {
 
 it('Should match ordered DESC', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_desc.json'))
+  configuration.categories.pop() // drop `uncategorized` category
   const options = {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -177,6 +179,7 @@ it('Should match ordered DESC', async () => {
 
 it('Should match ordered by title ASC', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_sort_title_asc.json'))
+  configuration.categories.pop() // drop `uncategorized` category
   const options = {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -200,6 +203,7 @@ it('Should match ordered by title ASC', async () => {
 
 it('Should match ordered by title DESC', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_sort_title_desc.json'))
+  configuration.categories.pop() // drop `uncategorized` category
   const options = {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',

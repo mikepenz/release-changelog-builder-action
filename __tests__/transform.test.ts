@@ -441,7 +441,6 @@ it('Use empty_content for empty category', async () => {
 
 it('Commit SHA-1 in commitMode', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
-  customConfig.categories.pop() // drop `uncategorized` category
   customConfig.sort = 'DESC'
   customConfig.pr_template = '${{MERGE_SHA}}'
 
