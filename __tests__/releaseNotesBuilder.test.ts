@@ -144,6 +144,7 @@ it('Should fill `template` placeholders', async () => {
 
 it('Should fill `template` placeholders, ignore', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_empty_all_placeholders.json'))
+  configuration.categories.pop() // drop `uncategorized` category
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
     null,

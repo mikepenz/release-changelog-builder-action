@@ -376,6 +376,7 @@ it('Match multiple labels exhaustive for category', async () => {
 
 it('Deduplicate duplicated PRs', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
+  customConfig.categories.pop() // drop `uncategorized` category
   customConfig.duplicate_filter = {
     pattern: '\\[ABC-....\\]',
     on_property: 'title',
@@ -388,6 +389,7 @@ it('Deduplicate duplicated PRs', async () => {
 
 it('Deduplicate duplicated PRs DESC', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
+  customConfig.categories.pop() // drop `uncategorized` category
   customConfig.sort = 'DESC'
   customConfig.duplicate_filter = {
     pattern: '\\[ABC-....\\]',

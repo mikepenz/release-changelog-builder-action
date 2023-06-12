@@ -85,6 +85,10 @@ export const DefaultConfiguration: Configuration = {
     {
       title: '## 🧪 Tests',
       labels: ['test']
+    },
+    {
+      title: '## 📦 Uncategorized',
+      labels: []
     }
   ], // the categories to support for the ordering
   ignore_labels: ['ignore'], // list of lables being ignored from the changelog
