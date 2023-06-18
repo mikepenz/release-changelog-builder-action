@@ -1,4 +1,4 @@
-import { TagInfo, filterTags, sortTags } from "github-pr-collector/lib/tags"
+import { TagInfo, filterTags, prepareAndSortTags } from "github-pr-collector/lib/tags"
 
 jest.setTimeout(180000)
 
@@ -17,7 +17,7 @@ it('Should order tags correctly using semver', async () => {
   const tagResolver = {
     method: 'semver'
   }
-  const sorted = sortTags(tags, tagResolver)
+  const sorted = prepareAndSortTags(tags, tagResolver)
     .map(function (tag) {
       return tag.name
     })
@@ -46,7 +46,7 @@ it('Should order tags correctly using semver', async () => {
   const tagResolver = {
     method: 'non-existing-method'
   }
-  const sorted = sortTags(tags, tagResolver)
+  const sorted = prepareAndSortTags(tags, tagResolver)
     .map(function (tag) {
       return tag.name
     })
@@ -75,7 +75,7 @@ it('Should order tags alphabetical', async () => {
   const tagResolver = {
     method: 'sort'
   }
-  const sorted = sortTags(tags, tagResolver)
+  const sorted = prepareAndSortTags(tags, tagResolver)
     .map(function (tag) {
       return tag.name
     })

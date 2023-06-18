@@ -26239,7 +26239,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.sortTags = exports.filterTags = exports.Tags = void 0;
+exports.prepareAndSortTags = exports.filterTags = exports.Tags = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const semver = __importStar(__nccwpck_require__(1383));
@@ -26330,7 +26330,7 @@ class Tags {
                             if (ignorePreReleases) {
                                 core.info(`ℹ️ Enabled 'ignorePreReleases', searching for the closest release`);
                                 for (let ii = i + 1; ii < length; ii++) {
-                                    if (!tags[ii].name.includes('-')) {
+                                    if (!tags[ii].preRelease) {
                                         return tags[ii];
                                     }
                                 }
@@ -26374,7 +26374,7 @@ class Tags {
             else {
                 transformedTags = filteredTags;
             }
-            let tags = sortTags(transformedTags, tagResolver);
+            let tags = prepareAndSortTags(transformedTags, tagResolver);
             if (tagTransformer != null) {
                 // restore the original name, after sorting
                 tags = filteredTags.map(function (tag) {
@@ -26495,16 +26495,17 @@ function transformTags(tags, transformer) {
   2020.3.1-a01
   2020.3.0
   */
-function sortTags(tags, tagResolver) {
+function prepareAndSortTags(tags, tagResolver) {
     if (tagResolver.method === 'sort') {
-        return stringSorting(tags);
+        return stringTags(tags);
     }
     else {
-        return semVerSorting(tags);
+        // semver is default
+        return semVerTags(tags);
     }
 }
-exports.sortTags = sortTags;
-function semVerSorting(tags) {
+exports.prepareAndSortTags = prepareAndSortTags;
+function semVerTags(tags) {
     // filter out tags which do not follow semver
     const validatedTags = tags.filter(tag => {
         const isValid = semver.valid(tag.name, {
@@ -26512,6 +26513,11 @@ function semVerSorting(tags) {
         }) !== null;
         if (!isValid) {
             core.debug(`⚠️ dropped tag ${tag.name} because it is not a valid semver tag`);
+        }
+        else {
+            tag.preRelease = semver.prerelease(tag.name, {
+                loose: true
+            }) != null;
         }
         return isValid;
     });
@@ -26524,7 +26530,10 @@ function semVerSorting(tags) {
     });
     return validatedTags;
 }
-function stringSorting(tags) {
+function stringTags(tags) {
+    for (const tag of tags) {
+        tag.preRelease = tag.name.includes('-');
+    }
     return tags.sort((b, a) => {
         const partsA = a.name.replace(/^v/, '').split('-');
         const partsB = b.name.replace(/^v/, '').split('-');

@@ -16,6 +16,7 @@ export interface TagResult {
 export interface TagInfo {
   name: string
   commit?: string
+  preRelease?: boolean
   date?: moment.Moment
 }
 
@@ -104,7 +105,7 @@ export class Tags {
             if (ignorePreReleases) {
               core.info(`ℹ️ Enabled 'ignorePreReleases', searching for the closest release`)
               for (let ii = i + 1; ii < length; ii++) {
-                if (!tags[ii].name.includes('-')) {
+                if (!tags[ii].preRelease) {
                   return tags[ii]
                 }
               }
@@ -157,7 +158,7 @@ export class Tags {
       transformedTags = filteredTags
     }
 
-    let tags = sortTags(transformedTags, tagResolver)
+    let tags = prepareAndSortTags(transformedTags, tagResolver)
 
     if (tagTransformer != null) {
       // restore the original name, after sorting
@@ -278,15 +279,16 @@ function transformTags(tags: TagInfo[], transformer: RegexTransformer): TagInfo[
   2020.3.1-a01
   2020.3.0
   */
-export function sortTags(tags: TagInfo[], tagResolver: TagResolver): TagInfo[] {
+export function prepareAndSortTags(tags: TagInfo[], tagResolver: TagResolver): TagInfo[] {
   if (tagResolver.method === 'sort') {
-    return stringSorting(tags)
+    return stringTags(tags)
   } else {
-    return semVerSorting(tags)
+    // semver is default
+    return semVerTags(tags)
   }
 }
 
-function semVerSorting(tags: TagInfo[]): TagInfo[] {
+function semVerTags(tags: TagInfo[]): TagInfo[] {
   // filter out tags which do not follow semver
   const validatedTags = tags.filter(tag => {
     const isValid =
@@ -295,6 +297,10 @@ function semVerSorting(tags: TagInfo[]): TagInfo[] {
       }) !== null
     if (!isValid) {
       core.debug(`⚠️ dropped tag ${tag.name} because it is not a valid semver tag`)
+    } else {
+      tag.preRelease = semver.prerelease(tag.name, {
+        loose: true
+      }) != null
     }
     return isValid
   })
@@ -309,7 +315,11 @@ function semVerSorting(tags: TagInfo[]): TagInfo[] {
   return validatedTags
 }
 
-function stringSorting(tags: TagInfo[]): TagInfo[] {
+function stringTags(tags: TagInfo[]): TagInfo[] {
+  for (const tag of tags) {
+    tag.preRelease = tag.name.includes('-')
+  }
+
   return tags.sort((b, a) => {
     const partsA = a.name.replace(/^v/, '').split('-')
     const partsB = b.name.replace(/^v/, '').split('-')
