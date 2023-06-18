@@ -36,7 +36,7 @@ export interface Sort {
 export interface TagResolver {
   method: string // semver, sort
   filter?: Regex // the regex to filter the tags, prior to sorting
-  transformer?: Transformer // transforms the tag name using the regex, run after the filter
+  transformer?: Transformer | Transformer[] // transforms the tag name using the regex, run after the filter
 }
 
 export interface Regex {

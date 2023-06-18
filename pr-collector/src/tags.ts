@@ -3,7 +3,7 @@ import * as github from '@actions/github'
 import * as semver from 'semver'
 import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import {SemVer} from 'semver'
-import {RegexTransformer, TagResolver} from './types'
+import {RegexTransformer, TagResolver, Transformer} from './types'
 import {createCommandManager} from './gitHelper'
 import moment from 'moment'
 import {validateTransformer} from './regexUtils'
@@ -147,20 +147,33 @@ export class Tags {
       tagResolver
     )
 
-    // check if a transformer was defined
-    const tagTransformer = validateTransformer(tagResolver.transformer)
-
-    let transformedTags: TagInfo[]
-    if (tagTransformer != null) {
-      core.debug(`ℹ️ Using configured tagTransformer`)
-      transformedTags = transformTags(filteredTags, tagTransformer)
-    } else {
-      transformedTags = filteredTags
+    // check if a transformer, legacy handling, transform single value input to array
+    let tagTransfomers: Transformer[] | undefined = undefined
+    if (!Array.isArray(tagTransfomers)) {
+      if (tagTransfomers !== undefined) {
+        tagTransfomers = [tagTransfomers]
+      }
+    } else if (tagResolver.transformer !== undefined) {
+      tagTransfomers = tagResolver.transformer as Transformer[]
     }
 
+    let transformed = false
+    let transformedTags: TagInfo[] = filteredTags
+    if (tagTransfomers !== undefined && tagTransfomers.length > 0) {
+      for (const transformer of tagTransfomers) {
+        const tagTransformer = validateTransformer(transformer)
+        if (tagTransformer != null) {
+          core.debug(`ℹ️ Using configured tagTransformer (${transformer.pattern})`)
+          transformedTags = transformTags(transformedTags, tagTransformer)
+          transformed = true
+        }
+      }
+    }
+
+    // sort tags, apply additional information (e.g. if tag is a pre release)
     let tags = prepareAndSortTags(transformedTags, tagResolver)
 
-    if (tagTransformer != null) {
+    if (transformed) {
       // restore the original name, after sorting
       tags = filteredTags.map(function (tag) {
         if (tag.hasOwnProperty('tmp')) {
@@ -298,9 +311,10 @@ function semVerTags(tags: TagInfo[]): TagInfo[] {
     if (!isValid) {
       core.debug(`⚠️ dropped tag ${tag.name} because it is not a valid semver tag`)
     } else {
-      tag.preRelease = semver.prerelease(tag.name, {
-        loose: true
-      }) != null
+      tag.preRelease =
+        semver.prerelease(tag.name, {
+          loose: true
+        }) != null
     }
     return isValid
   })
