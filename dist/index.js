@@ -25745,17 +25745,17 @@ const moment_1 = __importDefault(__nccwpck_require__(9623));
 const commits_1 = __nccwpck_require__(5789);
 exports.EMPTY_PULL_REQUEST_INFO = {
     number: 0,
-    title: "",
-    htmlURL: "",
-    baseBranch: "",
+    title: '',
+    htmlURL: '',
+    baseBranch: '',
     mergedAt: undefined,
     createdAt: (0, moment_1.default)(),
-    mergeCommitSha: "",
-    author: "",
-    repoName: "",
+    mergeCommitSha: '',
+    author: '',
+    repoName: '',
     labels: [],
-    milestone: "",
-    body: "",
+    milestone: '',
+    body: '',
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
@@ -26239,7 +26239,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.sortTags = exports.filterTags = exports.Tags = void 0;
+exports.prepareAndSortTags = exports.filterTags = exports.Tags = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const semver = __importStar(__nccwpck_require__(1383));
@@ -26330,7 +26330,7 @@ class Tags {
                             if (ignorePreReleases) {
                                 core.info(`ℹ️ Enabled 'ignorePreReleases', searching for the closest release`);
                                 for (let ii = i + 1; ii < length; ii++) {
-                                    if (!tags[ii].name.includes('-')) {
+                                    if (!tags[ii].preRelease) {
                                         return tags[ii];
                                     }
                                 }
@@ -26364,18 +26364,31 @@ class Tags {
             const filteredTags = filterTags(
             // retrieve the tags from the API
             yield this.getTags(owner, repo, maxTagsToFetch), tagResolver);
-            // check if a transformer was defined
-            const tagTransformer = (0, regexUtils_1.validateTransformer)(tagResolver.transformer);
-            let transformedTags;
-            if (tagTransformer != null) {
-                core.debug(`ℹ️ Using configured tagTransformer`);
-                transformedTags = transformTags(filteredTags, tagTransformer);
+            // check if a transformer, legacy handling, transform single value input to array
+            let tagTransfomers = undefined;
+            if (!Array.isArray(tagTransfomers)) {
+                if (tagTransfomers !== undefined) {
+                    tagTransfomers = [tagTransfomers];
+                }
             }
-            else {
-                transformedTags = filteredTags;
+            else if (tagResolver.transformer !== undefined) {
+                tagTransfomers = tagResolver.transformer;
             }
-            let tags = sortTags(transformedTags, tagResolver);
-            if (tagTransformer != null) {
+            let transformed = false;
+            let transformedTags = filteredTags;
+            if (tagTransfomers !== undefined && tagTransfomers.length > 0) {
+                for (const transformer of tagTransfomers) {
+                    const tagTransformer = (0, regexUtils_1.validateTransformer)(transformer);
+                    if (tagTransformer != null) {
+                        core.debug(`ℹ️ Using configured tagTransformer (${transformer.pattern})`);
+                        transformedTags = transformTags(transformedTags, tagTransformer);
+                        transformed = true;
+                    }
+                }
+            }
+            // sort tags, apply additional information (e.g. if tag is a pre release)
+            let tags = prepareAndSortTags(transformedTags, tagResolver);
+            if (transformed) {
                 // restore the original name, after sorting
                 tags = filteredTags.map(function (tag) {
                     if (tag.hasOwnProperty('tmp')) {
@@ -26495,16 +26508,17 @@ function transformTags(tags, transformer) {
   2020.3.1-a01
   2020.3.0
   */
-function sortTags(tags, tagResolver) {
+function prepareAndSortTags(tags, tagResolver) {
     if (tagResolver.method === 'sort') {
-        return stringSorting(tags);
+        return stringTags(tags);
     }
     else {
-        return semVerSorting(tags);
+        // semver is default
+        return semVerTags(tags);
     }
 }
-exports.sortTags = sortTags;
-function semVerSorting(tags) {
+exports.prepareAndSortTags = prepareAndSortTags;
+function semVerTags(tags) {
     // filter out tags which do not follow semver
     const validatedTags = tags.filter(tag => {
         const isValid = semver.valid(tag.name, {
@@ -26512,6 +26526,12 @@ function semVerSorting(tags) {
         }) !== null;
         if (!isValid) {
             core.debug(`⚠️ dropped tag ${tag.name} because it is not a valid semver tag`);
+        }
+        else {
+            tag.preRelease =
+                semver.prerelease(tag.name, {
+                    loose: true
+                }) != null;
         }
         return isValid;
     });
@@ -26524,7 +26544,10 @@ function semVerSorting(tags) {
     });
     return validatedTags;
 }
-function stringSorting(tags) {
+function stringTags(tags) {
+    for (const tag of tags) {
+        tag.preRelease = tag.name.includes('-');
+    }
     return tags.sort((b, a) => {
         const partsA = a.name.replace(/^v/, '').split('-');
         const partsB = b.name.replace(/^v/, '').split('-');

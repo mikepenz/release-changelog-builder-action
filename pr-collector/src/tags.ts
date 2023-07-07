@@ -3,7 +3,7 @@ import * as github from '@actions/github'
 import * as semver from 'semver'
 import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import {SemVer} from 'semver'
-import {RegexTransformer, TagResolver} from './types'
+import {RegexTransformer, TagResolver, Transformer} from './types'
 import {createCommandManager} from './gitHelper'
 import moment from 'moment'
 import {validateTransformer} from './regexUtils'
@@ -16,6 +16,7 @@ export interface TagResult {
 export interface TagInfo {
   name: string
   commit?: string
+  preRelease?: boolean
   date?: moment.Moment
 }
 
@@ -104,7 +105,7 @@ export class Tags {
             if (ignorePreReleases) {
               core.info(`ℹ️ Enabled 'ignorePreReleases', searching for the closest release`)
               for (let ii = i + 1; ii < length; ii++) {
-                if (!tags[ii].name.includes('-')) {
+                if (!tags[ii].preRelease) {
                   return tags[ii]
                 }
               }
@@ -146,20 +147,33 @@ export class Tags {
       tagResolver
     )
 
-    // check if a transformer was defined
-    const tagTransformer = validateTransformer(tagResolver.transformer)
-
-    let transformedTags: TagInfo[]
-    if (tagTransformer != null) {
-      core.debug(`ℹ️ Using configured tagTransformer`)
-      transformedTags = transformTags(filteredTags, tagTransformer)
-    } else {
-      transformedTags = filteredTags
+    // check if a transformer, legacy handling, transform single value input to array
+    let tagTransfomers: Transformer[] | undefined = undefined
+    if (!Array.isArray(tagTransfomers)) {
+      if (tagTransfomers !== undefined) {
+        tagTransfomers = [tagTransfomers]
+      }
+    } else if (tagResolver.transformer !== undefined) {
+      tagTransfomers = tagResolver.transformer as Transformer[]
     }
 
-    let tags = sortTags(transformedTags, tagResolver)
+    let transformed = false
+    let transformedTags: TagInfo[] = filteredTags
+    if (tagTransfomers !== undefined && tagTransfomers.length > 0) {
+      for (const transformer of tagTransfomers) {
+        const tagTransformer = validateTransformer(transformer)
+        if (tagTransformer != null) {
+          core.debug(`ℹ️ Using configured tagTransformer (${transformer.pattern})`)
+          transformedTags = transformTags(transformedTags, tagTransformer)
+          transformed = true
+        }
+      }
+    }
 
-    if (tagTransformer != null) {
+    // sort tags, apply additional information (e.g. if tag is a pre release)
+    let tags = prepareAndSortTags(transformedTags, tagResolver)
+
+    if (transformed) {
       // restore the original name, after sorting
       tags = filteredTags.map(function (tag) {
         if (tag.hasOwnProperty('tmp')) {
@@ -278,15 +292,16 @@ function transformTags(tags: TagInfo[], transformer: RegexTransformer): TagInfo[
   2020.3.1-a01
   2020.3.0
   */
-export function sortTags(tags: TagInfo[], tagResolver: TagResolver): TagInfo[] {
+export function prepareAndSortTags(tags: TagInfo[], tagResolver: TagResolver): TagInfo[] {
   if (tagResolver.method === 'sort') {
-    return stringSorting(tags)
+    return stringTags(tags)
   } else {
-    return semVerSorting(tags)
+    // semver is default
+    return semVerTags(tags)
   }
 }
 
-function semVerSorting(tags: TagInfo[]): TagInfo[] {
+function semVerTags(tags: TagInfo[]): TagInfo[] {
   // filter out tags which do not follow semver
   const validatedTags = tags.filter(tag => {
     const isValid =
@@ -295,6 +310,11 @@ function semVerSorting(tags: TagInfo[]): TagInfo[] {
       }) !== null
     if (!isValid) {
       core.debug(`⚠️ dropped tag ${tag.name} because it is not a valid semver tag`)
+    } else {
+      tag.preRelease =
+        semver.prerelease(tag.name, {
+          loose: true
+        }) != null
     }
     return isValid
   })
@@ -309,7 +329,11 @@ function semVerSorting(tags: TagInfo[]): TagInfo[] {
   return validatedTags
 }
 
-function stringSorting(tags: TagInfo[]): TagInfo[] {
+function stringTags(tags: TagInfo[]): TagInfo[] {
+  for (const tag of tags) {
+    tag.preRelease = tag.name.includes('-')
+  }
+
   return tags.sort((b, a) => {
     const partsA = a.name.replace(/^v/, '').split('-')
     const partsB = b.name.replace(/^v/, '').split('-')
