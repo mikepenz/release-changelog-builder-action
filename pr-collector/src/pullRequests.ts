@@ -71,7 +71,10 @@ type PullsListData = RestEndpointMethodTypes['pulls']['list']['response']['data'
 type PullReviewsData = RestEndpointMethodTypes['pulls']['listReviews']['response']['data']
 
 export class PullRequests {
-  constructor(private octokit: Octokit, private commits: Commits) {}
+  constructor(
+    private octokit: Octokit,
+    private commits: Commits
+  ) {}
 
   async getSingle(owner: string, repo: string, prNumber: number): Promise<PullRequestInfo | null> {
     try {
