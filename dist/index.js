@@ -1021,6 +1021,12 @@ function checkExportedData() {
             }
         }
         const options = cache.options;
+        if (options.fromTag.date) {
+            options.fromTag.date = (0, moment_1.default)(options.fromTag.date);
+        }
+        if (options.toTag.date) {
+            options.toTag.date = (0, moment_1.default)(options.toTag.date);
+        }
         return {
             diffInfo,
             mergedPullRequests,

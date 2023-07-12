@@ -51,6 +51,14 @@ export function checkExportedData(): Data | null {
     }
 
     const options: ReleaseNotesOptions = cache.options
+
+    if (options.fromTag.date) {
+      options.fromTag.date = moment(options.fromTag.date)
+    }
+    if (options.toTag.date) {
+      options.toTag.date = moment(options.toTag.date)
+    }
+
     return {
       diffInfo,
       mergedPullRequests,
