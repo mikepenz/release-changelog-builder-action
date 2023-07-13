@@ -309,7 +309,6 @@ class ReleaseNotesBuilder {
                     return null;
                 }
                 else {
-                    core.setOutput('owner', this.owner);
                     core.debug(`Resolved 'owner' as ${this.owner}`);
                 }
                 if (!this.repo) {
@@ -317,7 +316,6 @@ class ReleaseNotesBuilder {
                     return null;
                 }
                 else {
-                    core.setOutput('repo', this.repo);
                     core.debug(`Resolved 'repo' as ${this.repo}`);
                 }
                 core.endGroup();
@@ -340,17 +338,7 @@ class ReleaseNotesBuilder {
                 };
                 const mergedPullRequests = prData.mergedPullRequests;
                 const diffInfo = prData.diffInfo;
-                // define the included PRs within this release as output
-                core.setOutput('pull_requests', mergedPullRequests
-                    .map(pr => {
-                    return pr.number;
-                })
-                    .join(','));
-                core.setOutput('changed_files', diffInfo.changedFiles);
-                core.setOutput('additions', diffInfo.additions);
-                core.setOutput('deletions', diffInfo.deletions);
-                core.setOutput('changes', diffInfo.changes);
-                core.setOutput('commits', diffInfo.commits);
+                this.setOutputs(options, diffInfo, mergedPullRequests);
                 const cache = {
                     mergedPullRequests,
                     diffInfo,
@@ -394,9 +382,27 @@ class ReleaseNotesBuilder {
                     commitMode: this.commitMode || orgOptions.commitMode,
                     configuration: this.configuration || orgOptions.configuration
                 };
+                this.setOutputs(options, diffInfo, mergedPullRequests);
                 return (0, transform_1.buildChangelog)(diffInfo, mergedPullRequests, options);
             }
         });
+    }
+    setOutputs(options, diffInfo, mergedPullRequests) {
+        core.setOutput('owner', options.owner);
+        core.setOutput('repo', options.repo);
+        core.setOutput('toTag', options.toTag.name);
+        core.setOutput('fromTag', options.fromTag.name);
+        // define the included PRs within this release as output
+        core.setOutput('pull_requests', mergedPullRequests
+            .map(pr => {
+            return pr.number;
+        })
+            .join(','));
+        core.setOutput('changed_files', diffInfo.changedFiles);
+        core.setOutput('additions', diffInfo.additions);
+        core.setOutput('deletions', diffInfo.deletions);
+        core.setOutput('changes', diffInfo.changes);
+        core.setOutput('commits', diffInfo.commits);
     }
 }
 exports.ReleaseNotesBuilder = ReleaseNotesBuilder;
@@ -16915,7 +16921,6 @@ class PullRequestCollector {
                 return null;
             }
             else {
-                core.setOutput('toTag', thisTag.name);
                 core.debug(`Resolved 'toTag' as ${thisTag.name}`);
             }
             let previousTag = tagRange.from;
@@ -16923,7 +16928,6 @@ class PullRequestCollector {
                 (0, utils_1.failOrError)(`💥 Unable to retrieve previous tag given ${this.toTag}`, this.failOnError);
                 return null;
             }
-            core.setOutput('fromTag', previousTag.name);
             core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`);
             if (this.fetchReleaseInformation) {
                 // load release information from the GitHub API
