@@ -91,7 +91,6 @@ export class PullRequestCollector {
       failOrError(`💥 Missing or couldn't resolve 'toTag'`, this.failOnError)
       return null
     } else {
-      core.setOutput('toTag', thisTag.name)
       core.debug(`Resolved 'toTag' as ${thisTag.name}`)
     }
 
@@ -100,7 +99,6 @@ export class PullRequestCollector {
       failOrError(`💥 Unable to retrieve previous tag given ${this.toTag}`, this.failOnError)
       return null
     }
-    core.setOutput('fromTag', previousTag.name)
     core.debug(`fromTag resolved via previousTag as: ${previousTag.name}`)
 
     if (this.fetchReleaseInformation) {

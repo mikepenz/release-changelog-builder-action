@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import {Configuration} from './configuration'
 import {checkExportedData} from './utils'
-import {buildChangelog} from './transform'
+import {PullRequestData, buildChangelog} from './transform'
 import {PullRequestCollector} from 'github-pr-collector'
 import {failOrError} from 'github-pr-collector/lib/utils'
 import {TagInfo} from 'github-pr-collector/lib/tags'
@@ -48,6 +48,7 @@ export class ReleaseNotesBuilder {
     private configuration: Configuration
   ) {}
 
+
   async build(): Promise<string | null> {
     const releaseNotesData = checkExportedData()
     if (releaseNotesData == null) {
@@ -55,7 +56,6 @@ export class ReleaseNotesBuilder {
         failOrError(`💥 Missing or couldn't resolve 'owner'`, this.failOnError)
         return null
       } else {
-        core.setOutput('owner', this.owner)
         core.debug(`Resolved 'owner' as ${this.owner}`)
       }
 
@@ -63,7 +63,6 @@ export class ReleaseNotesBuilder {
         failOrError(`💥 Missing or couldn't resolve 'owner'`, this.failOnError)
         return null
       } else {
-        core.setOutput('repo', this.repo)
         core.debug(`Resolved 'repo' as ${this.repo}`)
       }
       core.endGroup()
@@ -105,21 +104,7 @@ export class ReleaseNotesBuilder {
       }
       const mergedPullRequests = prData.mergedPullRequests
       const diffInfo = prData.diffInfo
-
-      // define the included PRs within this release as output
-      core.setOutput(
-        'pull_requests',
-        mergedPullRequests
-          .map(pr => {
-            return pr.number
-          })
-          .join(',')
-      )
-      core.setOutput('changed_files', diffInfo.changedFiles)
-      core.setOutput('additions', diffInfo.additions)
-      core.setOutput('deletions', diffInfo.deletions)
-      core.setOutput('changes', diffInfo.changes)
-      core.setOutput('commits', diffInfo.commits)
+      this.setOutputs(options, diffInfo, mergedPullRequests)
 
       const cache = {
         mergedPullRequests,
@@ -168,7 +153,31 @@ export class ReleaseNotesBuilder {
         commitMode: this.commitMode || orgOptions.commitMode,
         configuration: this.configuration || orgOptions.configuration
       }
+
+      this.setOutputs(options, diffInfo, mergedPullRequests)
       return buildChangelog(diffInfo, mergedPullRequests, options)
     }
+  }
+
+  setOutputs(options: ReleaseNotesOptions, diffInfo: DiffInfo, mergedPullRequests: PullRequestData[]): void {
+    core.setOutput('owner', options.owner)
+    core.setOutput('repo', options.repo)
+    core.setOutput('toTag', options.toTag.name)
+    core.setOutput('fromTag', options.fromTag.name)
+
+    // define the included PRs within this release as output
+    core.setOutput(
+      'pull_requests',
+      mergedPullRequests
+        .map(pr => {
+          return pr.number
+        })
+        .join(',')
+    )
+    core.setOutput('changed_files', diffInfo.changedFiles)
+    core.setOutput('additions', diffInfo.additions)
+    core.setOutput('deletions', diffInfo.deletions)
+    core.setOutput('changes', diffInfo.changes)
+    core.setOutput('commits', diffInfo.commits)
   }
 }
