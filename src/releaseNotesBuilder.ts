@@ -48,7 +48,6 @@ export class ReleaseNotesBuilder {
     private configuration: Configuration
   ) {}
 
-
   async build(): Promise<string | null> {
     const releaseNotesData = checkExportedData()
     if (releaseNotesData == null) {
