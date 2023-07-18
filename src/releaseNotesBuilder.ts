@@ -130,11 +130,11 @@ export class ReleaseNotesBuilder {
 
       // merge fromTag info with provided info || otherwise use cached info
       const fromTag: TagInfo = orgOptions.fromTag
-      if (this.fromTag != null) {
+      if (this.fromTag) {
         fromTag.name = this.fromTag
       }
       const toTag: TagInfo = orgOptions.toTag
-      if (this.toTag != null) {
+      if (this.toTag) {
         toTag.name = this.toTag
       }
 

@@ -361,11 +361,11 @@ class ReleaseNotesBuilder {
                 const orgOptions = releaseNotesData.options;
                 // merge fromTag info with provided info || otherwise use cached info
                 const fromTag = orgOptions.fromTag;
-                if (this.fromTag != null) {
+                if (this.fromTag) {
                     fromTag.name = this.fromTag;
                 }
                 const toTag = orgOptions.toTag;
-                if (this.toTag != null) {
+                if (this.toTag) {
                     toTag.name = this.toTag;
                 }
                 // merge provided values with previous options (prefer provided)
