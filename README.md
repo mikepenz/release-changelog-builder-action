@@ -569,16 +569,17 @@ npm test -- custom.test.ts
 <p>
 
 ```typescript
-import {resolveConfiguration} from '../src/utils'
+import {mergeConfiguration, resolveConfiguration} from '../src/utils'
 import {ReleaseNotesBuilder} from '../src/releaseNotesBuilder'
+import {Configuration} from '../src/configuration';
 
 jest.setTimeout(180000)
 
 it('Test custom changelog builder', async () => {
-  const configuration = resolveConfiguration(
+  const configuration = mergeConfiguration(undefined, resolveConfiguration(
     '',
     'configs_test/configuration_approvers.json'
-  )
+  )) as Configuration;
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null, // baseUrl
     null, // token
