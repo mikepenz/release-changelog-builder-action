@@ -26900,7 +26900,7 @@ class PullRequests {
             }
             const firstCommit = commits[0];
             const lastCommit = commits[commits.length - 1];
-            let fromDate = moment_1.default.min(lastCommit.authorDate, lastCommit.commitDate); // get the lower date (e.g. if commits are modified)
+            let fromDate = moment_1.default.min(firstCommit.authorDate, firstCommit.commitDate); // get the lower date (e.g. if commits are modified)
             const toDate = moment_1.default.max(lastCommit.authorDate, lastCommit.commitDate); // ensure we get the higher date (e.g. in case of rebases)
             const maxDays = configuration.max_back_track_time_days;
             const maxFromDate = toDate.clone().subtract(maxDays, 'days');
