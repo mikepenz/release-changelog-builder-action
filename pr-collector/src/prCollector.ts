@@ -14,6 +14,7 @@ export interface Options {
   toTag: TagInfo // the tag/ref up to
   includeOpen: boolean // defines if we should also fetch open pull requests
   failOnError: boolean // defines if we should fail the action in case of an error
+  fetchViaCommits: boolean // defines if PRs are fetched via the commits identified. This will do 1 API request per commit -> Best for scenarios with squash merges | Or shorter from-to diffs (< 10 commits) | Also effective for shorters diffs for very old PRs
   fetchReviewers: boolean // defines if the action should fetch the reviewers for PRs - approved reviewers are not included in the default PR listing
   fetchReleaseInformation: boolean // defines if the action should fetch the release information for the from and to tag - e.g. the creation date for the associated release
   fetchReviews: boolean // defines if the action should fetch the reviews for the PR.
@@ -40,6 +41,7 @@ export class PullRequestCollector {
     private includeOpen: boolean = false,
     private failOnError: boolean,
     private ignorePreReleases: boolean,
+    private fetchViaCommits: boolean = false,
     private fetchReviewers: boolean = false,
     private fetchReleaseInformation: boolean = false,
     private fetchReviews: boolean = false,
@@ -119,6 +121,7 @@ export class PullRequestCollector {
       toTag: thisTag,
       includeOpen: this.includeOpen,
       failOnError: this.failOnError,
+      fetchViaCommits: this.fetchViaCommits,
       fetchReviewers: this.fetchReviewers,
       fetchReleaseInformation: this.fetchReleaseInformation,
       fetchReviews: this.fetchReviews,

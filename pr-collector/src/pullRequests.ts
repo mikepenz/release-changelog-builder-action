@@ -91,6 +91,28 @@ export class PullRequests {
     }
   }
 
+  async getForCommitHash(owner: string, repo: string, commit_sha: string, maxPullRequests: number): Promise<PullRequestInfo[]> {
+    const mergedPRs: PullRequestInfo[] = []
+
+    const options = this.octokit.repos.listPullRequestsAssociatedWithCommit.endpoint.merge({
+      owner,
+      repo,
+      commit_sha,
+      per_page: `${Math.min(10, maxPullRequests)}`,
+      direction: 'desc'
+    })
+
+    for await (const response of this.octokit.paginate.iterator(options)) {
+      const prs: PullsListData = response.data as PullsListData
+
+      for (const pr of prs) {
+        mergedPRs.push(mapPullRequest(pr, !!pr.merged_at ? 'merged' : 'open'))
+      }
+    }
+
+    return sortPrs(mergedPRs)
+  }
+
   async getBetweenDates(
     owner: string,
     repo: string,
@@ -103,7 +125,7 @@ export class PullRequests {
       owner,
       repo,
       state: 'closed',
-      sort: 'updated',
+      sort: 'merged',
       per_page: `${Math.min(100, maxPullRequests)}`,
       direction: 'desc'
     })
@@ -126,7 +148,7 @@ export class PullRequests {
         }
 
         // bail out early to not keep iterating on PRs super old
-        return sortPrs(mergedPRs)
+        break
       }
     }
 
@@ -158,7 +180,7 @@ export class PullRequests {
         }
 
         // bail out early to not keep iterating on PRs super old
-        return sortPrs(openPrs)
+        break
       }
     }
 
@@ -207,37 +229,55 @@ export class PullRequests {
 
     core.info(`ℹ️ Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`)
 
-    const pullRequests = await this.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests)
-
-    core.info(`ℹ️ Retrieved ${pullRequests.length} PRs for ${owner}/${repo} in date range from API`)
-
     const prCommits = filterCommits(commits, configuration.exclude_merge_branches)
-
     core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`)
 
     // create array of commits for this release
-    const releaseCommitHashes = prCommits.map(commmit => {
-      return commmit.sha
+    const releaseCommitHashes = prCommits.map(commit => {
+      return commit.sha
     })
 
-    // filter out pull requests not associated with this release
-    const mergedPullRequests = pullRequests.filter(pr => {
-      return releaseCommitHashes.includes(pr.mergeCommitSha)
-    })
+    let pullRequests: PullRequestInfo[]
+    if (releaseCommitHashes.length < 10) {
+      // fetch PRs based on commits instead (will get associated PRs per commit found)
+      const prsForReleaseCommits: Map<number, PullRequestInfo> = new Map()
+      for (const commit of prCommits) {
+        const result = await this.getForCommitHash(owner, repo, commit.sha, configuration.max_pull_requests)
+        result.forEach(pr => prsForReleaseCommits.set(pr.number, pr))
+      }
+      const dedupedPrsForReleaseCommits = Array.from(prsForReleaseCommits.values())
+      if (!includeOpen) {
+        pullRequests = dedupedPrsForReleaseCommits.filter(pr => pr.status !== 'open')
+        core.info(`ℹ️ Retrieved ${pullRequests.length} PRs for ${owner}/${repo} based on the release commit hashes`)
+      } else {
+        pullRequests = dedupedPrsForReleaseCommits
+        core.info(`ℹ️ Retrieved ${pullRequests.length} PRs for ${owner}/${repo} based on the release commit hashes (including open)`)
+      }
+    } else {
+      // fetch PRs based on the date range identified
+      const pullRequestsBetweenDate = await this.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests)
+      core.info(`ℹ️ Retrieved ${pullRequestsBetweenDate.length} PRs for ${owner}/${repo} in date range from API`)
 
-    core.info(`ℹ️ Retrieved ${mergedPullRequests.length} merged PRs for ${owner}/${repo}`)
+      // filter out pull requests not associated with this release
+      const mergedPullRequests = pullRequestsBetweenDate.filter(pr => {
+        return releaseCommitHashes.includes(pr.mergeCommitSha)
+      })
 
-    let allPullRequests = mergedPullRequests
-    if (includeOpen) {
-      // retrieve all open pull requests
-      const openPullRequests = await this.getOpen(owner, repo, configuration.max_pull_requests)
+      core.info(`ℹ️ Retrieved ${mergedPullRequests.length} merged PRs for ${owner}/${repo}`)
+      
+      let allPullRequests = mergedPullRequests
+      if (includeOpen) {
+        // retrieve all open pull requests
+        const openPullRequests = await this.getOpen(owner, repo, configuration.max_pull_requests)
 
-      core.info(`ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`)
+        core.info(`ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`)
 
-      // all pull requests
-      allPullRequests = allPullRequests.concat(openPullRequests)
+        // all pull requests
+        allPullRequests = allPullRequests.concat(openPullRequests)
 
-      core.info(`ℹ️ Retrieved ${allPullRequests.length} total PRs for ${owner}/${repo}`)
+        core.info(`ℹ️ Retrieved ${allPullRequests.length} total PRs for ${owner}/${repo}`)
+      }
+      pullRequests = allPullRequests
     }
 
     // retrieve base branches we allow
@@ -247,7 +287,7 @@ export class PullRequests {
     })
 
     // return only prs if the baseBranch is matching the configuration
-    const finalPrs = allPullRequests.filter(pr => {
+    const finalPrs = pullRequests.filter(pr => {
       if (baseBranches.length !== 0) {
         return baseBranchPatterns.some(pattern => {
           return pr.baseBranch.match(pattern) !== null
