@@ -26912,14 +26912,16 @@ class PullRequests {
                     for (const pr of prs.filter(p => !!p.merged_at)) {
                         mergedPRs.push(mapPullRequest(pr, 'merged'));
                     }
-                    const firstPR = prs[0];
-                    if (firstPR === undefined ||
-                        (firstPR.merged_at && fromDate.isAfter((0, moment_1.default)(firstPR.merged_at))) ||
-                        mergedPRs.length >= maxPullRequests) {
-                        if (mergedPRs.length >= maxPullRequests) {
-                            core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
+                    if (mergedPRs.length >= maxPullRequests) {
+                        core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
+                    }
+                    else if (prs.length > 0) {
+                        if (fetchedEnough(prs, fromDate)) {
+                            return sortPrs(mergedPRs); // bail out early to not keep iterating on PRs super old
                         }
-                        // bail out early to not keep iterating on PRs super old
+                    }
+                    else {
+                        core.debug(`⚠️ No more PRs retrieved from API. Fetched so far: ${mergedPRs.length}`);
                         break;
                     }
                 }
@@ -26960,8 +26962,7 @@ class PullRequests {
                         if (openPrs.length >= maxPullRequests) {
                             core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
                         }
-                        // bail out early to not keep iterating on PRs super old
-                        break;
+                        break; // bail out early to not keep iterating forever
                     }
                 }
             }
@@ -27114,6 +27115,21 @@ class PullRequests {
     }
 }
 exports.PullRequests = PullRequests;
+function fetchedEnough(pullRequests, fromDate) {
+    for (let i = 0; i < Math.min(pullRequests.length, 3); i++) {
+        const firstPR = pullRequests[i];
+        if (!firstPR.merged_at) {
+            continue; // no merged_at timestamp -> look for the next
+        }
+        else if (fromDate.isAfter((0, moment_1.default)(firstPR.merged_at))) {
+            return true;
+        }
+        else {
+            break; // not enough PRs yet, go further
+        }
+    }
+    return false;
+}
 function sortPrs(pullRequests) {
     return sortPullRequests(pullRequests, {
         order: 'ASC',
