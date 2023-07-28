@@ -2,12 +2,16 @@ import {mergeConfiguration, resolveConfiguration} from '../src/utils'
 import {Octokit} from '@octokit/rest'
 import {buildChangelog} from '../src/transform'
 import {pullData} from 'github-pr-collector'
+import fetch from 'node-fetch'
 
 jest.setTimeout(180000)
 
 // load octokit instance
 const octokit = new Octokit({
-  auth: `token ${process.env.GITHUB_TOKEN}`
+  auth: `token ${process.env.GITHUB_TOKEN}`,
+  request: {
+    fetch: fetch
+  }
 })
 
 it('Should have empty changelog (tags)', async () => {
