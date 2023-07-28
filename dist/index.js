@@ -26796,7 +26796,7 @@ class PullRequests {
                     const response = _c;
                     const prs = response.data;
                     for (const pr of prs) {
-                        mergedPRs.push(mapPullRequest(pr, !!pr.merged_at ? 'merged' : 'open'));
+                        mergedPRs.push(mapPullRequest(pr, pr.merged_at ? 'merged' : 'open'));
                     }
                 }
             }
@@ -26957,7 +26957,9 @@ class PullRequests {
                 const prsForReleaseCommits = new Map();
                 for (const commit of prCommits) {
                     const result = yield this.getForCommitHash(owner, repo, commit.sha, configuration.max_pull_requests);
-                    result.forEach(pr => prsForReleaseCommits.set(pr.number, pr));
+                    for (const pr of result) {
+                        prsForReleaseCommits.set(pr.number, pr);
+                    }
                 }
                 const dedupedPrsForReleaseCommits = Array.from(prsForReleaseCommits.values());
                 if (!includeOpen) {

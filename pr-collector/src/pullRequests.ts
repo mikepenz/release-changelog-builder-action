@@ -106,7 +106,7 @@ export class PullRequests {
       const prs: PullsListData = response.data as PullsListData
 
       for (const pr of prs) {
-        mergedPRs.push(mapPullRequest(pr, !!pr.merged_at ? 'merged' : 'open'))
+        mergedPRs.push(mapPullRequest(pr, pr.merged_at ? 'merged' : 'open'))
       }
     }
 
@@ -243,7 +243,9 @@ export class PullRequests {
       const prsForReleaseCommits: Map<number, PullRequestInfo> = new Map()
       for (const commit of prCommits) {
         const result = await this.getForCommitHash(owner, repo, commit.sha, configuration.max_pull_requests)
-        result.forEach(pr => prsForReleaseCommits.set(pr.number, pr))
+        for (const pr of result) {
+          prsForReleaseCommits.set(pr.number, pr)
+        }
       }
       const dedupedPrsForReleaseCommits = Array.from(prsForReleaseCommits.values())
       if (!includeOpen) {
