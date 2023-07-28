@@ -149,12 +149,12 @@ export class Tags {
 
     // check if a transformer, legacy handling, transform single value input to array
     let tagTransfomers: Transformer[] | undefined = undefined
-    if (!Array.isArray(tagTransfomers)) {
-      if (tagTransfomers !== undefined) {
-        tagTransfomers = [tagTransfomers]
+    if (tagResolver.transformer !== undefined) {
+      if (!Array.isArray(tagResolver.transformer)) {
+        tagTransfomers = [tagResolver.transformer]
+      } else {
+        tagTransfomers = tagResolver.transformer
       }
-    } else if (tagResolver.transformer !== undefined) {
-      tagTransfomers = tagResolver.transformer as Transformer[]
     }
 
     let transformed = false
