@@ -33,11 +33,12 @@
     "@octokit/rest": "^20.0.1",
     "https-proxy-agent": "^7.0.1",
     "moment": "^2.29.4",
-    "node-fetch": "^3.3.2",
+    "node-fetch": "2.6.12",
     "semver": "^7.5.4"
   },
   "devDependencies": {
     "@types/node": "^20.4.5",
+    "@types/node-fetch": "^2.6.4",
     "@types/semver": "^7.5.0",
     "@typescript-eslint/eslint-plugin": "^6.2.0",
     "@vercel/ncc": "^0.36.1",
