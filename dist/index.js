@@ -27348,13 +27348,13 @@ class Tags {
             yield this.getTags(owner, repo, maxTagsToFetch), tagResolver);
             // check if a transformer, legacy handling, transform single value input to array
             let tagTransfomers = undefined;
-            if (!Array.isArray(tagTransfomers)) {
-                if (tagTransfomers !== undefined) {
-                    tagTransfomers = [tagTransfomers];
+            if (tagResolver.transformer !== undefined) {
+                if (!Array.isArray(tagResolver.transformer)) {
+                    tagTransfomers = [tagResolver.transformer];
                 }
-            }
-            else if (tagResolver.transformer !== undefined) {
-                tagTransfomers = tagResolver.transformer;
+                else {
+                    tagTransfomers = tagResolver.transformer;
+                }
             }
             let transformed = false;
             let transformedTags = filteredTags;
