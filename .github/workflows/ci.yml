@@ -131,6 +131,7 @@ jobs:
           fromTag: "v8.1.0"
           toTag: "v8.1.6"
           token: ${{ secrets.PERSONAL_TOKEN }}
+          exportCache: true
           exportOnly: true
       
       - name: "External Repo Configuration"

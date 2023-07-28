@@ -146,8 +146,9 @@ function run() {
             const fetchReleaseInformation = core.getInput('fetchReleaseInformation') === 'true';
             const fetchReviews = core.getInput('fetchReviews') === 'true';
             const commitMode = core.getInput('commitMode') === 'true';
+            const exportCache = core.getInput('exportCache') === 'true';
             const exportOnly = core.getInput('exportOnly') === 'true';
-            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchViaCommits, fetchReviewers, fetchReleaseInformation, fetchReviews, commitMode, exportOnly, configuration).build();
+            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchViaCommits, fetchReviewers, fetchReleaseInformation, fetchReviews, commitMode, exportCache, exportOnly, configuration).build();
             core.setOutput('changelog', result);
             // write the result in changelog to file if possible
             const outputFile = core.getInput('outputFile');
@@ -283,7 +284,7 @@ const transform_1 = __nccwpck_require__(1644);
 const github_pr_collector_1 = __nccwpck_require__(3196);
 const utils_2 = __nccwpck_require__(853);
 class ReleaseNotesBuilder {
-    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode = false, exportOnly = false, configuration) {
+    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode = false, exportCache = false, exportOnly = false, configuration) {
         this.baseUrl = baseUrl;
         this.token = token;
         this.repositoryPath = repositoryPath;
@@ -299,6 +300,7 @@ class ReleaseNotesBuilder {
         this.fetchReleaseInformation = fetchReleaseInformation;
         this.fetchReviews = fetchReviews;
         this.commitMode = commitMode;
+        this.exportCache = exportCache;
         this.exportOnly = exportOnly;
         this.configuration = configuration;
     }
@@ -341,17 +343,19 @@ class ReleaseNotesBuilder {
                 const mergedPullRequests = prData.mergedPullRequests;
                 const diffInfo = prData.diffInfo;
                 this.setOutputs(options, diffInfo, mergedPullRequests);
-                const cache = {
-                    mergedPullRequests,
-                    diffInfo,
-                    options
-                };
-                core.setOutput(`cache`, JSON.stringify(cache));
-                //fs.writeFileSync(path.resolve('cache.json'), JSON.stringify(cache))
-                if (this.exportOnly) {
-                    core.info(`ℹ️ Enabled 'exportOnly' will not generate changelog`);
-                    core.endGroup();
-                    return null;
+                if (this.exportCache) {
+                    const cache = {
+                        mergedPullRequests,
+                        diffInfo,
+                        options
+                    };
+                    core.setOutput(`cache`, JSON.stringify(cache));
+                    //fs.writeFileSync(path.resolve('cache.json'), JSON.stringify(cache))
+                    if (this.exportOnly) {
+                        core.info(`ℹ️ Enabled 'exportOnly' will not generate changelog`);
+                        core.endGroup();
+                        return null;
+                    }
                 }
                 return (0, transform_1.buildChangelog)(diffInfo, mergedPullRequests, options);
             }
@@ -643,7 +647,7 @@ function buildChangelog(diffInfo, origPrs, options) {
                     break;
                 }
             }
-            // note the `exclude label` configuration of categories will not apply to the legacy "UNCATEGORIZED" placeholder 
+            // note the `exclude label` configuration of categories will not apply to the legacy "UNCATEGORIZED" placeholder
             uncategorizedPrs.push(body);
         }
         else {

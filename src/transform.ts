@@ -251,7 +251,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
         }
       }
 
-      // note the `exclude label` configuration of categories will not apply to the legacy "UNCATEGORIZED" placeholder 
+      // note the `exclude label` configuration of categories will not apply to the legacy "UNCATEGORIZED" placeholder
       uncategorizedPrs.push(body)
     } else {
       categorizedPrs.push(body)

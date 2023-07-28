@@ -588,20 +588,22 @@ it('Test custom changelog builder', async () => {
     'release-changelog-builder-action-playground',      // repo
     '1.5.0',         // fromTag
     '2.0.0',         // toTag
-    true,   // includeOpen
+    false, // includeOpen
     false, // failOnError
     false, // ignorePrePrelease
-    true,  // enable to fetch reviewers
+    false, // enable to fetch via commits
+    false, // enable to fetch reviewers
     false, // enable to fetch release information
     false, // enable to fetch reviews
-    false, // commitMode
+    false, // enable commitMode
+    false, // enable exportCache
     false, // enable exportOnly
     configuration  // configuration
   )
 
   const changeLog = await releaseNotesBuilder.build()
   console.log(changeLog)
-  expect(changeLog).toStrictEqual(``)
+  expect(changeLog).toStrictEqual(`define-expected-output`)
 })
 ```
 

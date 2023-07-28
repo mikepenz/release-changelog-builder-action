@@ -45,6 +45,7 @@ export class ReleaseNotesBuilder {
     private fetchReleaseInformation: boolean = false,
     private fetchReviews: boolean = false,
     private commitMode: boolean = false,
+    private exportCache: boolean = false,
     private exportOnly: boolean = false,
     private configuration: Configuration
   ) {}
@@ -107,18 +108,20 @@ export class ReleaseNotesBuilder {
       const diffInfo = prData.diffInfo
       this.setOutputs(options, diffInfo, mergedPullRequests)
 
-      const cache = {
-        mergedPullRequests,
-        diffInfo,
-        options
-      }
-      core.setOutput(`cache`, JSON.stringify(cache))
-      //fs.writeFileSync(path.resolve('cache.json'), JSON.stringify(cache))
+      if (this.exportCache) {
+        const cache = {
+          mergedPullRequests,
+          diffInfo,
+          options
+        }
+        core.setOutput(`cache`, JSON.stringify(cache))
+        //fs.writeFileSync(path.resolve('cache.json'), JSON.stringify(cache))
 
-      if (this.exportOnly) {
-        core.info(`ℹ️ Enabled 'exportOnly' will not generate changelog`)
-        core.endGroup()
-        return null
+        if (this.exportOnly) {
+          core.info(`ℹ️ Enabled 'exportOnly' will not generate changelog`)
+          core.endGroup()
+          return null
+        }
       }
 
       return buildChangelog(diffInfo, mergedPullRequests, options)
