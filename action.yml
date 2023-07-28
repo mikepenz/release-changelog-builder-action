@@ -28,6 +28,9 @@ inputs:
   failOnError:
     description: 'Defines if the action should result in a build failure, if an error was discovered'
     default: "false"
+  fetchViaCommits:
+    description: 'Defines if PRs are fetched via the commits identified. This will do 1 API request per commit -> Best for scenarios with squash merges | Or shorter from-to diffs (< 10 commits) | Also effective for shorters diffs for very old PRs'
+    default: "false"
   fetchReviewers:
     description: 'Will enable fetching the users/reviewers who approved the PR'
     default: "false"

@@ -238,7 +238,7 @@ export class PullRequests {
     })
 
     let pullRequests: PullRequestInfo[]
-    if (releaseCommitHashes.length < 10) {
+    if (options.fetchViaCommits) {
       // fetch PRs based on commits instead (will get associated PRs per commit found)
       const prsForReleaseCommits: Map<number, PullRequestInfo> = new Map()
       for (const commit of prCommits) {
@@ -264,7 +264,7 @@ export class PullRequests {
       })
 
       core.info(`ℹ️ Retrieved ${mergedPullRequests.length} merged PRs for ${owner}/${repo}`)
-      
+
       let allPullRequests = mergedPullRequests
       if (includeOpen) {
         // retrieve all open pull requests
