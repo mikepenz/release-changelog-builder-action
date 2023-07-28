@@ -26272,13 +26272,15 @@ class Commits {
                 commitInfo: commits
                     .filter(commit => commit.sha)
                     .map(commit => {
-                    var _a, _b;
+                    var _a, _b, _c, _d;
                     return ({
                         sha: commit.sha || '',
                         summary: commit.commit.message.split('\n')[0],
                         message: commit.commit.message,
-                        date: (0, moment_1.default)((_a = commit.commit.committer) === null || _a === void 0 ? void 0 : _a.date),
-                        author: ((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.name) || '',
+                        author: ((_a = commit.commit.author) === null || _a === void 0 ? void 0 : _a.name) || '',
+                        authorDate: (0, moment_1.default)((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.date),
+                        committer: ((_c = commit.commit.committer) === null || _c === void 0 ? void 0 : _c.name) || '',
+                        commitDate: (0, moment_1.default)((_d = commit.commit.committer) === null || _d === void 0 ? void 0 : _d.date),
                         prNumber: undefined
                     });
                 })
@@ -26296,10 +26298,10 @@ class Commits {
             commitsResult.push(commit);
         }
         commitsResult.sort((a, b) => {
-            if (a.date.isBefore(b.date)) {
+            if (a.commitDate.isBefore(b.commitDate)) {
                 return -1;
             }
-            else if (b.date.isBefore(a.date)) {
+            else if (b.commitDate.isBefore(a.commitDate)) {
                 return 1;
             }
             return 0;
@@ -26342,8 +26344,8 @@ class Commits {
                     title: commit.summary,
                     htmlURL: '',
                     baseBranch: '',
-                    createdAt: commit.date,
-                    mergedAt: commit.date,
+                    createdAt: commit.commitDate,
+                    mergedAt: commit.commitDate,
                     mergeCommitSha: commit.sha,
                     author: commit.author || '',
                     repoName: '',
@@ -26780,7 +26782,7 @@ class PullRequests {
                 owner,
                 repo,
                 state: 'closed',
-                sort: 'merged',
+                sort: 'updated',
                 per_page: `${Math.min(100, maxPullRequests)}`,
                 direction: 'desc'
             });
@@ -26898,8 +26900,8 @@ class PullRequests {
             }
             const firstCommit = commits[0];
             const lastCommit = commits[commits.length - 1];
-            let fromDate = firstCommit.date;
-            const toDate = lastCommit.date;
+            let fromDate = moment_1.default.min(lastCommit.authorDate, lastCommit.commitDate); // get the lower date (e.g. if commits are modified)
+            const toDate = moment_1.default.max(lastCommit.authorDate, lastCommit.commitDate); // ensure we get the higher date (e.g. in case of rebases)
             const maxDays = configuration.max_back_track_time_days;
             const maxFromDate = toDate.clone().subtract(maxDays, 'days');
             if (maxFromDate.isAfter(fromDate)) {

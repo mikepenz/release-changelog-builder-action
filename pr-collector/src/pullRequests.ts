@@ -103,7 +103,7 @@ export class PullRequests {
       owner,
       repo,
       state: 'closed',
-      sort: 'merged',
+      sort: 'updated',
       per_page: `${Math.min(100, maxPullRequests)}`,
       direction: 'desc'
     })
@@ -195,8 +195,8 @@ export class PullRequests {
 
     const firstCommit = commits[0]
     const lastCommit = commits[commits.length - 1]
-    let fromDate = firstCommit.date
-    const toDate = lastCommit.date
+    let fromDate = moment.min(lastCommit.authorDate, lastCommit.commitDate) // get the lower date (e.g. if commits are modified)
+    const toDate = moment.max(lastCommit.authorDate, lastCommit.commitDate) // ensure we get the higher date (e.g. in case of rebases)
 
     const maxDays = configuration.max_back_track_time_days
     const maxFromDate = toDate.clone().subtract(maxDays, 'days')
