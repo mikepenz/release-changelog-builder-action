@@ -627,10 +627,23 @@ function buildChangelog(diffInfo, origPrs, options) {
             // we allow to have pull requests included in an "uncategorized" category
             for (const [category, pullRequests] of categorized) {
                 if ((category.labels === undefined || category.labels.length === 0) && category.rules === undefined) {
-                    pullRequests.push(body);
+                    // check if any exclude label matches for the "uncategorized" category
+                    if (category.exclude_labels !== undefined) {
+                        if (!(0, utils_1.haveCommonElementsArr)(category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
+                            pullRequests.push(body);
+                        }
+                        else if (core.isDebug()) {
+                            const excludeLabels = JSON.stringify(category.exclude_labels);
+                            core.debug(`    PR ${pr.number} with labels: ${pr.labels} excluded from uncategorized category via exclude label: ${excludeLabels}`);
+                        }
+                    }
+                    else {
+                        pullRequests.push(body);
+                    }
                     break;
                 }
             }
+            // note the `exclude label` configuration of categories will not apply to the legacy "UNCATEGORIZED" placeholder 
             uncategorizedPrs.push(body);
         }
         else {
