@@ -28,7 +28,9 @@ export interface CommitInfo {
   summary: string
   message: string
   author: string
-  date: moment.Moment
+  authorDate: moment.Moment
+  committer: string
+  commitDate: moment.Moment
 }
 
 export class Commits {
@@ -90,8 +92,10 @@ export class Commits {
           sha: commit.sha || '',
           summary: commit.commit.message.split('\n')[0],
           message: commit.commit.message,
-          date: moment(commit.commit.committer?.date),
           author: commit.commit.author?.name || '',
+          authorDate: moment(commit.commit.author?.date),
+          committer: commit.commit.committer?.name || '',
+          commitDate: moment(commit.commit.committer?.date),
           prNumber: undefined
         }))
     }
@@ -110,9 +114,9 @@ export class Commits {
     }
 
     commitsResult.sort((a, b) => {
-      if (a.date.isBefore(b.date)) {
+      if (a.commitDate.isBefore(b.commitDate)) {
         return -1
-      } else if (b.date.isBefore(a.date)) {
+      } else if (b.commitDate.isBefore(a.commitDate)) {
         return 1
       }
       return 0
@@ -160,8 +164,8 @@ export class Commits {
         title: commit.summary,
         htmlURL: '',
         baseBranch: '',
-        createdAt: commit.date,
-        mergedAt: commit.date,
+        createdAt: commit.commitDate,
+        mergedAt: commit.commitDate,
         mergeCommitSha: commit.sha,
         author: commit.author || '',
         repoName: '',

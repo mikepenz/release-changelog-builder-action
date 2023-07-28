@@ -50,6 +50,7 @@ async function run(): Promise<void> {
     const includeOpen = core.getInput('includeOpen') === 'true'
     const ignorePreReleases = core.getInput('ignorePreReleases') === 'true'
     const failOnError = core.getInput('failOnError') === 'true'
+    const fetchViaCommits = core.getInput('fetchViaCommits') === 'true'
     const fetchReviewers = core.getInput('fetchReviewers') === 'true'
     const fetchReleaseInformation = core.getInput('fetchReleaseInformation') === 'true'
     const fetchReviews = core.getInput('fetchReviews') === 'true'
@@ -67,6 +68,7 @@ async function run(): Promise<void> {
       includeOpen,
       failOnError,
       ignorePreReleases,
+      fetchViaCommits,
       fetchReviewers,
       fetchReleaseInformation,
       fetchReviews,

@@ -141,12 +141,13 @@ function run() {
             const includeOpen = core.getInput('includeOpen') === 'true';
             const ignorePreReleases = core.getInput('ignorePreReleases') === 'true';
             const failOnError = core.getInput('failOnError') === 'true';
+            const fetchViaCommits = core.getInput('fetchViaCommits') === 'true';
             const fetchReviewers = core.getInput('fetchReviewers') === 'true';
             const fetchReleaseInformation = core.getInput('fetchReleaseInformation') === 'true';
             const fetchReviews = core.getInput('fetchReviews') === 'true';
             const commitMode = core.getInput('commitMode') === 'true';
             const exportOnly = core.getInput('exportOnly') === 'true';
-            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchReviewers, fetchReleaseInformation, fetchReviews, commitMode, exportOnly, configuration).build();
+            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchViaCommits, fetchReviewers, fetchReleaseInformation, fetchReviews, commitMode, exportOnly, configuration).build();
             core.setOutput('changelog', result);
             // write the result in changelog to file if possible
             const outputFile = core.getInput('outputFile');
@@ -282,7 +283,7 @@ const transform_1 = __nccwpck_require__(1644);
 const github_pr_collector_1 = __nccwpck_require__(3196);
 const utils_2 = __nccwpck_require__(853);
 class ReleaseNotesBuilder {
-    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode = false, exportOnly = false, configuration) {
+    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode = false, exportOnly = false, configuration) {
         this.baseUrl = baseUrl;
         this.token = token;
         this.repositoryPath = repositoryPath;
@@ -293,6 +294,7 @@ class ReleaseNotesBuilder {
         this.includeOpen = includeOpen;
         this.failOnError = failOnError;
         this.ignorePreReleases = ignorePreReleases;
+        this.fetchViaCommits = fetchViaCommits;
         this.fetchReviewers = fetchReviewers;
         this.fetchReleaseInformation = fetchReleaseInformation;
         this.fetchReviews = fetchReviews;
@@ -319,7 +321,7 @@ class ReleaseNotesBuilder {
                     core.debug(`Resolved 'repo' as ${this.repo}`);
                 }
                 core.endGroup();
-                const prData = yield new github_pr_collector_1.PullRequestCollector(this.baseUrl, this.token, this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.includeOpen, this.failOnError, this.ignorePreReleases, this.fetchReviewers, this.fetchReleaseInformation, this.fetchReviews, this.commitMode, this.configuration).build();
+                const prData = yield new github_pr_collector_1.PullRequestCollector(this.baseUrl, this.token, this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.includeOpen, this.failOnError, this.ignorePreReleases, this.fetchViaCommits, this.fetchReviewers, this.fetchReleaseInformation, this.fetchReviews, this.commitMode, this.configuration).build();
                 if (prData == null) {
                     return null;
                 }
@@ -26272,13 +26274,15 @@ class Commits {
                 commitInfo: commits
                     .filter(commit => commit.sha)
                     .map(commit => {
-                    var _a, _b;
+                    var _a, _b, _c, _d;
                     return ({
                         sha: commit.sha || '',
                         summary: commit.commit.message.split('\n')[0],
                         message: commit.commit.message,
-                        date: (0, moment_1.default)((_a = commit.commit.committer) === null || _a === void 0 ? void 0 : _a.date),
-                        author: ((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.name) || '',
+                        author: ((_a = commit.commit.author) === null || _a === void 0 ? void 0 : _a.name) || '',
+                        authorDate: (0, moment_1.default)((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.date),
+                        committer: ((_c = commit.commit.committer) === null || _c === void 0 ? void 0 : _c.name) || '',
+                        commitDate: (0, moment_1.default)((_d = commit.commit.committer) === null || _d === void 0 ? void 0 : _d.date),
                         prNumber: undefined
                     });
                 })
@@ -26296,10 +26300,10 @@ class Commits {
             commitsResult.push(commit);
         }
         commitsResult.sort((a, b) => {
-            if (a.date.isBefore(b.date)) {
+            if (a.commitDate.isBefore(b.commitDate)) {
                 return -1;
             }
-            else if (b.date.isBefore(a.date)) {
+            else if (b.commitDate.isBefore(a.commitDate)) {
                 return 1;
             }
             return 0;
@@ -26342,8 +26346,8 @@ class Commits {
                     title: commit.summary,
                     htmlURL: '',
                     baseBranch: '',
-                    createdAt: commit.date,
-                    mergedAt: commit.date,
+                    createdAt: commit.commitDate,
+                    mergedAt: commit.commitDate,
                     mergeCommitSha: commit.sha,
                     author: commit.author || '',
                     repoName: '',
@@ -26555,7 +26559,7 @@ const https_proxy_agent_1 = __nccwpck_require__(7219);
 const pullRequests_1 = __nccwpck_require__(1948);
 const commits_1 = __nccwpck_require__(5789);
 class PullRequestCollector {
-    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode = false, configuration) {
+    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode = false, configuration) {
         this.baseUrl = baseUrl;
         this.token = token;
         this.repositoryPath = repositoryPath;
@@ -26566,6 +26570,7 @@ class PullRequestCollector {
         this.includeOpen = includeOpen;
         this.failOnError = failOnError;
         this.ignorePreReleases = ignorePreReleases;
+        this.fetchViaCommits = fetchViaCommits;
         this.fetchReviewers = fetchReviewers;
         this.fetchReleaseInformation = fetchReleaseInformation;
         this.fetchReviews = fetchReviews;
@@ -26630,6 +26635,7 @@ class PullRequestCollector {
                 toTag: thisTag,
                 includeOpen: this.includeOpen,
                 failOnError: this.failOnError,
+                fetchViaCommits: this.fetchViaCommits,
                 fetchReviewers: this.fetchReviewers,
                 fetchReleaseInformation: this.fetchReleaseInformation,
                 fetchReviews: this.fetchReviews,
@@ -26772,8 +26778,40 @@ class PullRequests {
             }
         });
     }
-    getBetweenDates(owner, repo, fromDate, toDate, maxPullRequests) {
+    getForCommitHash(owner, repo, commit_sha, maxPullRequests) {
         var _a, e_1, _b, _c;
+        return __awaiter(this, void 0, void 0, function* () {
+            const mergedPRs = [];
+            const options = this.octokit.repos.listPullRequestsAssociatedWithCommit.endpoint.merge({
+                owner,
+                repo,
+                commit_sha,
+                per_page: `${Math.min(10, maxPullRequests)}`,
+                direction: 'desc'
+            });
+            try {
+                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(options)), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
+                    _c = _f.value;
+                    _d = false;
+                    const response = _c;
+                    const prs = response.data;
+                    for (const pr of prs) {
+                        mergedPRs.push(mapPullRequest(pr, pr.merged_at ? 'merged' : 'open'));
+                    }
+                }
+            }
+            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            finally {
+                try {
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
+                }
+                finally { if (e_1) throw e_1.error; }
+            }
+            return sortPrs(mergedPRs);
+        });
+    }
+    getBetweenDates(owner, repo, fromDate, toDate, maxPullRequests) {
+        var _a, e_2, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const mergedPRs = [];
             const options = this.octokit.pulls.list.endpoint.merge({
@@ -26801,22 +26839,22 @@ class PullRequests {
                             core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
                         }
                         // bail out early to not keep iterating on PRs super old
-                        return sortPrs(mergedPRs);
+                        break;
                     }
                 }
             }
-            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            catch (e_2_1) { e_2 = { error: e_2_1 }; }
             finally {
                 try {
                     if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
                 }
-                finally { if (e_1) throw e_1.error; }
+                finally { if (e_2) throw e_2.error; }
             }
             return sortPrs(mergedPRs);
         });
     }
     getOpen(owner, repo, maxPullRequests) {
-        var _a, e_2, _b, _c;
+        var _a, e_3, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const openPrs = [];
             const options = this.octokit.pulls.list.endpoint.merge({
@@ -26842,22 +26880,22 @@ class PullRequests {
                             core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
                         }
                         // bail out early to not keep iterating on PRs super old
-                        return sortPrs(openPrs);
+                        break;
                     }
                 }
             }
-            catch (e_2_1) { e_2 = { error: e_2_1 }; }
+            catch (e_3_1) { e_3 = { error: e_3_1 }; }
             finally {
                 try {
                     if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
                 }
-                finally { if (e_2) throw e_2.error; }
+                finally { if (e_3) throw e_3.error; }
             }
             return sortPrs(openPrs);
         });
     }
     getReviews(owner, repo, pr) {
-        var _a, e_3, _b, _c;
+        var _a, e_4, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const options = this.octokit.pulls.listReviews.endpoint.merge({
                 owner,
@@ -26878,12 +26916,12 @@ class PullRequests {
                     }
                 }
             }
-            catch (e_3_1) { e_3 = { error: e_3_1 }; }
+            catch (e_4_1) { e_4 = { error: e_4_1 }; }
             finally {
                 try {
                     if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
                 }
-                finally { if (e_3) throw e_3.error; }
+                finally { if (e_4) throw e_4.error; }
             }
             pr.reviews = prReviews;
         });
@@ -26898,8 +26936,8 @@ class PullRequests {
             }
             const firstCommit = commits[0];
             const lastCommit = commits[commits.length - 1];
-            let fromDate = firstCommit.date;
-            const toDate = lastCommit.date;
+            let fromDate = moment_1.default.min(firstCommit.authorDate, firstCommit.commitDate); // get the lower date (e.g. if commits are modified)
+            const toDate = moment_1.default.max(lastCommit.authorDate, lastCommit.commitDate); // ensure we get the higher date (e.g. in case of rebases)
             const maxDays = configuration.max_back_track_time_days;
             const maxFromDate = toDate.clone().subtract(maxDays, 'days');
             if (maxFromDate.isAfter(fromDate)) {
@@ -26907,27 +26945,51 @@ class PullRequests {
                 fromDate = maxFromDate;
             }
             core.info(`ℹ️ Fetching PRs between dates ${fromDate.toISOString()} to ${toDate.toISOString()} for ${owner}/${repo}`);
-            const pullRequests = yield this.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests);
-            core.info(`ℹ️ Retrieved ${pullRequests.length} PRs for ${owner}/${repo} in date range from API`);
             const prCommits = (0, commits_1.filterCommits)(commits, configuration.exclude_merge_branches);
             core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`);
             // create array of commits for this release
-            const releaseCommitHashes = prCommits.map(commmit => {
-                return commmit.sha;
+            const releaseCommitHashes = prCommits.map(commit => {
+                return commit.sha;
             });
-            // filter out pull requests not associated with this release
-            const mergedPullRequests = pullRequests.filter(pr => {
-                return releaseCommitHashes.includes(pr.mergeCommitSha);
-            });
-            core.info(`ℹ️ Retrieved ${mergedPullRequests.length} merged PRs for ${owner}/${repo}`);
-            let allPullRequests = mergedPullRequests;
-            if (includeOpen) {
-                // retrieve all open pull requests
-                const openPullRequests = yield this.getOpen(owner, repo, configuration.max_pull_requests);
-                core.info(`ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`);
-                // all pull requests
-                allPullRequests = allPullRequests.concat(openPullRequests);
-                core.info(`ℹ️ Retrieved ${allPullRequests.length} total PRs for ${owner}/${repo}`);
+            let pullRequests;
+            if (options.fetchViaCommits) {
+                // fetch PRs based on commits instead (will get associated PRs per commit found)
+                const prsForReleaseCommits = new Map();
+                for (const commit of prCommits) {
+                    const result = yield this.getForCommitHash(owner, repo, commit.sha, configuration.max_pull_requests);
+                    for (const pr of result) {
+                        prsForReleaseCommits.set(pr.number, pr);
+                    }
+                }
+                const dedupedPrsForReleaseCommits = Array.from(prsForReleaseCommits.values());
+                if (!includeOpen) {
+                    pullRequests = dedupedPrsForReleaseCommits.filter(pr => pr.status !== 'open');
+                    core.info(`ℹ️ Retrieved ${pullRequests.length} PRs for ${owner}/${repo} based on the release commit hashes`);
+                }
+                else {
+                    pullRequests = dedupedPrsForReleaseCommits;
+                    core.info(`ℹ️ Retrieved ${pullRequests.length} PRs for ${owner}/${repo} based on the release commit hashes (including open)`);
+                }
+            }
+            else {
+                // fetch PRs based on the date range identified
+                const pullRequestsBetweenDate = yield this.getBetweenDates(owner, repo, fromDate, toDate, configuration.max_pull_requests);
+                core.info(`ℹ️ Retrieved ${pullRequestsBetweenDate.length} PRs for ${owner}/${repo} in date range from API`);
+                // filter out pull requests not associated with this release
+                const mergedPullRequests = pullRequestsBetweenDate.filter(pr => {
+                    return releaseCommitHashes.includes(pr.mergeCommitSha);
+                });
+                core.info(`ℹ️ Retrieved ${mergedPullRequests.length} merged PRs for ${owner}/${repo}`);
+                let allPullRequests = mergedPullRequests;
+                if (includeOpen) {
+                    // retrieve all open pull requests
+                    const openPullRequests = yield this.getOpen(owner, repo, configuration.max_pull_requests);
+                    core.info(`ℹ️ Retrieved ${openPullRequests.length} open PRs for ${owner}/${repo}`);
+                    // all pull requests
+                    allPullRequests = allPullRequests.concat(openPullRequests);
+                    core.info(`ℹ️ Retrieved ${allPullRequests.length} total PRs for ${owner}/${repo}`);
+                }
+                pullRequests = allPullRequests;
             }
             // retrieve base branches we allow
             const baseBranches = configuration.base_branches;
@@ -26935,7 +26997,7 @@ class PullRequests {
                 return new RegExp(baseBranch.replace('\\\\', '\\'), 'gu');
             });
             // return only prs if the baseBranch is matching the configuration
-            const finalPrs = allPullRequests.filter(pr => {
+            const finalPrs = pullRequests.filter(pr => {
                 if (baseBranches.length !== 0) {
                     return baseBranchPatterns.some(pattern => {
                         return pr.baseBranch.match(pattern) !== null;

@@ -16,6 +16,7 @@ it('Should match generated changelog (unspecified fromTag)', async () => {
     false,
     false,
     false,
+    true, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
@@ -47,6 +48,7 @@ it('Should match generated changelog (unspecified tags)', async () => {
     false,
     false,
     false,
+    false, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
@@ -73,6 +75,7 @@ it('Should use empty placeholder', async () => {
     false,
     false,
     false,
+    true, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
@@ -99,6 +102,7 @@ it('Should fill empty placeholders', async () => {
     false,
     false,
     false,
+    true, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
@@ -127,6 +131,7 @@ it('Should fill `template` placeholders', async () => {
     false,
     false,
     false,
+    true, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
@@ -156,6 +161,7 @@ it('Should fill `template` placeholders, ignore', async () => {
     false,
     false,
     false,
+    false, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
@@ -184,6 +190,7 @@ it('Uncategorized category', async () => {
     false,
     false,
     false,
+    false, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
@@ -212,6 +219,7 @@ it('Verify commit based changelog', async () => {
     false,
     false,
     false,
+    true, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
@@ -240,6 +248,7 @@ it('Verify commit based changelog, with emoji categorisation', async () => {
     false,
     false,
     false,
+    false, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
@@ -268,6 +277,7 @@ it('Verify default inclusion of open PRs', async () => {
     true, // includeOpen
     false, // failOnError
     false, // ignorePrePrelease
+    false, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
@@ -296,6 +306,7 @@ it('Verify custom categorisation of open PRs', async () => {
     true, // includeOpen
     false, // failOnError
     false, // ignorePrePrelease
+    false, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
@@ -324,6 +335,7 @@ it('Verify reviewers who approved are fetched and also release information', asy
     true, // includeOpen
     false, // failOnError
     false, // ignorePrePrelease
+    false, // enable to fetch via commits
     true, // enable to fetch reviewers
     true, // enable to fetch tag release information
     false, // enable to fetch reviews
@@ -353,6 +365,7 @@ it('Fetch release information', async () => {
     true, // includeOpen
     false, // failOnError
     false, // ignorePrePrelease
+    false, // enable to fetch via commits
     false, // enable to fetch reviewers
     true, // enable to fetch tag release information
     false, // enable to fetch reviews
@@ -380,6 +393,7 @@ it('Fetch release information for non existing tag / release', async () => {
     true, // includeOpen
     false, // failOnError
     false, // ignorePrePrelease
+    false, // enable to fetch via commits
     false, // enable to fetch reviewers
     true, // enable to fetch tag release information
     false, // enable to fetch reviews

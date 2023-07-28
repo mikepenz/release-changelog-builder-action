@@ -1,8 +1,8 @@
 import {buildChangelog} from '../src/transform'
 import moment from 'moment'
 import {Configuration, DefaultConfiguration} from '../src/configuration'
-import { PullRequestInfo } from 'github-pr-collector/lib/pullRequests'
-import { DefaultDiffInfo } from 'github-pr-collector/lib/commits'
+import {PullRequestInfo} from 'github-pr-collector/lib/pullRequests'
+import {DefaultDiffInfo} from 'github-pr-collector/lib/commits'
 
 jest.setTimeout(180000)
 
@@ -409,16 +409,14 @@ it('Reference PRs', async () => {
       labels: []
     }
   ]
-  customConfig.pr_template = "${{NUMBER}} -- ${{REFERENCED[*].number}}"
+  customConfig.pr_template = '${{NUMBER}} -- ${{REFERENCED[*].number}}'
   customConfig.reference = {
-    pattern: '.*\ \#(.).*', // matches the 1 from "abcdefg #1 adfasdf"
+    pattern: '.* #(.).*', // matches the 1 from "abcdefg #1 adfasdf"
     on_property: 'body',
     method: 'replace',
     target: '$1'
   }
-  expect(buildChangelogTest(customConfig, pullRequestsWithLabels)).toStrictEqual(
-    `1 -- 2\n4 -- \n3 -- \n\n`
-  )
+  expect(buildChangelogTest(customConfig, pullRequestsWithLabels)).toStrictEqual(`1 -- 2\n4 -- \n3 -- \n\n`)
 })
 
 it('Use empty_content for empty category', async () => {

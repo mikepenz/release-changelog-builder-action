@@ -1,7 +1,7 @@
 import {mergeConfiguration, resolveConfiguration} from '../src/utils'
 import {Octokit} from '@octokit/rest'
 import {buildChangelog} from '../src/transform'
-import { pullData } from 'github-pr-collector'
+import {pullData} from 'github-pr-collector'
 
 jest.setTimeout(180000)
 
@@ -20,6 +20,7 @@ it('Should have empty changelog (tags)', async () => {
     toTag: {name: 'v0.0.2'},
     includeOpen: false,
     failOnError: false,
+    fetchViaCommits: true,
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
@@ -41,6 +42,7 @@ it('Should match generated changelog (tags)', async () => {
     toTag: {name: 'v0.0.3'},
     includeOpen: false,
     failOnError: false,
+    fetchViaCommits: true,
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
@@ -61,7 +63,7 @@ it('Should match generated changelog (tags)', async () => {
 
 it('Should match generated changelog (refs)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_all_placeholders.json'))
-  
+
   const options = {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
@@ -69,6 +71,7 @@ it('Should match generated changelog (refs)', async () => {
     toTag: {name: 'fa3788c8c4b3373ef8424ce3eb008a5cd07cc5aa'},
     includeOpen: false,
     failOnError: false,
+    fetchViaCommits: true,
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
@@ -104,6 +107,7 @@ it('Should match generated changelog and replace all occurrences (refs)', async 
     toTag: {name: 'fa3788c8c4b3373ef8424ce3eb008a5cd07cc5aa'},
     includeOpen: false,
     failOnError: false,
+    fetchViaCommits: true,
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
@@ -141,6 +145,7 @@ it('Should match ordered ASC', async () => {
     toTag: {name: 'v0.5.0'},
     includeOpen: false,
     failOnError: false,
+    fetchViaCommits: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
@@ -164,6 +169,7 @@ it('Should match ordered DESC', async () => {
     toTag: {name: 'v0.5.0'},
     includeOpen: false,
     failOnError: false,
+    fetchViaCommits: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
@@ -186,6 +192,7 @@ it('Should match ordered by title ASC', async () => {
     toTag: {name: 'v0.5.0'},
     includeOpen: false,
     failOnError: false,
+    fetchViaCommits: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
@@ -209,6 +216,7 @@ it('Should match ordered by title DESC', async () => {
     toTag: {name: 'v0.5.0'},
     includeOpen: false,
     failOnError: false,
+    fetchViaCommits: false,
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
@@ -233,6 +241,7 @@ it('Should ignore PRs not merged into develop branch', async () => {
     toTag: {name: 'v1.4.0'},
     includeOpen: false,
     failOnError: false,
+    fetchViaCommits: true,
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
@@ -254,6 +263,7 @@ it('Should ignore PRs not merged into main branch', async () => {
     toTag: {name: 'v1.4.0'},
     includeOpen: false,
     failOnError: false,
+    fetchViaCommits: true,
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
