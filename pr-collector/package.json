@@ -1,6 +1,6 @@
 {
   "name": "pr-collector",
-  "version": "v1.0.5",
+  "version": "v1.1.0",
   "description": "Library to fetch GitHub pull request between 2 tags/sha1 hashes.",
   "main": "lib/prCollector.js",
   "types": "lib/prCollector.d.ts",
@@ -30,15 +30,16 @@
     "@actions/core": "^1.10.0",
     "@actions/exec": "^1.1.1",
     "@actions/github": "^5.1.1",
-    "@octokit/rest": "^19.0.13",
+    "@octokit/rest": "^20.0.1",
     "https-proxy-agent": "^7.0.1",
     "moment": "^2.29.4",
+    "node-fetch": "^3.3.2",
     "semver": "^7.5.4"
   },
   "devDependencies": {
-    "@types/node": "^20.4.1",
+    "@types/node": "^20.4.5",
     "@types/semver": "^7.5.0",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.2.0",
     "@vercel/ncc": "^0.36.1",
     "eslint-plugin-prettier": "^5.0.0",
     "js-yaml": "^4.1.0",
