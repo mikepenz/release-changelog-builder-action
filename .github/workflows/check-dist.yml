@@ -41,8 +41,6 @@ jobs:
 
       - name: Build Action
         run: |
-          cd pr-collector 
-
           npm ci
           npm run build
           npm run package
