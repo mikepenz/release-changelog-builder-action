@@ -39,14 +39,14 @@ export class PullRequestCollector {
     private repo: string,
     private fromTag: string | null,
     private toTag: string | null,
-    private includeOpen: boolean = false,
+    private includeOpen = false,
     private failOnError: boolean,
     private ignorePreReleases: boolean,
-    private fetchViaCommits: boolean = false,
-    private fetchReviewers: boolean = false,
-    private fetchReleaseInformation: boolean = false,
-    private fetchReviews: boolean = false,
-    private commitMode: boolean = false,
+    private fetchViaCommits = false,
+    private fetchReviewers = false,
+    private fetchReleaseInformation = false,
+    private fetchReviews = false,
+    private commitMode = false,
     private configuration: PullConfiguration
   ) {}
 
