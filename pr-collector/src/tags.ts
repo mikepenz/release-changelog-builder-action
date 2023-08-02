@@ -140,48 +140,52 @@ export class Tags {
     maxTagsToFetch: number,
     tagResolver: TagResolver
   ): Promise<TagResult> {
-    // filter out tags not matching the specified filter
-    const filteredTags = filterTags(
-      // retrieve the tags from the API
-      await this.getTags(owner, repo, maxTagsToFetch),
-      tagResolver
-    )
+    let tags: TagInfo[] = []
 
-    // check if a transformer, legacy handling, transform single value input to array
-    let tagTransfomers: Transformer[] | undefined = undefined
-    if (tagResolver.transformer !== undefined) {
-      if (!Array.isArray(tagResolver.transformer)) {
-        tagTransfomers = [tagResolver.transformer]
-      } else {
-        tagTransfomers = tagResolver.transformer
-      }
-    }
+    if (!toTag || !fromTag) {
+      // filter out tags not matching the specified filter
+      const filteredTags = filterTags(
+        // retrieve the tags from the API
+        await this.getTags(owner, repo, maxTagsToFetch),
+        tagResolver
+      )
 
-    let transformed = false
-    let transformedTags: TagInfo[] = filteredTags
-    if (tagTransfomers !== undefined && tagTransfomers.length > 0) {
-      for (const transformer of tagTransfomers) {
-        const tagTransformer = validateTransformer(transformer)
-        if (tagTransformer != null) {
-          core.debug(`ℹ️ Using configured tagTransformer (${transformer.pattern})`)
-          transformedTags = transformTags(transformedTags, tagTransformer)
-          transformed = true
-        }
-      }
-    }
-
-    // sort tags, apply additional information (e.g. if tag is a pre release)
-    let tags = prepareAndSortTags(transformedTags, tagResolver)
-
-    if (transformed) {
-      // restore the original name, after sorting
-      tags = filteredTags.map(function (tag) {
-        if (tag.hasOwnProperty('tmp')) {
-          return {name: (tag as SortableTagInfo).tmp, commit: tag.commit}
+      // check if a transformer, legacy handling, transform single value input to array
+      let tagTransfomers: Transformer[] | undefined = undefined
+      if (tagResolver.transformer !== undefined) {
+        if (!Array.isArray(tagResolver.transformer)) {
+          tagTransfomers = [tagResolver.transformer]
         } else {
-          return tag
+          tagTransfomers = tagResolver.transformer
         }
-      })
+      }
+
+      let transformed = false
+      let transformedTags: TagInfo[] = filteredTags
+      if (tagTransfomers !== undefined && tagTransfomers.length > 0) {
+        for (const transformer of tagTransfomers) {
+          const tagTransformer = validateTransformer(transformer)
+          if (tagTransformer != null) {
+            core.debug(`ℹ️ Using configured tagTransformer (${transformer.pattern})`)
+            transformedTags = transformTags(transformedTags, tagTransformer)
+            transformed = true
+          }
+        }
+      }
+
+      // sort tags, apply additional information (e.g. if tag is a pre release)
+      tags = prepareAndSortTags(transformedTags, tagResolver)
+
+      if (transformed) {
+        // restore the original name, after sorting
+        tags = filteredTags.map(function (tag) {
+          if (tag.hasOwnProperty('tmp')) {
+            return {name: (tag as SortableTagInfo).tmp, commit: tag.commit}
+          } else {
+            return tag
+          }
+        })
+      }
     }
 
     let resultToTag: TagInfo | null
