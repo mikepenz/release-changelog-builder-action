@@ -36,22 +36,27 @@
     "@actions/exec": "^1.1.1",
     "@actions/github": "^5.1.1",
     "@octokit/rest": "^20.0.1",
-    "pr-collector": "file:pr-collector"
+    "https-proxy-agent": "^7.0.1",
+    "moment": "^2.29.4",
+    "node-fetch": "2.6.12",
+    "semver": "^7.5.4"
   },
   "devDependencies": {
     "@types/jest": "^29.5.3",
-    "@types/node": "^20.4.5",
-    "@typescript-eslint/parser": "^6.2.1",
-    "@typescript-eslint/eslint-plugin": "^6.2.1",
+    "@types/node": "^20.5.0",
+    "@types/node-fetch": "^2.6.4",
+    "@types/semver": "^7.5.0",
+    "@typescript-eslint/eslint-plugin": "^6.4.0",
+    "@typescript-eslint/parser": "^6.4.0",
     "@vercel/ncc": "^0.36.1",
-    "eslint": "^8.46.0",
+    "eslint": "^8.47.0",
     "eslint-plugin-github": "^4.9.2",
     "eslint-plugin-jest": "^27.2.3",
     "eslint-plugin-prettier": "^5.0.0",
     "jest": "^29.6.2",
     "jest-circus": "^29.6.2",
     "js-yaml": "^4.1.0",
-    "prettier": "3.0.0",
+    "prettier": "3.0.2",
     "ts-jest": "^29.1.1",
     "typescript": "^5.1.6"
   }
