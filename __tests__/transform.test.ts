@@ -1,8 +1,8 @@
 import {buildChangelog} from '../src/transform'
 import moment from 'moment'
 import {Configuration, DefaultConfiguration} from '../src/configuration'
-import {PullRequestInfo} from 'pr-collector/lib/pullRequests'
-import {DefaultDiffInfo} from 'pr-collector/lib/commits'
+import {PullRequestInfo} from '../src/pr-collector/pullRequests'
+import {DefaultDiffInfo} from '../src/pr-collector/commits'
 
 jest.setTimeout(180000)
 
