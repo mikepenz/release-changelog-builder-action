@@ -8,10 +8,10 @@ import {
   PullRequestInfo,
   retrieveProperty,
   sortPullRequests
-} from 'pr-collector/lib/pullRequests'
-import {DiffInfo} from 'pr-collector/lib/commits'
-import {validateTransformer} from 'pr-collector/lib/regexUtils'
-import {Transformer, RegexTransformer} from 'pr-collector/lib/types'
+} from './pr-collector/pullRequests'
+import {DiffInfo} from './pr-collector/commits'
+import {validateTransformer} from './pr-collector/regexUtils'
+import {Transformer, RegexTransformer} from './pr-collector/types'
 import {ReleaseNotesOptions} from './releaseNotesBuilder'
 import {matchesRules} from './regexUtils'
 

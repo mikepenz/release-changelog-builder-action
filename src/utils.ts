@@ -3,8 +3,8 @@ import * as fs from 'fs'
 import * as path from 'path'
 import {Configuration, DefaultConfiguration} from './configuration'
 import moment from 'moment'
-import {DiffInfo} from 'pr-collector/lib/commits'
-import {PullRequestInfo} from 'pr-collector/lib/pullRequests'
+import {DiffInfo} from './pr-collector/commits'
+import {PullRequestInfo} from './pr-collector/pullRequests'
 import {Data, ReleaseNotesOptions} from './releaseNotesBuilder'
 /**
  * Resolves the repository path, relatively to the GITHUB_WORKSPACE

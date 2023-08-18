@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
-import {Rule, RegexTransformer} from 'pr-collector/lib/types'
-import {PullRequestInfo, retrieveProperty} from 'pr-collector/lib/pullRequests'
-import {validateTransformer} from 'pr-collector/lib/regexUtils'
+import {Rule, RegexTransformer} from './pr-collector/types'
+import {PullRequestInfo, retrieveProperty} from './pr-collector/pullRequests'
+import {validateTransformer} from './pr-collector/regexUtils'
 
 /**
  * Checks if any of the rules match the given PR
