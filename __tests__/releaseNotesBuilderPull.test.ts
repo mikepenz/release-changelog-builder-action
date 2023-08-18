@@ -1,7 +1,7 @@
 import {mergeConfiguration, resolveConfiguration} from '../src/utils'
 import {Octokit} from '@octokit/rest'
 import {buildChangelog} from '../src/transform'
-import {pullData} from 'github-pr-collector'
+import {pullData} from 'pr-collector'
 import fetch from 'node-fetch'
 
 jest.setTimeout(180000)
