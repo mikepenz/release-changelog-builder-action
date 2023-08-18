@@ -92,9 +92,9 @@ export class Commits {
           sha: commit.sha || '',
           summary: commit.commit.message.split('\n')[0],
           message: commit.commit.message,
-          author: commit.commit.author?.name || '',
+          author: commit.author?.login || '',
           authorDate: moment(commit.commit.author?.date),
-          committer: commit.commit.committer?.name || '',
+          committer: commit.committer?.login || '',
           commitDate: moment(commit.commit.committer?.date),
           prNumber: undefined
         }))
