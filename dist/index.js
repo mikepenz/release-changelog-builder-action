@@ -282,9 +282,9 @@ class Commits {
                         sha: commit.sha || '',
                         summary: commit.commit.message.split('\n')[0],
                         message: commit.commit.message,
-                        author: ((_a = commit.commit.author) === null || _a === void 0 ? void 0 : _a.name) || '',
+                        author: ((_a = commit.author) === null || _a === void 0 ? void 0 : _a.login) || '',
                         authorDate: (0, moment_1.default)((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.date),
-                        committer: ((_c = commit.commit.committer) === null || _c === void 0 ? void 0 : _c.name) || '',
+                        committer: ((_c = commit.committer) === null || _c === void 0 ? void 0 : _c.login) || '',
                         commitDate: (0, moment_1.default)((_d = commit.commit.committer) === null || _d === void 0 ? void 0 : _d.date),
                         prNumber: undefined
                     });
