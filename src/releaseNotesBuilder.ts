@@ -2,11 +2,11 @@ import * as core from '@actions/core'
 import {Configuration} from './configuration'
 import {checkExportedData} from './utils'
 import {PullRequestData, buildChangelog} from './transform'
-import {PullRequestCollector} from 'github-pr-collector'
-import {failOrError} from 'github-pr-collector/lib/utils'
-import {TagInfo} from 'github-pr-collector/lib/tags'
-import {DiffInfo} from 'github-pr-collector/lib/commits'
-import {PullRequestInfo} from 'github-pr-collector/lib/pullRequests'
+import {PullRequestCollector} from './pr-collector/prCollector'
+import {failOrError} from './pr-collector/utils'
+import {TagInfo} from './pr-collector/tags'
+import {DiffInfo} from './pr-collector/commits'
+import {PullRequestInfo} from './pr-collector/pullRequests'
 
 export interface ReleaseNotesOptions {
   owner: string // the owner of the repository
