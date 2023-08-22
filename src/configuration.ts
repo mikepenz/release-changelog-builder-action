@@ -19,6 +19,9 @@ export interface Configuration extends PullConfiguration {
   base_branches: string[]
   custom_placeholders?: Placeholder[]
   trim_values: boolean
+  submodule_paths: string[]
+  submodule_template: string
+  submodule_empty_template: string
 }
 
 export interface Category {
@@ -91,7 +94,7 @@ export const DefaultConfiguration: Configuration = {
       labels: []
     }
   ], // the categories to support for the ordering
-  ignore_labels: ['ignore'], // list of lables being ignored from the changelog
+  ignore_labels: ['ignore'], // list of labels being ignored from the changelog
   label_extractor: [], // extracts additional labels from the commit message given a regex
   duplicate_filter: undefined, // extract an identifier from a PR used to detect duplicates, will keep the last match (depends on `sort`)
   transformers: [], // transformers to apply on the PR description according to the `pr_template`
@@ -103,5 +106,10 @@ export const DefaultConfiguration: Configuration = {
   },
   base_branches: [], // target branches for the merged PR ignoring PRs with different target branch, by default it will get all PRs
   custom_placeholders: [],
-  trim_values: false // defines if values are being trimmed prior to inserting
+  trim_values: false, // defines if values are being trimmed prior to inserting
+  submodule_paths: [], // paths in which to look for submodules
+  // template for submodule sections
+  submodule_template:
+    '### Submodule [${{OWNER}}/${{REPO}}](http://github.com/${{OWNER}}/${{REPO})\n\n${{CHANGELOG}}**🏷️ Miscellaneous**\n${{UNCATEGORIZED}}\n',
+  submodule_empty_template: '### Submodule [${{OWNER}}/${{REPO}}](http://github.com/${{OWNER}}/${{REPO})\n\nNo changes.'
 }

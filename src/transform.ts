@@ -373,6 +373,7 @@ function fillAdditionalPlaceholders(
   options: ReleaseNotesOptions,
   placeholderMap: Map<string, string> /* placeholderKey and original value */
 ): void {
+  placeholderMap.set('TEXT', options.text)
   placeholderMap.set('OWNER', options.owner)
   placeholderMap.set('REPO', options.repo)
   placeholderMap.set('FROM_TAG', options.fromTag.name)

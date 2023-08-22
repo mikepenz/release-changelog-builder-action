@@ -58,11 +58,13 @@ inputs:
     description: 'Defines the base url for GitHub Enterprise authentication, uses `https://api.github.com` by default'
   cache:
     description: 'Provide the cache of a previous run. Allows to re-use collected information multiple times to generate different release notes. Requires `exportCache` to be enabled for the previous run.'
+  text:
+    description: 'Custom text that can be referred to with the `TEXT` substitution variable in templates'
 outputs:
   changelog:
     description: The built release changelog built from the merged pull requests
   pull_requests:
-    description: A comma seperated list of PR numbers that were merged
+    description: A comma separated list of PR numbers that were merged
   owner:
     description: Specifies the owner of the repository processed
   repo:

@@ -7,6 +7,7 @@ import {failOrError} from './pr-collector/utils'
 import {TagInfo} from './pr-collector/tags'
 import {DiffInfo} from './pr-collector/commits'
 import {PullRequestInfo} from './pr-collector/pullRequests'
+import {Octokit} from '@octokit/rest'
 
 export interface ReleaseNotesOptions {
   owner: string // the owner of the repository
@@ -20,6 +21,7 @@ export interface ReleaseNotesOptions {
   fetchReviews: boolean // defines if the action should fetch the reviews for the PR.
   commitMode: boolean // defines if we use the alternative commit based mode. note: this is only partially supported
   configuration: Configuration // the configuration as defined in `configuration.ts`
+  text: string // optional text to feature in the notes
 }
 
 export interface Data {
@@ -30,8 +32,7 @@ export interface Data {
 
 export class ReleaseNotesBuilder {
   constructor(
-    private baseUrl: string | null,
-    private token: string | null,
+    private octokit: Octokit,
     private repositoryPath: string,
     private owner: string | null,
     private repo: string | null,
@@ -47,8 +48,17 @@ export class ReleaseNotesBuilder {
     private commitMode = false,
     private exportCache = false,
     private exportOnly = false,
-    private configuration: Configuration
+    private configuration: Configuration,
+    private text: string
   ) {}
+
+  getFromTag(): string {
+    return this.fromTag || ''
+  }
+
+  getToTag(): string {
+    return this.toTag || ''
+  }
 
   async build(): Promise<string | null> {
     const releaseNotesData = checkExportedData()
@@ -69,8 +79,7 @@ export class ReleaseNotesBuilder {
       core.endGroup()
 
       const prData = await new PullRequestCollector(
-        this.baseUrl,
-        this.token,
+        this.octokit,
         this.repositoryPath,
         this.owner,
         this.repo,
@@ -102,7 +111,8 @@ export class ReleaseNotesBuilder {
         fetchReleaseInformation: this.fetchReleaseInformation,
         fetchReviews: this.fetchReviews,
         commitMode: this.commitMode,
-        configuration: this.configuration
+        configuration: this.configuration,
+        text: this.text
       }
       const mergedPullRequests = prData.mergedPullRequests
       const diffInfo = prData.diffInfo
@@ -155,7 +165,8 @@ export class ReleaseNotesBuilder {
         fetchReleaseInformation: this.fetchReleaseInformation || orgOptions.fetchReleaseInformation,
         fetchReviews: this.fetchReviews || orgOptions.fetchReviews,
         commitMode: this.commitMode || orgOptions.commitMode,
-        configuration: this.configuration || orgOptions.configuration
+        configuration: this.configuration || orgOptions.configuration,
+        text: this.text
       }
 
       this.setOutputs(options, diffInfo, mergedPullRequests)

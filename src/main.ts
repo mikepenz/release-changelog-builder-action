@@ -3,6 +3,8 @@ import * as github from '@actions/github'
 import {mergeConfiguration, parseConfiguration, resolveConfiguration, retrieveRepositoryPath, writeOutput} from './utils'
 import {ReleaseNotesBuilder} from './releaseNotesBuilder'
 import {Configuration} from './configuration'
+import {Octokit} from '@octokit/rest'
+import {Submodules} from './submodules'
 
 async function run(): Promise<void> {
   core.setOutput('failed', false) // mark the action not failed by default
@@ -58,9 +60,17 @@ async function run(): Promise<void> {
     const exportCache = core.getInput('exportCache') === 'true'
     const exportOnly = core.getInput('exportOnly') === 'true'
 
-    const result = await new ReleaseNotesBuilder(
-      baseUrl,
-      token,
+    // read in the optional text
+    const text = core.getInput('text') || ''
+
+    // load octokit instance
+    const octokit = new Octokit({
+      auth: `token ${token || process.env.GITHUB_TOKEN}`,
+      baseUrl: `${baseUrl || 'https://api.github.com'}`
+    })
+
+    const mainBuilder = new ReleaseNotesBuilder(
+      octokit,
       repositoryPath,
       owner,
       repo,
@@ -76,10 +86,57 @@ async function run(): Promise<void> {
       commitMode,
       exportCache,
       exportOnly,
-      configuration
-    ).build()
+      configuration,
+      text
+    )
+
+    let result = await mainBuilder.build()
+    let appendix = ''
+
+    if (configuration.submodule_paths && configuration.submodule_paths.length > 0) {
+      configuration.template = configuration.submodule_template
+      configuration.empty_template = configuration.submodule_empty_template
+
+      const submodules = await new Submodules(octokit, failOnError).getSubmodules(
+        owner,
+        repo,
+        mainBuilder.getFromTag(),
+        mainBuilder.getToTag(),
+        configuration.submodule_paths
+      )
+
+      for (const submodule of submodules) {
+        core.info(`⚙️ Indexing submodule '${submodule.repo}'...`)
+        const notes = await new ReleaseNotesBuilder(
+          octokit,
+          submodule.path,
+          submodule.owner,
+          submodule.repo,
+          submodule.baseRef,
+          submodule.headRef,
+          includeOpen,
+          failOnError,
+          ignorePreReleases,
+          fetchViaCommits,
+          fetchReviewers,
+          fetchReleaseInformation,
+          fetchReviews,
+          commitMode,
+          exportCache,
+          exportOnly,
+          configuration,
+          text
+        ).build()
+        appendix += notes
+      }
+
+      result = `${result}${appendix}`
+    }
 
     core.setOutput('changelog', result)
+
+    // Debugging...
+    core.info(`${result}`)
 
     // write the result in changelog to file if possible
     const outputFile: string = core.getInput('outputFile')

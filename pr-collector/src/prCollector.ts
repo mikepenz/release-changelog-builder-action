@@ -1,12 +1,12 @@
 import * as core from '@actions/core'
 import {PullConfiguration} from './types'
 import {Octokit} from '@octokit/rest'
-import {TagInfo, Tags} from './tags'
+import {TagInfo, TagResult, Tags} from './tags'
 import {failOrError} from './utils'
 import {HttpsProxyAgent} from 'https-proxy-agent'
 import {PullRequestInfo, PullRequests} from './pullRequests'
 import {Commits, DiffInfo} from './commits'
-import fetch from 'node-fetch'
+import {DefaultConfiguration} from '../configuration'
 
 export interface Options {
   owner: string // the owner of the repository
@@ -32,8 +32,7 @@ export interface Data {
 
 export class PullRequestCollector {
   constructor(
-    private baseUrl: string | null,
-    private token: string | null,
+    private octokit: Octokit,
     private repositoryPath: string,
     private owner: string,
     private repo: string,
@@ -59,18 +58,9 @@ export class PullRequestCollector {
       noProxyArray = noProxy.split(',')
     }
 
-    // load octokit instance
-    const octokit = new Octokit({
-      auth: `token ${this.token || process.env.GITHUB_TOKEN}`,
-      baseUrl: `${this.baseUrl || 'https://api.github.com'}`,
-      request: {
-        fetch
-      }
-    })
-
     if (proxy) {
       const agent = new HttpsProxyAgent(proxy)
-      octokit.hook.before('request', options => {
+      this.octokit.hook.before('request', options => {
         if (noProxyArray.includes(options.request.hostname)) {
           return
         }
@@ -80,19 +70,31 @@ export class PullRequestCollector {
 
     // ensure proper from <-> to tag range
     core.startGroup(`🔖 Resolve tags`)
-    const tagsApi = new Tags(octokit)
-    const tagRange = await tagsApi.retrieveRange(
-      this.repositoryPath,
-      this.owner,
-      this.repo,
-      this.fromTag,
-      this.toTag,
-      this.ignorePreReleases,
-      this.configuration.max_tags_to_fetch,
-      this.configuration.tag_resolver
-    )
+    const tagsApi = new Tags(this.octokit)
+    const sha1 = /^[a-f0-9]{40}$/
+    let tagRange: TagResult
+    // check whether the tags need to be resolved or not
+    if (this.fromTag && sha1.test(this.fromTag) && this.toTag && sha1.test(this.toTag)) {
+      core.info(`Given start and end tags are plain SHA-1 hashes.`)
+      tagRange = {
+        from: {name: this.fromTag, commit: this.fromTag},
+        to: {name: this.toTag, commit: this.toTag}
+      }
+    } else {
+      // ensure proper from <-> to tag range
+      tagRange = await tagsApi.retrieveRange(
+        this.repositoryPath,
+        this.owner,
+        this.repo,
+        this.fromTag,
+        this.toTag,
+        this.ignorePreReleases,
+        this.configuration.max_tags_to_fetch || DefaultConfiguration.max_tags_to_fetch,
+        this.configuration.tag_resolver || DefaultConfiguration.tag_resolver
+      )
+    }
+    let thisTag = tagRange?.to
 
-    let thisTag = tagRange.to
     if (!thisTag) {
       failOrError(`💥 Missing or couldn't resolve 'toTag'`, this.failOnError)
       return null
@@ -100,7 +102,7 @@ export class PullRequestCollector {
       core.debug(`Resolved 'toTag' as ${thisTag.name}`)
     }
 
-    let previousTag = tagRange.from
+    let previousTag = tagRange?.from
     if (previousTag == null) {
       failOrError(`💥 Unable to retrieve previous tag given ${this.toTag}`, this.failOnError)
       return null
@@ -118,7 +120,7 @@ export class PullRequestCollector {
 
     core.endGroup()
 
-    return await pullData(octokit, {
+    return await pullData(this.octokit, {
       owner: this.owner,
       repo: this.repo,
       fromTag: previousTag,

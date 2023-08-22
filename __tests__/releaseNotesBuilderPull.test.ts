@@ -29,7 +29,8 @@ it('Should have empty changelog (tags)', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    text: ""
   }
   const data = await pullData(octokit, options)
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
@@ -51,7 +52,8 @@ it('Should match generated changelog (tags)', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    text: ""
   }
   const data = await pullData(octokit, options)
 
@@ -80,7 +82,8 @@ it('Should match generated changelog (refs)', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    text: ""
   }
   const data = await pullData(octokit, options)
 
@@ -116,7 +119,8 @@ it('Should match generated changelog and replace all occurrences (refs)', async 
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    text: ""
   }
   const data = await pullData(octokit, options)
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
@@ -154,7 +158,8 @@ it('Should match ordered ASC', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    text: ""
   }
   const data = await pullData(octokit, options)
 
@@ -178,7 +183,8 @@ it('Should match ordered DESC', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    text: ""
   }
   const data = await pullData(octokit, options)
 
@@ -201,7 +207,8 @@ it('Should match ordered by title ASC', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    text: ""
   }
   const data = await pullData(octokit, options)
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
@@ -225,7 +232,8 @@ it('Should match ordered by title DESC', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    text: ""
   }
   const data = await pullData(octokit, options)
 
@@ -250,7 +258,8 @@ it('Should ignore PRs not merged into develop branch', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    text: ""
   }
   const data = await pullData(octokit, options)
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
@@ -272,7 +281,8 @@ it('Should ignore PRs not merged into main branch', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    text: ""
   }
   const data = await pullData(octokit, options)
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)

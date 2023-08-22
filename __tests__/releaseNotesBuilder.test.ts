@@ -1,13 +1,22 @@
 import {mergeConfiguration, resolveConfiguration} from '../src/utils'
 import {ReleaseNotesBuilder} from '../src/releaseNotesBuilder'
+import { Octokit } from '@octokit/rest'
 
 jest.setTimeout(180000)
+
+// load octokit instance
+const octokit = new Octokit({
+    auth: `token ${process.env.GITHUB_TOKEN}`,
+    request: {
+      fetch: fetch
+    }
+  })
+
 
 it('Should match generated changelog (unspecified fromTag)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs/configuration.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
-    null,
-    null,
+    octokit,
     '.',
     'mikepenz',
     'release-changelog-builder-action',
@@ -23,7 +32,8 @@ it('Should match generated changelog (unspecified fromTag)', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    configuration
+    configuration,
+    ""
   )
 
   const changeLog = await releaseNotesBuilder.build()
@@ -39,8 +49,7 @@ it('Should match generated changelog (unspecified fromTag)', async () => {
 it('Should match generated changelog (unspecified tags)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs/configuration.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
-    null,
-    null,
+    octokit,
     '.',
     'mikepenz',
     'action-junit-report-legacy',
@@ -56,7 +65,8 @@ it('Should match generated changelog (unspecified tags)', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    configuration
+    configuration,
+    ""
   )
 
   const changeLog = await releaseNotesBuilder.build()
@@ -67,8 +77,7 @@ it('Should match generated changelog (unspecified tags)', async () => {
 it('Should use empty placeholder', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs/configuration.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
-    null,
-    null,
+    octokit,
     '.',
     'mikepenz',
     'release-changelog-builder-action',
@@ -84,7 +93,8 @@ it('Should use empty placeholder', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    configuration
+    configuration,
+    ""
   )
 
   const changeLog = await releaseNotesBuilder.build()
@@ -95,8 +105,7 @@ it('Should use empty placeholder', async () => {
 it('Should fill empty placeholders', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_empty_all_placeholders.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
-    null,
-    null,
+    octokit,
     '.',
     'mikepenz',
     'release-changelog-builder-action',
@@ -112,7 +121,8 @@ it('Should fill empty placeholders', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    configuration
+    configuration,
+    ""
   )
 
   const changeLog = await releaseNotesBuilder.build()
@@ -125,8 +135,7 @@ it('Should fill empty placeholders', async () => {
 it('Should fill `template` placeholders', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_empty_all_placeholders.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
-    null,
-    null,
+    octokit,
     '.',
     'mikepenz',
     'release-changelog-builder-action',
@@ -142,7 +151,8 @@ it('Should fill `template` placeholders', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    configuration
+    configuration,
+    ""
   )
 
   const changeLog = await releaseNotesBuilder.build()
@@ -156,8 +166,7 @@ it('Should fill `template` placeholders, ignore', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_empty_all_placeholders.json'))
   configuration.categories.pop() // drop `uncategorized` category
   const releaseNotesBuilder = new ReleaseNotesBuilder(
-    null,
-    null,
+    octokit,
     '.',
     'mikepenz',
     'release-changelog-builder-action',
@@ -173,7 +182,8 @@ it('Should fill `template` placeholders, ignore', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    configuration
+    configuration,
+    ""
   )
 
   const changeLog = await releaseNotesBuilder.build()
@@ -182,12 +192,11 @@ it('Should fill `template` placeholders, ignore', async () => {
     `## 🚀 Features\n\n- Enhance sorting by using proper semver\n   - PR: #51\n\n## 🧪 Tests\n\n- Improve test cases\n   - PR: #49\n\n\n- Bump @types/node from 14.11.8 to 14.11.10\n   - PR: #47\n- Adjust code to move fromTag resolving to main.ts\n   - PR: #48\n- dev -> main\n   - PR: #52\n- Update package.json to updated description\n   - PR: #53\n- dev -> main\n   - PR: #54\n\n- New additional placeholders for \`template\` and \`empty_template\`\n   - PR: #50\n\nmikepenz\nrelease-changelog-builder-action\nv0.9.1\nv0.9.5\nhttps://github.com/mikepenz/release-changelog-builder-action/compare/v0.9.1...v0.9.5\n2\n5\n1\n16\n2931\n450\n3381\n26`
   )
 })
-
+  
 it('Uncategorized category', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_uncategorized_category.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
-    null,
-    null,
+    octokit,
     '.',
     'mikepenz',
     'release-changelog-builder-action',
@@ -203,7 +212,8 @@ it('Uncategorized category', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    configuration
+    configuration,
+    ""
   )
 
   const changeLog = await releaseNotesBuilder.build()
@@ -216,8 +226,7 @@ it('Uncategorized category', async () => {
 it('Verify commit based changelog', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_commits.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
-    null,
-    null,
+    octokit,
     '.',
     'mikepenz',
     'release-changelog-builder-action',
@@ -233,7 +242,8 @@ it('Verify commit based changelog', async () => {
     true, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    configuration
+    configuration,
+    ""
   )
 
   const changeLog = await releaseNotesBuilder.build()
@@ -246,8 +256,7 @@ it('Verify commit based changelog', async () => {
 it('Verify commit based changelog, with emoji categorisation', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_commits_emoji.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
-    null,
-    null,
+    octokit,
     '.',
     'theapache64',
     'stackzy',
@@ -263,7 +272,8 @@ it('Verify commit based changelog, with emoji categorisation', async () => {
     true, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    configuration
+    configuration,
+    ""
   )
 
   const changeLog = await releaseNotesBuilder.build()
@@ -276,8 +286,7 @@ it('Verify commit based changelog, with emoji categorisation', async () => {
 it('Verify default inclusion of open PRs', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_including_open.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
-    null, // baseUrl
-    null, // token
+    octokit,
     '.', // repoPath
     'mikepenz', // user
     'release-changelog-builder-action-playground', // repo
@@ -293,7 +302,8 @@ it('Verify default inclusion of open PRs', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    configuration // configuration
+    configuration, // configuration
+    ""
   )
 
   const changeLog = await releaseNotesBuilder.build()
@@ -306,8 +316,7 @@ it('Verify default inclusion of open PRs', async () => {
 it('Verify custom categorisation of open PRs', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_excluding_open.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
-    null, // baseUrl
-    null, // token
+    octokit,
     '.', // repoPath
     'mikepenz', // user
     'release-changelog-builder-action-playground', // repo
@@ -323,7 +332,8 @@ it('Verify custom categorisation of open PRs', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    configuration // configuration
+    configuration, // configuration
+    ""
   )
 
   const changeLog = await releaseNotesBuilder.build()
@@ -336,8 +346,7 @@ it('Verify custom categorisation of open PRs', async () => {
 it('Verify reviewers who approved are fetched and also release information', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_approvers.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
-    null, // baseUrl
-    null, // token
+    octokit,
     '.', // repoPath
     'mikepenz', // user
     'release-changelog-builder-action-playground', // repo
@@ -353,7 +362,8 @@ it('Verify reviewers who approved are fetched and also release information', asy
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    configuration // configuration
+    configuration, // configuration
+    ""
   )
 
   const changeLog = await releaseNotesBuilder.build()
@@ -367,8 +377,7 @@ it('Fetch release information', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_approvers.json'))
   configuration.template = '${{FROM_TAG}}-${{FROM_TAG_DATE}}\n${{TO_TAG}}-${{TO_TAG_DATE}}\n${{DAYS_SINCE}}'
   const releaseNotesBuilder = new ReleaseNotesBuilder(
-    null, // baseUrl
-    null, // token
+    octokit, // token
     '.', // repoPath
     'mikepenz', // user
     'release-changelog-builder-action-playground', // repo
@@ -384,7 +393,8 @@ it('Fetch release information', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    configuration // configuration
+    configuration, // configuration
+    ""
   )
 
   const changeLog = await releaseNotesBuilder.build()
@@ -396,8 +406,7 @@ it('Fetch release information for non existing tag / release', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_approvers.json'))
   configuration.template = '${{FROM_TAG}}-${{FROM_TAG_DATE}}\n${{TO_TAG}}-${{TO_TAG_DATE}}\n${{DAYS_SINCE}}'
   const releaseNotesBuilder = new ReleaseNotesBuilder(
-    null, // baseUrl
-    null, // token
+    octokit,
     '.', // repoPath
     'mikepenz', // user
     'release-changelog-builder-action-playground', // repo
@@ -413,7 +422,8 @@ it('Fetch release information for non existing tag / release', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    configuration // configuration
+    configuration, // configuration
+    ""
   )
 
   const changeLog = await releaseNotesBuilder.build()

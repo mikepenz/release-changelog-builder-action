@@ -453,7 +453,8 @@ it('Commit SHA-1 in commitMode', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: true,
-    configuration: customConfig
+    configuration: customConfig,
+    text: ""
   })
 
   expect(resultChangelog).toStrictEqual(`## 🚀 Features\n\nsha1-3\nsha1-1\n\n## 🐛 Fixes\n\nsha1-3\nsha1-2\n\n`)
@@ -474,7 +475,8 @@ it('Release Diff', async () => {
     fetchReleaseInformation: true,
     fetchReviews: false,
     commitMode: true,
-    configuration: customConfig
+    configuration: customConfig,
+    text: ""
   })
 
   expect(resultChangelog).toStrictEqual(`https://github.com/mikepenz/release-changelog-builder-action/compare/v2.8.0...v2.8.1\n`)
@@ -678,6 +680,7 @@ function buildChangelogTest(config: Configuration, prs: PullRequestInfo[]): stri
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration: config
+    configuration: config,
+    text: ""
   })
 }

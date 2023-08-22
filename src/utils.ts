@@ -143,7 +143,10 @@ export function mergeConfiguration(jc?: Configuration, fc?: Configuration): Conf
     tag_resolver: jc?.tag_resolver || fc?.tag_resolver || DefaultConfiguration.tag_resolver,
     base_branches: jc?.base_branches || fc?.base_branches || DefaultConfiguration.base_branches,
     custom_placeholders: jc?.custom_placeholders || fc?.custom_placeholders || DefaultConfiguration.custom_placeholders,
-    trim_values: jc?.trim_values || fc?.trim_values || DefaultConfiguration.trim_values
+    trim_values: jc?.trim_values || fc?.trim_values || DefaultConfiguration.trim_values,
+    submodule_paths: jc?.submodule_paths || fc?.submodule_paths || DefaultConfiguration.submodule_paths,
+    submodule_template: jc?.submodule_template || fc?.submodule_template || DefaultConfiguration.submodule_template,
+    submodule_empty_template: jc?.submodule_empty_template || fc?.submodule_empty_template || DefaultConfiguration.submodule_empty_template
   }
 }
 
