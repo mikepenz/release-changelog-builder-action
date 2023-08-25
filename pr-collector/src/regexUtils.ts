@@ -54,7 +54,7 @@ export function buildRegex(
       onEmpty
     }
   } catch (e) {
-    core.warning(`⚠️ Bad replacer regex: ${regex.pattern}`)
+    core.warning(`⚠️ Bad regex: ${regex.pattern} (${e})`)
     return null
   }
 }

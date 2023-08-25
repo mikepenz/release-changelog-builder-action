@@ -197,7 +197,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
         if (category.exhaustive_rules !== undefined) {
           exhaustive_rules = category.exhaustive_rules
         }
-        if (matched && category.rules !== undefined) {
+        if ((matched || category.labels === undefined) && category.rules !== undefined) {
           matched = matchesRules(category.rules, pr, exhaustive_rules)
         }
       } else {
