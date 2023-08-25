@@ -1,12 +1,14 @@
-import {mergeConfiguration, resolveConfiguration} from '../src/utils'
+import {checkExportedData, mergeConfiguration, resolveConfiguration} from '../src/utils'
 import {Octokit} from '@octokit/rest'
 import {buildChangelog} from '../src/transform'
 import {pullData} from '../src/pr-collector/prCollector'
 import fetch from 'node-fetch'
+import { Data } from '../src/releaseNotesBuilder'
 
 jest.setTimeout(180000)
 
 // load octokit instance
+const enablePullData = false // if false -> use cache for data
 const octokit = new Octokit({
   auth: `token ${process.env.GITHUB_TOKEN}`,
   request: {
@@ -20,8 +22,8 @@ it('Should have empty changelog (tags)', async () => {
   const options = {
     owner: 'mikepenz',
     repo: 'release-changelog-builder-action',
-    fromTag: {name: 'v0.0.1'},
-    toTag: {name: 'v0.0.2'},
+    fromTag: {name: 'v0.0.2'},
+    toTag: {name: 'v0.0.3'},
     includeOpen: false,
     failOnError: false,
     fetchViaCommits: true,
@@ -31,7 +33,12 @@ it('Should have empty changelog (tags)', async () => {
     commitMode: false,
     configuration
   }
-  const data = await pullData(octokit, options)
+  let data: any
+  if (enablePullData) {
+    data = await pullData(octokit, options)
+  } else {
+    data = checkExportedData(false, "caches/rcba_0.0.2-0.0.3_cache.json")
+  }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
   expect(changeLog).toStrictEqual('- no changes')
@@ -53,8 +60,12 @@ it('Should match generated changelog (tags)', async () => {
     commitMode: false,
     configuration
   }
-  const data = await pullData(octokit, options)
-
+  let data: any
+  if (enablePullData) {
+    data = await pullData(octokit, options)
+  } else {
+    data = checkExportedData(false, "caches/rcba_0.0.1-0.0.3_cache.json")
+  }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 🧪 Tests
@@ -82,8 +93,12 @@ it('Should match generated changelog (refs)', async () => {
     commitMode: false,
     configuration
   }
-  const data = await pullData(octokit, options)
-
+  let data: any
+  if (enablePullData) {
+    data = await pullData(octokit, options)
+  } else {
+    data = checkExportedData(false, "caches/rcba_5ec7a2-fa3788_cache.json")
+  }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 🧪 Tests
@@ -118,7 +133,12 @@ it('Should match generated changelog and replace all occurrences (refs)', async 
     commitMode: false,
     configuration
   }
-  const data = await pullData(octokit, options)
+  let data: any
+  if (enablePullData) {
+    data = await pullData(octokit, options)
+  } else {
+    data = checkExportedData(false, "caches/rcba_5ec7a2-fa3788_cache.json")
+  }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 🧪 Tests
@@ -156,8 +176,12 @@ it('Should match ordered ASC', async () => {
     commitMode: false,
     configuration
   }
-  const data = await pullData(octokit, options)
-
+  let data: any
+  if (enablePullData) {
+    data = await pullData(octokit, options)
+  } else {
+    data = checkExportedData(false, "caches/rcba_0.3.0-0.5.0_cache.json")
+  }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 🚀 Features\n\n22\n24\n25\n26\n28\n\n## 🐛 Fixes\n\n23\n\n`)
@@ -180,8 +204,12 @@ it('Should match ordered DESC', async () => {
     commitMode: false,
     configuration
   }
-  const data = await pullData(octokit, options)
-
+  let data: any
+  if (enablePullData) {
+    data = await pullData(octokit, options)
+  } else {
+    data = checkExportedData(false, "caches/rcba_0.3.0-0.5.0_cache.json")
+  }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 🚀 Features\n\n28\n26\n25\n24\n22\n\n## 🐛 Fixes\n\n23\n\n`)
@@ -203,7 +231,12 @@ it('Should match ordered by title ASC', async () => {
     commitMode: false,
     configuration
   }
-  const data = await pullData(octokit, options)
+  let data: any
+  if (enablePullData) {
+    data = await pullData(octokit, options)
+  } else {
+    data = checkExportedData(false, "caches/rcba_0.3.0-0.5.0_cache.json")
+  }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(
@@ -227,8 +260,12 @@ it('Should match ordered by title DESC', async () => {
     commitMode: false,
     configuration
   }
-  const data = await pullData(octokit, options)
-
+  let data: any
+  if (enablePullData) {
+    data = await pullData(octokit, options)
+  } else {
+    data = checkExportedData(false, "caches/rcba_0.3.0-0.5.0_cache.json")
+  }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(
@@ -252,7 +289,12 @@ it('Should ignore PRs not merged into develop branch', async () => {
     commitMode: false,
     configuration
   }
-  const data = await pullData(octokit, options)
+  let data: any
+  if (enablePullData) {
+    data = await pullData(octokit, options)
+  } else {
+    data = checkExportedData(false, "caches/rcba_1.3.1-1.4.0_base_develop_cache.json")
+  }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`150\n\n`)
@@ -274,7 +316,12 @@ it('Should ignore PRs not merged into main branch', async () => {
     commitMode: false,
     configuration
   }
-  const data = await pullData(octokit, options)
+  let data: any
+  if (enablePullData) {
+    data = await pullData(octokit, options)
+  } else {
+    data = checkExportedData(false, "caches/rcba_1.3.1-1.4.0_base_main_cache.json")
+  }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`153\n\n`)

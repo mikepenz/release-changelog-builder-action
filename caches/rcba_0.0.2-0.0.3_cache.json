@@ -1,0 +1,70 @@
+{
+    "mergedPullRequests": [],
+    "diffInfo": {
+        "changedFiles": 0,
+        "additions": 0,
+        "deletions": 0,
+        "changes": 0,
+        "commits": 0,
+        "commitInfo": []
+    },
+    "options": {
+        "owner": "mikepenz",
+        "repo": "release-changelog-builder-action",
+        "fromTag": {
+            "name": "v0.0.2",
+            "commit": "v0.0.2"
+        },
+        "toTag": {
+            "name": "v0.0.3",
+            "commit": "v0.0.3"
+        },
+        "includeOpen": false,
+        "failOnError": false,
+        "fetchReviewers": false,
+        "fetchReleaseInformation": false,
+        "fetchReviews": false,
+        "commitMode": false,
+        "configuration": {
+            "max_tags_to_fetch": 200,
+            "max_pull_requests": 1000,
+            "max_back_track_time_days": 1000,
+            "exclude_merge_branches": [],
+            "sort": "ASC",
+            "template": "${{CHANGELOG}}",
+            "pr_template": "- ${{TITLE}}\n   - PR: #${{NUMBER}}",
+            "empty_template": "- no changes",
+            "categories": [
+                {
+                    "title": "## 🚀 Features",
+                    "labels": [
+                        "feature"
+                    ]
+                },
+                {
+                    "title": "## 🐛 Fixes",
+                    "labels": [
+                        "fix"
+                    ]
+                },
+                {
+                    "title": "## 🧪 Tests",
+                    "labels": [
+                        "test"
+                    ]
+                }
+            ],
+            "ignore_labels": [
+                "ignore"
+            ],
+            "label_extractor": [],
+            "transformers": [],
+            "tag_resolver": {
+                "method": "semver"
+            },
+            "base_branches": [],
+            "custom_placeholders": [],
+            "trim_values": false
+        }
+    }
+}

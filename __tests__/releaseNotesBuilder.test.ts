@@ -86,7 +86,7 @@ it('Should use empty placeholder', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    null, // path to the cache
+    "caches/rcba_0.0.2-0.0.3_cache.json", // path to the cache
     configuration
   )
 
@@ -115,7 +115,7 @@ it('Should fill empty placeholders', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    null, // path to the cache
+    "caches/rcba_0.0.2-0.0.3_cache.json", // path to the cache
     configuration
   )
 
@@ -146,7 +146,7 @@ it('Should fill `template` placeholders', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    null, // path to the cache
+    "caches/rcba_0.0.1-0.0.3_cache.json", // path to the cache
     configuration
   )
 
@@ -178,7 +178,7 @@ it('Should fill `template` placeholders, ignore', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    null, // path to the cache
+    "caches/rcba_0.9.1-0.9.5_cache.json", // path to the cache
     configuration
   )
 
@@ -209,7 +209,7 @@ it('Uncategorized category', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    null, // path to the cache
+    "caches/rcba_0.9.1-0.9.5_cache.json", // path to the cache
     configuration
   )
 
@@ -240,7 +240,7 @@ it('Verify commit based changelog', async () => {
     true, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    null, // path to the cache
+    "caches/rcba_0.0.1-0.0.3_commit_cache.json", // path to the cache
     configuration
   )
 
@@ -271,7 +271,7 @@ it('Verify commit based changelog, with emoji categorisation', async () => {
     true, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
-    null, // path to the cache
+    "caches/stackzy_bd3242-17a9e4_cache.json", // path to the cache
     configuration
   )
 
