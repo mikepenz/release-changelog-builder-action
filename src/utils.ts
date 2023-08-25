@@ -32,7 +32,7 @@ export function writeCacheData(data: Data, cacheOutput: string | null): void {
     // However, this can result in a "Argument list too long" exception for very long caches
     cacheFile = cacheOutput
   } else {
-    if (env.RUNNER_TEMP) {
+    if (env.RUNNER_TEMP && !fs.existsSync(env.RUNNER_TEMP)) {
       fs.mkdirSync(env.RUNNER_TEMP)
     }
     cacheFile = `${env.RUNNER_TEMP}/rcba-cache.json`

@@ -2597,7 +2597,7 @@ function writeCacheData(data, cacheOutput) {
         cacheFile = cacheOutput;
     }
     else {
-        if (process_1.env.RUNNER_TEMP) {
+        if (process_1.env.RUNNER_TEMP && !fs.existsSync(process_1.env.RUNNER_TEMP)) {
             fs.mkdirSync(process_1.env.RUNNER_TEMP);
         }
         cacheFile = `${process_1.env.RUNNER_TEMP}/rcba-cache.json`;
