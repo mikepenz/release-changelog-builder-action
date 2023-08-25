@@ -62,7 +62,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
             }
             parent.childPrs.push(pr)
           } else {
-            if (!valid) core.warning(`⚠️ Extracted reference 'isNaN': ${extracted}`)
+            if (!valid) core.debug(`⚠️ Extracted reference 'isNaN': ${extracted}`)
             remappedPrs.push(pr)
           }
         } else {
