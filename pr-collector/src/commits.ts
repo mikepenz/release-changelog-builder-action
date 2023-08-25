@@ -1,6 +1,9 @@
 import * as core from '@actions/core'
 import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import moment from 'moment'
+import {failOrError} from './utils'
+import {PullRequestInfo} from './pullRequests'
+import {Options} from './prCollector'
 
 export interface DiffInfo {
   changedFiles: number
@@ -25,7 +28,9 @@ export interface CommitInfo {
   summary: string
   message: string
   author: string
-  date: moment.Moment
+  authorDate: moment.Moment
+  committer: string
+  commitDate: moment.Moment
 }
 
 export class Commits {
@@ -87,8 +92,10 @@ export class Commits {
           sha: commit.sha || '',
           summary: commit.commit.message.split('\n')[0],
           message: commit.commit.message,
-          date: moment(commit.commit.committer?.date),
-          author: commit.commit.author?.name || '',
+          author: commit.author?.login || '',
+          authorDate: moment(commit.commit.author?.date),
+          committer: commit.committer?.login || '',
+          commitDate: moment(commit.commit.committer?.date),
           prNumber: undefined
         }))
     }
@@ -107,15 +114,71 @@ export class Commits {
     }
 
     commitsResult.sort((a, b) => {
-      if (a.date.isBefore(b.date)) {
+      if (a.commitDate.isBefore(b.commitDate)) {
         return -1
-      } else if (b.date.isBefore(a.date)) {
+      } else if (b.commitDate.isBefore(a.commitDate)) {
         return 1
       }
       return 0
     })
 
     return commitsResult
+  }
+
+  async getCommitHistory(options: Options): Promise<DiffInfo> {
+    const {owner, repo, fromTag, toTag, failOnError} = options
+    core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag.name}...${toTag.name}'`)
+
+    const commitsApi = new Commits(this.octokit)
+    let diffInfo: DiffInfo
+    try {
+      diffInfo = await commitsApi.getDiff(owner, repo, fromTag.name, toTag.name)
+    } catch (error) {
+      failOrError(`💥 Failed to retrieve - Invalid tag? - Because of: ${error}`, failOnError)
+      return DefaultDiffInfo
+    }
+    if (diffInfo.commitInfo.length === 0) {
+      core.warning(`⚠️ No commits found between - ${fromTag.name}...${toTag.name}`)
+      return DefaultDiffInfo
+    }
+
+    return diffInfo
+  }
+
+  async generateCommitPRs(options: Options): Promise<[DiffInfo, PullRequestInfo[]]> {
+    const {owner, repo, configuration} = options
+
+    const diffInfo = await this.getCommitHistory(options)
+    const commits = diffInfo.commitInfo
+    if (commits.length === 0) {
+      return [diffInfo, []]
+    }
+
+    const prCommits = filterCommits(commits, configuration.exclude_merge_branches)
+
+    core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`)
+
+    const prs = prCommits.map(function (commit): PullRequestInfo {
+      return {
+        number: 0,
+        title: commit.summary,
+        htmlURL: '',
+        baseBranch: '',
+        createdAt: commit.commitDate,
+        mergedAt: commit.commitDate,
+        mergeCommitSha: commit.sha,
+        author: commit.author || '',
+        repoName: '',
+        labels: [],
+        milestone: '',
+        body: commit.message || '',
+        assignees: [],
+        requestedReviewers: [],
+        approvedReviewers: [],
+        status: 'merged'
+      }
+    })
+    return [diffInfo, prs]
   }
 }
 

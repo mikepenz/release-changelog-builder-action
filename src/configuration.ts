@@ -1,4 +1,6 @@
-export interface Configuration {
+import {Rule, Extractor, Regex, Transformer, Sort, PullConfiguration} from './pr-collector/types'
+
+export interface Configuration extends PullConfiguration {
   max_tags_to_fetch: number
   max_pull_requests: number
   max_back_track_time_days: number
@@ -11,6 +13,7 @@ export interface Configuration {
   ignore_labels: string[]
   label_extractor: Extractor[]
   duplicate_filter?: Extractor // extract an identifier from a PR used to detect duplicates, will keep the last match (depends on `sort`)
+  reference?: Extractor // extracts a reference from a PR, used to establish parent child relations. This will remove the child from the main PR list.
   transformers: Transformer[]
   tag_resolver: TagResolver
   base_branches: string[]
@@ -19,6 +22,7 @@ export interface Configuration {
 }
 
 export interface Category {
+  key?: string // a key for this category. This is currently only used for the json output
   title: string // the title of this category
   labels?: string[] // labels to associate PRs to this category
   exclude_labels?: string[] // if an exclude label is detected, the PR will be excluded from this category
@@ -43,30 +47,6 @@ export type Property =
   | 'requestedReviewers'
   | 'approvedReviewers'
   | 'status'
-
-export interface Rule extends Regex {
-  on_property?: Property // retrieve the property to apply the rule on
-}
-
-export interface Sort {
-  order: 'ASC' | 'DESC' // the sorting order
-  on_property: 'mergedAt' | 'title' // the property to sort on. (mergedAt falls back to createdAt)
-}
-
-export interface Regex {
-  pattern: string // the regex pattern to match
-  flags?: string // the regex flag to use for RegExp
-}
-
-export interface Transformer extends Regex {
-  target?: string // the target string to transform the source string using the regex to
-}
-
-export interface Extractor extends Transformer {
-  on_property?: Property[] | Property | undefined // retrieve the property to extract the value from
-  method?: 'replace' | 'match' | undefined // the method to use to extract the value, `match` will not use the `target` property
-  on_empty?: string | undefined // in case the regex results in an empty string, this value is gonna be used instead (only for label_extractor currently)
-}
 
 export interface TagResolver {
   method: string // semver, sort
@@ -105,6 +85,10 @@ export const DefaultConfiguration: Configuration = {
     {
       title: '## 🧪 Tests',
       labels: ['test']
+    },
+    {
+      title: '## 📦 Uncategorized',
+      labels: []
     }
   ], // the categories to support for the ordering
   ignore_labels: ['ignore'], // list of lables being ignored from the changelog

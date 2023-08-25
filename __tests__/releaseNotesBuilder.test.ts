@@ -16,10 +16,14 @@ it('Should match generated changelog (unspecified fromTag)', async () => {
     false,
     false,
     false,
+    true, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false,
+    false, // enable commitMode
+    false, // enable exportCache
+    false, // enable exportOnly
+    null, // path to the cache
     configuration
   )
 
@@ -46,10 +50,14 @@ it('Should match generated changelog (unspecified tags)', async () => {
     false,
     false,
     false,
+    false, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false,
+    false, // enable commitMode
+    false, // enable exportCache
+    false, // enable exportOnly
+    null, // path to the cache
     configuration
   )
 
@@ -71,10 +79,14 @@ it('Should use empty placeholder', async () => {
     false,
     false,
     false,
+    true, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false,
+    false, // enable commitMode
+    false, // enable exportCache
+    false, // enable exportOnly
+    "caches/rcba_0.0.2-0.0.3_cache.json", // path to the cache
     configuration
   )
 
@@ -96,10 +108,14 @@ it('Should fill empty placeholders', async () => {
     false,
     false,
     false,
+    true, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false,
+    false, // enable commitMode
+    false, // enable exportCache
+    false, // enable exportOnly
+    "caches/rcba_0.0.2-0.0.3_cache.json", // path to the cache
     configuration
   )
 
@@ -123,10 +139,14 @@ it('Should fill `template` placeholders', async () => {
     false,
     false,
     false,
+    true, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false,
+    false, // enable commitMode
+    false, // enable exportCache
+    false, // enable exportOnly
+    "caches/rcba_0.0.1-0.0.3_cache.json", // path to the cache
     configuration
   )
 
@@ -139,6 +159,7 @@ it('Should fill `template` placeholders', async () => {
 
 it('Should fill `template` placeholders, ignore', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_empty_all_placeholders.json'))
+  configuration.categories.pop() // drop `uncategorized` category
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
     null,
@@ -150,10 +171,14 @@ it('Should fill `template` placeholders, ignore', async () => {
     false,
     false,
     false,
+    false, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false,
+    false, // enable commitMode
+    false, // enable exportCache
+    false, // enable exportOnly
+    "caches/rcba_0.9.1-0.9.5_cache.json", // path to the cache
     configuration
   )
 
@@ -177,10 +202,14 @@ it('Uncategorized category', async () => {
     false,
     false,
     false,
+    false, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false,
+    false, // enable commitMode
+    false, // enable exportCache
+    false, // enable exportOnly
+    "caches/rcba_0.9.1-0.9.5_cache.json", // path to the cache
     configuration
   )
 
@@ -204,10 +233,14 @@ it('Verify commit based changelog', async () => {
     false,
     false,
     false,
+    true, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    true,
+    true, // enable commitMode
+    false, // enable exportCache
+    false, // enable exportOnly
+    "caches/rcba_0.0.1-0.0.3_commit_cache.json", // path to the cache
     configuration
   )
 
@@ -231,10 +264,14 @@ it('Verify commit based changelog, with emoji categorisation', async () => {
     false,
     false,
     false,
+    false, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    true,
+    true, // enable commitMode
+    false, // enable exportCache
+    false, // enable exportOnly
+    "caches/stackzy_bd3242-17a9e4_cache.json", // path to the cache
     configuration
   )
 
@@ -258,10 +295,14 @@ it('Verify default inclusion of open PRs', async () => {
     true, // includeOpen
     false, // failOnError
     false, // ignorePrePrelease
+    false, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false, // commitMode
+    false, // enable commitMode
+    false, // enable exportCache
+    false, // enable exportOnly
+    null, // path to the cache
     configuration // configuration
   )
 
@@ -285,10 +326,14 @@ it('Verify custom categorisation of open PRs', async () => {
     true, // includeOpen
     false, // failOnError
     false, // ignorePrePrelease
+    false, // enable to fetch via commits
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false, // commitMode
+    false, // enable commitMode
+    false, // enable exportCache
+    false, // enable exportOnly
+    null, // path to the cache
     configuration // configuration
   )
 
@@ -312,10 +357,14 @@ it('Verify reviewers who approved are fetched and also release information', asy
     true, // includeOpen
     false, // failOnError
     false, // ignorePrePrelease
+    false, // enable to fetch via commits
     true, // enable to fetch reviewers
     true, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false, // commitMode
+    false, // enable commitMode
+    false, // enable exportCache
+    false, // enable exportOnly
+    null, // path to the cache
     configuration // configuration
   )
 
@@ -340,10 +389,14 @@ it('Fetch release information', async () => {
     true, // includeOpen
     false, // failOnError
     false, // ignorePrePrelease
+    false, // enable to fetch via commits
     false, // enable to fetch reviewers
     true, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false, // commitMode
+    false, // enable commitMode
+    false, // enable exportCache
+    false, // enable exportOnly
+    null, // path to the cache
     configuration // configuration
   )
 
@@ -366,10 +419,14 @@ it('Fetch release information for non existing tag / release', async () => {
     true, // includeOpen
     false, // failOnError
     false, // ignorePrePrelease
+    false, // enable to fetch via commits
     false, // enable to fetch reviewers
     true, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false, // commitMode
+    false, // enable commitMode
+    false, // enable exportCache
+    false, // enable exportOnly
+    null, // path to the cache
     configuration // configuration
   )
 

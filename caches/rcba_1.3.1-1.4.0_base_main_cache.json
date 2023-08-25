@@ -1,0 +1,161 @@
+{
+    "mergedPullRequests": [
+        {
+            "number": 153,
+            "title": "dev -> main",
+            "htmlURL": "https://github.com/mikepenz/release-changelog-builder-action/pull/153",
+            "baseBranch": "main",
+            "branch": "develop",
+            "createdAt": "2021-01-07T14:44:21.000Z",
+            "mergedAt": "2021-01-07T14:48:33.000Z",
+            "mergeCommitSha": "12ab81c9e9e730283fecbe3b6c85356952fc5ccb",
+            "author": "mikepenz",
+            "repoName": "mikepenz/release-changelog-builder-action",
+            "labels": [
+                "ignore",
+                "--rcba-merged"
+            ],
+            "milestone": "",
+            "body": "merge dev into main",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        }
+    ],
+    "diffInfo": {
+        "changedFiles": 12,
+        "additions": 10148,
+        "deletions": 21465,
+        "changes": 31613,
+        "commits": 8,
+        "commitInfo": [
+            {
+                "sha": "59903d2471fb3ddbc12e68b5d77d03509038703b",
+                "summary": "Bump @vercel/ncc from 0.26.1 to 0.26.2",
+                "message": "Bump @vercel/ncc from 0.26.1 to 0.26.2\n\nBumps [@vercel/ncc](https://github.com/vercel/ncc) from 0.26.1 to 0.26.2.\n- [Release notes](https://github.com/vercel/ncc/releases)\n- [Commits](https://github.com/vercel/ncc/compare/0.26.1...0.26.2)\n\nSigned-off-by: dependabot[bot] <support@github.com>",
+                "author": "dependabot[bot]",
+                "authorDate": "2021-01-07T06:32:58.000Z",
+                "committer": "web-flow",
+                "commitDate": "2021-01-07T06:32:58.000Z"
+            },
+            {
+                "sha": "cb75836b8da89f4e7d6bfabc985a5715e4e41826",
+                "summary": "Merge pull request #150 from mikepenz/dependabot/npm_and_yarn/vercel/ncc-0.26.2",
+                "message": "Merge pull request #150 from mikepenz/dependabot/npm_and_yarn/vercel/ncc-0.26.2\n\nBump @vercel/ncc from 0.26.1 to 0.26.2",
+                "author": "mikepenz",
+                "authorDate": "2021-01-07T07:24:43.000Z",
+                "committer": "web-flow",
+                "commitDate": "2021-01-07T07:24:43.000Z"
+            },
+            {
+                "sha": "d66aa0a4e5aa2037387d4ae13ccde6a106442d9b",
+                "summary": "- introduce experimental (light) commit based changelog generation mode",
+                "message": "- introduce experimental (light) commit based changelog generation mode\n  - FIX https://github.com/mikepenz/release-changelog-builder-action/issues/141\n  - this is not fully supported and not documented as it lacks big amounts of the features we know and love\n- npm install\n- recompile dist",
+                "author": "mikepenz",
+                "authorDate": "2021-01-07T14:31:18.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2021-01-07T14:31:18.000Z"
+            },
+            {
+                "sha": "937f979dcbce7b629455279dbb09da67743a4aee",
+                "summary": "- add new param also to other test set",
+                "message": "- add new param also to other test set",
+                "author": "mikepenz",
+                "authorDate": "2021-01-07T14:36:26.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2021-01-07T14:36:26.000Z"
+            },
+            {
+                "sha": "626951a1000cda5638a736820fa191a12b4b8fb6",
+                "summary": "Merge pull request #151 from mikepenz/feature/141",
+                "message": "Merge pull request #151 from mikepenz/feature/141\n\nExperimental commit based changelog generation mode",
+                "author": "mikepenz",
+                "authorDate": "2021-01-07T14:38:58.000Z",
+                "committer": "web-flow",
+                "commitDate": "2021-01-07T14:38:58.000Z"
+            },
+            {
+                "sha": "6f1faacf001681108f3a5677febf2abdc5261d33",
+                "summary": "- update jest and recompile dist",
+                "message": "- update jest and recompile dist",
+                "author": "mikepenz",
+                "authorDate": "2021-01-07T14:41:18.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2021-01-07T14:41:18.000Z"
+            },
+            {
+                "sha": "eb374ed818dfb7d29b1a17daf831ddd7611ec6a1",
+                "summary": "Merge pull request #152 from mikepenz/feature/update_jest",
+                "message": "Merge pull request #152 from mikepenz/feature/update_jest\n\nUpdate jest",
+                "author": "mikepenz",
+                "authorDate": "2021-01-07T14:43:46.000Z",
+                "committer": "web-flow",
+                "commitDate": "2021-01-07T14:43:46.000Z"
+            },
+            {
+                "sha": "12ab81c9e9e730283fecbe3b6c85356952fc5ccb",
+                "summary": "Merge pull request #153 from mikepenz/develop",
+                "message": "Merge pull request #153 from mikepenz/develop\n\ndev -> main",
+                "author": "mikepenz",
+                "authorDate": "2021-01-07T14:48:32.000Z",
+                "committer": "web-flow",
+                "commitDate": "2021-01-07T14:48:32.000Z"
+            }
+        ]
+    },
+    "options": {
+        "owner": "mikepenz",
+        "repo": "release-changelog-builder-action",
+        "fromTag": {
+            "name": "v1.3.1",
+            "commit": "v1.3.1"
+        },
+        "toTag": {
+            "name": "v1.4.0",
+            "commit": "v1.4.0"
+        },
+        "includeOpen": false,
+        "failOnError": false,
+        "fetchReviewers": false,
+        "fetchReleaseInformation": false,
+        "fetchReviews": false,
+        "commitMode": false,
+        "configuration": {
+            "max_tags_to_fetch": 200,
+            "max_pull_requests": 1000,
+            "max_back_track_time_days": 1000,
+            "exclude_merge_branches": [],
+            "sort": "DESC",
+            "template": "${{CHANGELOG}}",
+            "pr_template": "${{NUMBER}}",
+            "empty_template": "- no changes",
+            "categories": [
+                {
+                    "title": "",
+                    "labels": [
+                        "dev",
+                        "Bump"
+                    ]
+                }
+            ],
+            "ignore_labels": [],
+            "label_extractor": [
+                {
+                    "pattern": ".*(dev|Bump).*",
+                    "target": "$1",
+                    "on_property": "title"
+                }
+            ],
+            "transformers": [],
+            "tag_resolver": {
+                "method": "semver"
+            },
+            "base_branches": [
+                "main"
+            ],
+            "custom_placeholders": [],
+            "trim_values": false
+        }
+    }
+}

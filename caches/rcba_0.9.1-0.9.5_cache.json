@@ -1,0 +1,482 @@
+{
+    "mergedPullRequests": [
+        {
+            "number": 47,
+            "title": "Bump @types/node from 14.11.8 to 14.11.10",
+            "htmlURL": "https://github.com/mikepenz/release-changelog-builder-action/pull/47",
+            "baseBranch": "develop",
+            "branch": "dependabot/npm_and_yarn/types/node-14.11.10",
+            "createdAt": "2020-10-19T07:14:58.000Z",
+            "mergedAt": "2020-10-19T07:28:55.000Z",
+            "mergeCommitSha": "2fb7019ca5820d18d6d53fb3926bb68d61323a9f",
+            "author": "dependabot[bot]",
+            "repoName": "mikepenz/release-changelog-builder-action",
+            "labels": [
+                "dependencies",
+                "--rcba-merged"
+            ],
+            "milestone": "",
+            "body": "Bumps [@types/node](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/HEAD/types/node) from 14.11.8 to 14.11.10.\n<details>\n<summary>Commits</summary>\n<ul>\n<li>See full diff in <a href=\"https://github.com/DefinitelyTyped/DefinitelyTyped/commits/HEAD/types/node\">compare view</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=@types/node&package-manager=npm_and_yarn&previous-version=14.11.8&new-version=14.11.10)](https://docs.github.com/en/github/managing-security-vulnerabilities/configuring-github-dependabot-security-updates)\n\nDependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can also trigger a rebase manually by commenting `@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after your CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge and block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating it. You can achieve the same result by closing it manually\n- `@dependabot ignore this major version` will close this PR and stop Dependabot creating any more for this major version (unless you reopen the PR or upgrade to it yourself)\n- `@dependabot ignore this minor version` will close this PR and stop Dependabot creating any more for this minor version (unless you reopen the PR or upgrade to it yourself)\n- `@dependabot ignore this dependency` will close this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or upgrade to it yourself)\n\n\n</details>",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        },
+        {
+            "number": 48,
+            "title": "Adjust code to move fromTag resolving to main.ts",
+            "htmlURL": "https://github.com/mikepenz/release-changelog-builder-action/pull/48",
+            "baseBranch": "develop",
+            "branch": "feature/move_from_tag_resolval",
+            "createdAt": "2020-10-19T14:34:03.000Z",
+            "mergedAt": "2020-10-19T14:39:43.000Z",
+            "mergeCommitSha": "0ceacbaa6a79aa63ea2821acb59978eae2bab896",
+            "author": "mikepenz",
+            "repoName": "mikepenz/release-changelog-builder-action",
+            "labels": [
+                "--rcba-merged"
+            ],
+            "milestone": "",
+            "body": "- move fromTag resolving to main.ts and remove dependency on checks from ReleaseNotes.ts\r\n  - require fromTag for ReleaseNotes\r\n- adjust tests, split into according test classes\r\n- simplify transform.ts",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        },
+        {
+            "number": 49,
+            "title": "Improve test cases",
+            "htmlURL": "https://github.com/mikepenz/release-changelog-builder-action/pull/49",
+            "baseBranch": "develop",
+            "branch": "feature/split_logic",
+            "createdAt": "2020-10-19T15:30:05.000Z",
+            "mergedAt": "2020-10-19T15:44:18.000Z",
+            "mergeCommitSha": "470822c9f815deba5ba07dce30c164dc190b844f",
+            "author": "mikepenz",
+            "repoName": "mikepenz/release-changelog-builder-action",
+            "labels": [
+                "test",
+                "--rcba-merged"
+            ],
+            "milestone": "",
+            "body": "Add additional test cases to also verify action runner specifically",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        },
+        {
+            "number": 50,
+            "title": "New additional placeholders for `template` and `empty_template`",
+            "htmlURL": "https://github.com/mikepenz/release-changelog-builder-action/pull/50",
+            "baseBranch": "develop",
+            "branch": "feature/dynamic_placeholders",
+            "createdAt": "2020-10-19T16:05:52.000Z",
+            "mergedAt": "2020-10-19T16:13:13.000Z",
+            "mergeCommitSha": "a774c0328fdcf13e96fa60bcc273a24ff9558ac6",
+            "author": "mikepenz",
+            "repoName": "mikepenz/release-changelog-builder-action",
+            "labels": [
+                "ignore",
+                "--rcba-merged"
+            ],
+            "milestone": "",
+            "body": "- introduce additional placeholders supported by the `template` \r\n- introduce placeholder support into `empty_template`\r\n- introduce new placeholders for templates, update README with new placeholders\r\n- recompile dist files\r\n- properly count categorized PRs\r\n- introduce tests to verify new placeholders used for `template` and `empty_template`",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        },
+        {
+            "number": 51,
+            "title": "Enhance sorting by using proper semver",
+            "htmlURL": "https://github.com/mikepenz/release-changelog-builder-action/pull/51",
+            "baseBranch": "develop",
+            "branch": "feature/enhance_tags_sorting",
+            "createdAt": "2020-10-19T16:57:29.000Z",
+            "mergedAt": "2020-10-19T18:27:12.000Z",
+            "mergeCommitSha": "a5629a3f6e6711ed08871d10e64e9435848d6554",
+            "author": "mikepenz",
+            "repoName": "mikepenz/release-changelog-builder-action",
+            "labels": [
+                "feature",
+                "--rcba-merged"
+            ],
+            "milestone": "",
+            "body": "- make sortTags method to be accessible for test …\r\n- add test to verify ordering of tags\r\n- upgrade sorting logic to use semver to ensure we support all cases properly\r\n- highlight versioning resolving automation\r\n- formatting adjustment",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        },
+        {
+            "number": 52,
+            "title": "dev -> main",
+            "htmlURL": "https://github.com/mikepenz/release-changelog-builder-action/pull/52",
+            "baseBranch": "main",
+            "branch": "develop",
+            "createdAt": "2020-10-19T18:34:23.000Z",
+            "mergedAt": "2020-10-19T18:36:20.000Z",
+            "mergeCommitSha": "0f9cd813de2e9738922ca580e690787d98f21579",
+            "author": "mikepenz",
+            "repoName": "mikepenz/release-changelog-builder-action",
+            "labels": [
+                "--rcba-merged"
+            ],
+            "milestone": "",
+            "body": "merge dev into main",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        },
+        {
+            "number": 53,
+            "title": "Update package.json to updated description",
+            "htmlURL": "https://github.com/mikepenz/release-changelog-builder-action/pull/53",
+            "baseBranch": "develop",
+            "branch": "feature/improve_package.json",
+            "createdAt": "2020-10-19T18:40:40.000Z",
+            "mergedAt": "2020-10-19T18:43:21.000Z",
+            "mergeCommitSha": "7e8a518561a061def732618b66bd375323ac997a",
+            "author": "mikepenz",
+            "repoName": "mikepenz/release-changelog-builder-action",
+            "labels": [
+                "other",
+                "--rcba-merged"
+            ],
+            "milestone": "",
+            "body": "- add more keywords and update description",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        },
+        {
+            "number": 54,
+            "title": "dev -> main",
+            "htmlURL": "https://github.com/mikepenz/release-changelog-builder-action/pull/54",
+            "baseBranch": "main",
+            "branch": "develop",
+            "createdAt": "2020-10-19T18:43:53.000Z",
+            "mergedAt": "2020-10-19T18:45:15.000Z",
+            "mergeCommitSha": "7d955b5f8d222f336a064e2dbe15662917fbf79c",
+            "author": "mikepenz",
+            "repoName": "mikepenz/release-changelog-builder-action",
+            "labels": [
+                "--rcba-merged"
+            ],
+            "milestone": "",
+            "body": "merge dev into main",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        }
+    ],
+    "diffInfo": {
+        "changedFiles": 16,
+        "additions": 2931,
+        "deletions": 450,
+        "changes": 3381,
+        "commits": 26,
+        "commitInfo": [
+            {
+                "sha": "6e2c5b3a6e382170a0241ad87414b70bf93dc0c9",
+                "summary": "Bump @types/node from 14.11.8 to 14.11.10",
+                "message": "Bump @types/node from 14.11.8 to 14.11.10\n\nBumps [@types/node](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/HEAD/types/node) from 14.11.8 to 14.11.10.\n- [Release notes](https://github.com/DefinitelyTyped/DefinitelyTyped/releases)\n- [Commits](https://github.com/DefinitelyTyped/DefinitelyTyped/commits/HEAD/types/node)\n\nSigned-off-by: dependabot[bot] <support@github.com>",
+                "author": "dependabot[bot]",
+                "authorDate": "2020-10-19T07:14:57.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-19T07:14:57.000Z"
+            },
+            {
+                "sha": "2fb7019ca5820d18d6d53fb3926bb68d61323a9f",
+                "summary": "Merge pull request #47 from mikepenz/dependabot/npm_and_yarn/types/node-14.11.10",
+                "message": "Merge pull request #47 from mikepenz/dependabot/npm_and_yarn/types/node-14.11.10\n\nBump @types/node from 14.11.8 to 14.11.10",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T07:28:54.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-19T07:28:54.000Z"
+            },
+            {
+                "sha": "d9c1239d34cc7cd9ae0cdc203740674b91541233",
+                "summary": "- move fromTag resolving to main.ts and remove dependency on checks from ReleaseNotes.ts",
+                "message": "- move fromTag resolving to main.ts and remove dependency on checks from ReleaseNotes.ts\n  - require fromTag for ReleaseNotes\n- adjust tests, split into according test classes\n- simplify transform.ts",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T14:33:00.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-19T14:33:00.000Z"
+            },
+            {
+                "sha": "d61ec6c06cf142943a6be76f8f2795ea4c405c1b",
+                "summary": "- rebuild dist files",
+                "message": "- rebuild dist files",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T14:35:11.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-19T14:35:11.000Z"
+            },
+            {
+                "sha": "9258366eafaff9a4345468dd2cdd08d8f4f6896a",
+                "summary": "- tmp remove test class",
+                "message": "- tmp remove test class",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T14:37:11.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-19T14:37:11.000Z"
+            },
+            {
+                "sha": "0ceacbaa6a79aa63ea2821acb59978eae2bab896",
+                "summary": "Merge pull request #48 from mikepenz/feature/move_from_tag_resolval",
+                "message": "Merge pull request #48 from mikepenz/feature/move_from_tag_resolval\n\nAdjust code to move fromTag resolving to main.ts",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T14:39:42.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-19T14:39:42.000Z"
+            },
+            {
+                "sha": "8b6119add8ae9aa85e5bf9dde99340bae7b3c210",
+                "summary": "- split logic to validate and read in additional details for changelog generation into new `releaseNotesBuilder`",
+                "message": "- split logic to validate and read in additional details for changelog generation into new `releaseNotesBuilder`\n- construct main class to be as simple as possible",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T15:11:13.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-19T15:28:54.000Z"
+            },
+            {
+                "sha": "49d12f5b1e6adadcb303e1f0609034e09d4e7d90",
+                "summary": "- introduce tests covering the action process itself",
+                "message": "- introduce tests covering the action process itself",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T15:28:28.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-19T15:28:54.000Z"
+            },
+            {
+                "sha": "470822c9f815deba5ba07dce30c164dc190b844f",
+                "summary": "Merge pull request #49 from mikepenz/feature/split_logic",
+                "message": "Merge pull request #49 from mikepenz/feature/split_logic\n\nImprove test cases",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T15:44:17.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-19T15:44:17.000Z"
+            },
+            {
+                "sha": "c6ed215bc27914551f484a20b14943c073d52ee8",
+                "summary": "- introduce additional placeholders supported by the `template`",
+                "message": "- introduce additional placeholders supported by the `template`\n- introduce placeholder support into `empty_template`\n- introduce new placeholders for templates, update README with new placeholders",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T15:53:04.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-19T15:53:39.000Z"
+            },
+            {
+                "sha": "4eaa60b4d55c63f43b70df90aa29936b04fb9c46",
+                "summary": "- recompile dist files",
+                "message": "- recompile dist files",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T15:54:18.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-19T15:54:18.000Z"
+            },
+            {
+                "sha": "26cab8c692c791ec20e3e921b45553c8f764b7ee",
+                "summary": "- properly count categorized PRs",
+                "message": "- properly count categorized PRs",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T16:03:50.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-19T16:03:50.000Z"
+            },
+            {
+                "sha": "bdb790ac5eef1d39537c7833afdcf1e00939c8a6",
+                "summary": "- introduce tests to verify new placeholders used for `template` and `empty_template`",
+                "message": "- introduce tests to verify new placeholders used for `template` and `empty_template`",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T16:04:56.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-19T16:04:56.000Z"
+            },
+            {
+                "sha": "a774c0328fdcf13e96fa60bcc273a24ff9558ac6",
+                "summary": "Merge pull request #50 from mikepenz/feature/dynamic_placeholders",
+                "message": "Merge pull request #50 from mikepenz/feature/dynamic_placeholders\n\nNew additional placeholders for `template` and `empty_template`",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T16:13:13.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-19T16:13:13.000Z"
+            },
+            {
+                "sha": "c309b839db3f3af9e92d5fa1484682202db4ade9",
+                "summary": "- make sortTags method to be accessible for test",
+                "message": "- make sortTags method to be accessible for test\n- add test to verify ordering of tags",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T16:14:10.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-19T16:56:26.000Z"
+            },
+            {
+                "sha": "83ad299b7efd80b3d1fc59859aa196578e8e4887",
+                "summary": "- upgrade sorting logic to use semver to ensure we support all cases properly",
+                "message": "- upgrade sorting logic to use semver to ensure we support all cases properly",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T16:49:22.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-19T16:56:26.000Z"
+            },
+            {
+                "sha": "a048bfac80a9681ea279a49df647c169470ac54b",
+                "summary": "- highlight versioning resolving automation",
+                "message": "- highlight versioning resolving automation",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T16:55:00.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-19T16:56:26.000Z"
+            },
+            {
+                "sha": "4ad1d585c9c700617812b12d137ee95711c3d5da",
+                "summary": "- formatting adjustment",
+                "message": "- formatting adjustment",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T16:55:59.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-19T16:56:26.000Z"
+            },
+            {
+                "sha": "2a95fba312329f7a9d039a9a67dabd3baf05e28b",
+                "summary": "- verify versions match semver versioning",
+                "message": "- verify versions match semver versioning",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T17:58:36.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-19T17:58:36.000Z"
+            },
+            {
+                "sha": "01db48f0528c9d498fbdc15e6e88b86caf1fac34",
+                "summary": "- rebuild dist",
+                "message": "- rebuild dist",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T18:25:24.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-19T18:25:24.000Z"
+            },
+            {
+                "sha": "a5629a3f6e6711ed08871d10e64e9435848d6554",
+                "summary": "Merge pull request #51 from mikepenz/feature/enhance_tags_sorting",
+                "message": "Merge pull request #51 from mikepenz/feature/enhance_tags_sorting\n\nEnhance sorting by using proper semver",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T18:27:12.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-19T18:27:12.000Z"
+            },
+            {
+                "sha": "0f9cd813de2e9738922ca580e690787d98f21579",
+                "summary": "Merge pull request #52 from mikepenz/develop",
+                "message": "Merge pull request #52 from mikepenz/develop\n\ndev -> main",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T18:36:19.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-19T18:36:19.000Z"
+            },
+            {
+                "sha": "0648f8a89720680fca0e690f188a764087a50b0b",
+                "summary": "- add more keywords and update description",
+                "message": "- add more keywords and update description",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T18:40:13.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-19T18:40:13.000Z"
+            },
+            {
+                "sha": "b0227ab71a91effef6774342e435a4807dfb004c",
+                "summary": "- add changelog to headline",
+                "message": "- add changelog to headline",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T18:41:44.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-19T18:41:44.000Z"
+            },
+            {
+                "sha": "7e8a518561a061def732618b66bd375323ac997a",
+                "summary": "Merge pull request #53 from mikepenz/feature/improve_package.json",
+                "message": "Merge pull request #53 from mikepenz/feature/improve_package.json\n\nUpdate package.json to updated description",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T18:43:21.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-19T18:43:21.000Z"
+            },
+            {
+                "sha": "7d955b5f8d222f336a064e2dbe15662917fbf79c",
+                "summary": "Merge pull request #54 from mikepenz/develop",
+                "message": "Merge pull request #54 from mikepenz/develop\n\ndev -> main",
+                "author": "mikepenz",
+                "authorDate": "2020-10-19T18:45:15.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-19T18:45:15.000Z"
+            }
+        ]
+    },
+    "options": {
+        "owner": "mikepenz",
+        "repo": "release-changelog-builder-action",
+        "fromTag": {
+            "name": "v0.9.1",
+            "commit": "v0.9.1"
+        },
+        "toTag": {
+            "name": "v0.9.5",
+            "commit": "v0.9.5"
+        },
+        "includeOpen": false,
+        "failOnError": false,
+        "fetchReviewers": false,
+        "fetchReleaseInformation": false,
+        "fetchReviews": false,
+        "commitMode": false,
+        "configuration": {
+            "max_tags_to_fetch": 200,
+            "max_pull_requests": 1000,
+            "max_back_track_time_days": 1000,
+            "exclude_merge_branches": [],
+            "sort": {
+                "order": "ASC",
+                "on_property": "mergedAt"
+            },
+            "template": "${{CHANGELOG}}\n${{UNCATEGORIZED}}\n${{IGNORED}}\n${{OWNER}}\n${{REPO}}\n${{FROM_TAG}}\n${{TO_TAG}}\n${{RELEASE_DIFF}}\n${{CATEGORIZED_COUNT}}\n${{UNCATEGORIZED_COUNT}}\n${{IGNORED_COUNT}}\n${{CHANGED_FILES}}\n${{ADDITIONS}}\n${{DELETIONS}}\n${{CHANGES}}\n${{COMMITS}}",
+            "pr_template": "- ${{TITLE}}\n   - PR: #${{NUMBER}}",
+            "empty_template": "${{OWNER}}\n${{REPO}}\n${{FROM_TAG}}\n${{TO_TAG}}\n${{RELEASE_DIFF}}",
+            "categories": [
+                {
+                    "title": "## 🚀 Features",
+                    "labels": [
+                        "feature"
+                    ]
+                },
+                {
+                    "title": "## 🐛 Fixes",
+                    "labels": [
+                        "fix"
+                    ]
+                },
+                {
+                    "title": "## 🧪 Tests",
+                    "labels": [
+                        "test"
+                    ]
+                }
+            ],
+            "ignore_labels": [
+                "ignore"
+            ],
+            "label_extractor": [],
+            "transformers": [],
+            "tag_resolver": {
+                "method": "semver"
+            },
+            "base_branches": [],
+            "custom_placeholders": [],
+            "trim_values": false
+        }
+    }
+}

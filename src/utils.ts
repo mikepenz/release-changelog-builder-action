@@ -2,6 +2,11 @@ import * as core from '@actions/core'
 import * as fs from 'fs'
 import * as path from 'path'
 import {Configuration, DefaultConfiguration} from './configuration'
+import moment from 'moment'
+import {DiffInfo} from './pr-collector/commits'
+import {PullRequestInfo} from './pr-collector/pullRequests'
+import {Data, ReleaseNotesOptions} from './releaseNotesBuilder'
+import {env} from 'process'
 /**
  * Resolves the repository path, relatively to the GITHUB_WORKSPACE
  */
@@ -19,16 +24,87 @@ export function retrieveRepositoryPath(providedPath: string): string {
   return repositoryPath
 }
 
-/**
- * Will automatically either report the message to the log, or mark the action as failed. Additionally defining the output failed, allowing it to be read in by other actions
- */
-export function failOrError(message: string | Error, failOnError: boolean): void {
-  // if we report any failure, consider the action to have failed, may not make the build fail
-  core.setOutput('failed', true)
-  if (failOnError) {
-    core.setFailed(message)
+export function writeCacheData(data: Data, cacheOutput: string | null): void {
+  let cacheFile: string
+
+  if (cacheOutput && !cacheOutput.startsWith('{')) {
+    // legacy handling, originally we allowed cache as direct string.
+    // However, this can result in a "Argument list too long" exception for very long caches
+    cacheFile = cacheOutput
   } else {
-    core.error(message)
+    if (env.RUNNER_TEMP && !fs.existsSync(env.RUNNER_TEMP)) {
+      fs.mkdirSync(env.RUNNER_TEMP)
+    }
+    cacheFile = `${env.RUNNER_TEMP}/rcba-cache.json`
+    core.debug(`Defined cacheFile as ${cacheFile}`)
+  }
+
+  try {
+    fs.writeFileSync(cacheFile, JSON.stringify(data))
+    core.setOutput(`cache`, cacheFile)
+  } catch (error) {
+    core.warning(`Failed to write cache file. (${error})`)
+  }
+}
+
+/**
+ * Retrieves the exported information from a previous run of the `release-changelog-builder-action`.
+ * If available, return a [ReleaseNotesData].
+ */
+export function checkExportedData(exportCache: boolean, cacheInput: string | null): Data | null {
+  if (exportCache) {
+    return null
+  }
+  if (cacheInput) {
+    // legacy handling, originally we allowed cache as direct string.
+    // However, this can result in a "Argument list too long" exception for very long caches
+    const legacyJsonCache = cacheInput.startsWith('{')
+
+    let cache: Data
+    if (legacyJsonCache) {
+      cache = JSON.parse(cacheInput)
+    } else {
+      if (!fs.existsSync(cacheInput)) {
+        throw new Error(`💥 The provided cache file does not exist`)
+      } else {
+        cache = JSON.parse(fs.readFileSync(cacheInput, 'utf8'))
+      }
+    }
+
+    const diffInfo: DiffInfo = cache.diffInfo
+    const mergedPullRequests: PullRequestInfo[] = cache.mergedPullRequests
+
+    for (const pr of mergedPullRequests) {
+      pr.createdAt = moment(pr.createdAt)
+      if (pr.mergedAt) {
+        pr.mergedAt = moment(pr.mergedAt)
+      }
+
+      if (pr.reviews) {
+        for (const review of pr.reviews) {
+          if (review.submittedAt) {
+            review.submittedAt = moment(review.submittedAt)
+          }
+        }
+      }
+    }
+
+    const options: ReleaseNotesOptions = cache.options
+
+    if (options.fromTag.date) {
+      options.fromTag.date = moment(options.fromTag.date)
+    }
+    if (options.toTag.date) {
+      options.toTag.date = moment(options.toTag.date)
+    }
+
+    return {
+      diffInfo,
+      mergedPullRequests,
+      options
+    }
+  } else {
+    return null
   }
 }
 
@@ -111,38 +187,6 @@ export function mergeConfiguration(jc?: Configuration, fc?: Configuration): Conf
 }
 
 /**
- * Checks if a given directory exists
- */
-export function directoryExistsSync(inputPath: string, required?: boolean): boolean {
-  if (!inputPath) {
-    throw new Error("Arg 'path' must not be empty")
-  }
-
-  let stats: fs.Stats
-  try {
-    stats = fs.statSync(inputPath)
-  } catch (error: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
-    if (error.code === 'ENOENT') {
-      if (!required) {
-        return false
-      }
-
-      throw new Error(`Directory '${inputPath}' does not exist`)
-    }
-
-    throw new Error(`Encountered an error when checking whether path '${inputPath}' exists: ${error.message}`)
-  }
-
-  if (stats.isDirectory()) {
-    return true
-  } else if (!required) {
-    return false
-  }
-
-  throw new Error(`Directory '${inputPath}' does not exist`)
-}
-
-/**
  * Writes the changelog to the given the file
  */
 export function writeOutput(githubWorkspacePath: string, outputFile: string, changelog: string | null): void {
@@ -157,8 +201,6 @@ export function writeOutput(githubWorkspacePath: string, outputFile: string, cha
   }
 }
 
-export type Unpacked<T> = T extends (infer U)[] ? U : T
-
 export function createOrSet<T>(map: Map<string, T[]>, key: string, value: T): void {
   const entry = map.get(key)
   if (!entry) {
@@ -172,6 +214,14 @@ export function haveCommonElements(arr1: string[], arr2: Set<string>): boolean {
   return arr1.some(item => arr2.has(item))
 }
 
+export function haveCommonElementsArr(arr1: string[], arr2: string[]): boolean {
+  return haveCommonElements(arr1, new Set(arr2))
+}
+
 export function haveEveryElements(arr1: string[], arr2: Set<string>): boolean {
   return arr1.every(item => arr2.has(item))
+}
+
+export function haveEveryElementsArr(arr1: string[], arr2: string[]): boolean {
+  return haveEveryElements(arr1, new Set(arr2))
 }

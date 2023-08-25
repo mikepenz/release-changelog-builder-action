@@ -31,7 +31,7 @@ async function run(): Promise<void> {
       core.info(`ℹ️ Retreived configuration via 'configuration' (via file).`)
     }
 
-    if (!configurationFile && !configFile) {
+    if (!configJson && !configFile) {
       core.info(`ℹ️ No configuration provided. Using Defaults.`)
     }
 
@@ -50,10 +50,14 @@ async function run(): Promise<void> {
     const includeOpen = core.getInput('includeOpen') === 'true'
     const ignorePreReleases = core.getInput('ignorePreReleases') === 'true'
     const failOnError = core.getInput('failOnError') === 'true'
+    const fetchViaCommits = core.getInput('fetchViaCommits') === 'true'
     const fetchReviewers = core.getInput('fetchReviewers') === 'true'
     const fetchReleaseInformation = core.getInput('fetchReleaseInformation') === 'true'
     const fetchReviews = core.getInput('fetchReviews') === 'true'
     const commitMode = core.getInput('commitMode') === 'true'
+    const exportCache = core.getInput('exportCache') === 'true'
+    const exportOnly = core.getInput('exportOnly') === 'true'
+    const cache = core.getInput('cache')
 
     const result = await new ReleaseNotesBuilder(
       baseUrl,
@@ -66,10 +70,14 @@ async function run(): Promise<void> {
       includeOpen,
       failOnError,
       ignorePreReleases,
+      fetchViaCommits,
       fetchReviewers,
       fetchReleaseInformation,
       fetchReviews,
       commitMode,
+      exportCache,
+      exportOnly,
+      cache,
       configuration
     ).build()
 

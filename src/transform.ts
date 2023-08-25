@@ -1,24 +1,84 @@
 import * as core from '@actions/core'
-import {Category, Configuration, Placeholder, Property, Transformer} from './configuration'
-import {CommentInfo, EMPTY_COMMENT_INFO, PullRequestInfo, retrieveProperty, sortPullRequests} from './pullRequests'
-import {ReleaseNotesOptions} from './releaseNotes'
-import {DiffInfo} from './commits'
-import {createOrSet, haveCommonElements, haveEveryElements} from './utils'
-import {matchesRules, RegexTransformer, validateTransformer} from './regexUtils'
+import {Category, Configuration, Placeholder, Property} from './configuration'
+import {createOrSet, haveCommonElementsArr, haveEveryElementsArr} from './utils'
+import {
+  CommentInfo,
+  EMPTY_COMMENT_INFO,
+  EMPTY_PULL_REQUEST_INFO,
+  PullRequestInfo,
+  retrieveProperty,
+  sortPullRequests
+} from './pr-collector/pullRequests'
+import {DiffInfo} from './pr-collector/commits'
+import {validateTransformer} from './pr-collector/regexUtils'
+import {Transformer, RegexTransformer} from './pr-collector/types'
+import {ReleaseNotesOptions} from './releaseNotesBuilder'
+import {matchesRules} from './regexUtils'
 
 const EMPTY_MAP = new Map<string, string>()
 
-export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], options: ReleaseNotesOptions): string {
+export interface PullRequestData extends PullRequestInfo {
+  childPrs?: PullRequestInfo[]
+}
+
+export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], options: ReleaseNotesOptions): string {
+  core.startGroup('📦 Build changelog')
+
+  let prs: PullRequestData[] = origPrs
+  if (prs.length === 0) {
+    core.warning(`⚠️ No pull requests found`)
+    const result = replaceEmptyTemplate(options.configuration.empty_template, options)
+    core.endGroup()
+    return result
+  }
+
   // sort to target order
   const config = options.configuration
   const sort = config.sort
   prs = sortPullRequests(prs, sort)
   core.info(`ℹ️ Sorted all pull requests ascending: ${JSON.stringify(sort)}`)
 
+  // establish parent child PR relations
+  if (config.reference !== undefined) {
+    const reference = validateTransformer(config.reference)
+    if (reference !== null) {
+      core.info(`ℹ️ Identifying PR references using \`reference\``)
+
+      const mapped = new Map<number, PullRequestData>()
+      for (const pr of prs) {
+        mapped.set(pr.number, pr)
+      }
+
+      const remappedPrs: PullRequestData[] = []
+      for (const pr of prs) {
+        const extracted = extractValues(pr, reference, 'reference')
+        if (extracted !== null && extracted.length > 0) {
+          const foundNumber = parseInt(extracted[0])
+          const valid = !isNaN(foundNumber)
+          const parent = mapped.get(foundNumber)
+          if (valid && parent !== undefined) {
+            if (parent.childPrs === undefined) {
+              parent.childPrs = []
+            }
+            parent.childPrs.push(pr)
+          } else {
+            if (!valid) core.debug(`⚠️ Extracted reference 'isNaN': ${extracted}`)
+            remappedPrs.push(pr)
+          }
+        } else {
+          remappedPrs.push(pr)
+        }
+      }
+      prs = remappedPrs
+    } else {
+      core.warning(`⚠️ Configured \`reference\` invalid.`)
+    }
+  }
+
   // drop duplicate pull requests
   if (config.duplicate_filter !== undefined) {
     const extractor = validateTransformer(config.duplicate_filter)
-    if (extractor != null) {
+    if (extractor !== null) {
       core.info(`ℹ️ Remove duplicated pull requests using \`duplicate_filter\``)
 
       const deduplicatedMap = new Map<string, PullRequestInfo>()
@@ -49,7 +109,7 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
       const extracted = extractValues(pr, extractor, 'label_extractor')
       if (extracted !== null) {
         for (const label of extracted) {
-          pr.labels.add(label)
+          pr.labels.push(label)
         }
 
         if (core.isDebug()) {
@@ -92,7 +152,7 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
   // bring elements in order
   for (const [pr, body] of transformedMap) {
     if (
-      haveCommonElements(
+      haveCommonElementsArr(
         ignoredLabels.map(lbl => lbl.toLocaleLowerCase('en')),
         pr.labels
       )
@@ -111,7 +171,7 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
       // check if any exclude label matches
       if (category.exclude_labels !== undefined) {
         if (
-          haveCommonElements(
+          haveCommonElementsArr(
             category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')),
             pr.labels
           )
@@ -128,7 +188,7 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
       // validate for an exhaustive match (e.g. every provided rule applies)
       if (category.exhaustive === true && (category.labels !== undefined || category.rules !== undefined)) {
         if (category.labels !== undefined) {
-          matched = haveEveryElements(
+          matched = haveEveryElementsArr(
             category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
             pr.labels
           )
@@ -137,14 +197,14 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
         if (category.exhaustive_rules !== undefined) {
           exhaustive_rules = category.exhaustive_rules
         }
-        if (matched && category.rules !== undefined) {
+        if ((matched || category.labels === undefined) && category.rules !== undefined) {
           matched = matchesRules(category.rules, pr, exhaustive_rules)
         }
       } else {
         // if not exhaustive, do individual matches
         if (category.labels !== undefined) {
           // check if either any of the labels applies
-          matched = haveCommonElements(
+          matched = haveCommonElementsArr(
             category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
             pr.labels
           )
@@ -168,16 +228,43 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
       // we allow to have pull requests included in an "uncategorized" category
       for (const [category, pullRequests] of categorized) {
         if ((category.labels === undefined || category.labels.length === 0) && category.rules === undefined) {
-          pullRequests.push(body)
+          // check if any exclude label matches for the "uncategorized" category
+          if (category.exclude_labels !== undefined) {
+            if (
+              !haveCommonElementsArr(
+                category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')),
+                pr.labels
+              )
+            ) {
+              pullRequests.push(body)
+            } else if (core.isDebug()) {
+              const excludeLabels = JSON.stringify(category.exclude_labels)
+              core.debug(
+                `    PR ${pr.number} with labels: ${pr.labels} excluded from uncategorized category via exclude label: ${excludeLabels}`
+              )
+            }
+          } else {
+            pullRequests.push(body)
+          }
+
           break
         }
       }
+
+      // note the `exclude label` configuration of categories will not apply to the legacy "UNCATEGORIZED" placeholder
       uncategorizedPrs.push(body)
     } else {
       categorizedPrs.push(body)
     }
   }
   core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`)
+
+  // serialize and provide the categorized content as json
+  const transformedCategorized = Array.from(categorized).reduce(
+    (obj, [key, value]) => Object.assign(obj, {[key.key || key.title]: value}),
+    {}
+  )
+  core.setOutput('categorized', JSON.stringify(transformedCategorized))
 
   // construct final changelog
   let changelog = ''
@@ -266,7 +353,9 @@ export function buildChangelog(diffInfo: DiffInfo, prs: PullRequestInfo[], optio
   transformedChangelog = replacePlaceholders(transformedChangelog, EMPTY_MAP, placeholderMap, placeholders, placeholderPrMap, config)
   transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap, config)
   transformedChangelog = cleanupPrPlaceholders(transformedChangelog, placeholders)
+  transformedChangelog = cleanupPlaceholders(transformedChangelog)
   core.info(`ℹ️ Filled template`)
+  core.endGroup()
   return transformedChangelog
 }
 
@@ -304,7 +393,7 @@ function fillAdditionalPlaceholders(
 }
 
 function fillPrTemplate(
-  pr: PullRequestInfo,
+  pr: PullRequestData,
   template: string,
   placeholders: Map<string, Placeholder[]> /* placeholders to apply */,
   placeholderPrMap: Map<string, string[]> /* map to keep replaced placeholder values with their key */,
@@ -312,6 +401,7 @@ function fillPrTemplate(
 ): string {
   const arrayPlaceholderMap = new Map<string, string>()
   fillReviewPlaceholders(arrayPlaceholderMap, 'REVIEWS', pr.reviews || [])
+  fillChildPrPlaceholders(arrayPlaceholderMap, 'REFERENCED', pr.childPrs || [])
   const placeholderMap = new Map<string, string>()
   placeholderMap.set('NUMBER', pr.number.toString())
   placeholderMap.set('TITLE', pr.title)
@@ -401,6 +491,7 @@ function fillArrayPlaceholders(
   key: string,
   values: string[]
 ): void {
+  if (values.length === 0) return
   for (let i = 0; i < values.length; i++) {
     placeholderMap.set(`${key}[${i}]`, values[i])
   }
@@ -412,6 +503,7 @@ function fillReviewPlaceholders(
   parentKey: string,
   values: CommentInfo[]
 ): void {
+  if (values.length === 0) return
   // retrieve the keys from the CommentInfo object
   for (const childKey of Object.keys(EMPTY_COMMENT_INFO)) {
     for (let i = 0; i < values.length; i++) {
@@ -420,6 +512,24 @@ function fillReviewPlaceholders(
     placeholderMap.set(
       `${parentKey}[*].${childKey}`,
       values.map(value => value[childKey as keyof CommentInfo]?.toLocaleString('en') || '').join(', ')
+    )
+  }
+}
+
+function fillChildPrPlaceholders(
+  placeholderMap: Map<string, string> /* placeholderKey and original value */,
+  parentKey: string,
+  values: PullRequestInfo[]
+): void {
+  if (values.length === 0) return
+  // retrieve the keys from the PullRequestInfo object
+  for (const childKey of Object.keys(EMPTY_PULL_REQUEST_INFO)) {
+    for (let i = 0; i < values.length; i++) {
+      placeholderMap.set(`${parentKey}[${i}].${childKey}`, values[i][childKey as keyof PullRequestInfo]?.toLocaleString('en') || '')
+    }
+    placeholderMap.set(
+      `${parentKey}[*].${childKey}`,
+      values.map(value => value[childKey as keyof PullRequestInfo]?.toLocaleString('en') || '').join(', ')
     )
   }
 }
@@ -445,6 +555,14 @@ function cleanupPrPlaceholders(template: string, placeholders: Map<string, Place
     for (const ph of phs) {
       transformed = transformed.replaceAll(new RegExp(`\\$\\{\\{${ph.name}(?:\\[.+?\\])?\\}\\}`, 'gu'), '')
     }
+  }
+  return transformed
+}
+
+function cleanupPlaceholders(template: string): string {
+  let transformed = template
+  for (const phs of ['REVIEWS', 'REFERENCED', 'ASSIGNEES', 'REVIEWERS', 'APPROVERS']) {
+    transformed = transformed.replaceAll(new RegExp(`\\$\\{\\{${phs}\\[.+?\\]\\..*?\\}\\}`, 'gu'), '')
   }
   return transformed
 }

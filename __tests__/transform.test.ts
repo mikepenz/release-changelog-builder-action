@@ -1,8 +1,8 @@
 import {buildChangelog} from '../src/transform'
-import {PullRequestInfo} from '../src/pullRequests'
 import moment from 'moment'
 import {Configuration, DefaultConfiguration} from '../src/configuration'
-import {DefaultDiffInfo} from '../src/commits'
+import {PullRequestInfo} from '../src/pr-collector/pullRequests'
+import {DefaultDiffInfo} from '../src/pr-collector/commits'
 
 jest.setTimeout(180000)
 
@@ -39,7 +39,7 @@ mergedPullRequests.push(
     mergeCommitSha: 'sha1',
     author: 'Mike',
     repoName: 'test-repo',
-    labels: new Set<string>(),
+    labels: [],
     milestone: '',
     body: 'no magic body1 for this matter',
     assignees: [],
@@ -57,7 +57,7 @@ mergedPullRequests.push(
     mergeCommitSha: 'sha1',
     author: 'Mike',
     repoName: 'test-repo',
-    labels: new Set<string>(),
+    labels: [],
     milestone: '',
     body: 'no magic body2 for this matter',
     assignees: [],
@@ -75,7 +75,7 @@ mergedPullRequests.push(
     mergeCommitSha: 'sha1',
     author: 'Mike',
     repoName: 'test-repo',
-    labels: new Set<string>(),
+    labels: [],
     milestone: '',
     body: 'no magic body3 for this matter',
     assignees: [],
@@ -93,7 +93,7 @@ mergedPullRequests.push(
     mergeCommitSha: 'sha1',
     author: 'Mike',
     repoName: 'test-repo',
-    labels: new Set<string>(),
+    labels: [],
     milestone: '',
     body: 'no magic body4 for this matter',
     assignees: [],
@@ -113,7 +113,7 @@ const pullRequestWithLabelInBody: PullRequestInfo = {
   mergeCommitSha: 'sha1',
   author: 'Mike',
   repoName: 'test-repo',
-  labels: new Set<string>(),
+  labels: [],
   milestone: '',
   body: '[Issue][Feature][AB-1234321] - no magic body for this matter',
   assignees: [],
@@ -132,7 +132,7 @@ const openPullRequest: PullRequestInfo = {
   mergeCommitSha: 'sha1',
   author: 'Mike',
   repoName: 'test-repo',
-  labels: new Set<string>(),
+  labels: [],
   milestone: '',
   body: 'Some fancy body message',
   assignees: [],
@@ -246,7 +246,7 @@ pullRequestsWithLabels.push(
     mergeCommitSha: 'sha1-1',
     author: 'Mike',
     repoName: 'test-repo',
-    labels: new Set<string>().add('feature'),
+    labels: ['feature'],
     milestone: '',
     body: 'no magic body for this matter',
     assignees: [],
@@ -264,9 +264,9 @@ pullRequestsWithLabels.push(
     mergeCommitSha: 'sha1-2',
     author: 'Mike',
     repoName: 'test-repo',
-    labels: new Set<string>().add('issue').add('fix'),
+    labels: ['issue', 'fix'],
     milestone: '',
-    body: 'no magic body for this matter',
+    body: 'no magic body for this matter - #1',
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
@@ -282,7 +282,7 @@ pullRequestsWithLabels.push(
     mergeCommitSha: 'sha1-3',
     author: 'Mike',
     repoName: 'test-repo',
-    labels: new Set<string>().add('issue').add('feature').add('fix'),
+    labels: ['issue', 'feature', 'fix'],
     milestone: '',
     body: 'no magic body for this matter',
     assignees: [],
@@ -300,7 +300,7 @@ pullRequestsWithLabels.push(
     mergeCommitSha: 'sha1-4',
     author: 'Mike',
     repoName: 'test-repo',
-    labels: new Set<string>().add(''),
+    labels: [''],
     milestone: '',
     body: 'no magic body for this matter',
     assignees: [],
@@ -313,41 +313,41 @@ pullRequestsWithLabels.push(
 const openPullRequestsWithLabels: PullRequestInfo[] = []
 openPullRequestsWithLabels.push(
   {
-  number: 6,
-  title: 'Still pending open pull request (Current)',
-  htmlURL: '',
-  baseBranch: '',
-  createdAt: moment(),
-  mergedAt: moment(),
-  mergeCommitSha: 'sha1',
-  author: 'Mike',
-  repoName: 'test-repo',
-  labels: new Set<string>().add('feature'),
-  milestone: '',
-  body: 'Some fancy body message',
-  assignees: [],
-  requestedReviewers: [],
-  approvedReviewers: [],
-  status: 'open'
-},
-{
-  number: 7,
-  title: 'Still pending open pull request',
-  htmlURL: '',
-  baseBranch: '',
-  createdAt: moment(),
-  mergedAt: moment(),
-  mergeCommitSha: 'sha1',
-  author: 'Mike',
-  repoName: 'test-repo',
-  labels: new Set<string>().add('feature'),
-  milestone: '',
-  body: 'Some fancy body message',
-  assignees: [],
-  requestedReviewers: [],
-  approvedReviewers: [],
-  status: 'open'
-}
+    number: 6,
+    title: 'Still pending open pull request (Current)',
+    htmlURL: '',
+    baseBranch: '',
+    createdAt: moment(),
+    mergedAt: moment(),
+    mergeCommitSha: 'sha1',
+    author: 'Mike',
+    repoName: 'test-repo',
+    labels: ['feature'],
+    milestone: '',
+    body: 'Some fancy body message',
+    assignees: [],
+    requestedReviewers: [],
+    approvedReviewers: [],
+    status: 'open'
+  },
+  {
+    number: 7,
+    title: 'Still pending open pull request',
+    htmlURL: '',
+    baseBranch: '',
+    createdAt: moment(),
+    mergedAt: moment(),
+    mergeCommitSha: 'sha1',
+    author: 'Mike',
+    repoName: 'test-repo',
+    labels: [],
+    milestone: '',
+    body: 'Some fancy body message',
+    assignees: [],
+    requestedReviewers: [],
+    approvedReviewers: [],
+    status: 'open'
+  }
 )
 
 it('Match multiple labels exhaustive for category', async () => {
@@ -376,6 +376,7 @@ it('Match multiple labels exhaustive for category', async () => {
 
 it('Deduplicate duplicated PRs', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
+  customConfig.categories.pop() // drop `uncategorized` category
   customConfig.duplicate_filter = {
     pattern: '\\[ABC-....\\]',
     on_property: 'title',
@@ -388,6 +389,7 @@ it('Deduplicate duplicated PRs', async () => {
 
 it('Deduplicate duplicated PRs DESC', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
+  customConfig.categories.pop() // drop `uncategorized` category
   customConfig.sort = 'DESC'
   customConfig.duplicate_filter = {
     pattern: '\\[ABC-....\\]',
@@ -397,6 +399,24 @@ it('Deduplicate duplicated PRs DESC', async () => {
   expect(buildChangelogTest(customConfig, pullRequestsWithLabels)).toStrictEqual(
     `## 🚀 Features\n\n- [ABC-1234] - this is a PR 1 title message\n   - PR: #1\n\n## 🐛 Fixes\n\n- [ABC-4321] - this is a PR 2 title message\n   - PR: #2\n\n`
   )
+})
+
+it('Reference PRs', async () => {
+  const customConfig = Object.assign({}, DefaultConfiguration)
+  customConfig.categories = [
+    {
+      title: '',
+      labels: []
+    }
+  ]
+  customConfig.pr_template = '${{NUMBER}} -- ${{REFERENCED[*].number}}'
+  customConfig.reference = {
+    pattern: '.* #(.).*', // matches the 1 from "abcdefg #1 adfasdf"
+    on_property: 'body',
+    method: 'replace',
+    target: '$1'
+  }
+  expect(buildChangelogTest(customConfig, pullRequestsWithLabels)).toStrictEqual(`1 -- 2\n4 -- \n3 -- \n\n`)
 })
 
 it('Use empty_content for empty category', async () => {
@@ -457,9 +477,7 @@ it('Release Diff', async () => {
     configuration: customConfig
   })
 
-  expect(resultChangelog).toStrictEqual(
-    `https://github.com/mikepenz/release-changelog-builder-action/compare/v2.8.0...v2.8.1\n`
-  )
+  expect(resultChangelog).toStrictEqual(`https://github.com/mikepenz/release-changelog-builder-action/compare/v2.8.0...v2.8.1\n`)
 })
 
 it('Use exclude labels to not include a PR within a category.', async () => {
@@ -532,7 +550,6 @@ it('Extract custom placeholder from PR body and replace in global template', asy
   )
 })
 
-
 it('Use Rules to include a PR within a Category.', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.categories = [
@@ -542,12 +559,12 @@ it('Use Rules to include a PR within a Category.', async () => {
       exclude_labels: ['Fix'],
       rules: [
         {
-          pattern: "\[ABC-1234\]",
-          on_property: "title"
+          pattern: '\\[ABC-1234\\]',
+          on_property: 'title'
         },
         {
-          pattern: "merged",
-          on_property: "status"
+          pattern: 'merged',
+          on_property: 'status'
         }
       ],
       exhaustive: true
@@ -568,15 +585,14 @@ it('Use Rules to get all open PRs in a Category.', async () => {
       title: '## Open PRs only',
       rules: [
         {
-          pattern: "open",
-          on_property: "status"
+          pattern: 'open',
+          on_property: 'status'
         }
       ]
     }
   ]
   expect(buildChangelogTest(customConfig, prs)).toStrictEqual(`## Open PRs only\n\n- Still pending open pull request\n   - PR: #6\n\n`)
 })
-
 
 it('Use Rules to get current open PR and merged categorised.', async () => {
   let prs = Array.from(pullRequestsWithLabels)
@@ -599,7 +615,8 @@ it('Use Rules to get current open PR and merged categorised.', async () => {
       ],
       exhaustive: true,
       exhaustive_rules: false
-    },{
+    },
+    {
       title: '## 🐛 Issues',
       labels: ['Issue'],
       rules: [
@@ -627,8 +644,8 @@ it('Use Rules to get all open PRs in one Category and merged categorised.', asyn
       title: '## Open PRs only',
       rules: [
         {
-          pattern: "open",
-          on_property: "status"
+          pattern: 'open',
+          on_property: 'status'
         }
       ]
     },
@@ -637,18 +654,17 @@ it('Use Rules to get all open PRs in one Category and merged categorised.', asyn
       labels: ['Feature', 'Issue'],
       rules: [
         {
-          pattern: "merged",
-          on_property: "status"
+          pattern: 'merged',
+          on_property: 'status'
         }
       ],
-      exhaustive: true,
+      exhaustive: true
     }
   ]
   expect(buildChangelogTest(customConfig, prs)).toStrictEqual(
     `## Open PRs only\n\n- Still pending open pull request\n   - PR: #6\n\n## 🚀 Features and 🐛 Issues\n\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
-
 
 function buildChangelogTest(config: Configuration, prs: PullRequestInfo[]): string {
   return buildChangelog(DefaultDiffInfo, prs, {

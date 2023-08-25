@@ -90,7 +90,8 @@ A full set list of possible output values for this action.
 | `outputs.deletions`         | Count of code deletions in this release (lines).                                                                          |
 | `outputs.changes`           | Total count of changes in this release (lines).                                                                           |
 | `outputs.commits`           | Count of commits which have been added in this release.                                                                   |
-
+| `outputs.categorized`       | The categorized pull requests used to build the changelog as serialized JSON.                                             |
+| `outputs.cache`             | The file pointing to the cache for the current fetched data. Can be provided to another action step.                      |
 
 ## Full Sample 🖥️
 
@@ -99,7 +100,7 @@ Below is a complete example showcasing how to define a build, which is executed 
 - Build changelog, given the tag
 - Create release on GitHub - specifying body with constructed changelog
 
-> Note: PRs will only show up in the changelog if assigned one of the default label categories "feature", "fix" or "test"
+> Note: Pre v4 PRs will only show up in the changelog if assigned one of the default label categories "feature", "fix" or "test". Starting with v4 these PRs will be in the `Uncategorized` section. 
 
 <details><summary><b>Example</b></summary>
 <p>
@@ -211,6 +212,7 @@ This configuration is a `JSON` in the following format. (The below showcases *ex
         "labels": ["fix"]
       },
       {
+        "key": "tests",
         "title": "## 🧪 Tests",
         "labels": ["test"]
       },
@@ -256,6 +258,12 @@ This configuration is a `JSON` in the following format. (The below showcases *ex
       "pattern": "\\[ABC-....\\]",
       "on_property": "title",
       "method": "match"
+    },
+    "reference": {
+      "pattern": ".*\\ \\#(.).*",
+      "on_property": "body",
+      "method": "replace",
+      "target": "$1"
     },
     "transformers": [
       {
@@ -325,10 +333,14 @@ For advanced use cases additional settings can be provided to the action
 | `includeOpen`             | Enables to also fetch currently open PRs. Default: false                                                                                                                    |
 | `ignorePreReleases`       | Allows to ignore pre-releases for changelog generation (E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick). Only used if `fromTag` was not specified. Default: false    |
 | `failOnError`             | Defines if the action will result in a build failure if problems occurred. Default: false                                                                                   |
+| `fetchViaCommits`          | Enables PRs to get fetched via the commits identified between from->to tag. This will do 1 API request per commit -> Best for scenarios with squash merges | Or shorter from->to diffs (< 10 commits) | Also effective for shorters diffs for very old PRs. Default: false                                                                                                |
 | `fetchReviewers`          | Will enable fetching the users/reviewers who approved the PR. Default: false                                                                                                |
 | `fetchReleaseInformation` | Will enable fetching additional release information from tags. Default: false                                                                                               |
 | `fetchReviews`            | Will enable fetching the reviews on of the PR. Default: false                                                                                                               |
 | `commitMode`              | Special configuration for projects which work without PRs. Uses commit messages as changelog. This mode looses access to information only available for PRs. Default: false |
+| `exportCache`             | Will enable exporting the fetched PR information to a cache, which can be re-used by later runs. Default: false                                                             |
+| `exportOnly`              | When enabled, will result in only exporting the cache, without genearting a changelog. Default: false (Requires `exportCache` to be enabled)                                |
+| `cache`                   | The file path to write/read the cache to/from.                                                                                                                              |
 
 > **Warning**: `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repositories please use a PAT (Personal Access Token).
 
@@ -368,8 +380,10 @@ When using `*` values are joined by `,`.
 | `${{REVIEWERS[*]}}` | GitHub Login names of specified reviewers. Requires `fetchReviewers` to be enabled. |
 | `${{APPROVERS[*]}}` | GitHub Login names of users who approved the PR.                                    |
 
-Additionally there is a special array placeholder `REVIEWS` which allows access to it's properties:
-`(KEY)[(*/index)].(property)` for example: `REVIEWS[*].author` or `REVIEWS[*].body`
+Additionally there are special array placeholders like `REVIEWS` which allows access to it's properties via
+`(KEY)[(*/index)].(property)`.
+
+For example: `REVIEWS[*].author` or `REVIEWS[*].body`
 
 | **Placeholder**               | **Description**                            |
 |-------------------------------|--------------------------------------------|
@@ -378,6 +392,14 @@ Additionally there is a special array placeholder `REVIEWS` which allows access 
 | `${{REVIEWS[*].htmlURL}}`     | The URL to the given review.               |
 | `${{REVIEWS[*].submittedAt}}` | The date whent he review was submitted.    |
 | `${{REVIEWS[*].state}}`       | The state of the given review.             |
+
+Similar to `REVIEWS`, `REFERENCED` PRs also offer special placeholders. 
+
+| **Placeholder**               | **Description**                                                           |
+|-------------------------------|---------------------------------------------------------------------------|
+| `${{REFERENCED[*].number}}`   | The PR number of the referenced PR.                                       |
+| `${{REFERENCED[*].title}}`    | The title of the referenced PR.                                           |
+| `${{REFERENCED[*]."..."}}`    | Allows to use most other PR properties as placeholder.                    |
 
 </p>
 </details>
@@ -419,6 +441,7 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | **Input**                   | **Description**                                                                                                                                                                                                                    |
 |-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | categories                  | An array of `category` specifications, offering a flexible way to group changes into categories.                                                                                                                                   |
+| category.key                | Optional key used for the `categorized` json output.                                                                                                                                                                                    |
 | category.title              | The display name of a category in the changelog.                                                                                                                                                                                   |
 | category.labels             | An array of labels, to match pull request labels against. If any PR label matches any category label, the pull request will show up under this category. (See `exhaustive` to change this)                                         |
 | category.exclude_labels     | Similar to `labels`, an array of labels to match PRs against, but if a match occurs the PR is excluded from this category.                                                                                                         |
@@ -444,6 +467,7 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | label_extractor.flags       | Defines the regex flags specified for the pattern. Default: `gu`.                                                                                                                                                                  |
 | label_extractor.on_empty    | Defines the placeholder to be filled in, if the regex does not lead to a result.                                                                                                                                                   |
 | duplicate_filter            | Defines the `Extractor` to use for retrieving the identifier for a PR. In case of duplicates will keep the last matching pull request (depends on `sort`). See `label_extractor` for details on `Extractor` properties.            |
+| reference                   | Defines the `Extractor` to use for resolving the "PR-number" for a parent PR. In case of a match, the child PR will not be included in the release notes. See `label_extractor` for details on `Extractor` properties.            |
 | transformers                | An array of `transform` specifications, offering a flexible API to modify the text per pull request. This is applied on the change text created with `pr_template`. `transformers` are executed per change, in the order specified |
 | transformer.pattern         | A `regex` pattern, extracting values of the change message.                                                                                                                                                                        |
 | transformer.target          | The result pattern, the regex groups will be filled into. Allows for full transformation of a pull request message. Including potentially specified texts                                                                          |
@@ -548,16 +572,16 @@ npm test -- custom.test.ts
 <p>
 
 ```typescript
-import {resolveConfiguration} from '../src/utils'
+import {mergeConfiguration, resolveConfiguration} from '../src/utils'
 import {ReleaseNotesBuilder} from '../src/releaseNotesBuilder'
 
 jest.setTimeout(180000)
 
 it('Test custom changelog builder', async () => {
-  const configuration = resolveConfiguration(
+  const configuration = mergeConfiguration(undefined, resolveConfiguration(
     '',
     'configs_test/configuration_approvers.json'
-  )
+  ))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null, // baseUrl
     null, // token
@@ -566,19 +590,23 @@ it('Test custom changelog builder', async () => {
     'release-changelog-builder-action-playground',      // repo
     '1.5.0',         // fromTag
     '2.0.0',         // toTag
-    true,   // includeOpen
+    false, // includeOpen
     false, // failOnError
     false, // ignorePrePrelease
-    true,  // enable to fetch reviewers
+    false, // enable to fetch via commits
+    false, // enable to fetch reviewers
     false, // enable to fetch release information
     false, // enable to fetch reviews
-    false, // commitMode
+    false, // enable commitMode
+    false, // enable exportCache
+    false, // enable exportOnly
+    null,  // path to the cache
     configuration  // configuration
   )
 
   const changeLog = await releaseNotesBuilder.build()
   console.log(changeLog)
-  expect(changeLog).toStrictEqual(``)
+  expect(changeLog).toStrictEqual(`define-expected-output`)
 })
 ```
 

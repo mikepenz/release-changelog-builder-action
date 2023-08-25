@@ -28,6 +28,9 @@ inputs:
   failOnError:
     description: 'Defines if the action should result in a build failure, if an error was discovered'
     default: "false"
+  fetchViaCommits:
+    description: 'Defines if PRs are fetched via the commits identified. This will do 1 API request per commit -> Best for scenarios with squash merges | Or shorter from-to diffs (< 10 commits) | Also effective for shorters diffs for very old PRs'
+    default: "false"
   fetchReviewers:
     description: 'Will enable fetching the users/reviewers who approved the PR'
     default: "false"
@@ -47,6 +50,14 @@ inputs:
     default: ${{ github.token }}
   baseUrl:
     description: 'Defines the base url for GitHub Enterprise authentication, uses `https://api.github.com` by default'
+  exportCache:
+    description: 'If enabled, the action will export the collected data to the cache. This is disabled by default. Can be passed to a follow up run via `cache`.'
+    default: "false"
+  exportOnly:
+    description: 'If enabled, the action will only collect the data and terminate afterwards. Data can then be consumed by steps afterwards. This requires `exportCache` to be enabled'
+    default: "false"
+  cache:
+    description: 'Provide the cache of a previous run. Allows to re-use collected information multiple times to generate different release notes. Requires `exportCache` to be enabled for the previous run.'
 outputs:
   changelog:
     description: The built release changelog built from the merged pull requests
@@ -68,6 +79,8 @@ outputs:
     description: Count of uncategorized pull requests
   open_prs:
     description: Count of open pull requests. Only fetched if `includeOpen` is enabled.
+  cache:
+    description: 'Cache containing this runs data. Allows to re-use collected information multiple times to generate different release notes.'
 runs:
   using: 'node16'
   main: 'dist/index.js'

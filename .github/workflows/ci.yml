@@ -24,10 +24,18 @@ jobs:
 
       - name: Install NPM
         run: |
+          cd pr-collector 
+          npm install
+          
+          cd ..
           npm install
           
       - name: Run NPM
         run: |
+          cd pr-collector 
+          npm run all
+
+          cd ..
           npm run all
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -113,6 +121,19 @@ jobs:
         run: echo "CHANGELOG"
 
         # Showcases the capability to generate the changelog for an external repository provided
+        # Showcase ability to only fetch data first, and then continue with exported data later
+      - name: "External Repo Configuration Collect Report"
+        id: external_changelog_collect
+        uses: ./
+        with:
+          owner: "mikepenz"
+          repo: "MaterialDrawer"
+          fromTag: "v8.1.0"
+          toTag: "v8.1.6"
+          token: ${{ secrets.PERSONAL_TOKEN }}
+          exportCache: true
+          exportOnly: true
+      
       - name: "External Repo Configuration"
         id: external_changelog
         uses: ./
@@ -120,14 +141,37 @@ jobs:
           configuration: "configs/configuration_complex.json"
           owner: "mikepenz"
           repo: "MaterialDrawer"
-          fromTag: "v8.1.0"
-          toTag: "v8.1.6"
-          token: ${{ secrets.PERSONAL_TOKEN }}
+          cache: ${{ steps.external_changelog_collect.outputs.cache }}
+
+      - name: "External Repo Configuration Second"
+        id: external_changelog_second
+        uses: ./
+        with:
+          configurationJson: |
+            {
+              "template": "#{{CHANGELOG}}",
+              "pr_template": "PR: ##{{NUMBER}}",
+              "categories": [
+                {
+                    "title": "## Everything",
+                    "labels": []
+                }
+              ]
+            }
+          owner: "mikepenz"
+          repo: "MaterialDrawer"
+          cache: ${{ steps.external_changelog_collect.outputs.cache }}
 
       - name: Echo External Repo Configuration Changelog
         env:
           CHANGELOG: ${{ steps.external_changelog.outputs.changelog }}
-        run: echo "$CHANGELOG"
+          CHANGELOG_SECOND: ${{ steps.external_changelog_second.outputs.changelog }}
+        run: |
+          echo "First:"
+          echo "$CHANGELOG"
+
+          echo "Second:"
+          echo "$CHANGELOG_SECOND"
 
   release:
     if: startsWith(github.ref, 'refs/tags/')
@@ -138,14 +182,14 @@ jobs:
 
       - name: "Build Changelog"
         id: github_release
-        uses: mikepenz/release-changelog-builder-action@v2
+        uses: mikepenz/release-changelog-builder-action@v4
         with:
           configuration: "configs/configuration_repo.json"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
-        uses: softprops/action-gh-release@6034af24fba4e5a8e975aaa6056554efe4c794d0
+        uses: mikepenz/action-gh-release@v1
         with:
           body: ${{steps.github_release.outputs.changelog}}
           prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-b') || contains(github.ref, '-a') }}

@@ -5,7 +5,7 @@
 	"image": "mcr.microsoft.com/devcontainers/typescript-node:16-bullseye",
 	"features": {
 		"ghcr.io/devcontainers/features/node:1": {},
-		"ghcr.io/devcontainers-contrib/features/typescript:1": {}
+		"ghcr.io/devcontainers-contrib/features/typescript:2.0.9": {}
 	},
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
@@ -15,7 +15,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "npm install",
+	"postCreateCommand": "./.devcontainer/postCreateCommand.sh",
 
 	// Configure tool-specific properties.
 	// "customizations": {},

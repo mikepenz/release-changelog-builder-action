@@ -1,4 +1,4 @@
-import {TagInfo, sortTags, filterTags} from '../src/tags'
+import {TagInfo, filterTags, prepareAndSortTags} from '../src/pr-collector/tags'
 
 jest.setTimeout(180000)
 
@@ -17,15 +17,13 @@ it('Should order tags correctly using semver', async () => {
   const tagResolver = {
     method: 'semver'
   }
-  const sorted = sortTags(tags, tagResolver)
+  const sorted = prepareAndSortTags(tags, tagResolver)
     .map(function (tag) {
       return tag.name
     })
     .join(',')
 
-  expect(sorted).toStrictEqual(
-    `2020.4.0,2020.4.0-rc02,2020.3.2,v2020.3.1,2020.3.1-rc03,2020.3.1-rc01,2020.3.1-b01,v2020.3.0`
-  )
+  expect(sorted).toStrictEqual(`2020.4.0,2020.4.0-rc02,2020.3.2,v2020.3.1,2020.3.1-rc03,2020.3.1-rc01,2020.3.1-b01,v2020.3.0`)
 })
 
 it('Should order tags correctly using semver', async () => {
@@ -48,15 +46,13 @@ it('Should order tags correctly using semver', async () => {
   const tagResolver = {
     method: 'non-existing-method'
   }
-  const sorted = sortTags(tags, tagResolver)
+  const sorted = prepareAndSortTags(tags, tagResolver)
     .map(function (tag) {
       return tag.name
     })
     .join(',')
 
-  expect(sorted).toStrictEqual(
-    `1000.0.0,100.0.0,20.0.2,10.1.0,10.1.0-2,10.0.0,2.0.0,1.0.0,1.0.0-a01,0.1.0,0.1.0-b01,0.0.1,0.0.1-rc01`
-  )
+  expect(sorted).toStrictEqual(`1000.0.0,100.0.0,20.0.2,10.1.0,10.1.0-2,10.0.0,2.0.0,1.0.0,1.0.0-a01,0.1.0,0.1.0-b01,0.0.1,0.0.1-rc01`)
 })
 
 it('Should order tags alphabetical', async () => {
@@ -79,15 +75,13 @@ it('Should order tags alphabetical', async () => {
   const tagResolver = {
     method: 'sort'
   }
-  const sorted = sortTags(tags, tagResolver)
+  const sorted = prepareAndSortTags(tags, tagResolver)
     .map(function (tag) {
       return tag.name
     })
     .join(',')
 
-  expect(sorted).toStrictEqual(
-    `a,20.0.2,2.0.0,1000.0.0,10.1.0,10.1.0-2,10.0.0,1.0.0,1.0.0-a01,v1,0.1.0-b01,0.0.1,0.0.1-rc01`
-  )
+  expect(sorted).toStrictEqual(`a,20.0.2,2.0.0,1000.0.0,10.1.0,10.1.0-2,10.0.0,1.0.0,1.0.0-a01,v1,0.1.0-b01,0.0.1,0.0.1-rc01`)
 })
 
 it('Should filter tags correctly using the regex', async () => {
