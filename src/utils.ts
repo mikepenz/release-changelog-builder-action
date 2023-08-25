@@ -6,6 +6,7 @@ import moment from 'moment'
 import {DiffInfo} from './pr-collector/commits'
 import {PullRequestInfo} from './pr-collector/pullRequests'
 import {Data, ReleaseNotesOptions} from './releaseNotesBuilder'
+import {env} from 'process'
 /**
  * Resolves the repository path, relatively to the GITHUB_WORKSPACE
  */
@@ -23,15 +24,53 @@ export function retrieveRepositoryPath(providedPath: string): string {
   return repositoryPath
 }
 
+export function writeCacheData(data: Data, cacheOutput: string | null): void {
+  let cacheFile: string
+
+  if (cacheOutput && !cacheOutput.startsWith('{')) {
+    // legacy handling, originally we allowed cache as direct string.
+    // However, this can result in a "Argument list too long" exception for very long caches
+    cacheFile = cacheOutput
+  } else {
+    if (env.RUNNER_TEMP && !fs.existsSync(env.RUNNER_TEMP)) {
+      fs.mkdirSync(env.RUNNER_TEMP)
+    }
+    cacheFile = `${env.RUNNER_TEMP}/rcba-cache.json`
+    core.debug(`Defined cacheFile as ${cacheFile}`)
+  }
+
+  try {
+    fs.writeFileSync(cacheFile, JSON.stringify(data))
+    core.setOutput(`cache`, cacheFile)
+  } catch (error) {
+    core.warning(`Failed to write cache file. (${error})`)
+  }
+}
+
 /**
  * Retrieves the exported information from a previous run of the `release-changelog-builder-action`.
  * If available, return a [ReleaseNotesData].
  */
-export function checkExportedData(): Data | null {
-  const rawCache = core.getInput(`cache`)
+export function checkExportedData(exportCache: boolean, cacheInput: string | null): Data | null {
+  if (exportCache) {
+    return null
+  }
+  if (cacheInput) {
+    // legacy handling, originally we allowed cache as direct string.
+    // However, this can result in a "Argument list too long" exception for very long caches
+    const legacyJsonCache = cacheInput.startsWith('{')
 
-  if (rawCache) {
-    const cache: Data = JSON.parse(rawCache)
+    let cache: Data
+    if (legacyJsonCache) {
+      cache = JSON.parse(cacheInput)
+    } else {
+      if (!fs.existsSync(cacheInput)) {
+        throw new Error(`💥 The provided cache file does not exist`)
+      } else {
+        cache = JSON.parse(fs.readFileSync(cacheInput, 'utf8'))
+      }
+    }
+
     const diffInfo: DiffInfo = cache.diffInfo
     const mergedPullRequests: PullRequestInfo[] = cache.mergedPullRequests
 

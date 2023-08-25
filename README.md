@@ -90,8 +90,8 @@ A full set list of possible output values for this action.
 | `outputs.deletions`         | Count of code deletions in this release (lines).                                                                          |
 | `outputs.changes`           | Total count of changes in this release (lines).                                                                           |
 | `outputs.commits`           | Count of commits which have been added in this release.                                                                   |
-| `outputs.categorized`       | The categorized pull requests used to build the changelog as serialized JSON.                                                           |
-| `outputs.cache`             | The cache for the current fetched data. Can be provided to another action step.                                                           |
+| `outputs.categorized`       | The categorized pull requests used to build the changelog as serialized JSON.                                             |
+| `outputs.cache`             | The file pointing to the cache for the current fetched data. Can be provided to another action step.                      |
 
 ## Full Sample 🖥️
 
@@ -338,7 +338,9 @@ For advanced use cases additional settings can be provided to the action
 | `fetchReleaseInformation` | Will enable fetching additional release information from tags. Default: false                                                                                               |
 | `fetchReviews`            | Will enable fetching the reviews on of the PR. Default: false                                                                                                               |
 | `commitMode`              | Special configuration for projects which work without PRs. Uses commit messages as changelog. This mode looses access to information only available for PRs. Default: false |
-| `cache`                  | Cached data from a previous run. Will skip fetching PR information |
+| `exportCache`             | Will enable exporting the fetched PR information to a cache, which can be re-used by later runs. Default: false                                                             |
+| `exportOnly`              | When enabled, will result in only exporting the cache, without genearting a changelog. Default: false (Requires `exportCache` to be enabled)                                |
+| `cache`                   | The file path to write/read the cache to/from.                                                                                                                              |
 
 > **Warning**: `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repositories please use a PAT (Personal Access Token).
 
@@ -598,6 +600,7 @@ it('Test custom changelog builder', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
+    null,  // path to the cache
     configuration  // configuration
   )
 

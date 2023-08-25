@@ -43,12 +43,6 @@ inputs:
   commitMode:
     description: 'Enables a `light` commit based mode. This mode generates changelogs based on the commits. Please note that this is not officially supported, and lacks a lot of features only possible with PRs.'
     default: "false"
-  exportCache:
-    description: 'If enabled, the action will export the collected data to the cache. This is disabled by default. Can be passed to a follow up run via `cache`.'
-    default: "false"
-  exportOnly:
-    description: 'If enabled, the action will only collect the data and terminate afterwards. Data can then be consumed by steps afterwards. This requires `exportCache` to be enabled'
-    default: "false"
   outputFile:
     description: 'If defined, the changelog will get written to this file. (relative to the checkout dir)'
   token:
@@ -56,6 +50,12 @@ inputs:
     default: ${{ github.token }}
   baseUrl:
     description: 'Defines the base url for GitHub Enterprise authentication, uses `https://api.github.com` by default'
+  exportCache:
+    description: 'If enabled, the action will export the collected data to the cache. This is disabled by default. Can be passed to a follow up run via `cache`.'
+    default: "false"
+  exportOnly:
+    description: 'If enabled, the action will only collect the data and terminate afterwards. Data can then be consumed by steps afterwards. This requires `exportCache` to be enabled'
+    default: "false"
   cache:
     description: 'Provide the cache of a previous run. Allows to re-use collected information multiple times to generate different release notes. Requires `exportCache` to be enabled for the previous run.'
 outputs:

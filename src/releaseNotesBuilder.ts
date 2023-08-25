@@ -1,12 +1,13 @@
 import * as core from '@actions/core'
 import {Configuration} from './configuration'
-import {checkExportedData} from './utils'
+import {checkExportedData, writeCacheData} from './utils'
 import {PullRequestData, buildChangelog} from './transform'
 import {PullRequestCollector} from './pr-collector/prCollector'
 import {failOrError} from './pr-collector/utils'
 import {TagInfo} from './pr-collector/tags'
 import {DiffInfo} from './pr-collector/commits'
 import {PullRequestInfo} from './pr-collector/pullRequests'
+import * as fs from 'fs'
 
 export interface ReleaseNotesOptions {
   owner: string // the owner of the repository
@@ -47,11 +48,18 @@ export class ReleaseNotesBuilder {
     private commitMode = false,
     private exportCache = false,
     private exportOnly = false,
+    private cache: string | null = null,
     private configuration: Configuration
   ) {}
 
   async build(): Promise<string | null> {
-    const releaseNotesData = checkExportedData()
+    let releaseNotesData: Data | null
+    try {
+      releaseNotesData = checkExportedData(this.exportCache, this.cache)
+    } catch (error) {
+      failOrError(`${error}`, this.failOnError)
+      return null
+    }
     if (releaseNotesData == null) {
       if (!this.owner) {
         failOrError(`💥 Missing or couldn't resolve 'owner'`, this.failOnError)
@@ -109,13 +117,13 @@ export class ReleaseNotesBuilder {
       this.setOutputs(options, diffInfo, mergedPullRequests)
 
       if (this.exportCache) {
-        const cache = {
+        const cacheData = {
           mergedPullRequests,
           diffInfo,
           options
         }
-        core.setOutput(`cache`, JSON.stringify(cache))
-        //fs.writeFileSync(path.resolve('cache.json'), JSON.stringify(cache))
+
+        writeCacheData(cacheData, this.cache)
 
         if (this.exportOnly) {
           core.info(`ℹ️ Enabled 'exportOnly' will not generate changelog`)

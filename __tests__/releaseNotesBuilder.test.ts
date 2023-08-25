@@ -23,6 +23,7 @@ it('Should match generated changelog (unspecified fromTag)', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
+    null, // path to the cache
     configuration
   )
 
@@ -56,6 +57,7 @@ it('Should match generated changelog (unspecified tags)', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
+    null, // path to the cache
     configuration
   )
 
@@ -84,6 +86,7 @@ it('Should use empty placeholder', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
+    null, // path to the cache
     configuration
   )
 
@@ -112,6 +115,7 @@ it('Should fill empty placeholders', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
+    null, // path to the cache
     configuration
   )
 
@@ -142,6 +146,7 @@ it('Should fill `template` placeholders', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
+    null, // path to the cache
     configuration
   )
 
@@ -173,6 +178,7 @@ it('Should fill `template` placeholders, ignore', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
+    null, // path to the cache
     configuration
   )
 
@@ -203,6 +209,7 @@ it('Uncategorized category', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
+    null, // path to the cache
     configuration
   )
 
@@ -233,6 +240,7 @@ it('Verify commit based changelog', async () => {
     true, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
+    null, // path to the cache
     configuration
   )
 
@@ -263,6 +271,7 @@ it('Verify commit based changelog, with emoji categorisation', async () => {
     true, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
+    null, // path to the cache
     configuration
   )
 
@@ -293,6 +302,7 @@ it('Verify default inclusion of open PRs', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
+    null, // path to the cache
     configuration // configuration
   )
 
@@ -323,6 +333,7 @@ it('Verify custom categorisation of open PRs', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
+    null, // path to the cache
     configuration // configuration
   )
 
@@ -353,6 +364,7 @@ it('Verify reviewers who approved are fetched and also release information', asy
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
+    null, // path to the cache
     configuration // configuration
   )
 
@@ -384,6 +396,7 @@ it('Fetch release information', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
+    null, // path to the cache
     configuration // configuration
   )
 
@@ -413,6 +426,7 @@ it('Fetch release information for non existing tag / release', async () => {
     false, // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
+    null, // path to the cache
     configuration // configuration
   )
 

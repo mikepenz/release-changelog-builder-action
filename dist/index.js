@@ -148,7 +148,8 @@ function run() {
             const commitMode = core.getInput('commitMode') === 'true';
             const exportCache = core.getInput('exportCache') === 'true';
             const exportOnly = core.getInput('exportOnly') === 'true';
-            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchViaCommits, fetchReviewers, fetchReleaseInformation, fetchReviews, commitMode, exportCache, exportOnly, configuration).build();
+            const cache = core.getInput('cache');
+            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchViaCommits, fetchReviewers, fetchReleaseInformation, fetchReviews, commitMode, exportCache, exportOnly, cache, configuration).build();
             core.setOutput('changelog', result);
             // write the result in changelog to file if possible
             const outputFile = core.getInput('outputFile');
@@ -1842,7 +1843,7 @@ const transform_1 = __nccwpck_require__(1644);
 const prCollector_1 = __nccwpck_require__(2267);
 const utils_2 = __nccwpck_require__(9613);
 class ReleaseNotesBuilder {
-    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode = false, exportCache = false, exportOnly = false, configuration) {
+    constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode = false, exportCache = false, exportOnly = false, cache = null, configuration) {
         this.baseUrl = baseUrl;
         this.token = token;
         this.repositoryPath = repositoryPath;
@@ -1860,11 +1861,19 @@ class ReleaseNotesBuilder {
         this.commitMode = commitMode;
         this.exportCache = exportCache;
         this.exportOnly = exportOnly;
+        this.cache = cache;
         this.configuration = configuration;
     }
     build() {
         return __awaiter(this, void 0, void 0, function* () {
-            const releaseNotesData = (0, utils_1.checkExportedData)();
+            let releaseNotesData;
+            try {
+                releaseNotesData = (0, utils_1.checkExportedData)(this.exportCache, this.cache);
+            }
+            catch (error) {
+                (0, utils_2.failOrError)(`${error}`, this.failOnError);
+                return null;
+            }
             if (releaseNotesData == null) {
                 if (!this.owner) {
                     (0, utils_2.failOrError)(`💥 Missing or couldn't resolve 'owner'`, this.failOnError);
@@ -1902,13 +1911,12 @@ class ReleaseNotesBuilder {
                 const diffInfo = prData.diffInfo;
                 this.setOutputs(options, diffInfo, mergedPullRequests);
                 if (this.exportCache) {
-                    const cache = {
+                    const cacheData = {
                         mergedPullRequests,
                         diffInfo,
                         options
                     };
-                    core.setOutput(`cache`, JSON.stringify(cache));
-                    //fs.writeFileSync(path.resolve('cache.json'), JSON.stringify(cache))
+                    (0, utils_1.writeCacheData)(cacheData, this.cache);
                     if (this.exportOnly) {
                         core.info(`ℹ️ Enabled 'exportOnly' will not generate changelog`);
                         core.endGroup();
@@ -2558,12 +2566,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.haveEveryElementsArr = exports.haveEveryElements = exports.haveCommonElementsArr = exports.haveCommonElements = exports.createOrSet = exports.writeOutput = exports.mergeConfiguration = exports.parseConfiguration = exports.resolveConfiguration = exports.checkExportedData = exports.retrieveRepositoryPath = void 0;
+exports.haveEveryElementsArr = exports.haveEveryElements = exports.haveCommonElementsArr = exports.haveCommonElements = exports.createOrSet = exports.writeOutput = exports.mergeConfiguration = exports.parseConfiguration = exports.resolveConfiguration = exports.checkExportedData = exports.writeCacheData = exports.retrieveRepositoryPath = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
 const configuration_1 = __nccwpck_require__(5527);
 const moment_1 = __importDefault(__nccwpck_require__(9623));
+const process_1 = __nccwpck_require__(7282);
 /**
  * Resolves the repository path, relatively to the GITHUB_WORKSPACE
  */
@@ -2580,14 +2589,53 @@ function retrieveRepositoryPath(providedPath) {
     return repositoryPath;
 }
 exports.retrieveRepositoryPath = retrieveRepositoryPath;
+function writeCacheData(data, cacheOutput) {
+    let cacheFile;
+    if (cacheOutput && !cacheOutput.startsWith('{')) {
+        // legacy handling, originally we allowed cache as direct string.
+        // However, this can result in a "Argument list too long" exception for very long caches
+        cacheFile = cacheOutput;
+    }
+    else {
+        if (process_1.env.RUNNER_TEMP && !fs.existsSync(process_1.env.RUNNER_TEMP)) {
+            fs.mkdirSync(process_1.env.RUNNER_TEMP);
+        }
+        cacheFile = `${process_1.env.RUNNER_TEMP}/rcba-cache.json`;
+        core.debug(`Defined cacheFile as ${cacheFile}`);
+    }
+    try {
+        fs.writeFileSync(cacheFile, JSON.stringify(data));
+        core.setOutput(`cache`, cacheFile);
+    }
+    catch (error) {
+        core.warning(`Failed to write cache file. (${error})`);
+    }
+}
+exports.writeCacheData = writeCacheData;
 /**
  * Retrieves the exported information from a previous run of the `release-changelog-builder-action`.
  * If available, return a [ReleaseNotesData].
  */
-function checkExportedData() {
-    const rawCache = core.getInput(`cache`);
-    if (rawCache) {
-        const cache = JSON.parse(rawCache);
+function checkExportedData(exportCache, cacheInput) {
+    if (exportCache) {
+        return null;
+    }
+    if (cacheInput) {
+        // legacy handling, originally we allowed cache as direct string.
+        // However, this can result in a "Argument list too long" exception for very long caches
+        const legacyJsonCache = cacheInput.startsWith('{');
+        let cache;
+        if (legacyJsonCache) {
+            cache = JSON.parse(cacheInput);
+        }
+        else {
+            if (!fs.existsSync(cacheInput)) {
+                throw new Error(`💥 The provided cache file does not exist`);
+            }
+            else {
+                cache = JSON.parse(fs.readFileSync(cacheInput, 'utf8'));
+            }
+        }
         const diffInfo = cache.diffInfo;
         const mergedPullRequests = cache.mergedPullRequests;
         for (const pr of mergedPullRequests) {
@@ -27900,6 +27948,14 @@ module.exports = require("os");
 
 "use strict";
 module.exports = require("path");
+
+/***/ }),
+
+/***/ 7282:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("process");
 
 /***/ }),
 
