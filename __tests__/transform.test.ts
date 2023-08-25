@@ -559,7 +559,7 @@ it('Use Rules to include a PR within a Category.', async () => {
       exclude_labels: ['Fix'],
       rules: [
         {
-          pattern: '[ABC-1234]',
+          pattern: '\\[ABC-1234\\]',
           on_property: 'title'
         },
         {
