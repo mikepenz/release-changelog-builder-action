@@ -1,0 +1,618 @@
+{
+    "mergedPullRequests": [
+        {
+            "number": 22,
+            "title": "Improve README",
+            "htmlURL": "https://github.com/mikepenz/release-changelog-builder-action/pull/22",
+            "baseBranch": "develop",
+            "branch": "feature/improve_readme",
+            "createdAt": "2020-10-17T08:35:33.000Z",
+            "mergedAt": "2020-10-17T08:40:04.000Z",
+            "mergeCommitSha": "5ce9cb035198f91472ff44b0c99b94b89e332469",
+            "author": "mikepenz",
+            "repoName": "mikepenz/release-changelog-builder-action",
+            "labels": [
+                "feature",
+                "--rcba-merged"
+            ],
+            "milestone": "",
+            "body": "- update readme, with more details, more emojis, more everything",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        },
+        {
+            "number": 23,
+            "title": "Improved handling for non existing tags",
+            "htmlURL": "https://github.com/mikepenz/release-changelog-builder-action/pull/23",
+            "baseBranch": "develop",
+            "branch": "feature/improve_missing_tag_handling",
+            "createdAt": "2020-10-17T15:38:35.000Z",
+            "mergedAt": "2020-10-17T15:57:00.000Z",
+            "mergeCommitSha": "c7eec1d5a6002d84d45559594ef15eee9e2ff443",
+            "author": "mikepenz",
+            "repoName": "mikepenz/release-changelog-builder-action",
+            "labels": [
+                "fix",
+                "--rcba-merged"
+            ],
+            "milestone": "",
+            "body": "- introduce better handling of cases in which invalid references are provided, return an empty changelog and send out error",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        },
+        {
+            "number": 24,
+            "title": "Improved configuration failure handling",
+            "htmlURL": "https://github.com/mikepenz/release-changelog-builder-action/pull/24",
+            "baseBranch": "develop",
+            "branch": "feature/improved_configuration_issue_handling",
+            "createdAt": "2020-10-17T16:02:41.000Z",
+            "mergedAt": "2020-10-17T16:07:02.000Z",
+            "mergeCommitSha": "911126dfc76b9e4030aab0564a318133a96454e0",
+            "author": "mikepenz",
+            "repoName": "mikepenz/release-changelog-builder-action",
+            "labels": [
+                "feature",
+                "--rcba-merged"
+            ],
+            "milestone": "",
+            "body": "- introduce better more stable fallbacks in case the configuration is missing\r\n- move configurations into subfolder for easier discovery\r\n- simplify missing value fallback specification",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        },
+        {
+            "number": 25,
+            "title": "Improved defaults if no configuration is provided",
+            "htmlURL": "https://github.com/mikepenz/release-changelog-builder-action/pull/25",
+            "baseBranch": "develop",
+            "branch": "feature/improved_defaults",
+            "createdAt": "2020-10-17T16:12:36.000Z",
+            "mergedAt": "2020-10-17T16:17:05.000Z",
+            "mergeCommitSha": "519f09e8915a63c3c666f1d19c7014e61048754e",
+            "author": "mikepenz",
+            "repoName": "mikepenz/release-changelog-builder-action",
+            "labels": [
+                "feature",
+                "--rcba-merged"
+            ],
+            "milestone": "",
+            "body": "- adjust defaults to already provide a great base set of categories\r\n- define categories\r\n```json\r\ncategories: [\r\n    {\r\n      title: '## 🚀 Features',\r\n      labels: ['feature']\r\n    },\r\n    {\r\n      title: '## 🐛 Fixes',\r\n      labels: ['fix']\r\n    },\r\n    {\r\n      title: '## 🧪 Tests',\r\n      labels: ['test']\r\n    }\r\n  ]\r\n```",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        },
+        {
+            "number": 26,
+            "title": "Introduce additional placeholders [milestone, labels, assignees, reviewers]",
+            "htmlURL": "https://github.com/mikepenz/release-changelog-builder-action/pull/26",
+            "baseBranch": "develop",
+            "branch": "feature/introduce_additional_placeholders",
+            "createdAt": "2020-10-17T16:18:42.000Z",
+            "mergedAt": "2020-10-17T16:21:08.000Z",
+            "mergeCommitSha": "d88fa22107021326ed5ee36b8ecf3e87b633c5d5",
+            "author": "mikepenz",
+            "repoName": "mikepenz/release-changelog-builder-action",
+            "labels": [
+                "feature",
+                "--rcba-merged"
+            ],
+            "milestone": "",
+            "body": "- introduce more placeholders (milestone, labels, assignees, reviewers)\r\n- update testcase to check new placeholders",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        },
+        {
+            "number": 27,
+            "title": "Fix typos in Readme",
+            "htmlURL": "https://github.com/mikepenz/release-changelog-builder-action/pull/27",
+            "baseBranch": "develop",
+            "branch": "feature/proofread-readme",
+            "createdAt": "2020-10-17T16:54:36.000Z",
+            "mergedAt": "2020-10-17T17:00:35.000Z",
+            "mergeCommitSha": "c8090bcb0dc99210e766f5c0d1330e0dd3372dd1",
+            "author": "nhoelzl",
+            "repoName": "mikepenz/release-changelog-builder-action",
+            "labels": [
+                "other",
+                "--rcba-merged"
+            ],
+            "milestone": "",
+            "body": "- fix misspelled words and comma issues",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        },
+        {
+            "number": 28,
+            "title": "Enhanced action logs",
+            "htmlURL": "https://github.com/mikepenz/release-changelog-builder-action/pull/28",
+            "baseBranch": "develop",
+            "branch": "feature/enhance_logging_outputs",
+            "createdAt": "2020-10-17T17:04:44.000Z",
+            "mergedAt": "2020-10-17T17:57:36.000Z",
+            "mergeCommitSha": "809b20a9dee4179ee02c55f0a06f7213876784e5",
+            "author": "mikepenz",
+            "repoName": "mikepenz/release-changelog-builder-action",
+            "labels": [
+                "feature",
+                "--rcba-merged"
+            ],
+            "milestone": "",
+            "body": "- group logs together to have a better visualisation of what's going on\r\n- add emojis to all sorts of logs",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        },
+        {
+            "number": 29,
+            "title": "Improve changelog generation of project",
+            "htmlURL": "https://github.com/mikepenz/release-changelog-builder-action/pull/29",
+            "baseBranch": "develop",
+            "branch": "feature/improved_changelog",
+            "createdAt": "2020-10-17T17:58:08.000Z",
+            "mergedAt": "2020-10-17T18:16:30.000Z",
+            "mergeCommitSha": "116d28a3234d04b7b5cb528ed730a5fe7ec6acbf",
+            "author": "mikepenz",
+            "repoName": "mikepenz/release-changelog-builder-action",
+            "labels": [
+                "other",
+                "--rcba-merged"
+            ],
+            "milestone": "",
+            "body": "- introduce `other` category for library changelog",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        },
+        {
+            "number": 30,
+            "title": "develop -> main",
+            "htmlURL": "https://github.com/mikepenz/release-changelog-builder-action/pull/30",
+            "baseBranch": "main",
+            "branch": "develop",
+            "createdAt": "2020-10-17T18:16:59.000Z",
+            "mergedAt": "2020-10-17T18:18:23.000Z",
+            "mergeCommitSha": "4cecfac83e8e47adbb32cb97931cea6ee44e0d36",
+            "author": "mikepenz",
+            "repoName": "mikepenz/release-changelog-builder-action",
+            "labels": [
+                "--rcba-merged"
+            ],
+            "milestone": "",
+            "body": "Merge develop -> main",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        },
+        {
+            "number": 31,
+            "title": "Adjust release github action",
+            "htmlURL": "https://github.com/mikepenz/release-changelog-builder-action/pull/31",
+            "baseBranch": "develop",
+            "branch": "feature/adjust_release_github_action",
+            "createdAt": "2020-10-18T07:16:35.000Z",
+            "mergedAt": "2020-10-18T07:16:41.000Z",
+            "mergeCommitSha": "d1f245b0eb35536da5dd38cae16d110ea3918eb4",
+            "author": "mikepenz",
+            "repoName": "mikepenz/release-changelog-builder-action",
+            "labels": [
+                "other",
+                "--rcba-merged"
+            ],
+            "milestone": "",
+            "body": "- add back checkout to have configuration available",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        },
+        {
+            "number": 32,
+            "title": "dev -> main",
+            "htmlURL": "https://github.com/mikepenz/release-changelog-builder-action/pull/32",
+            "baseBranch": "main",
+            "branch": "develop",
+            "createdAt": "2020-10-18T07:16:58.000Z",
+            "mergedAt": "2020-10-18T07:17:04.000Z",
+            "mergeCommitSha": "ca3a814f05a7b2df3bd89c94b14e52b81107780c",
+            "author": "mikepenz",
+            "repoName": "mikepenz/release-changelog-builder-action",
+            "labels": [
+                "--rcba-merged"
+            ],
+            "milestone": "",
+            "body": "merge dev into main",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        }
+    ],
+    "diffInfo": {
+        "changedFiles": 19,
+        "additions": 603,
+        "deletions": 319,
+        "changes": 922,
+        "commits": 34,
+        "commitInfo": [
+            {
+                "sha": "4ee65b5cf02ccbac40a99236c012d01c46243965",
+                "summary": "- update readme, with more details, more emojis, more everything",
+                "message": "- update readme, with more details, more emojis, more everything",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T08:35:05.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T08:35:05.000Z"
+            },
+            {
+                "sha": "876d5042a33329ef419db306a8b8e814f4464167",
+                "summary": "- change header sizes",
+                "message": "- change header sizes",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T08:38:40.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T08:38:40.000Z"
+            },
+            {
+                "sha": "5ce9cb035198f91472ff44b0c99b94b89e332469",
+                "summary": "Merge pull request #22 from mikepenz/feature/improve_readme",
+                "message": "Merge pull request #22 from mikepenz/feature/improve_readme\n\nImprove README",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T08:40:03.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-17T08:40:03.000Z"
+            },
+            {
+                "sha": "619d3f460eb467222f275494158e1da89a4f43e9",
+                "summary": "- introduce better handling of cases in which invalid references are provided, return an empty changelog and send out error",
+                "message": "- introduce better handling of cases in which invalid references are provided, return an empty changelog and send out error",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T15:38:08.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T15:38:08.000Z"
+            },
+            {
+                "sha": "c7eec1d5a6002d84d45559594ef15eee9e2ff443",
+                "summary": "Merge pull request #23 from mikepenz/feature/improve_missing_tag_handling",
+                "message": "Merge pull request #23 from mikepenz/feature/improve_missing_tag_handling\n\nImproved handling for non existing tags",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T15:56:59.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-17T15:56:59.000Z"
+            },
+            {
+                "sha": "b464ff088a0407e8c66150e125f5dfef707caa2d",
+                "summary": "- introduce better more stable fallbacks in case the configuration is missing",
+                "message": "- introduce better more stable fallbacks in case the configuration is missing\n- move configurations into subfolder for easier discovery\n- simplify missing value fallback specification",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T16:02:08.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T16:02:08.000Z"
+            },
+            {
+                "sha": "fbc3c7370b2f7bbf3c9450fabea17d17c8997a53",
+                "summary": "- fix test case",
+                "message": "- fix test case",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T16:05:35.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T16:05:35.000Z"
+            },
+            {
+                "sha": "911126dfc76b9e4030aab0564a318133a96454e0",
+                "summary": "Merge pull request #24 from mikepenz/feature/improved_configuration_issue_handling",
+                "message": "Merge pull request #24 from mikepenz/feature/improved_configuration_issue_handling\n\nImproved configuration failure handling",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T16:07:01.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-17T16:07:01.000Z"
+            },
+            {
+                "sha": "8058353346f53b12ad17db2a72dd1a318b48e541",
+                "summary": "- adjust defaults to already provide a great base set of categories",
+                "message": "- adjust defaults to already provide a great base set of categories",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T16:03:46.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T16:07:31.000Z"
+            },
+            {
+                "sha": "da897391639b0c24efb71f47ba755811b2ae06ea",
+                "summary": "- introduce more placeholders (milestone, labels, asignees, reviewers)",
+                "message": "- introduce more placeholders (milestone, labels, asignees, reviewers)\n- update testcase to check new placeholders",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T16:11:22.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T16:11:22.000Z"
+            },
+            {
+                "sha": "17acfb397f365d1ffe28eac561125dd31d95361a",
+                "summary": "- update table with additional placeholders",
+                "message": "- update table with additional placeholders",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T16:17:01.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T16:17:01.000Z"
+            },
+            {
+                "sha": "519f09e8915a63c3c666f1d19c7014e61048754e",
+                "summary": "Merge pull request #25 from mikepenz/feature/improved_defaults",
+                "message": "Merge pull request #25 from mikepenz/feature/improved_defaults\n\nImproved defaults if no configuration is provided",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T16:17:05.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-17T16:17:05.000Z"
+            },
+            {
+                "sha": "6cce2a6c0f0368f8e4380d333937a76b46ef3da2",
+                "summary": "- write assignee correct",
+                "message": "- write assignee correct",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T16:19:41.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T16:19:41.000Z"
+            },
+            {
+                "sha": "d88fa22107021326ed5ee36b8ecf3e87b633c5d5",
+                "summary": "Merge pull request #26 from mikepenz/feature/introduce_additional_placeholders",
+                "message": "Merge pull request #26 from mikepenz/feature/introduce_additional_placeholders\n\nIntroduce additional placeholders [milestone, labels, assignees, reviewers]",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T16:21:07.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-17T16:21:07.000Z"
+            },
+            {
+                "sha": "44272b156eb889a1b7012017b0bfa680fbef4892",
+                "summary": "fix typos in readme",
+                "message": "fix typos in readme",
+                "author": "nhoelzl",
+                "authorDate": "2020-10-17T16:47:04.000Z",
+                "committer": "nhoelzl",
+                "commitDate": "2020-10-17T16:47:04.000Z"
+            },
+            {
+                "sha": "c8090bcb0dc99210e766f5c0d1330e0dd3372dd1",
+                "summary": "Merge pull request #27 from nhoelzl/feature/proofread-readme",
+                "message": "Merge pull request #27 from nhoelzl/feature/proofread-readme\n\nFix typos in Readme",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T17:00:35.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-17T17:00:35.000Z"
+            },
+            {
+                "sha": "f675789732276657e158284fdf0dc4f51bacc82f",
+                "summary": "- group logs together to have a better visualisation of what's going on",
+                "message": "- group logs together to have a better visualisation of what's going on\n- add emojis to all sorts of logs",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T17:00:04.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T17:37:11.000Z"
+            },
+            {
+                "sha": "1e0f6ab49e7327d0c806ec8fcc74fee6151d3e0c",
+                "summary": "- add more log messages to action",
+                "message": "- add more log messages to action",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T17:20:12.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T17:37:11.000Z"
+            },
+            {
+                "sha": "bd49950417115e662bda6a26bbc4fe8cec29ea4f",
+                "summary": "- use different pen for write logs",
+                "message": "- use different pen for write logs\n- remove default value for configuration, to cleanly fallback to defaults\n- rename gitHelper, move dir exists helper\n- add reading input values group\n- improve warning for configuration",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T17:35:26.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T17:37:11.000Z"
+            },
+            {
+                "sha": "f63fa1dabb0cdf1453d103436723e7f7a685c252",
+                "summary": "- fix formatting, and unused import",
+                "message": "- fix formatting, and unused import",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T17:42:26.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T17:42:26.000Z"
+            },
+            {
+                "sha": "f9222d8d7735fc23a6b3e1b586a1e557b9c9573b",
+                "summary": "- adjust README to reflect the no longer used default configuration lookup",
+                "message": "- adjust README to reflect the no longer used default configuration lookup",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T17:44:13.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T17:44:13.000Z"
+            },
+            {
+                "sha": "0452303d4c8efe16300568e38200d5d023506fd4",
+                "summary": "- improve action specification",
+                "message": "- improve action specification\n- clean up imports for tests",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T17:53:23.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T17:53:23.000Z"
+            },
+            {
+                "sha": "35c73a53787022efe9453b8a9bd6e256eb5cc7dd",
+                "summary": "- recompile",
+                "message": "- recompile",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T17:56:06.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T17:56:06.000Z"
+            },
+            {
+                "sha": "8044ea441ae9433d7ac82befecefb9a55439f9a6",
+                "summary": "- introduce `other` category for library changelog",
+                "message": "- introduce `other` category for library changelog",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T17:56:31.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T17:56:31.000Z"
+            },
+            {
+                "sha": "809b20a9dee4179ee02c55f0a06f7213876784e5",
+                "summary": "Merge pull request #28 from mikepenz/feature/enhance_logging_outputs",
+                "message": "Merge pull request #28 from mikepenz/feature/enhance_logging_outputs\n\nEnhanced action logs",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T17:57:36.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-17T17:57:36.000Z"
+            },
+            {
+                "sha": "9a9cd269402e105cb4d6472109f01d4d49a95e19",
+                "summary": "- improve build to add sample, without having a prior checkout",
+                "message": "- improve build to add sample, without having a prior checkout",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T18:04:44.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T18:04:44.000Z"
+            },
+            {
+                "sha": "bfabe29961086e383c17254f50a0cd7a93251a62",
+                "summary": "- use develop state for action",
+                "message": "- use develop state for action",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T18:08:53.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T18:08:53.000Z"
+            },
+            {
+                "sha": "d970a0bc9a36ba9216ab8c76181adbfa707515e9",
+                "summary": "- improve messages for test output",
+                "message": "- improve messages for test output\n- include complete sample in README",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T18:13:31.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T18:13:31.000Z"
+            },
+            {
+                "sha": "fde922d7852a24fd5e24597af6878ee5a2543bc6",
+                "summary": "- fix link",
+                "message": "- fix link",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T18:15:05.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-17T18:15:05.000Z"
+            },
+            {
+                "sha": "116d28a3234d04b7b5cb528ed730a5fe7ec6acbf",
+                "summary": "Merge pull request #29 from mikepenz/feature/improved_changelog",
+                "message": "Merge pull request #29 from mikepenz/feature/improved_changelog\n\nImprove changelog generation of project",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T18:16:30.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-17T18:16:30.000Z"
+            },
+            {
+                "sha": "4cecfac83e8e47adbb32cb97931cea6ee44e0d36",
+                "summary": "Merge pull request #30 from mikepenz/develop",
+                "message": "Merge pull request #30 from mikepenz/develop\n\ndevelop -> main",
+                "author": "mikepenz",
+                "authorDate": "2020-10-17T18:18:23.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-17T18:18:23.000Z"
+            },
+            {
+                "sha": "c03b55984d6c4dd9617cebcc8858209d2451def5",
+                "summary": "- add back checkout to have configuration available",
+                "message": "- add back checkout to have configuration available",
+                "author": "mikepenz",
+                "authorDate": "2020-10-18T07:16:18.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-18T07:16:18.000Z"
+            },
+            {
+                "sha": "d1f245b0eb35536da5dd38cae16d110ea3918eb4",
+                "summary": "Merge pull request #31 from mikepenz/feature/adjust_release_github_action",
+                "message": "Merge pull request #31 from mikepenz/feature/adjust_release_github_action\n\nAdjust release github action",
+                "author": "mikepenz",
+                "authorDate": "2020-10-18T07:16:40.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-18T07:16:40.000Z"
+            },
+            {
+                "sha": "ca3a814f05a7b2df3bd89c94b14e52b81107780c",
+                "summary": "Merge pull request #32 from mikepenz/develop",
+                "message": "Merge pull request #32 from mikepenz/develop\n\ndev -> main",
+                "author": "mikepenz",
+                "authorDate": "2020-10-18T07:17:04.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-18T07:17:04.000Z"
+            }
+        ]
+    },
+    "options": {
+        "owner": "mikepenz",
+        "repo": "release-changelog-builder-action",
+        "fromTag": {
+            "name": "v0.3.0",
+            "commit": "v0.3.0"
+        },
+        "toTag": {
+            "name": "v0.5.0",
+            "commit": "v0.5.0"
+        },
+        "includeOpen": false,
+        "failOnError": false,
+        "fetchReviewers": false,
+        "fetchReleaseInformation": false,
+        "fetchReviews": false,
+        "commitMode": false,
+        "configuration": {
+            "max_tags_to_fetch": 200,
+            "max_pull_requests": 1000,
+            "max_back_track_time_days": 1000,
+            "exclude_merge_branches": [],
+            "sort": "ASC",
+            "template": "${{CHANGELOG}}",
+            "pr_template": "- ${{TITLE}}\n   - PR: #${{NUMBER}}",
+            "empty_template": "- no changes",
+            "categories": [
+                {
+                    "title": "## 🚀 Features",
+                    "labels": [
+                        "feature"
+                    ]
+                },
+                {
+                    "title": "## 🐛 Fixes",
+                    "labels": [
+                        "fix"
+                    ]
+                },
+                {
+                    "title": "## 🧪 Tests",
+                    "labels": [
+                        "test"
+                    ]
+                }
+            ],
+            "ignore_labels": [
+                "ignore"
+            ],
+            "label_extractor": [],
+            "transformers": [],
+            "tag_resolver": {
+                "method": "semver"
+            },
+            "base_branches": [],
+            "custom_placeholders": [],
+            "trim_values": false
+        }
+    }
+}

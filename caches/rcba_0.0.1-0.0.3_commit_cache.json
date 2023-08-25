@@ -1,0 +1,142 @@
+{
+    "mergedPullRequests": [
+        {
+            "number": 0,
+            "title": "- introduce proper approach to retrieve tag before a given tag",
+            "htmlURL": "",
+            "baseBranch": "",
+            "createdAt": "2020-10-16T13:52:24.000Z",
+            "mergedAt": "2020-10-16T13:52:24.000Z",
+            "mergeCommitSha": "0a66008df0b0a89c4bcfd447c5457e223f4b9947",
+            "author": "mikepenz",
+            "repoName": "",
+            "labels": [],
+            "milestone": "",
+            "body": "- introduce proper approach to retrieve tag before a given tag\n- add configuration options for\n  - path\n  - configuration\n  - fromTag, toTag\n  - token\n- allow to specify transformers to adjust information to a specific form\n- allow to specify different templates\n- speed up by limiting information to pull\n- add logic to automatically resolve current\n- use github actions logger",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        },
+        {
+            "number": 0,
+            "title": "- configure test case",
+            "htmlURL": "",
+            "baseBranch": "",
+            "createdAt": "2020-10-16T13:56:40.000Z",
+            "mergedAt": "2020-10-16T13:56:40.000Z",
+            "mergeCommitSha": "92577cd8be4b0ff97648fcf6db98ba38dcba1f25",
+            "author": "mikepenz",
+            "repoName": "",
+            "labels": [],
+            "milestone": "",
+            "body": "- configure test case",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        },
+        {
+            "number": 0,
+            "title": "Merge pull request #10 from mikepenz/feature/specify_test",
+            "htmlURL": "",
+            "baseBranch": "",
+            "createdAt": "2020-10-16T13:59:35.000Z",
+            "mergedAt": "2020-10-16T13:59:35.000Z",
+            "mergeCommitSha": "fa3788c8c4b3373ef8424ce3eb008a5cd07cc5aa",
+            "author": "mikepenz",
+            "repoName": "",
+            "labels": [],
+            "milestone": "",
+            "body": "Merge pull request #10 from mikepenz/feature/specify_test\n\n[CI] Specify Test Case",
+            "assignees": [],
+            "requestedReviewers": [],
+            "approvedReviewers": [],
+            "status": "merged"
+        }
+    ],
+    "diffInfo": {
+        "changedFiles": 19,
+        "additions": 14827,
+        "deletions": 444,
+        "changes": 15271,
+        "commits": 3,
+        "commitInfo": [
+            {
+                "sha": "0a66008df0b0a89c4bcfd447c5457e223f4b9947",
+                "summary": "- introduce proper approach to retrieve tag before a given tag",
+                "message": "- introduce proper approach to retrieve tag before a given tag\n- add configuration options for\n  - path\n  - configuration\n  - fromTag, toTag\n  - token\n- allow to specify transformers to adjust information to a specific form\n- allow to specify different templates\n- speed up by limiting information to pull\n- add logic to automatically resolve current\n- use github actions logger",
+                "author": "mikepenz",
+                "authorDate": "2020-10-16T13:52:24.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-16T13:52:24.000Z"
+            },
+            {
+                "sha": "92577cd8be4b0ff97648fcf6db98ba38dcba1f25",
+                "summary": "- configure test case",
+                "message": "- configure test case",
+                "author": "mikepenz",
+                "authorDate": "2020-10-16T13:56:40.000Z",
+                "committer": "mikepenz",
+                "commitDate": "2020-10-16T13:56:40.000Z"
+            },
+            {
+                "sha": "fa3788c8c4b3373ef8424ce3eb008a5cd07cc5aa",
+                "summary": "Merge pull request #10 from mikepenz/feature/specify_test",
+                "message": "Merge pull request #10 from mikepenz/feature/specify_test\n\n[CI] Specify Test Case",
+                "author": "mikepenz",
+                "authorDate": "2020-10-16T13:59:35.000Z",
+                "committer": "web-flow",
+                "commitDate": "2020-10-16T13:59:35.000Z"
+            }
+        ]
+    },
+    "options": {
+        "owner": "mikepenz",
+        "repo": "release-changelog-builder-action",
+        "fromTag": {
+            "name": "v0.0.1",
+            "commit": "v0.0.1"
+        },
+        "toTag": {
+            "name": "v0.0.3",
+            "commit": "v0.0.3"
+        },
+        "includeOpen": false,
+        "failOnError": false,
+        "fetchReviewers": false,
+        "fetchReleaseInformation": false,
+        "fetchReviews": false,
+        "commitMode": true,
+        "configuration": {
+            "max_tags_to_fetch": 200,
+            "max_pull_requests": 1000,
+            "max_back_track_time_days": 1000,
+            "exclude_merge_branches": [],
+            "sort": {
+                "order": "ASC",
+                "on_property": "mergedAt"
+            },
+            "template": "${{CHANGELOG}}\n\nUncategorized:\n${{UNCATEGORIZED}}\n\nIgnored:\n${{IGNORED}}\n\n${{UNCATEGORIZED_COUNT}}\n${{IGNORED_COUNT}}",
+            "pr_template": "- ${{TITLE}}\n",
+            "empty_template": "${{OWNER}}\n${{REPO}}\n${{FROM_TAG}}\n${{TO_TAG}}",
+            "categories": [
+                {
+                    "title": "## 📦 Uncategorized",
+                    "labels": []
+                }
+            ],
+            "ignore_labels": [
+                "ignore"
+            ],
+            "label_extractor": [],
+            "transformers": [],
+            "tag_resolver": {
+                "method": "semver"
+            },
+            "base_branches": [],
+            "custom_placeholders": [],
+            "trim_values": false
+        }
+    }
+}
