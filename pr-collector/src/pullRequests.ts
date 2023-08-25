@@ -138,7 +138,8 @@ export class PullRequests {
       }
 
       if (mergedPRs.length >= maxPullRequests) {
-        core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`)
+        core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests} (1)`)
+        break // bail out early to not keep iterating forever
       } else if (prs.length > 0) {
         if (fetchedEnough(prs, fromDate)) {
           return sortPrs(mergedPRs) // bail out early to not keep iterating on PRs super old
@@ -173,7 +174,7 @@ export class PullRequests {
       const firstPR = prs[0]
       if (firstPR === undefined || openPrs.length >= maxPullRequests) {
         if (openPrs.length >= maxPullRequests) {
-          core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`)
+          core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests} (2)`)
         }
         break // bail out early to not keep iterating forever
       }

@@ -842,7 +842,8 @@ class PullRequests {
                         mergedPRs.push(mapPullRequest(pr, 'merged'));
                     }
                     if (mergedPRs.length >= maxPullRequests) {
-                        core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
+                        core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests} (1)`);
+                        break; // bail out early to not keep iterating forever
                     }
                     else if (prs.length > 0) {
                         if (fetchedEnough(prs, fromDate)) {
@@ -889,7 +890,7 @@ class PullRequests {
                     const firstPR = prs[0];
                     if (firstPR === undefined || openPrs.length >= maxPullRequests) {
                         if (openPrs.length >= maxPullRequests) {
-                            core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests}`);
+                            core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests} (2)`);
                         }
                         break; // bail out early to not keep iterating forever
                     }
