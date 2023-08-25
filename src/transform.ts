@@ -62,7 +62,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
             }
             parent.childPrs.push(pr)
           } else {
-            if (!valid) core.warning(`⚠️ Extracted reference 'isNaN': ${extracted}`)
+            if (!valid) core.debug(`⚠️ Extracted reference 'isNaN': ${extracted}`)
             remappedPrs.push(pr)
           }
         } else {
@@ -197,7 +197,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
         if (category.exhaustive_rules !== undefined) {
           exhaustive_rules = category.exhaustive_rules
         }
-        if (matched && category.rules !== undefined) {
+        if ((matched || category.labels === undefined) && category.rules !== undefined) {
           matched = matchesRules(category.rules, pr, exhaustive_rules)
         }
       } else {

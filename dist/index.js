@@ -1254,7 +1254,7 @@ function buildRegex(regex, target, onProperty, method, onEmpty) {
         };
     }
     catch (e) {
-        core.warning(`⚠️ Bad replacer regex: ${regex.pattern}`);
+        core.warning(`⚠️ Bad regex: ${regex.pattern} (${e})`);
         return null;
     }
 }
@@ -2056,7 +2056,7 @@ function buildChangelog(diffInfo, origPrs, options) {
                     }
                     else {
                         if (!valid)
-                            core.warning(`⚠️ Extracted reference 'isNaN': ${extracted}`);
+                            core.debug(`⚠️ Extracted reference 'isNaN': ${extracted}`);
                         remappedPrs.push(pr);
                     }
                 }
@@ -2169,7 +2169,7 @@ function buildChangelog(diffInfo, origPrs, options) {
                 if (category.exhaustive_rules !== undefined) {
                     exhaustive_rules = category.exhaustive_rules;
                 }
-                if (matched && category.rules !== undefined) {
+                if ((matched || category.labels === undefined) && category.rules !== undefined) {
                     matched = (0, regexUtils_2.matchesRules)(category.rules, pr, exhaustive_rules);
                 }
             }
