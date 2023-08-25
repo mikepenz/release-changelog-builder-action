@@ -57,6 +57,7 @@ async function run(): Promise<void> {
     const commitMode = core.getInput('commitMode') === 'true'
     const exportCache = core.getInput('exportCache') === 'true'
     const exportOnly = core.getInput('exportOnly') === 'true'
+    const cache = core.getInput('cache')
 
     const result = await new ReleaseNotesBuilder(
       baseUrl,
@@ -76,6 +77,7 @@ async function run(): Promise<void> {
       commitMode,
       exportCache,
       exportOnly,
+      cache,
       configuration
     ).build()
 
