@@ -21,21 +21,9 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 16.x
-
-      - name: Install NPM
-        run: |
-          cd pr-collector 
-          npm install
-          
-          cd ..
-          npm install
-          
+   
       - name: Run NPM
         run: |
-          cd pr-collector 
-          npm run all
-
-          cd ..
           npm run all
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
