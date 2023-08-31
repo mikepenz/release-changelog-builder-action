@@ -117,9 +117,9 @@
                 "order": "ASC",
                 "on_property": "mergedAt"
             },
-            "template": "${{CHANGELOG}}\n\nUncategorized:\n${{UNCATEGORIZED}}\n\nIgnored:\n${{IGNORED}}\n\n${{UNCATEGORIZED_COUNT}}\n${{IGNORED_COUNT}}",
-            "pr_template": "- ${{TITLE}}\n",
-            "empty_template": "${{OWNER}}\n${{REPO}}\n${{FROM_TAG}}\n${{TO_TAG}}",
+            "template": "#{{CHANGELOG}}\n\nUncategorized:\n#{{UNCATEGORIZED}}\n\nIgnored:\n#{{IGNORED}}\n\n#{{UNCATEGORIZED_COUNT}}\n#{{IGNORED_COUNT}}",
+            "pr_template": "- #{{TITLE}}\n",
+            "empty_template": "#{{OWNER}}\n#{{REPO}}\n#{{FROM_TAG}}\n#{{TO_TAG}}",
             "categories": [
                 {
                     "title": "## 📦 Uncategorized",
