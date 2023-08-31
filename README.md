@@ -365,6 +365,7 @@ Table of supported placeholders allowed to be used in the `pr_template` configur
 | `#{{REVIEWERS}}`  | GitHub Login names of specified reviewers, joined by `,`. Requires `fetchReviewers` to be enabled. |
 | `#{{APPROVERS}}`  | GitHub Login names of users who approved the PR, joined by `,`.                                    |
 
+> **Note**: `v4` updates the default placeholders format to `#{{}}`. The old format `${{}}` will be supported until v5 for backwards compatiblity.
 
 <details><summary><b>Array Placeholders</b></summary>
 <p>
