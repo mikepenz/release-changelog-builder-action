@@ -409,7 +409,7 @@ it('Reference PRs', async () => {
       labels: []
     }
   ]
-  customConfig.pr_template = '${{NUMBER}} -- ${{REFERENCED[*].number}}'
+  customConfig.pr_template = '#{{NUMBER}} -- #{{REFERENCED[*].number}}'
   customConfig.reference = {
     pattern: '.* #(.).*', // matches the 1 from "abcdefg #1 adfasdf"
     on_property: 'body',
@@ -440,7 +440,7 @@ it('Use empty_content for empty category', async () => {
 it('Commit SHA-1 in commitMode', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.sort = 'DESC'
-  customConfig.pr_template = '${{MERGE_SHA}}'
+  customConfig.pr_template = '#{{MERGE_SHA}}'
 
   const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
     owner: 'mikepenz',
@@ -461,7 +461,7 @@ it('Commit SHA-1 in commitMode', async () => {
 
 it('Release Diff', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
-  customConfig.template = '${{RELEASE_DIFF}}\n${{DAYS_SINCE}}'
+  customConfig.template = '#{{RELEASE_DIFF}}\n#{{DAYS_SINCE}}'
 
   const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
     owner: 'mikepenz',
@@ -542,8 +542,8 @@ it('Extract custom placeholder from PR body and replace in global template', asy
     }
   ]
   customConfig.template =
-    '${{CHANGELOG}}\n\n${{C_PLACEHOLER_2[2]}}\n\n${{C_PLACEHOLER_2[*]}}${{C_PLACEHOLDER_1[7]}}${{C_PLACEHOLER_2[1493]}}${{C_PLACEHOLER_4[*]}}${{C_PLACEHOLER_4[0]}}${{C_PLACEHOLER_3[1]}}'
-  customConfig.pr_template = '${{BODY}} ---->  ${{C_PLACEHOLDER_1}}${{C_PLACEHOLER_3}}'
+    '#{{CHANGELOG}}\n\n#{{C_PLACEHOLER_2[2]}}\n\n#{{C_PLACEHOLER_2[*]}}#{{C_PLACEHOLDER_1[7]}}#{{C_PLACEHOLER_2[1493]}}#{{C_PLACEHOLER_4[*]}}#{{C_PLACEHOLER_4[0]}}#{{C_PLACEHOLER_3[1]}}'
+  customConfig.pr_template = '#{{BODY}} ---->  #{{C_PLACEHOLDER_1}}#{{C_PLACEHOLER_3}}'
 
   expect(buildChangelogTest(customConfig, mergedPullRequests)).toStrictEqual(
     `## 🚀 Features\n\nno magic body1 for this matter ---->  - body1body1\nno magic body3 for this matter ---->  - body3\n\n## 🐛 Fixes\n\nno magic body2 for this matter ---->  - body2\nno magic body3 for this matter ---->  - body3\n\n## 🧪 Others\n\nno magic body4 for this matter ---->  - body4\n\n\n\n\n- ody3\n\n\n- ody1\n- ody2\n- ody3\n- ody4`

@@ -456,7 +456,7 @@ function handlePlaceholder(
   placeholderPrMap: Map<string, string[]> | undefined /* map to keep replaced placeholder values with their key */,
   configuration: Configuration
 ): string {
-  let transformed = template.replaceAll(`\${{${key}}}`, configuration.trim_values ? value.trim() : value)
+  let transformed = template.replaceAll(`#{{${key}}}`, configuration.trim_values ? value.trim() : value)
   // replace custom placeholders
   const phs = placeholders.get(key)
   if (phs) {
@@ -470,7 +470,7 @@ function handlePlaceholder(
             createOrSet(placeholderPrMap, placeholder.name, extractedValue)
           }
           transformed = transformed.replaceAll(
-            `\${{${placeholder.name}}}`,
+            `#{{${placeholder.name}}}`,
             configuration.trim_values ? extractedValue.trim() : extractedValue
           )
 
@@ -542,9 +542,9 @@ function replacePrPlaceholders(
   let transformed = template
   for (const [key, values] of placeholderPrMap) {
     for (let i = 0; i < values.length; i++) {
-      transformed = transformed.replaceAll(`\${{${key}[${i}]}}`, configuration.trim_values ? values[i].trim() : values[i])
+      transformed = transformed.replaceAll(`#{{${key}[${i}]}}`, configuration.trim_values ? values[i].trim() : values[i])
     }
-    transformed = transformed.replaceAll(`\${{${key}[*]}}`, values.join(''))
+    transformed = transformed.replaceAll(`#{{${key}[*]}}`, values.join(''))
   }
   return transformed
 }
@@ -553,7 +553,7 @@ function cleanupPrPlaceholders(template: string, placeholders: Map<string, Place
   let transformed = template
   for (const [, phs] of placeholders) {
     for (const ph of phs) {
-      transformed = transformed.replaceAll(new RegExp(`\\$\\{\\{${ph.name}(?:\\[.+?\\])?\\}\\}`, 'gu'), '')
+      transformed = transformed.replaceAll(new RegExp(`#\\{\\{${ph.name}(?:\\[.+?\\])?\\}\\}`, 'gu'), '')
     }
   }
   return transformed
@@ -562,7 +562,7 @@ function cleanupPrPlaceholders(template: string, placeholders: Map<string, Place
 function cleanupPlaceholders(template: string): string {
   let transformed = template
   for (const phs of ['REVIEWS', 'REFERENCED', 'ASSIGNEES', 'REVIEWERS', 'APPROVERS']) {
-    transformed = transformed.replaceAll(new RegExp(`\\$\\{\\{${phs}\\[.+?\\]\\..*?\\}\\}`, 'gu'), '')
+    transformed = transformed.replaceAll(new RegExp(`#\\{\\{${phs}\\[.+?\\]\\..*?\\}\\}`, 'gu'), '')
   }
   return transformed
 }

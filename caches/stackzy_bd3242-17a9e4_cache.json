@@ -468,8 +468,8 @@
                 "order": "ASC",
                 "on_property": "mergedAt"
             },
-            "template": "${{CHANGELOG}}",
-            "pr_template": "${{TITLE}}",
+            "template": "#{{CHANGELOG}}",
+            "pr_template": "#{{TITLE}}",
             "empty_template": "- no changes",
             "categories": [
                 {

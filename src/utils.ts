@@ -153,7 +153,7 @@ function readConfiguration(filename: string): Configuration | undefined {
 export function parseConfiguration(config: string): Configuration | undefined {
   try {
     // for compatiblity with the `yml` file we require to use `#{{}}` instead of `${{}}` - replace it here.
-    const configurationJSON: Configuration = JSON.parse(config.replace(/#{{/g, '${{'))
+    const configurationJSON: Configuration = JSON.parse(config.replace(/\${{/g, '#{{'))
     return configurationJSON
   } catch (error) {
     core.info(`⚠️ Configuration provided, but it couldn't be parsed. Fallback to Defaults.`)

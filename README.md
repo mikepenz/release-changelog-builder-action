@@ -239,8 +239,8 @@ This configuration is a `JSON` in the following format. (The below showcases *ex
       "order": "ASC",
       "on_property": "mergedAt"
     },
-    "template": "${{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n${{UNCATEGORIZED}}\n</details>",
-    "pr_template": "- ${{TITLE}}\n   - PR: #${{NUMBER}}",
+    "template": "#{{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n#{{UNCATEGORIZED}}\n</details>",
+    "pr_template": "- #{{TITLE}}\n   - PR: ##{{NUMBER}}",
     "empty_template": "- no changes",
     "label_extractor": [
       {
@@ -350,21 +350,22 @@ Table of supported placeholders allowed to be used in the `pr_template` configur
 
 | **Placeholder**   | **Description**                                                                                    |
 |-------------------|----------------------------------------------------------------------------------------------------|
-| `${{NUMBER}}`     | The number referencing this pull request. E.g. 13.                                                 |
-| `${{TITLE}}`      | Specified title of the merged pull request.                                                        |
-| `${{URL}}`        | Url linking to the pull request on GitHub.                                                         |
-| `${{STATUS}}`     | Status of the PR. Usually always `merged`. Possibly `Open` if `includeOpen` is configured.         |
-| `${{CREATED_AT}}` | The ISO time, the pull request was created at.                                                     |
-| `${{MERGED_AT}}`  | The ISO time, the pull request was merged at.                                                      |
-| `${{MERGE_SHA}}`  | The commit SHA, the pull request was merged with.                                                  |
-| `${{AUTHOR}}`     | Author creating and opening the pull request.                                                      |
-| `${{LABELS}}`     | The labels associated with this pull request, joined by `,`.                                       |
-| `${{MILESTONE}}`  | Milestone this PR was part of, as assigned on GitHub.                                              |
-| `${{BODY}}`       | Description/Body of the pull request as specified on GitHub.                                       |
-| `${{ASSIGNEES}}`  | Login names of assigned GitHub users, joined by `,`.                                               |
-| `${{REVIEWERS}}`  | GitHub Login names of specified reviewers, joined by `,`. Requires `fetchReviewers` to be enabled. |
-| `${{APPROVERS}}`  | GitHub Login names of users who approved the PR, joined by `,`.                                    |
+| `#{{NUMBER}}`     | The number referencing this pull request. E.g. 13.                                                 |
+| `#{{TITLE}}`      | Specified title of the merged pull request.                                                        |
+| `#{{URL}}`        | Url linking to the pull request on GitHub.                                                         |
+| `#{{STATUS}}`     | Status of the PR. Usually always `merged`. Possibly `Open` if `includeOpen` is configured.         |
+| `#{{CREATED_AT}}` | The ISO time, the pull request was created at.                                                     |
+| `#{{MERGED_AT}}`  | The ISO time, the pull request was merged at.                                                      |
+| `#{{MERGE_SHA}}`  | The commit SHA, the pull request was merged with.                                                  |
+| `#{{AUTHOR}}`     | Author creating and opening the pull request.                                                      |
+| `#{{LABELS}}`     | The labels associated with this pull request, joined by `,`.                                       |
+| `#{{MILESTONE}}`  | Milestone this PR was part of, as assigned on GitHub.                                              |
+| `#{{BODY}}`       | Description/Body of the pull request as specified on GitHub.                                       |
+| `#{{ASSIGNEES}}`  | Login names of assigned GitHub users, joined by `,`.                                               |
+| `#{{REVIEWERS}}`  | GitHub Login names of specified reviewers, joined by `,`. Requires `fetchReviewers` to be enabled. |
+| `#{{APPROVERS}}`  | GitHub Login names of users who approved the PR, joined by `,`.                                    |
 
+> **Note**: `v4` updates the default placeholders format to `#{{}}`. The old format `${{}}` will be supported until v5 for backwards compatiblity.
 
 <details><summary><b>Array Placeholders</b></summary>
 <p>
@@ -376,9 +377,9 @@ When using `*` values are joined by `,`.
 
 | **Placeholder**     | **Description**                                                                     |
 |---------------------|-------------------------------------------------------------------------------------|
-| `${{ASSIGNEES[*]}}` | Login names of assigned GitHub users.                                               |
-| `${{REVIEWERS[*]}}` | GitHub Login names of specified reviewers. Requires `fetchReviewers` to be enabled. |
-| `${{APPROVERS[*]}}` | GitHub Login names of users who approved the PR.                                    |
+| `#{{ASSIGNEES[*]}}` | Login names of assigned GitHub users.                                               |
+| `#{{REVIEWERS[*]}}` | GitHub Login names of specified reviewers. Requires `fetchReviewers` to be enabled. |
+| `#{{APPROVERS[*]}}` | GitHub Login names of users who approved the PR.                                    |
 
 Additionally there are special array placeholders like `REVIEWS` which allows access to it's properties via
 `(KEY)[(*/index)].(property)`.
@@ -387,19 +388,19 @@ For example: `REVIEWS[*].author` or `REVIEWS[*].body`
 
 | **Placeholder**               | **Description**                            |
 |-------------------------------|--------------------------------------------|
-| `${{REVIEWS[*].author}}`      | GitHub Login names of specified reviewers. |
-| `${{REVIEWS[*].body}}`        | The body of the review.                    |
-| `${{REVIEWS[*].htmlURL}}`     | The URL to the given review.               |
-| `${{REVIEWS[*].submittedAt}}` | The date whent he review was submitted.    |
-| `${{REVIEWS[*].state}}`       | The state of the given review.             |
+| `#{{REVIEWS[*].author}}`      | GitHub Login names of specified reviewers. |
+| `#{{REVIEWS[*].body}}`        | The body of the review.                    |
+| `#{{REVIEWS[*].htmlURL}}`     | The URL to the given review.               |
+| `#{{REVIEWS[*].submittedAt}}` | The date whent he review was submitted.    |
+| `#{{REVIEWS[*].state}}`       | The state of the given review.             |
 
 Similar to `REVIEWS`, `REFERENCED` PRs also offer special placeholders. 
 
 | **Placeholder**               | **Description**                                                           |
 |-------------------------------|---------------------------------------------------------------------------|
-| `${{REFERENCED[*].number}}`   | The PR number of the referenced PR.                                       |
-| `${{REFERENCED[*].title}}`    | The title of the referenced PR.                                           |
-| `${{REFERENCED[*]."..."}}`    | Allows to use most other PR properties as placeholder.                    |
+| `#{{REFERENCED[*].number}}`   | The PR number of the referenced PR.                                       |
+| `#{{REFERENCED[*].title}}`    | The title of the referenced PR.                                           |
+| `#{{REFERENCED[*]."..."}}`    | Allows to use most other PR properties as placeholder.                    |
 
 </p>
 </details>
@@ -412,27 +413,27 @@ Table of supported placeholders allowed to be used in the `template` and `empty_
 
 | **Placeholder**            | **Description**                                                                                    | **Empty** |
 |----------------------------|----------------------------------------------------------------------------------------------------|:---------:|
-| `${{CHANGELOG}}`           | The contents of the changelog, matching the labels as specified in the categories configuration    |           |
-| `${{UNCATEGORIZED}}`       | All pull requests not matching a specified label in categories                                     |           |
-| `${{OPEN}}`                | All open pull requests. Will only be fetched if `includeOpen` is enabled.                          |           |
-| `${{IGNORED}}`             | All pull requests defining labels matching the `ignore_labels` configuration                       |           |
-| `${{OWNER}}`               | Describes the owner of the repository the changelog was generated for                              | x         |
-| `${{REPO}}`                | The repository name of the repo the changelog was generated for                                    | x         |
-| `${{FROM_TAG}}`            | Defines the 'start' from where the changelog did consider merged pull requests                     | x         |
-| `${{FROM_TAG_DATE}}`       | Defines the date at which the 'start' tag was created. Requires `fetchReleaseInformation`.         | x         |
-| `${{TO_TAG}}`              | Defines until which tag the changelog did consider merged pull requests                            | x         |
-| `${{TO_TAG_DATE}}`         | Defines the date at which the 'until' tag was created. Requires `fetchReleaseInformation`.         | x         |
-| `${{RELEASE_DIFF}}`        | Introduces a link to the full diff between from tag and to tag releases                            | x         |
-| `${{CHANGED_FILES}}`       | The count of changed files.                                                                        |           |
-| `${{ADDITIONS}}`           | The count of code additions (lines).                                                               |           |
-| `${{DELETIONS}}`           | The count of code deletions (lines).                                                               |           |
-| `${{CHANGES}}`             | The count of total changes (lines).                                                                |           |
-| `${{COMMITS}}`             | The count of commits in this release.                                                              |           |
-| `${{CATEGORIZED_COUNT}}`   | The count of PRs which were categorized                                                            |           |
-| `${{UNCATEGORIZED_COUNT}}` | The count of PRs and changes which were not categorized. No label overlapping with category labels |           |
-| `${{OPEN_COUNT}}`          | The count of open PRs. Will only be fetched if `includeOpen` is configured.                        |           |
-| `${{IGNORED_COUNT}}`       | The count of PRs and changes which were specifically ignored from the changelog.                   |           |
-| `${{DAYS_SINCE}}`          | Days between the 2 releases. Requires `fetchReleaseInformation` to be enabled.                     | x         |
+| `#{{CHANGELOG}}`           | The contents of the changelog, matching the labels as specified in the categories configuration    |           |
+| `#{{UNCATEGORIZED}}`       | All pull requests not matching a specified label in categories                                     |           |
+| `#{{OPEN}}`                | All open pull requests. Will only be fetched if `includeOpen` is enabled.                          |           |
+| `#{{IGNORED}}`             | All pull requests defining labels matching the `ignore_labels` configuration                       |           |
+| `#{{OWNER}}`               | Describes the owner of the repository the changelog was generated for                              | x         |
+| `#{{REPO}}`                | The repository name of the repo the changelog was generated for                                    | x         |
+| `#{{FROM_TAG}}`            | Defines the 'start' from where the changelog did consider merged pull requests                     | x         |
+| `#{{FROM_TAG_DATE}}`       | Defines the date at which the 'start' tag was created. Requires `fetchReleaseInformation`.         | x         |
+| `#{{TO_TAG}}`              | Defines until which tag the changelog did consider merged pull requests                            | x         |
+| `#{{TO_TAG_DATE}}`         | Defines the date at which the 'until' tag was created. Requires `fetchReleaseInformation`.         | x         |
+| `#{{RELEASE_DIFF}}`        | Introduces a link to the full diff between from tag and to tag releases                            | x         |
+| `#{{CHANGED_FILES}}`       | The count of changed files.                                                                        |           |
+| `#{{ADDITIONS}}`           | The count of code additions (lines).                                                               |           |
+| `#{{DELETIONS}}`           | The count of code deletions (lines).                                                               |           |
+| `#{{CHANGES}}`             | The count of total changes (lines).                                                                |           |
+| `#{{COMMITS}}`             | The count of commits in this release.                                                              |           |
+| `#{{CATEGORIZED_COUNT}}`   | The count of PRs which were categorized                                                            |           |
+| `#{{UNCATEGORIZED_COUNT}}` | The count of PRs and changes which were not categorized. No label overlapping with category labels |           |
+| `#{{OPEN_COUNT}}`          | The count of open PRs. Will only be fetched if `includeOpen` is configured.                        |           |
+| `#{{IGNORED_COUNT}}`       | The count of PRs and changes which were specifically ignored from the changelog.                   |           |
+| `#{{DAYS_SINCE}}`          | Days between the 2 releases. Requires `fetchReleaseInformation` to be enabled.                     | x         |
 
 ### Configuration Specification
 
@@ -494,8 +495,8 @@ Custom placeholders can be defined via the `configuration.json` as `custom_place
 
 ```json
 {
-  "template": "**Epics**\n${{EPIC[*]}}\n\n${{CHANGELOG}}",
-  "pr_template": "- ${{TITLE}} - ${{URL}} ${{EPIC}}",
+  "template": "**Epics**\n#{{EPIC[*]}}\n\n#{{CHANGELOG}}",
+  "pr_template": "- #{{TITLE}} - #{{URL}} #{{EPIC}}",
   "custom_placeholders": [
     {
       "name": "EPIC",
@@ -518,7 +519,7 @@ This example will look for JIRA tickets in the EPIC project, and extract all of 
 | custom_placeholders.source      | The source PLACEHOLDER, requires to be one of the existing Template or PR Template placeholders.                             |
 | custom_placeholders.transformer | The transformer specification used to extract the value from the original source PLACEHOLDER.                                |
 
-A placeholder with the name as `CUSTOM_PLACEHOLDER` can be used as `${{CUSTOM_PLACEHOLDER}}` in the target template. 
+A placeholder with the name as `CUSTOM_PLACEHOLDER` can be used as `#{{CUSTOM_PLACEHOLDER}}` in the target template. 
 By default the same restriction applies as for PR vs template placeholder. E.g. a global placeholder can only be used in the global template (and not in the PR template).
 
 Custom placeholders offer one new feature though. PR related placeholders can be used in the global template via the following syntax:
