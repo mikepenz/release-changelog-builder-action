@@ -32,13 +32,6 @@ jobs:
         with:
           node-version: 16.x
 
-      - name: Build PR-Collector
-        run: |
-          cd pr-collector 
-          npm ci
-          npm run build
-          npm run package
-
       - name: Build Action
         run: |
           npm ci
