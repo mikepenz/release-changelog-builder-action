@@ -90,9 +90,9 @@
                 "order": "ASC",
                 "on_property": "mergedAt"
             },
-            "template": "${{CHANGELOG}}\n${{UNCATEGORIZED}}\n${{IGNORED}}\n${{OWNER}}\n${{REPO}}\n${{FROM_TAG}}\n${{TO_TAG}}\n${{RELEASE_DIFF}}\n${{CATEGORIZED_COUNT}}\n${{UNCATEGORIZED_COUNT}}\n${{IGNORED_COUNT}}\n${{CHANGED_FILES}}\n${{ADDITIONS}}\n${{DELETIONS}}\n${{CHANGES}}\n${{COMMITS}}",
-            "pr_template": "- ${{TITLE}}\n   - PR: #${{NUMBER}}",
-            "empty_template": "${{OWNER}}\n${{REPO}}\n${{FROM_TAG}}\n${{TO_TAG}}\n${{RELEASE_DIFF}}",
+            "template": "#{{CHANGELOG}}\n#{{UNCATEGORIZED}}\n#{{IGNORED}}\n#{{OWNER}}\n#{{REPO}}\n#{{FROM_TAG}}\n#{{TO_TAG}}\n#{{RELEASE_DIFF}}\n#{{CATEGORIZED_COUNT}}\n#{{UNCATEGORIZED_COUNT}}\n#{{IGNORED_COUNT}}\n#{{CHANGED_FILES}}\n#{{ADDITIONS}}\n#{{DELETIONS}}\n#{{CHANGES}}\n#{{COMMITS}}",
+            "pr_template": "- #{{TITLE}}\n   - PR: ##{{NUMBER}}",
+            "empty_template": "#{{OWNER}}\n#{{REPO}}\n#{{FROM_TAG}}\n#{{TO_TAG}}\n#{{RELEASE_DIFF}}",
             "categories": [
                 {
                     "title": "## 🚀 Features",

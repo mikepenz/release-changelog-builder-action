@@ -18,8 +18,8 @@ exports.DefaultConfiguration = {
         order: 'ASC',
         on_property: 'mergedAt' // the property to sort on. (mergedAt falls back to createdAt)
     },
-    template: '${{CHANGELOG}}',
-    pr_template: '- ${{TITLE}}\n   - PR: #${{NUMBER}}',
+    template: '#{{CHANGELOG}}',
+    pr_template: '- #{{TITLE}}\n   - PR: ##{{NUMBER}}',
     empty_template: '- no changes',
     categories: [
         {
@@ -2380,7 +2380,7 @@ function replacePlaceholders(template, arrayPlaceholderMap /* arrayPlaceholderKe
     return transformed;
 }
 function handlePlaceholder(template, key, value, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */, configuration) {
-    let transformed = template.replaceAll(`\${{${key}}}`, configuration.trim_values ? value.trim() : value);
+    let transformed = template.replaceAll(`#{{${key}}}`, configuration.trim_values ? value.trim() : value);
     // replace custom placeholders
     const phs = placeholders.get(key);
     if (phs) {
@@ -2393,7 +2393,7 @@ function handlePlaceholder(template, key, value, placeholders /* placeholders to
                     if (placeholderPrMap) {
                         (0, utils_1.createOrSet)(placeholderPrMap, placeholder.name, extractedValue);
                     }
-                    transformed = transformed.replaceAll(`\${{${placeholder.name}}}`, configuration.trim_values ? extractedValue.trim() : extractedValue);
+                    transformed = transformed.replaceAll(`#{{${placeholder.name}}}`, configuration.trim_values ? extractedValue.trim() : extractedValue);
                     if (core.isDebug()) {
                         core.debug(`    Custom Placeholder successfully matched data - ${extractValues} (${placeholder.name})`);
                     }
@@ -2442,9 +2442,9 @@ function replacePrPlaceholders(template, placeholderPrMap /* map with all pr rel
     let transformed = template;
     for (const [key, values] of placeholderPrMap) {
         for (let i = 0; i < values.length; i++) {
-            transformed = transformed.replaceAll(`\${{${key}[${i}]}}`, configuration.trim_values ? values[i].trim() : values[i]);
+            transformed = transformed.replaceAll(`#{{${key}[${i}]}}`, configuration.trim_values ? values[i].trim() : values[i]);
         }
-        transformed = transformed.replaceAll(`\${{${key}[*]}}`, values.join(''));
+        transformed = transformed.replaceAll(`#{{${key}[*]}}`, values.join(''));
     }
     return transformed;
 }
@@ -2452,7 +2452,7 @@ function cleanupPrPlaceholders(template, placeholders) {
     let transformed = template;
     for (const [, phs] of placeholders) {
         for (const ph of phs) {
-            transformed = transformed.replaceAll(new RegExp(`\\$\\{\\{${ph.name}(?:\\[.+?\\])?\\}\\}`, 'gu'), '');
+            transformed = transformed.replaceAll(new RegExp(`#\\{\\{${ph.name}(?:\\[.+?\\])?\\}\\}`, 'gu'), '');
         }
     }
     return transformed;
@@ -2460,7 +2460,7 @@ function cleanupPrPlaceholders(template, placeholders) {
 function cleanupPlaceholders(template) {
     let transformed = template;
     for (const phs of ['REVIEWS', 'REFERENCED', 'ASSIGNEES', 'REVIEWERS', 'APPROVERS']) {
-        transformed = transformed.replaceAll(new RegExp(`\\$\\{\\{${phs}\\[.+?\\]\\..*?\\}\\}`, 'gu'), '');
+        transformed = transformed.replaceAll(new RegExp(`#\\{\\{${phs}\\[.+?\\]\\..*?\\}\\}`, 'gu'), '');
     }
     return transformed;
 }
@@ -2717,7 +2717,7 @@ function readConfiguration(filename) {
 function parseConfiguration(config) {
     try {
         // for compatiblity with the `yml` file we require to use `#{{}}` instead of `${{}}` - replace it here.
-        const configurationJSON = JSON.parse(config.replace(/#{{/g, '${{'));
+        const configurationJSON = JSON.parse(config.replace(/\${{/g, '#{{'));
         return configurationJSON;
     }
     catch (error) {

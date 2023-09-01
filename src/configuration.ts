@@ -70,8 +70,8 @@ export const DefaultConfiguration: Configuration = {
     order: 'ASC', // the sorting order
     on_property: 'mergedAt' // the property to sort on. (mergedAt falls back to createdAt)
   },
-  template: '${{CHANGELOG}}', // the global template to host the changelog
-  pr_template: '- ${{TITLE}}\n   - PR: #${{NUMBER}}', // the per PR template to pick
+  template: '#{{CHANGELOG}}', // the global template to host the changelog
+  pr_template: '- #{{TITLE}}\n   - PR: ##{{NUMBER}}', // the per PR template to pick
   empty_template: '- no changes', // the template to use if no pull requests are found
   categories: [
     {

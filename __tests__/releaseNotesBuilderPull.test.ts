@@ -3,7 +3,7 @@ import {Octokit} from '@octokit/rest'
 import {buildChangelog} from '../src/transform'
 import {pullData} from '../src/pr-collector/prCollector'
 import fetch from 'node-fetch'
-import { Data } from '../src/releaseNotesBuilder'
+import {Data} from '../src/releaseNotesBuilder'
 
 jest.setTimeout(180000)
 
@@ -37,7 +37,7 @@ it('Should have empty changelog (tags)', async () => {
   if (enablePullData) {
     data = await pullData(octokit, options)
   } else {
-    data = checkExportedData(false, "caches/rcba_0.0.2-0.0.3_cache.json")
+    data = checkExportedData(false, 'caches/rcba_0.0.2-0.0.3_cache.json')
   }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
@@ -64,7 +64,7 @@ it('Should match generated changelog (tags)', async () => {
   if (enablePullData) {
     data = await pullData(octokit, options)
   } else {
-    data = checkExportedData(false, "caches/rcba_0.0.1-0.0.3_cache.json")
+    data = checkExportedData(false, 'caches/rcba_0.0.1-0.0.3_cache.json')
   }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
@@ -97,7 +97,7 @@ it('Should match generated changelog (refs)', async () => {
   if (enablePullData) {
     data = await pullData(octokit, options)
   } else {
-    data = checkExportedData(false, "caches/rcba_5ec7a2-fa3788_cache.json")
+    data = checkExportedData(false, 'caches/rcba_5ec7a2-fa3788_cache.json')
   }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
@@ -137,7 +137,7 @@ it('Should match generated changelog and replace all occurrences (refs)', async 
   if (enablePullData) {
     data = await pullData(octokit, options)
   } else {
-    data = checkExportedData(false, "caches/rcba_5ec7a2-fa3788_cache.json")
+    data = checkExportedData(false, 'caches/rcba_5ec7a2-fa3788_cache.json')
   }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
@@ -180,7 +180,7 @@ it('Should match ordered ASC', async () => {
   if (enablePullData) {
     data = await pullData(octokit, options)
   } else {
-    data = checkExportedData(false, "caches/rcba_0.3.0-0.5.0_cache.json")
+    data = checkExportedData(false, 'caches/rcba_0.3.0-0.5.0_cache.json')
   }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
@@ -208,7 +208,7 @@ it('Should match ordered DESC', async () => {
   if (enablePullData) {
     data = await pullData(octokit, options)
   } else {
-    data = checkExportedData(false, "caches/rcba_0.3.0-0.5.0_cache.json")
+    data = checkExportedData(false, 'caches/rcba_0.3.0-0.5.0_cache.json')
   }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
@@ -235,7 +235,7 @@ it('Should match ordered by title ASC', async () => {
   if (enablePullData) {
     data = await pullData(octokit, options)
   } else {
-    data = checkExportedData(false, "caches/rcba_0.3.0-0.5.0_cache.json")
+    data = checkExportedData(false, 'caches/rcba_0.3.0-0.5.0_cache.json')
   }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
@@ -264,7 +264,7 @@ it('Should match ordered by title DESC', async () => {
   if (enablePullData) {
     data = await pullData(octokit, options)
   } else {
-    data = checkExportedData(false, "caches/rcba_0.3.0-0.5.0_cache.json")
+    data = checkExportedData(false, 'caches/rcba_0.3.0-0.5.0_cache.json')
   }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
@@ -293,7 +293,7 @@ it('Should ignore PRs not merged into develop branch', async () => {
   if (enablePullData) {
     data = await pullData(octokit, options)
   } else {
-    data = checkExportedData(false, "caches/rcba_1.3.1-1.4.0_base_develop_cache.json")
+    data = checkExportedData(false, 'caches/rcba_1.3.1-1.4.0_base_develop_cache.json')
   }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
@@ -320,7 +320,7 @@ it('Should ignore PRs not merged into main branch', async () => {
   if (enablePullData) {
     data = await pullData(octokit, options)
   } else {
-    data = checkExportedData(false, "caches/rcba_1.3.1-1.4.0_base_main_cache.json")
+    data = checkExportedData(false, 'caches/rcba_1.3.1-1.4.0_base_main_cache.json')
   }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
