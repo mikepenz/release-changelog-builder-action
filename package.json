@@ -43,7 +43,7 @@
   },
   "devDependencies": {
     "@types/jest": "^29.5.4",
-    "@types/node": "^20.5.7",
+    "@types/node": "^20.5.9",
     "@types/node-fetch": "^2.6.4",
     "@types/semver": "^7.5.1",
     "@typescript-eslint/eslint-plugin": "^6.5.0",
