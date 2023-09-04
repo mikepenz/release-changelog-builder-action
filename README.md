@@ -627,6 +627,20 @@ From GitHub codespaces, open the terminal panel -> Click the small arrow down be
 
 Permissions depend on the specific usecase, however this action only requires `read-only` permissions as it will not make modifications to the repository.
 
+### GitHub actions
+
+Depending on the given environment it may be required to define teh token scope for GitHub actions to `read` for `contents` and `pull-requests`.
+
+```
+permissions:
+  contents: read
+  pull-requests: read
+```
+
+[GitHub Actions token scope](https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs#defining-access-for-the-github_token-scopes).
+
+### `Fine-grained personal access tokens`
+
 For `Fine-grained personal access tokens` this means:
 
 - `read` for [Pull requests](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/pr-collector/src/pullRequests.ts#L124)
@@ -638,7 +652,11 @@ For `Fine-grained personal access tokens` this means:
 - `read` to [list reviews](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/pr-collector/src/pullRequests.ts#L186)
   - Covered by the `contents` scope
  
+ ### Classic tokens
+ 
  For Classic tokens you only have to create the token without special permissions.
+
+
 
 ## Developed By
 
