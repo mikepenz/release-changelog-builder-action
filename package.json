@@ -36,15 +36,13 @@
     "@actions/exec": "^1.1.1",
     "@actions/github": "^5.1.1",
     "@octokit/rest": "^20.0.1",
-    "https-proxy-agent": "^7.0.1",
+    "https-proxy-agent": "^7.0.2",
     "moment": "^2.29.4",
-    "node-fetch": "2.6.12",
     "semver": "^7.5.4"
   },
   "devDependencies": {
     "@types/jest": "^29.5.4",
-    "@types/node": "^20.5.7",
-    "@types/node-fetch": "^2.6.4",
+    "@types/node": "^20.5.9",
     "@types/semver": "^7.5.1",
     "@typescript-eslint/eslint-plugin": "^6.5.0",
     "@typescript-eslint/parser": "^6.5.0",

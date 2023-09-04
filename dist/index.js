@@ -553,9 +553,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.pullData = exports.PullRequestCollector = void 0;
 const core = __importStar(__nccwpck_require__(2186));
@@ -565,7 +562,6 @@ const utils_1 = __nccwpck_require__(9613);
 const https_proxy_agent_1 = __nccwpck_require__(7219);
 const pullRequests_1 = __nccwpck_require__(4012);
 const commits_1 = __nccwpck_require__(234);
-const node_fetch_1 = __importDefault(__nccwpck_require__(467));
 class PullRequestCollector {
     constructor(baseUrl, token, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode = false, configuration) {
         this.baseUrl = baseUrl;
@@ -597,10 +593,7 @@ class PullRequestCollector {
             // load octokit instance
             const octokit = new rest_1.Octokit({
                 auth: `token ${this.token || process.env.GITHUB_TOKEN}`,
-                baseUrl: `${this.baseUrl || 'https://api.github.com'}`,
-                request: {
-                    fetch: node_fetch_1.default
-                }
+                baseUrl: `${this.baseUrl || 'https://api.github.com'}`
             });
             if (proxy) {
                 const agent = new https_proxy_agent_1.HttpsProxyAgent(proxy);
@@ -13351,7 +13344,11 @@ class HttpsProxyAgent extends agent_base_1.Agent {
         let socket;
         if (proxy.protocol === 'https:') {
             debug('Creating `tls.Socket`: %o', this.connectOpts);
-            socket = tls.connect(this.connectOpts);
+            const servername = this.connectOpts.servername || this.connectOpts.host;
+            socket = tls.connect({
+                ...this.connectOpts,
+                servername: servername && net.isIP(servername) ? undefined : servername
+            });
         }
         else {
             debug('Creating `net.Socket`: %o', this.connectOpts);
@@ -13494,7 +13491,10 @@ function parseProxyResponse(socket) {
                 read();
                 return;
             }
-            const headerParts = buffered.slice(0, endOfHeaders).toString('ascii').split('\r\n');
+            const headerParts = buffered
+                .slice(0, endOfHeaders)
+                .toString('ascii')
+                .split('\r\n');
             const firstLine = headerParts.shift();
             if (!firstLine) {
                 socket.destroy();
@@ -20824,10 +20824,6 @@ function getNodeRequestOptions(request) {
 		agent = agent(parsedURL);
 	}
 
-	if (!headers.has('Connection') && !agent) {
-		headers.set('Connection', 'close');
-	}
-
 	// HTTP-network fetch step 4.2
 	// chunked encoding is handled by Node.js
 
@@ -21247,6 +21243,7 @@ exports.Headers = Headers;
 exports.Request = Request;
 exports.Response = Response;
 exports.FetchError = FetchError;
+exports.AbortError = AbortError;
 
 
 /***/ }),

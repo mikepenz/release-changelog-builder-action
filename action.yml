@@ -82,5 +82,5 @@ outputs:
   cache:
     description: 'Cache containing this runs data. Allows to re-use collected information multiple times to generate different release notes.'
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'dist/index.js'
