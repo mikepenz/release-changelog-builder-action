@@ -6,7 +6,6 @@ import {failOrError} from './utils'
 import {HttpsProxyAgent} from 'https-proxy-agent'
 import {PullRequestInfo, PullRequests} from './pullRequests'
 import {Commits, DiffInfo} from './commits'
-import fetch from 'node-fetch'
 
 export interface Options {
   owner: string // the owner of the repository
@@ -62,10 +61,7 @@ export class PullRequestCollector {
     // load octokit instance
     const octokit = new Octokit({
       auth: `token ${this.token || process.env.GITHUB_TOKEN}`,
-      baseUrl: `${this.baseUrl || 'https://api.github.com'}`,
-      request: {
-        fetch
-      }
+      baseUrl: `${this.baseUrl || 'https://api.github.com'}`
     })
 
     if (proxy) {
