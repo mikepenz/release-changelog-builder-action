@@ -2,7 +2,6 @@ import {checkExportedData, mergeConfiguration, resolveConfiguration} from '../sr
 import {Octokit} from '@octokit/rest'
 import {buildChangelog} from '../src/transform'
 import {pullData} from '../src/pr-collector/prCollector'
-import fetch from 'node-fetch'
 import {Data} from '../src/releaseNotesBuilder'
 
 jest.setTimeout(180000)
@@ -10,10 +9,7 @@ jest.setTimeout(180000)
 // load octokit instance
 const enablePullData = false // if false -> use cache for data
 const octokit = new Octokit({
-  auth: `token ${process.env.GITHUB_TOKEN}`,
-  request: {
-    fetch: fetch
-  }
+  auth: `token ${process.env.GITHUB_TOKEN}`
 })
 
 it('Should have empty changelog (tags)', async () => {
