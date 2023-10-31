@@ -36,6 +36,8 @@
     "@actions/exec": "^1.1.1",
     "@actions/github": "^6.0.0",
     "@octokit/rest": "^20.0.2",
+    "cross-fetch": "^4.0.0",
+    "gitea-js": "^1.20.1",
     "https-proxy-agent": "^7.0.2",
     "moment": "^2.29.4",
     "semver": "^7.5.4"

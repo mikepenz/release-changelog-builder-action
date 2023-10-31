@@ -8,7 +8,7 @@ import {TagInfo} from './pr-collector/tags'
 import {DiffInfo} from './pr-collector/commits'
 import {PullRequestInfo} from './pr-collector/pullRequests'
 import * as fs from 'fs'
-import {BaseRepository} from "./repositories/BaseRepository";
+import {BaseRepository} from './repositories/BaseRepository'
 
 export interface ReleaseNotesOptions {
   owner: string // the owner of the repository
