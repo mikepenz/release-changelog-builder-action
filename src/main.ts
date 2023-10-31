@@ -3,13 +3,31 @@ import * as github from '@actions/github'
 import {mergeConfiguration, parseConfiguration, resolveConfiguration, retrieveRepositoryPath, writeOutput} from './utils'
 import {ReleaseNotesBuilder} from './releaseNotesBuilder'
 import {Configuration} from './configuration'
+import {GithubRepository} from "./repositories/GithubRepository";
+import {GiteaRepository} from "./repositories/GiteaRepository";
 
 async function run(): Promise<void> {
+
+  const supportedPlatform = {
+    github: GithubRepository,
+    gitea: GiteaRepository,
+  };
+  function isSupportedPlatform(type: string): type is keyof typeof supportedPlatform {
+    return type in supportedPlatform;
+  }
   core.setOutput('failed', false) // mark the action not failed by default
 
   core.startGroup(`📘 Reading input values`)
   try {
     // read in path specification, resolve github workspace, and repo path
+    const platform = core.getInput('platform') || "github"
+    if(!isSupportedPlatform(platform)){
+      core.setFailed(`The ${platform} platform is not supported. `)
+      return
+    }
+
+
+
     const inputPath = core.getInput('path')
     const repositoryPath = retrieveRepositoryPath(inputPath)
 
@@ -40,7 +58,7 @@ async function run(): Promise<void> {
 
     // read in repository inputs
     const baseUrl = core.getInput('baseUrl')
-    const token = core.getInput('token')
+    const token = core.getInput('token') || process.env.GITHUB_TOKEN || ""
     const owner = core.getInput('owner') || github.context.repo.owner
     const repo = core.getInput('repo') || github.context.repo.repo
     // read in from, to tag inputs
@@ -59,9 +77,11 @@ async function run(): Promise<void> {
     const exportOnly = core.getInput('exportOnly') === 'true'
     const cache = core.getInput('cache')
 
+
+    const repositoryUtils = new supportedPlatform[platform](token,baseUrl);
     const result = await new ReleaseNotesBuilder(
       baseUrl,
-      token,
+        repositoryUtils,
       repositoryPath,
       owner,
       repo,

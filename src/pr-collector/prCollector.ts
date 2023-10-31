@@ -6,6 +6,7 @@ import {failOrError} from './utils'
 import {HttpsProxyAgent} from 'https-proxy-agent'
 import {PullRequestInfo, PullRequests} from './pullRequests'
 import {Commits, DiffInfo} from './commits'
+import {BaseRepository} from "../repositories/BaseRepository";
 
 export interface Options {
   owner: string // the owner of the repository
@@ -32,7 +33,7 @@ export interface Data {
 export class PullRequestCollector {
   constructor(
     private baseUrl: string | null,
-    private token: string | null,
+    private repositoryUtils: BaseRepository ,
     private repositoryPath: string,
     private owner: string,
     private repo: string,
@@ -46,37 +47,15 @@ export class PullRequestCollector {
     private fetchReleaseInformation = false,
     private fetchReviews = false,
     private commitMode = false,
-    private configuration: PullConfiguration
+    private configuration: PullConfiguration,
   ) {}
 
   async build(): Promise<Data | null> {
     // check proxy setup for GHES environments
-    const proxy = process.env.https_proxy || process.env.HTTPS_PROXY
-    const noProxy = process.env.no_proxy || process.env.NO_PROXY
-    let noProxyArray: string[] = []
-    if (noProxy) {
-      noProxyArray = noProxy.split(',')
-    }
-
-    // load octokit instance
-    const octokit = new Octokit({
-      auth: `token ${this.token || process.env.GITHUB_TOKEN}`,
-      baseUrl: `${this.baseUrl || 'https://api.github.com'}`
-    })
-
-    if (proxy) {
-      const agent = new HttpsProxyAgent(proxy)
-      octokit.hook.before('request', options => {
-        if (noProxyArray.includes(options.request.hostname)) {
-          return
-        }
-        options.request.agent = agent
-      })
-    }
 
     // ensure proper from <-> to tag range
     core.startGroup(`🔖 Resolve tags`)
-    const tagsApi = new Tags(octokit)
+    const tagsApi = new Tags(this.repositoryUtils)
     const tagRange = await tagsApi.retrieveRange(
       this.repositoryPath,
       this.owner,
@@ -114,7 +93,7 @@ export class PullRequestCollector {
 
     core.endGroup()
 
-    return await pullData(octokit, {
+    return await pullData( this.repositoryUtils, {
       owner: this.owner,
       repo: this.repo,
       fromTag: previousTag,
@@ -131,14 +110,14 @@ export class PullRequestCollector {
   }
 }
 
-export async function pullData(octokit: Octokit, options: Options): Promise<Data | null> {
+export async function pullData( repositoryUtils: BaseRepository , options: Options): Promise<Data | null> {
   let mergedPullRequests: PullRequestInfo[]
   let diffInfo: DiffInfo
 
-  const commitsApi = new Commits(octokit)
+  const commitsApi = new Commits(repositoryUtils)
   if (!options.commitMode) {
     core.startGroup(`🚀 Load pull requests`)
-    const pullRequestsApi = new PullRequests(octokit, commitsApi)
+    const pullRequestsApi = new PullRequests(repositoryUtils, commitsApi)
     const [info, prs] = await pullRequestsApi.getMergedPullRequests(options)
     mergedPullRequests = prs
     diffInfo = info

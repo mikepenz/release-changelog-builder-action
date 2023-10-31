@@ -1,12 +1,12 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import * as semver from 'semver'
-import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import {SemVer} from 'semver'
 import {RegexTransformer, TagResolver, Transformer} from './types'
 import {createCommandManager} from './gitHelper'
 import moment from 'moment'
 import {validateTransformer} from './regexUtils'
+import {BaseRepository} from "../repositories/BaseRepository";
 
 export interface TagResult {
   from: TagInfo | null
@@ -25,69 +25,14 @@ export interface SortableTagInfo extends TagInfo {
 }
 
 export class Tags {
-  constructor(private octokit: Octokit) {}
+  constructor(private repositoryUtils: BaseRepository) {}
 
   async getTags(owner: string, repo: string, maxTagsToFetch: number): Promise<TagInfo[]> {
-    const tagsInfo: TagInfo[] = []
-    const options = this.octokit.repos.listTags.endpoint.merge({
-      owner,
-      repo,
-      direction: 'desc',
-      per_page: 100
-    })
-
-    for await (const response of this.octokit.paginate.iterator(options)) {
-      type TagsListData = RestEndpointMethodTypes['repos']['listTags']['response']['data']
-      const tags: TagsListData = response.data as TagsListData
-
-      for (const tag of tags) {
-        tagsInfo.push({
-          name: tag.name,
-          commit: tag.commit.sha
-        })
-      }
-
-      // for performance only fetch newest maxTagsToFetch tags!!
-      if (tagsInfo.length >= maxTagsToFetch) {
-        break
-      }
-    }
-
-    core.info(`ℹ️ Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`)
-    return tagsInfo
+   return this.repositoryUtils.getTags(owner,repo,maxTagsToFetch)
   }
 
   async fillTagInformation(repositoryPath: string, owner: string, repo: string, tagInfo: TagInfo): Promise<TagInfo> {
-    const options = this.octokit.repos.getReleaseByTag.endpoint.merge({
-      owner,
-      repo,
-      tag: tagInfo.name
-    })
-
-    try {
-      const response = await this.octokit.request(options)
-      type ReleaseInformation = RestEndpointMethodTypes['repos']['getReleaseByTag']['response']['data']
-
-      const release: ReleaseInformation = response.data as ReleaseInformation
-      tagInfo.date = moment(release.created_at)
-      core.info(`ℹ️ Retrieved information about the release associated with ${tagInfo.name} from the GitHub API`)
-    } catch (error) {
-      core.info(`⚠️ No release information found for ${tagInfo.name}, trying to retrieve tag creation time as fallback.`)
-      const gitHelper = await createCommandManager(repositoryPath)
-      const creationTimeString = await gitHelper.tagCreation(tagInfo.name)
-      const creationTime = moment(creationTimeString)
-      if (creationTimeString !== null && creationTime.isValid()) {
-        tagInfo.date = creationTime
-        core.info(
-          `ℹ️ Resolved tag creation time (${creationTimeString}) from 'git for-each-ref --format="%(creatordate:rfc)" "refs/tags/${tagInfo.name}`
-        )
-      } else {
-        core.info(
-          `⚠️ Could not retrieve tag creation time via git cli 'git for-each-ref --format="%(creatordate:rfc)" "refs/tags/${tagInfo.name}'`
-        )
-      }
-    }
-    return tagInfo
+    return  this.repositoryUtils.fillTagInformation(repositoryPath,owner,repo,tagInfo)
   }
 
   async findPredecessorTag(

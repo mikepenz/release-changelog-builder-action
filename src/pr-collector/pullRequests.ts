@@ -5,6 +5,7 @@ import moment from 'moment'
 import {Property, Sort} from './types'
 import {Commits, DiffInfo, filterCommits} from './commits'
 import {Options} from './prCollector'
+import {BaseRepository} from "../repositories/BaseRepository";
 
 export interface PullRequestInfo {
   number: number
@@ -64,142 +65,33 @@ export const EMPTY_COMMENT_INFO: CommentInfo = {
   state: undefined
 }
 
-type PullData = RestEndpointMethodTypes['pulls']['get']['response']['data']
+export  type PullData = RestEndpointMethodTypes['pulls']['get']['response']['data']
 
-type PullsListData = RestEndpointMethodTypes['pulls']['list']['response']['data']
+export type PullsListData = RestEndpointMethodTypes['pulls']['list']['response']['data']
 
-type PullReviewsData = RestEndpointMethodTypes['pulls']['listReviews']['response']['data']
+export type PullReviewsData = RestEndpointMethodTypes['pulls']['listReviews']['response']['data']
 
 export class PullRequests {
   constructor(
-    private octokit: Octokit,
+    private repositoryUtils: BaseRepository,
     private commits: Commits
   ) {}
 
-  async getSingle(owner: string, repo: string, prNumber: number): Promise<PullRequestInfo | null> {
-    try {
-      const {data} = await this.octokit.pulls.get({
-        owner,
-        repo,
-        pull_number: prNumber
-      })
-
-      return mapPullRequest(data)
-    } catch (e: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
-      core.warning(`⚠️ Cannot find PR ${owner}/${repo}#${prNumber} - ${e.message}`)
-      return null
-    }
-  }
 
   async getForCommitHash(owner: string, repo: string, commit_sha: string, maxPullRequests: number): Promise<PullRequestInfo[]> {
-    const mergedPRs: PullRequestInfo[] = []
-
-    const options = this.octokit.repos.listPullRequestsAssociatedWithCommit.endpoint.merge({
-      owner,
-      repo,
-      commit_sha,
-      per_page: `${Math.min(10, maxPullRequests)}`,
-      direction: 'desc'
-    })
-
-    for await (const response of this.octokit.paginate.iterator(options)) {
-      const prs: PullsListData = response.data as PullsListData
-
-      for (const pr of prs) {
-        mergedPRs.push(mapPullRequest(pr, pr.merged_at ? 'merged' : 'open'))
-      }
-    }
-
-    return sortPrs(mergedPRs)
+    return sortPrs(await this.repositoryUtils.getForCommitHash(owner, repo, commit_sha, maxPullRequests))
   }
 
-  async getBetweenDates(
-    owner: string,
-    repo: string,
-    fromDate: moment.Moment,
-    toDate: moment.Moment,
-    maxPullRequests: number
-  ): Promise<PullRequestInfo[]> {
-    const mergedPRs: PullRequestInfo[] = []
-    const options = this.octokit.pulls.list.endpoint.merge({
-      owner,
-      repo,
-      state: 'closed',
-      sort: 'merged',
-      per_page: `${Math.min(100, maxPullRequests)}`,
-      direction: 'desc'
-    })
-
-    for await (const response of this.octokit.paginate.iterator(options)) {
-      const prs: PullsListData = response.data as PullsListData
-
-      for (const pr of prs.filter(p => !!p.merged_at)) {
-        mergedPRs.push(mapPullRequest(pr, 'merged'))
-      }
-
-      if (mergedPRs.length >= maxPullRequests) {
-        core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests} (1)`)
-        break // bail out early to not keep iterating forever
-      } else if (prs.length > 0) {
-        if (fetchedEnough(prs, fromDate)) {
-          return sortPrs(mergedPRs) // bail out early to not keep iterating on PRs super old
-        }
-      } else {
-        core.debug(`⚠️ No more PRs retrieved from API. Fetched so far: ${mergedPRs.length}`)
-        break
-      }
-    }
-
-    return sortPrs(mergedPRs)
+  async getBetweenDates(owner: string, repo: string, fromDate: moment.Moment, toDate: moment.Moment, maxPullRequests: number): Promise<PullRequestInfo[]> {
+    return sortPrs(await this.repositoryUtils.getBetweenDates(owner, repo,fromDate,toDate,maxPullRequests))
   }
 
   async getOpen(owner: string, repo: string, maxPullRequests: number): Promise<PullRequestInfo[]> {
-    const openPrs: PullRequestInfo[] = []
-    const options = this.octokit.pulls.list.endpoint.merge({
-      owner,
-      repo,
-      state: 'open',
-      sort: 'created',
-      per_page: '100',
-      direction: 'desc'
-    })
-
-    for await (const response of this.octokit.paginate.iterator(options)) {
-      const prs: PullsListData = response.data as PullsListData
-
-      for (const pr of prs) {
-        openPrs.push(mapPullRequest(pr, 'open'))
-      }
-
-      const firstPR = prs[0]
-      if (firstPR === undefined || openPrs.length >= maxPullRequests) {
-        if (openPrs.length >= maxPullRequests) {
-          core.warning(`⚠️ Reached 'maxPullRequests' count ${maxPullRequests} (2)`)
-        }
-        break // bail out early to not keep iterating forever
-      }
-    }
-
-    return sortPrs(openPrs)
+    return sortPrs(await this.repositoryUtils.getOpen(owner, repo,maxPullRequests))
   }
 
   async getReviews(owner: string, repo: string, pr: PullRequestInfo): Promise<void> {
-    const options = this.octokit.pulls.listReviews.endpoint.merge({
-      owner,
-      repo,
-      pull_number: pr.number,
-      sort: 'created',
-      direction: 'desc'
-    })
-    const prReviews: CommentInfo[] = []
-    for await (const response of this.octokit.paginate.iterator(options)) {
-      const comments: PullReviewsData = response.data as PullReviewsData
-
-      for (const comment of comments) {
-        prReviews.push(mapComment(comment))
-      }
-    }
-    pr.reviews = prReviews
+    await this.repositoryUtils.getReviews(owner, repo, pr)
   }
 
   async getMergedPullRequests(options: Options): Promise<[DiffInfo, PullRequestInfo[]]> {
@@ -323,7 +215,7 @@ export class PullRequests {
   }
 }
 
-function fetchedEnough(pullRequests: PullsListData, fromDate: moment.Moment): boolean {
+export function fetchedEnough(pullRequests: PullsListData, fromDate: moment.Moment): boolean {
   for (let i = 0; i < Math.min(pullRequests.length, 3); i++) {
     const firstPR = pullRequests[i]
     if (!firstPR.merged_at) {
@@ -408,7 +300,7 @@ function attachSpeciaLabels(status: 'open' | 'merged', labels: string[]): string
   return labels
 }
 
-const mapPullRequest = (pr: PullData | Unpacked<PullsListData>, status: 'open' | 'merged' = 'open'): PullRequestInfo => ({
+export const mapPullRequest = (pr: PullData | Unpacked<PullsListData>, status: 'open' | 'merged' = 'open'): PullRequestInfo => ({
   number: pr.number,
   title: pr.title,
   htmlURL: pr.html_url,
@@ -429,7 +321,7 @@ const mapPullRequest = (pr: PullData | Unpacked<PullsListData>, status: 'open' |
   status
 })
 
-const mapComment = (comment: Unpacked<PullReviewsData>): CommentInfo => ({
+export const mapComment = (comment: Unpacked<PullReviewsData>): CommentInfo => ({
   id: comment.id,
   htmlURL: comment.html_url,
   submittedAt: comment.submitted_at ? moment(comment.submitted_at) : undefined,

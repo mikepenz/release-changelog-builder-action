@@ -8,6 +8,7 @@ import {TagInfo} from './pr-collector/tags'
 import {DiffInfo} from './pr-collector/commits'
 import {PullRequestInfo} from './pr-collector/pullRequests'
 import * as fs from 'fs'
+import {BaseRepository} from "./repositories/BaseRepository";
 
 export interface ReleaseNotesOptions {
   owner: string // the owner of the repository
@@ -32,7 +33,7 @@ export interface Data {
 export class ReleaseNotesBuilder {
   constructor(
     private baseUrl: string | null,
-    private token: string | null,
+    private repositoryUtils: BaseRepository,
     private repositoryPath: string,
     private owner: string | null,
     private repo: string | null,
@@ -78,7 +79,7 @@ export class ReleaseNotesBuilder {
 
       const prData = await new PullRequestCollector(
         this.baseUrl,
-        this.token,
+        this.repositoryUtils,
         this.repositoryPath,
         this.owner,
         this.repo,
