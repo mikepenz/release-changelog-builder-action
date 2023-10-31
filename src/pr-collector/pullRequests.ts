@@ -215,19 +215,7 @@ export class PullRequests {
   }
 }
 
-export function fetchedEnough(pullRequests: PullsListData, fromDate: moment.Moment): boolean {
-  for (let i = 0; i < Math.min(pullRequests.length, 3); i++) {
-    const firstPR = pullRequests[i]
-    if (!firstPR.merged_at) {
-      continue // no merged_at timestamp -> look for the next
-    } else if (fromDate.isAfter(moment(firstPR.merged_at))) {
-      return true
-    } else {
-      break // not enough PRs yet, go further
-    }
-  }
-  return false
-}
+
 
 function sortPrs(pullRequests: PullRequestInfo[]): PullRequestInfo[] {
   return sortPullRequests(pullRequests, {
@@ -294,38 +282,3 @@ export function retrieveProperty(pr: PullRequestInfo, property: Property, useCas
   return value
 }
 
-// helper function to add a special open label to prs not merged.
-function attachSpeciaLabels(status: 'open' | 'merged', labels: string[]): string[] {
-  labels.push(`--rcba-${status}`)
-  return labels
-}
-
-export const mapPullRequest = (pr: PullData | Unpacked<PullsListData>, status: 'open' | 'merged' = 'open'): PullRequestInfo => ({
-  number: pr.number,
-  title: pr.title,
-  htmlURL: pr.html_url,
-  baseBranch: pr.base.ref,
-  branch: pr.head.ref,
-  createdAt: moment(pr.created_at),
-  mergedAt: pr.merged_at ? moment(pr.merged_at) : undefined,
-  mergeCommitSha: pr.merge_commit_sha || '',
-  author: pr.user?.login || '',
-  repoName: pr.base.repo.full_name,
-  labels: attachSpeciaLabels(status, pr.labels?.map(lbl => lbl.name?.toLocaleLowerCase('en') || '') || []),
-  milestone: pr.milestone?.title || '',
-  body: pr.body || '',
-  assignees: pr.assignees?.map(asignee => asignee?.login || '') || [],
-  requestedReviewers: pr.requested_reviewers?.map(reviewer => reviewer?.login || '') || [],
-  approvedReviewers: [],
-  reviews: undefined,
-  status
-})
-
-export const mapComment = (comment: Unpacked<PullReviewsData>): CommentInfo => ({
-  id: comment.id,
-  htmlURL: comment.html_url,
-  submittedAt: comment.submitted_at ? moment(comment.submitted_at) : undefined,
-  author: comment.user?.login || '',
-  body: comment.body,
-  state: comment.state
-})

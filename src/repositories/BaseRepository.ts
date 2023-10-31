@@ -3,6 +3,8 @@ import {DiffInfo} from "../pr-collector/commits";
 import {Options} from "../pr-collector/prCollector";
 import moment from "moment/moment";
 import {PullRequestInfo} from "../pr-collector/pullRequests";
+import * as core from "@actions/core";
+import {createCommandManager} from "../pr-collector/gitHelper";
 
 export abstract class BaseRepository {
     proxy?: string;
@@ -11,7 +13,7 @@ export abstract class BaseRepository {
     // Define an abstract getter for the default URL
     abstract get defaultUrl(): string;
 
-    protected constructor(protected token: string, protected url?: string) {
+    protected constructor(protected token: string, protected url: string | undefined,protected repositoryPath:string) {
         this.proxy = process.env.https_proxy || process.env.HTTPS_PROXY
         const noProxy = process.env.no_proxy || process.env.NO_PROXY
         this.noProxyArray = []
@@ -34,4 +36,24 @@ export abstract class BaseRepository {
     abstract getOpen(owner: string, repo: string, maxPullRequests: number): Promise<PullRequestInfo[]>
 
     abstract getReviews(owner: string, repo: string, pr: PullRequestInfo): Promise<void>
+
+
+    protected async  getTagByCreateTime(repositoryPath: string, tagInfo: TagInfo) {
+        core.info(`⚠️ No release information found for ${tagInfo.name}, trying to retrieve tag creation time as fallback.`)
+        const gitHelper = await createCommandManager(repositoryPath)
+        const creationTimeString = await gitHelper.tagCreation(tagInfo.name)
+        const creationTime = moment(creationTimeString)
+        if (creationTimeString !== null && creationTime.isValid()) {
+            tagInfo.date = creationTime
+            core.info(
+                `ℹ️ Resolved tag creation time (${creationTimeString}) from 'git for-each-ref --format="%(creatordate:rfc)" "refs/tags/${tagInfo.name}`
+            )
+        } else {
+            core.info(
+                `⚠️ Could not retrieve tag creation time via git cli 'git for-each-ref --format="%(creatordate:rfc)" "refs/tags/${tagInfo.name}'`
+            )
+        }
+        return tagInfo
+    }
+
 }
