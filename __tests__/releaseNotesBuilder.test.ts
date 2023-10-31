@@ -1,13 +1,16 @@
 import {mergeConfiguration, resolveConfiguration} from '../src/utils'
 import {ReleaseNotesBuilder} from '../src/releaseNotesBuilder'
+import {GithubRepository} from '../src/repositories/GithubRepository'
 
 jest.setTimeout(180000)
 
-it('Should match generated changelog (unspecified fromTag)', async () => {
+const token = process.env.GITHUB_TOKEN || ""
+const githubRepository = new GithubRepository(token, undefined, '.')
+it('[Github] Should match generated changelog (unspecified fromTag)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs/configuration.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
-    null,
+    githubRepository,
     '.',
     'mikepenz',
     'release-changelog-builder-action',
@@ -37,11 +40,11 @@ it('Should match generated changelog (unspecified fromTag)', async () => {
 `)
 })
 
-it('Should match generated changelog (unspecified tags)', async () => {
+it('[Github] Should match generated changelog (unspecified tags)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs/configuration.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
-    null,
+    githubRepository,
     '.',
     'mikepenz',
     'action-junit-report-legacy',
@@ -66,11 +69,11 @@ it('Should match generated changelog (unspecified tags)', async () => {
   expect(changeLog).toStrictEqual(`## 🐛 Fixes\n\n- Stacktrace Data can be an array\n   - PR: #39\n\n`)
 })
 
-it('Should use empty placeholder', async () => {
+it('[Github] Should use empty placeholder', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs/configuration.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
-    null,
+    githubRepository,
     '.',
     'mikepenz',
     'release-changelog-builder-action',
@@ -95,11 +98,11 @@ it('Should use empty placeholder', async () => {
   expect(changeLog).toStrictEqual(`- no changes`)
 })
 
-it('Should fill empty placeholders', async () => {
+it('[Github] Should fill empty placeholders', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_empty_all_placeholders.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
-    null,
+    githubRepository,
     '.',
     'mikepenz',
     'release-changelog-builder-action',
@@ -126,11 +129,11 @@ it('Should fill empty placeholders', async () => {
   )
 })
 
-it('Should fill `template` placeholders', async () => {
+it('[Github] Should fill `template` placeholders', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_empty_all_placeholders.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
-    null,
+    githubRepository,
     '.',
     'mikepenz',
     'release-changelog-builder-action',
@@ -157,12 +160,12 @@ it('Should fill `template` placeholders', async () => {
   )
 })
 
-it('Should fill `template` placeholders, ignore', async () => {
+it('[Github] Should fill `template` placeholders, ignore', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_empty_all_placeholders.json'))
   configuration.categories.pop() // drop `uncategorized` category
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
-    null,
+    githubRepository,
     '.',
     'mikepenz',
     'release-changelog-builder-action',
@@ -189,11 +192,11 @@ it('Should fill `template` placeholders, ignore', async () => {
   )
 })
 
-it('Uncategorized category', async () => {
+it('[Github] Uncategorized category', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_uncategorized_category.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
-    null,
+    githubRepository,
     '.',
     'mikepenz',
     'release-changelog-builder-action',
@@ -220,11 +223,11 @@ it('Uncategorized category', async () => {
   )
 })
 
-it('Verify commit based changelog', async () => {
+it('[Github] Verify commit based changelog', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_commits.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
-    null,
+    githubRepository,
     '.',
     'mikepenz',
     'release-changelog-builder-action',
@@ -251,11 +254,11 @@ it('Verify commit based changelog', async () => {
   )
 })
 
-it('Verify commit based changelog, with emoji categorisation', async () => {
+it('[Github] Verify commit based changelog, with emoji categorisation', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_commits_emoji.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
-    null,
+    githubRepository,
     '.',
     'theapache64',
     'stackzy',
@@ -282,11 +285,11 @@ it('Verify commit based changelog, with emoji categorisation', async () => {
   )
 })
 
-it('Verify default inclusion of open PRs', async () => {
+it('[Github] Verify default inclusion of open PRs', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_including_open.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null, // baseUrl
-    null, // token
+    githubRepository, // token
     '.', // repoPath
     'mikepenz', // user
     'release-changelog-builder-action-playground', // repo
@@ -313,11 +316,11 @@ it('Verify default inclusion of open PRs', async () => {
   )
 })
 
-it('Verify custom categorisation of open PRs', async () => {
+it('[Github] Verify custom categorisation of open PRs', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_excluding_open.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null, // baseUrl
-    null, // token
+    githubRepository, // token
     '.', // repoPath
     'mikepenz', // user
     'release-changelog-builder-action-playground', // repo
@@ -344,11 +347,11 @@ it('Verify custom categorisation of open PRs', async () => {
   )
 })
 
-it('Verify reviewers who approved are fetched and also release information', async () => {
+it('[Github] Verify reviewers who approved are fetched and also release information', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_approvers.json'))
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null, // baseUrl
-    null, // token
+    githubRepository, // token
     '.', // repoPath
     'mikepenz', // user
     'release-changelog-builder-action-playground', // repo
@@ -375,12 +378,12 @@ it('Verify reviewers who approved are fetched and also release information', asy
   )
 })
 
-it('Fetch release information', async () => {
+it('[Github] Fetch release information', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_approvers.json'))
   configuration.template = '#{{FROM_TAG}}-#{{FROM_TAG_DATE}}\n#{{TO_TAG}}-#{{TO_TAG_DATE}}\n#{{DAYS_SINCE}}'
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null, // baseUrl
-    null, // token
+    githubRepository, // token
     '.', // repoPath
     'mikepenz', // user
     'release-changelog-builder-action-playground', // repo
@@ -405,12 +408,12 @@ it('Fetch release information', async () => {
   expect(changeLog).toStrictEqual(`2.0.0-2022-04-08T07:52:40.000Z\n3.0.0-a01-2022-07-26T14:28:36.000Z\n109`)
 })
 
-it('Fetch release information for non existing tag / release', async () => {
+it('[Github] Fetch release information for non existing tag / release', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_approvers.json'))
   configuration.template = '#{{FROM_TAG}}-#{{FROM_TAG_DATE}}\n#{{TO_TAG}}-#{{TO_TAG_DATE}}\n#{{DAYS_SINCE}}'
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null, // baseUrl
-    null, // token
+    githubRepository, // token
     '.', // repoPath
     'mikepenz', // user
     'release-changelog-builder-action-playground', // repo
