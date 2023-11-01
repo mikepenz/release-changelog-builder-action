@@ -1779,7 +1779,7 @@ class GiteaRepository extends BaseRepository_1.BaseRepository {
             });
         };
         this.url = url || this.defaultUrl;
-        this.api = (0, gitea_js_1.giteaApi)('https://gitea.com/', {
+        this.api = (0, gitea_js_1.giteaApi)(this.url, {
             token: token,
             customFetch: cross_fetch_1.default
         });
@@ -1901,6 +1901,9 @@ class GiteaRepository extends BaseRepository_1.BaseRepository {
                     if (response.error === null) {
                         GiteaRepository.pulls[state].push(...response.data);
                     }
+                    else {
+                        core.error(`ℹ️ Some errors. ${response.error.message}`);
+                    }
                     page++;
                     count += response.data.length;
                     if (response.data.length === 0)
@@ -1941,12 +1944,16 @@ class GiteaRepository extends BaseRepository_1.BaseRepository {
                     prReviews.push(this.mapComment(comment));
                 }
             }
+            else {
+                core.error(`ℹ️ Some errors. ${response.error.message}`);
+            }
             pr.reviews = prReviews;
         });
     }
     getTags(owner, repo, maxTagsToFetch) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
+            core.debug(`start to get gitea tag `);
             const response = yield this.api.repos.repoListTags(owner, repo, {
                 limit: maxTagsToFetch
             });
@@ -1958,6 +1965,9 @@ class GiteaRepository extends BaseRepository_1.BaseRepository {
                         commit: (_a = tag.commit) === null || _a === void 0 ? void 0 : _a.sha
                     });
                 }
+            }
+            else {
+                core.error(`ℹ️ Some errors. ${response.error.message}`);
             }
             core.info(`ℹ️ Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`);
             return tagsInfo;
