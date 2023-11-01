@@ -6,6 +6,8 @@ import  {Api, PullRequest, PullReview} from 'gitea-js'
 import moment from 'moment'
 import * as core from '@actions/core'
 import {createCommandManager} from '../pr-collector/gitHelper'
+import { giteaApi } from 'gitea-js';
+import fetch from 'cross-fetch';
 interface Pulls {
   closed: PullRequest[]
   open: PullRequest[]
@@ -21,11 +23,10 @@ export class GiteaRepository extends BaseRepository {
   constructor(token: string, url: string | undefined, repositoryPath: string) {
     super(token, url, repositoryPath)
     this.url = url || this.defaultUrl
-    const fetch = require('cross-fetch')
-      const {giteaApi} = require('gitea-js')
-    // @ts-ignore
-    this.api = new giteaApi('https://gitea.com/', {
-      token, // generate one at https://gitea.example.com/user/settings/applications
+
+
+    this.api =  giteaApi('https://gitea.com/',{
+      token:token,
       customFetch: fetch
     })
   }
