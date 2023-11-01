@@ -8,6 +8,7 @@
     "build": "tsc",
     "format": "prettier --write **/*.ts",
     "format-check": "prettier --check **/*.ts",
+    "format-fix": "eslint --fix src/**/*.ts",
     "lint": "eslint src/**/*.ts",
     "package": "ncc build --source-map --license licenses.txt",
     "test": "jest",
@@ -44,7 +45,7 @@
   },
   "devDependencies": {
     "@types/jest": "^29.5.6",
-    "@types/node": "^20.8.7",
+    "@types/node": "^20.8.10",
     "@types/semver": "^7.5.4",
     "@typescript-eslint/eslint-plugin": "^6.8.0",
     "@typescript-eslint/parser": "^6.8.0",
