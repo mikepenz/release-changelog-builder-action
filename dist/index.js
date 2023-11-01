@@ -1756,10 +1756,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GiteaRepository = void 0;
 const BaseRepository_1 = __nccwpck_require__(786);
-const gitea_js_1 = __importDefault(__nccwpck_require__(6814));
 const moment_1 = __importDefault(__nccwpck_require__(9623));
 const core = __importStar(__nccwpck_require__(2186));
 const gitHelper_1 = __nccwpck_require__(3636);
+const gitea_js_1 = __nccwpck_require__(6814);
+const cross_fetch_1 = __importDefault(__nccwpck_require__(9805));
 class GiteaRepository extends BaseRepository_1.BaseRepository {
     get defaultUrl() {
         return 'https://gitea.com';
@@ -1778,12 +1779,9 @@ class GiteaRepository extends BaseRepository_1.BaseRepository {
             });
         };
         this.url = url || this.defaultUrl;
-        const fetch = __nccwpck_require__(9805);
-        //  const {giteaApi} = require('gitea-js')
-        // @ts-ignore
-        this.api = new gitea_js_1.default.giteaApi('https://gitea.com/', {
-            token,
-            customFetch: fetch
+        this.api = (0, gitea_js_1.giteaApi)('https://gitea.com/', {
+            token: token,
+            customFetch: cross_fetch_1.default
         });
     }
     fillTagInformation(repositoryPath, owner, repo, tagInfo) {
