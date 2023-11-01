@@ -6,9 +6,11 @@ import {
 } from "../pr-collector/pullRequests";
 import {DiffInfo} from "../pr-collector/commits";
 import {Api, PullRequest, PullReview} from "gitea-js";
-import moment from "moment";
+import moment, {min} from "moment";
 import * as core from "@actions/core";
 import {createCommandManager} from "../pr-collector/gitHelper";
+import {match} from "assert";
+import {log} from "util";
 
 export class GiteaRepository extends BaseRepository {
     private api: Api<unknown>
@@ -150,26 +152,42 @@ export class GiteaRepository extends BaseRepository {
         };
     }
 
+    static  pulls:PullRequest[] = [];
 
     async getForCommitHash(owner: string, repo: string, commit_sha: string, maxPullRequests: number): Promise<PullRequestInfo[]> {
         const mergedPRs: PullRequestInfo[] = []
 
-        const response = await this.api.repos.repoListPullRequests(owner, repo, {
-            sort: 'recentupdate',
-            state: 'closed',
-            limit: 1000,
-        })
+        if(GiteaRepository.pulls.length===0){
+            let page = 1
+            let count = 0
+            while (count < maxPullRequests){
+                let limit = Math.min(50, maxPullRequests)
+                const response = await this.api.repos.repoListPullRequests(owner, repo, {
+                    sort: 'recentupdate',
+                    state: 'closed',
+                    limit: limit,
+                    page
+                })
+                if (response.error === null) {
+                    GiteaRepository.pulls.push(...response.data)
 
-
-
-        if (response.error === null) {
-
-            for (const pr of response.data) {
-                if (pr.merge_commit_sha === commit_sha) {
-                    mergedPRs.push(this.mapPullRequest(pr, pr.merged_at ? 'merged' : 'open'))
                 }
+                page++;
+                count+= response.data.length
+                if(response.data.length===0)break;
+            }
+
+        }
+
+        for (const pr of GiteaRepository.pulls) {
+            if (pr.merge_commit_sha === commit_sha) {
+                mergedPRs.push(this.mapPullRequest(pr, pr.merged_at ? 'merged' : 'open'))
             }
         }
+
+
+
+        core.debug(`⚠️ No more PRs retrieved from API. Fetched so far: ${mergedPRs.length}`)
 
         return mergedPRs
 
@@ -231,6 +249,10 @@ export class GiteaRepository extends BaseRepository {
         }
         core.info(`ℹ️ Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`)
         return tagsInfo
+    }
+
+    get homeUrl(): string {
+        return "https://gitea.com";
     }
 
 }

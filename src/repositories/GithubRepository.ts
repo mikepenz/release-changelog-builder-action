@@ -287,7 +287,7 @@ export class GithubRepository extends BaseRepository {
         for (let i = 0; i < Math.min(pullRequests.length, 3); i++) {
             const firstPR = pullRequests[i]
             if (!firstPR.merged_at) {
-                continue // no merged_at timestamp -> look for the next
+                 // no merged_at timestamp -> look for the next
             } else if (fromDate.isAfter(moment(firstPR.merged_at))) {
                 return true
             } else {
@@ -295,5 +295,8 @@ export class GithubRepository extends BaseRepository {
             }
         }
         return false
+    }
+    get homeUrl(): string {
+        return "https://github.com";
     }
 }

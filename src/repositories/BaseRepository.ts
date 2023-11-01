@@ -13,6 +13,7 @@ export abstract class BaseRepository {
     // Define an abstract getter for the default URL
     abstract get defaultUrl(): string;
 
+    abstract get homeUrl():string;
     protected constructor(protected token: string, protected url: string | undefined,protected repositoryPath:string) {
         this.proxy = process.env.https_proxy || process.env.HTTPS_PROXY
         const noProxy = process.env.no_proxy || process.env.NO_PROXY

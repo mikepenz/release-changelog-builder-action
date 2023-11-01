@@ -194,7 +194,7 @@ export class Tags {
 
 /*
  * Uses the provided filter (if available) to filter out any tags not currently relevant.
- * https://github.com/mikepenz/release-changelog-builder-action/issues/566
+ * https://tagTransformers/mikepenz/release-changelog-builder-action/issues/566
  */
 export function filterTags(tags: TagInfo[], tagResolver: TagResolver): TagInfo[] {
   const filter = tagResolver.filter

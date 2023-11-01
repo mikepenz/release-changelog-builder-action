@@ -22,6 +22,7 @@ export interface ReleaseNotesOptions {
   fetchReviews: boolean // defines if the action should fetch the reviews for the PR.
   commitMode: boolean // defines if we use the alternative commit based mode. note: this is only partially supported
   configuration: Configuration // the configuration as defined in `configuration.ts`
+  repositoryUtils: BaseRepository
 }
 
 export interface Data {
@@ -111,7 +112,8 @@ export class ReleaseNotesBuilder {
         fetchReleaseInformation: this.fetchReleaseInformation,
         fetchReviews: this.fetchReviews,
         commitMode: this.commitMode,
-        configuration: this.configuration
+        configuration: this.configuration,
+        repositoryUtils: this.repositoryUtils
       }
       const mergedPullRequests = prData.mergedPullRequests
       const diffInfo = prData.diffInfo
@@ -164,7 +166,8 @@ export class ReleaseNotesBuilder {
         fetchReleaseInformation: this.fetchReleaseInformation || orgOptions.fetchReleaseInformation,
         fetchReviews: this.fetchReviews || orgOptions.fetchReviews,
         commitMode: this.commitMode || orgOptions.commitMode,
-        configuration: this.configuration || orgOptions.configuration
+        configuration: this.configuration || orgOptions.configuration,
+        repositoryUtils: this.repositoryUtils || orgOptions.repositoryUtils
       }
 
       this.setOutputs(options, diffInfo, mergedPullRequests)
