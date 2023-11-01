@@ -1,4 +1,4 @@
-import {TagInfo, filterTags, prepareAndSortTags} from '../src/pr-collector/tags'
+import {filterTags, prepareAndSortTags, TagInfo} from '../src/pr-collector/tags'
 
 jest.setTimeout(180000)
 

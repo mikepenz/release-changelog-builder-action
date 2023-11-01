@@ -4,7 +4,7 @@ import {GithubRepository} from '../src/repositories/GithubRepository'
 
 jest.setTimeout(180000)
 
-const token = process.env.GITHUB_TOKEN || ""
+const token = process.env.GITHUB_TOKEN || ''
 const githubRepository = new GithubRepository(token, undefined, '.')
 it('[Github] Should match generated changelog (unspecified fromTag)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs/configuration.json'))

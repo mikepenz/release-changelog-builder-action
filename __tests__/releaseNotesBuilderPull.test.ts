@@ -1,17 +1,14 @@
 import {checkExportedData, mergeConfiguration, resolveConfiguration} from '../src/utils'
-import {Octokit} from '@octokit/rest'
 import {buildChangelog} from '../src/transform'
 import {pullData} from '../src/pr-collector/prCollector'
-import {Data} from '../src/releaseNotesBuilder'
-import {GithubRepository} from "../src/repositories/GithubRepository";
+import {GithubRepository} from '../src/repositories/GithubRepository'
 
 jest.setTimeout(180000)
 
 // load octokit instance
 const enablePullData = false // if false -> use cache for data
 
-
-const token = process.env.GITHUB_TOKEN || ""
+const token = process.env.GITHUB_TOKEN || ''
 const githubRepository = new GithubRepository(token, undefined, '.')
 it('Should have empty changelog (tags)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs/configuration.json'))
@@ -28,7 +25,8 @@ it('Should have empty changelog (tags)', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
@@ -55,7 +53,8 @@ it('Should match generated changelog (tags)', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
@@ -88,7 +87,8 @@ it('Should match generated changelog (refs)', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
@@ -128,7 +128,8 @@ it('Should match generated changelog and replace all occurrences (refs)', async 
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
@@ -171,7 +172,8 @@ it('Should match ordered ASC', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
@@ -199,7 +201,8 @@ it('Should match ordered DESC', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
@@ -226,7 +229,8 @@ it('Should match ordered by title ASC', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
@@ -255,7 +259,8 @@ it('Should match ordered by title DESC', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
@@ -284,7 +289,8 @@ it('Should ignore PRs not merged into develop branch', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
@@ -311,7 +317,8 @@ it('Should ignore PRs not merged into main branch', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {

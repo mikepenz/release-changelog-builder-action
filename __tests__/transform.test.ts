@@ -3,6 +3,7 @@ import moment from 'moment'
 import {Configuration, DefaultConfiguration} from '../src/configuration'
 import {PullRequestInfo} from '../src/pr-collector/pullRequests'
 import {DefaultDiffInfo} from '../src/pr-collector/commits'
+import {GithubRepository} from '../src/repositories/GithubRepository'
 
 jest.setTimeout(180000)
 
@@ -437,6 +438,7 @@ it('Use empty_content for empty category', async () => {
   )
 })
 
+const repositoryUtils = new GithubRepository(process.env.GITEA_TOKEN || '', undefined, '.')
 it('Commit SHA-1 in commitMode', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.sort = 'DESC'
@@ -453,7 +455,8 @@ it('Commit SHA-1 in commitMode', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: true,
-    configuration: customConfig
+    configuration: customConfig,
+    repositoryUtils: repositoryUtils
   })
 
   expect(resultChangelog).toStrictEqual(`## 🚀 Features\n\nsha1-3\nsha1-1\n\n## 🐛 Fixes\n\nsha1-3\nsha1-2\n\n`)
@@ -474,7 +477,8 @@ it('Release Diff', async () => {
     fetchReleaseInformation: true,
     fetchReviews: false,
     commitMode: true,
-    configuration: customConfig
+    configuration: customConfig,
+    repositoryUtils: repositoryUtils
   })
 
   expect(resultChangelog).toStrictEqual(`https://github.com/mikepenz/release-changelog-builder-action/compare/v2.8.0...v2.8.1\n`)
@@ -678,6 +682,7 @@ function buildChangelogTest(config: Configuration, prs: PullRequestInfo[]): stri
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration: config
+    configuration: config,
+    repositoryUtils: repositoryUtils
   })
 }
