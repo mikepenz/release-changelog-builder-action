@@ -7,6 +7,7 @@ import {DiffInfo} from './pr-collector/commits'
 import {PullRequestInfo} from './pr-collector/pullRequests'
 import {Data, ReleaseNotesOptions} from './releaseNotesBuilder'
 import {env} from 'process'
+
 /**
  * Resolves the repository path, relatively to the GITHUB_WORKSPACE
  */

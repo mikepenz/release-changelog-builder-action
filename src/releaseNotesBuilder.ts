@@ -1,13 +1,12 @@
 import * as core from '@actions/core'
 import {Configuration} from './configuration'
 import {checkExportedData, writeCacheData} from './utils'
-import {PullRequestData, buildChangelog} from './transform'
+import {buildChangelog, PullRequestData} from './transform'
 import {PullRequestCollector} from './pr-collector/prCollector'
 import {failOrError} from './pr-collector/utils'
 import {TagInfo} from './pr-collector/tags'
 import {DiffInfo} from './pr-collector/commits'
 import {PullRequestInfo} from './pr-collector/pullRequests'
-import * as fs from 'fs'
 import {BaseRepository} from './repositories/BaseRepository'
 
 export interface ReleaseNotesOptions {

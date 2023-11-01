@@ -1,12 +1,10 @@
 import * as core from '@actions/core'
 import {PullConfiguration} from './types'
-import {Octokit} from '@octokit/rest'
 import {TagInfo, Tags} from './tags'
 import {failOrError} from './utils'
-import {HttpsProxyAgent} from 'https-proxy-agent'
 import {PullRequestInfo, PullRequests} from './pullRequests'
 import {Commits, DiffInfo} from './commits'
-import {BaseRepository} from "../repositories/BaseRepository";
+import {BaseRepository} from '../repositories/BaseRepository'
 
 export interface Options {
   owner: string // the owner of the repository
@@ -33,7 +31,7 @@ export interface Data {
 export class PullRequestCollector {
   constructor(
     private baseUrl: string | null,
-    private repositoryUtils: BaseRepository ,
+    private repositoryUtils: BaseRepository,
     private repositoryPath: string,
     private owner: string,
     private repo: string,
@@ -47,7 +45,7 @@ export class PullRequestCollector {
     private fetchReleaseInformation = false,
     private fetchReviews = false,
     private commitMode = false,
-    private configuration: PullConfiguration,
+    private configuration: PullConfiguration
   ) {}
 
   async build(): Promise<Data | null> {
@@ -93,7 +91,7 @@ export class PullRequestCollector {
 
     core.endGroup()
 
-    return await pullData( this.repositoryUtils, {
+    return await pullData(this.repositoryUtils, {
       owner: this.owner,
       repo: this.repo,
       fromTag: previousTag,
@@ -110,7 +108,7 @@ export class PullRequestCollector {
   }
 }
 
-export async function pullData( repositoryUtils: BaseRepository , options: Options): Promise<Data | null> {
+export async function pullData(repositoryUtils: BaseRepository, options: Options): Promise<Data | null> {
   let mergedPullRequests: PullRequestInfo[]
   let diffInfo: DiffInfo
 

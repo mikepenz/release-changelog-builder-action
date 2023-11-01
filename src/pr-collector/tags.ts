@@ -6,7 +6,7 @@ import {RegexTransformer, TagResolver, Transformer} from './types'
 import {createCommandManager} from './gitHelper'
 import moment from 'moment'
 import {validateTransformer} from './regexUtils'
-import {BaseRepository} from "../repositories/BaseRepository";
+import {BaseRepository} from '../repositories/BaseRepository'
 
 export interface TagResult {
   from: TagInfo | null
@@ -28,11 +28,11 @@ export class Tags {
   constructor(private repositoryUtils: BaseRepository) {}
 
   async getTags(owner: string, repo: string, maxTagsToFetch: number): Promise<TagInfo[]> {
-   return this.repositoryUtils.getTags(owner,repo,maxTagsToFetch)
+    return this.repositoryUtils.getTags(owner, repo, maxTagsToFetch)
   }
 
   async fillTagInformation(repositoryPath: string, owner: string, repo: string, tagInfo: TagInfo): Promise<TagInfo> {
-    return  this.repositoryUtils.fillTagInformation(repositoryPath,owner,repo,tagInfo)
+    return this.repositoryUtils.fillTagInformation(repositoryPath, owner, repo, tagInfo)
   }
 
   async findPredecessorTag(

@@ -1,11 +1,10 @@
 import * as core from '@actions/core'
-import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
-import {Unpacked} from './utils'
+import {RestEndpointMethodTypes} from '@octokit/rest'
 import moment from 'moment'
 import {Property, Sort} from './types'
 import {Commits, DiffInfo, filterCommits} from './commits'
 import {Options} from './prCollector'
-import {BaseRepository} from "../repositories/BaseRepository";
+import {BaseRepository} from '../repositories/BaseRepository'
 
 export interface PullRequestInfo {
   number: number
@@ -65,7 +64,7 @@ export const EMPTY_COMMENT_INFO: CommentInfo = {
   state: undefined
 }
 
-export  type PullData = RestEndpointMethodTypes['pulls']['get']['response']['data']
+export type PullData = RestEndpointMethodTypes['pulls']['get']['response']['data']
 
 export type PullsListData = RestEndpointMethodTypes['pulls']['list']['response']['data']
 
@@ -77,17 +76,22 @@ export class PullRequests {
     private commits: Commits
   ) {}
 
-
   async getForCommitHash(owner: string, repo: string, commit_sha: string, maxPullRequests: number): Promise<PullRequestInfo[]> {
     return sortPrs(await this.repositoryUtils.getForCommitHash(owner, repo, commit_sha, maxPullRequests))
   }
 
-  async getBetweenDates(owner: string, repo: string, fromDate: moment.Moment, toDate: moment.Moment, maxPullRequests: number): Promise<PullRequestInfo[]> {
-    return sortPrs(await this.repositoryUtils.getBetweenDates(owner, repo,fromDate,toDate,maxPullRequests))
+  async getBetweenDates(
+    owner: string,
+    repo: string,
+    fromDate: moment.Moment,
+    toDate: moment.Moment,
+    maxPullRequests: number
+  ): Promise<PullRequestInfo[]> {
+    return sortPrs(await this.repositoryUtils.getBetweenDates(owner, repo, fromDate, toDate, maxPullRequests))
   }
 
   async getOpen(owner: string, repo: string, maxPullRequests: number): Promise<PullRequestInfo[]> {
-    return sortPrs(await this.repositoryUtils.getOpen(owner, repo,maxPullRequests))
+    return sortPrs(await this.repositoryUtils.getOpen(owner, repo, maxPullRequests))
   }
 
   async getReviews(owner: string, repo: string, pr: PullRequestInfo): Promise<void> {
@@ -215,8 +219,6 @@ export class PullRequests {
   }
 }
 
-
-
 function sortPrs(pullRequests: PullRequestInfo[]): PullRequestInfo[] {
   return sortPullRequests(pullRequests, {
     order: 'ASC',
@@ -281,4 +283,3 @@ export function retrieveProperty(pr: PullRequestInfo, property: Property, useCas
   }
   return value
 }
-
