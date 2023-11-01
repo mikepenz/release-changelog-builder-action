@@ -23,7 +23,7 @@ export class GiteaRepository extends BaseRepository {
   constructor(token: string, url: string | undefined, repositoryPath: string) {
     super(token, url, repositoryPath)
     this.url = url || this.defaultUrl
-    this.api =  giteaApi('https://gitea.com/',{
+    this.api =  giteaApi(this.url,{
       token:token,
       customFetch: fetch
     })
@@ -164,6 +164,8 @@ export class GiteaRepository extends BaseRepository {
         })
         if (response.error === null) {
           GiteaRepository.pulls[state].push(...response.data)
+        }else{
+          core.error(`ℹ️ Some errors. ${response.error!!.message}`)
         }
         page++
         count += response.data.length
@@ -204,6 +206,9 @@ export class GiteaRepository extends BaseRepository {
       for (const comment of response.data) {
         prReviews.push(this.mapComment(comment))
       }
+    }else{
+
+      core.error(`ℹ️ Some errors. ${response.error!!.message}`)
     }
     pr.reviews = prReviews
   }
@@ -218,6 +223,7 @@ export class GiteaRepository extends BaseRepository {
   })
 
   async getTags(owner: string, repo: string, maxTagsToFetch: number): Promise<TagInfo[]> {
+    core.debug(`start to get gitea tag `)
     const response = await this.api.repos.repoListTags(owner, repo, {
       limit: maxTagsToFetch
     })
@@ -229,6 +235,9 @@ export class GiteaRepository extends BaseRepository {
           commit: tag.commit?.sha
         })
       }
+    }else{
+
+      core.error(`ℹ️ Some errors. ${response.error!!.message}`)
     }
     core.info(`ℹ️ Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`)
     return tagsInfo
