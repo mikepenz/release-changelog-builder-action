@@ -23,8 +23,6 @@ export class GiteaRepository extends BaseRepository {
   constructor(token: string, url: string | undefined, repositoryPath: string) {
     super(token, url, repositoryPath)
     this.url = url || this.defaultUrl
-
-
     this.api =  giteaApi('https://gitea.com/',{
       token:token,
       customFetch: fetch
