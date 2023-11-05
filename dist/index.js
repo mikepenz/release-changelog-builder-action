@@ -1764,6 +1764,9 @@ class GiteaRepository extends BaseRepository_1.BaseRepository {
     get defaultUrl() {
         return 'https://gitea.com';
     }
+    get homeUrl() {
+        return 'https://gitea.com';
+    }
     constructor(token, url, repositoryPath) {
         super(token, url, repositoryPath);
         this.mapComment = (comment) => {
@@ -1830,6 +1833,10 @@ class GiteaRepository extends BaseRepository_1.BaseRepository {
             reviews: undefined
         };
     }
+    /**
+     * WARNING: This does not actually get the diff from the remote, as Gitea does not offer a compareable API.
+     * This uses the local repository to get the diff. NOTE: As such, gitea integration requires the repo available.
+     */
     getDiffRemote(owner, repo, base, head) {
         return __awaiter(this, void 0, void 0, function* () {
             let changedFilesCount = 0;
@@ -1952,7 +1959,7 @@ class GiteaRepository extends BaseRepository_1.BaseRepository {
     getTags(owner, repo, maxTagsToFetch) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            core.debug(`start to get gitea tag `);
+            core.debug(`Start to get tag from gitea`);
             const response = yield this.api.repos.repoListTags(owner, repo, {
                 limit: maxTagsToFetch
             });
@@ -1971,9 +1978,6 @@ class GiteaRepository extends BaseRepository_1.BaseRepository {
             core.info(`ℹ️ Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`);
             return tagsInfo;
         });
-    }
-    get homeUrl() {
-        return 'https://gitea.com';
     }
 }
 exports.GiteaRepository = GiteaRepository;
@@ -2254,6 +2258,10 @@ class GithubRepository extends BaseRepository_1.BaseRepository {
     get defaultUrl() {
         return 'https://api.github.com';
     }
+    get homeUrl() {
+        var _a;
+        return ((_a = this.url) === null || _a === void 0 ? void 0 : _a.replace('api.', '')) || 'https://github.com';
+    }
     constructor(token, url, repositoryPath) {
         super(token, url, repositoryPath);
         this.mapPullRequest = (pr, status = 'open') => {
@@ -2383,9 +2391,6 @@ class GithubRepository extends BaseRepository_1.BaseRepository {
             }
         }
         return false;
-    }
-    get homeUrl() {
-        return 'https://github.com';
     }
 }
 exports.GithubRepository = GithubRepository;

@@ -7,7 +7,7 @@ jest.setTimeout(180000)
 
 test('missing values should result in failure', () => {
   expect.assertions(1)
-  
+
   process.env['GITHUB_WORKSPACE'] = '.'
   process.env['INPUT_OWNER'] = undefined
   process.env['INPUT_CONFIGURATION'] = 'configs/configuration.json'

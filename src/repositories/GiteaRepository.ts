@@ -6,6 +6,7 @@ import {Api, PullRequest, PullReview, giteaApi} from 'gitea-js'
 import moment from 'moment'
 import * as core from '@actions/core'
 import {createCommandManager} from '../pr-collector/gitHelper'
+
 interface Pulls {
   closed: PullRequest[]
   open: PullRequest[]
@@ -85,6 +86,10 @@ export class GiteaRepository extends BaseRepository {
     }
   }
 
+  /**
+   * WARNING: This does not actually get the diff from the remote, as Gitea does not offer a compareable API.
+   * This uses the local repository to get the diff. NOTE: As such, gitea integration requires the repo available.
+   */
   async getDiffRemote(owner: string, repo: string, base: string, head: string): Promise<DiffInfo> {
     let changedFilesCount = 0
     let additionCount = 0
@@ -223,7 +228,7 @@ export class GiteaRepository extends BaseRepository {
   })
 
   async getTags(owner: string, repo: string, maxTagsToFetch: number): Promise<TagInfo[]> {
-    core.debug(`start to get gitea tag `)
+    core.debug(`Start to get tag from gitea`)
     const response = await this.api.repos.repoListTags(owner, repo, {
       limit: maxTagsToFetch
     })

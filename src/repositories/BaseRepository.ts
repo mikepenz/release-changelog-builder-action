@@ -12,7 +12,9 @@ export abstract class BaseRepository {
   // Define an abstract getter for the default URL
   abstract get defaultUrl(): string
 
+  // Define the abstract getter for the home URL (also used for some replace patterns)
   abstract get homeUrl(): string
+
   protected constructor(
     protected token: string,
     protected url: string | undefined,

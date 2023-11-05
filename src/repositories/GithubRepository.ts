@@ -288,6 +288,7 @@ export class GithubRepository extends BaseRepository {
     body: comment.body,
     state: comment.state
   })
+
   private fetchedEnough(pullRequests: PullsListData, fromDate: moment.Moment): boolean {
     for (let i = 0; i < Math.min(pullRequests.length, 3); i++) {
       const firstPR = pullRequests[i]
