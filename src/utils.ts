@@ -7,6 +7,7 @@ import {DiffInfo} from './pr-collector/commits'
 import {PullRequestInfo} from './pr-collector/pullRequests'
 import {Data, ReleaseNotesOptions} from './releaseNotesBuilder'
 import {env} from 'process'
+
 /**
  * Resolves the repository path, relatively to the GITHUB_WORKSPACE
  */
@@ -40,11 +41,19 @@ export function writeCacheData(data: Data, cacheOutput: string | null): void {
   }
 
   try {
-    fs.writeFileSync(cacheFile, JSON.stringify(data))
+    // use replacer to not cache the repositoryUtils (as that would contain token information)
+    fs.writeFileSync(cacheFile, JSON.stringify(data, replacer))
     core.setOutput(`cache`, cacheFile)
   } catch (error) {
     core.warning(`Failed to write cache file. (${error})`)
   }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function replacer(key: string, value: any): any {
+  if (key === 'repositoryUtils') return undefined
+  if (key === 'token') return undefined
+  else return value
 }
 
 /**

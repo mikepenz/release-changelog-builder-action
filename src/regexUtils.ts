@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import {Rule, RegexTransformer} from './pr-collector/types'
+import {RegexTransformer, Rule} from './pr-collector/types'
 import {PullRequestInfo, retrieveProperty} from './pr-collector/pullRequests'
 import {validateTransformer} from './pr-collector/regexUtils'
 

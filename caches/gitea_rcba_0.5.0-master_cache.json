@@ -1,0 +1,167 @@
+{
+    "mergedPullRequests": [
+        {
+            "number": 36,
+            "title": "Add attachment removal and change message",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/36",
+            "baseBranch": "master",
+            "branch": "cce2360f0fcec4f63c66e5b05bac25a7ba42f942",
+            "mergedAt": "2020-09-21T14:19:38.000Z",
+            "mergeCommitSha": "0bbe2e35ff5b482bae10ecf7abcd89815274c217",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "enhancement"
+            ],
+            "milestone": "0.5.1",
+            "body": "Fixes #35\r\n\r\nChanges the message to instead tell the user how many files were added/removed from the release.\r\n\r\nThis PR also adds a way to multi-select attachments to be removed from a release via `sip release attach remove` since `sip release remove` will be reserved for removing a release in the future.",
+            "approvedReviewers": [],
+            "createdAt": "2020-09-21T03:59:49.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 37,
+            "title": "Change to vanity URL",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/37",
+            "baseBranch": "master",
+            "branch": "0bbe2e35ff5b482bae10ecf7abcd89815274c217",
+            "mergedAt": "2020-09-21T19:21:09.000Z",
+            "mergeCommitSha": "5ecbcde5180e4a3b12bdc35416c2f050cd0808f1",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "build"
+            ],
+            "milestone": "",
+            "body": "",
+            "approvedReviewers": [],
+            "createdAt": "2020-09-21T04:07:33.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 38,
+            "title": "Fix drone-gitea-main",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/38",
+            "baseBranch": "master",
+            "branch": "5ecbcde5180e4a3b12bdc35416c2f050cd0808f1",
+            "mergedAt": "2020-09-21T19:30:23.000Z",
+            "mergeCommitSha": "1742fcc37c35faca189eae173cd803e9623a8b80",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "bug",
+                "build",
+                "skip-changelog"
+            ],
+            "milestone": "0.5.1",
+            "body": "No `:1` tag exists for the image, only `latest`.",
+            "approvedReviewers": [],
+            "createdAt": "2020-09-21T19:30:06.000Z",
+            "status": "merged"
+        }
+    ],
+    "diffInfo": {
+        "changedFiles": 24,
+        "additions": 160,
+        "deletions": 41,
+        "changes": 0,
+        "commits": 3,
+        "commitInfo": [
+            {
+                "sha": "0bbe2e35ff5b482bae10ecf7abcd89815274c217",
+                "summary": "Add attachment removal and change message (#36)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-09-21T14:19:36.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-09-21T14:19:36.000Z"
+            },
+            {
+                "sha": "5ecbcde5180e4a3b12bdc35416c2f050cd0808f1",
+                "summary": "Change to vanity URL (#37)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-09-21T19:21:07.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-09-21T19:21:07.000Z"
+            },
+            {
+                "sha": "1742fcc37c35faca189eae173cd803e9623a8b80",
+                "summary": "Fix drone-gitea-main (#38)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-09-21T19:30:21.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-09-21T19:30:21.000Z"
+            }
+        ]
+    },
+    "options": {
+        "owner": "jolheiser",
+        "repo": "sip",
+        "fromTag": {
+            "name": "v0.5.0"
+        },
+        "toTag": {
+            "name": "master"
+        },
+        "includeOpen": false,
+        "failOnError": false,
+        "fetchViaCommits": true,
+        "fetchReviewers": false,
+        "fetchReleaseInformation": false,
+        "fetchReviews": false,
+        "commitMode": false,
+        "configuration": {
+            "max_tags_to_fetch": 200,
+            "max_pull_requests": 1000,
+            "max_back_track_time_days": 1000,
+            "exclude_merge_branches": [],
+            "sort": "ASC",
+            "template": "#{{CHANGELOG}}",
+            "pr_template": "- #{{TITLE}}\n   - PR: ##{{NUMBER}}",
+            "empty_template": "- no changes",
+            "categories": [
+                {
+                    "title": "## 🚀 Features",
+                    "labels": [
+                        "add",
+                        "Add"
+                    ]
+                },
+                {
+                    "title": "## 🐛 Fixes",
+                    "labels": [
+                        "fix",
+                        "Fix"
+                    ]
+                },
+                {
+                    "title": "## 🧪 Upgrade",
+                    "labels": [
+                        "upgrade",
+                        "Upgrade",
+                        "Clean"
+                    ]
+                }
+            ],
+            "ignore_labels": [
+                "ignore"
+            ],
+            "label_extractor": [
+                {
+                    "pattern": "(\\w+) (.+)",
+                    "target": "$1",
+                    "on_property": "title"
+                }
+            ],
+            "transformers": [],
+            "tag_resolver": {
+                "method": "semver"
+            },
+            "base_branches": [],
+            "custom_placeholders": [],
+            "trim_values": false
+        }
+    }
+}

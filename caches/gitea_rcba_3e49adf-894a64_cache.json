@@ -1,0 +1,134 @@
+{
+    "mergedPullRequests": [
+        {
+            "number": 26,
+            "title": "Add release attachments",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/26",
+            "baseBranch": "master",
+            "branch": "3e49adf6047960a03f53346bbececb3ce7e0809b",
+            "mergedAt": "2020-09-16T18:07:32.000Z",
+            "mergeCommitSha": "a51305f8162b0a5ec80387db0b5ecc8a89e209be",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "enhancement"
+            ],
+            "milestone": "0.5.0",
+            "body": "Resolves #25",
+            "approvedReviewers": [],
+            "createdAt": "2020-09-16T17:57:57.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 29,
+            "title": "Refactor",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/29",
+            "baseBranch": "master",
+            "branch": "a51305f8162b0a5ec80387db0b5ecc8a89e209be",
+            "mergedAt": "2020-09-17T16:25:11.000Z",
+            "mergeCommitSha": "894a641ef86c444dccfa55eca457186b5e10da95",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "enhancement"
+            ],
+            "milestone": "0.5.0",
+            "body": "Fixes #27\n\nFixes #28\n\nThis PR refactors and cleans up packages.\n\nIt also scans CLI flags into variables for fewer footguns.",
+            "approvedReviewers": [],
+            "createdAt": "2020-09-17T04:11:50.000Z",
+            "status": "merged"
+        }
+    ],
+    "diffInfo": {
+        "changedFiles": 36,
+        "additions": 576,
+        "deletions": 205,
+        "changes": 0,
+        "commits": 2,
+        "commitInfo": [
+            {
+                "sha": "a51305f8162b0a5ec80387db0b5ecc8a89e209be",
+                "summary": "Add release attachments (#26)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-09-16T18:07:30.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-09-16T18:07:30.000Z"
+            },
+            {
+                "sha": "894a641ef86c444dccfa55eca457186b5e10da95",
+                "summary": "Refactor (#29)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-09-17T16:25:09.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-09-17T16:25:09.000Z"
+            }
+        ]
+    },
+    "options": {
+        "owner": "jolheiser",
+        "repo": "sip",
+        "fromTag": {
+            "name": "3e49adf6047960a03f53346bbececb3ce7e0809b"
+        },
+        "toTag": {
+            "name": "894a641ef86c444dccfa55eca457186b5e10da95"
+        },
+        "includeOpen": false,
+        "failOnError": false,
+        "fetchViaCommits": true,
+        "fetchReviewers": false,
+        "fetchReleaseInformation": false,
+        "fetchReviews": false,
+        "commitMode": false,
+        "configuration": {
+            "max_tags_to_fetch": 200,
+            "max_pull_requests": 1000,
+            "max_back_track_time_days": 1000,
+            "exclude_merge_branches": [],
+            "sort": {
+                "order": "ASC",
+                "on_property": "mergedAt"
+            },
+            "template": "#{{CHANGELOG}}",
+            "pr_template": "#{{TITLE}}\n#{{NUMBER}}\n#{{URL}}\n#{{MERGED_AT}}\n#{{AUTHOR}}\n#{{LABELS}}\n#{{MILESTONE}}\n#{{BODY}}\n#{{ASSIGNEES}}\n#{{REVIEWERS}}",
+            "empty_template": "- no changes",
+            "categories": [
+                {
+                    "title": "## 🚀 Features",
+                    "labels": [
+                        "feature"
+                    ]
+                },
+                {
+                    "title": "## 🐛 Fixes",
+                    "labels": [
+                        "fix"
+                    ]
+                },
+                {
+                    "title": "## 🧪 Tests",
+                    "labels": [
+                        "test"
+                    ]
+                },
+                {
+                    "title": "## 📦 Uncategorized",
+                    "labels": []
+                }
+            ],
+            "ignore_labels": [
+                "ignore"
+            ],
+            "label_extractor": [],
+            "transformers": [],
+            "tag_resolver": {
+                "method": "semver"
+            },
+            "base_branches": [],
+            "custom_placeholders": [],
+            "trim_values": false
+        }
+    }
+}

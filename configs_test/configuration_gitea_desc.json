@@ -1,0 +1,29 @@
+{
+    "categories": [
+        {
+            "title": "## 🚀 Features",
+            "labels": ["add","Add"]
+        },
+        {
+            "title": "## 🐛 Fixes",
+            "labels": ["fix","Fix"]
+        },
+        {
+            "title": "## 🧪 Upgrade",
+            "labels": ["upgrade","Upgrade","Clean"]
+        }
+    ],
+    "label_extractor": [
+        {
+            "pattern": "(\\w+) (.+)",
+            "target": "$1",
+            "on_property": "title"
+        }
+    ],
+    "sort": "DESC",
+    "template": "${{CHANGELOG}}",
+    "pr_template": "- ${{TITLE}}\n   - PR: #${{NUMBER}}",
+    "empty_template": "- no changes",
+    "max_pull_requests": 1000,
+    "max_back_track_time_days": 1000
+}

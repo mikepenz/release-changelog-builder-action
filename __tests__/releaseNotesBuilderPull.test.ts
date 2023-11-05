@@ -1,17 +1,15 @@
 import {checkExportedData, mergeConfiguration, resolveConfiguration} from '../src/utils'
-import {Octokit} from '@octokit/rest'
 import {buildChangelog} from '../src/transform'
 import {pullData} from '../src/pr-collector/prCollector'
-import {Data} from '../src/releaseNotesBuilder'
+import {GithubRepository} from '../src/repositories/GithubRepository'
 
 jest.setTimeout(180000)
 
 // load octokit instance
 const enablePullData = false // if false -> use cache for data
-const octokit = new Octokit({
-  auth: `token ${process.env.GITHUB_TOKEN}`
-})
 
+const token = process.env.GITHUB_TOKEN || ''
+const githubRepository = new GithubRepository(token, undefined, '.')
 it('Should have empty changelog (tags)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs/configuration.json'))
 
@@ -27,11 +25,12 @@ it('Should have empty changelog (tags)', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(octokit, options)
+    data = await pullData(githubRepository, options)
   } else {
     data = checkExportedData(false, 'caches/rcba_0.0.2-0.0.3_cache.json')
   }
@@ -54,11 +53,12 @@ it('Should match generated changelog (tags)', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(octokit, options)
+    data = await pullData(githubRepository, options)
   } else {
     data = checkExportedData(false, 'caches/rcba_0.0.1-0.0.3_cache.json')
   }
@@ -87,11 +87,12 @@ it('Should match generated changelog (refs)', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(octokit, options)
+    data = await pullData(githubRepository, options)
   } else {
     data = checkExportedData(false, 'caches/rcba_5ec7a2-fa3788_cache.json')
   }
@@ -127,11 +128,12 @@ it('Should match generated changelog and replace all occurrences (refs)', async 
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(octokit, options)
+    data = await pullData(githubRepository, options)
   } else {
     data = checkExportedData(false, 'caches/rcba_5ec7a2-fa3788_cache.json')
   }
@@ -170,11 +172,12 @@ it('Should match ordered ASC', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(octokit, options)
+    data = await pullData(githubRepository, options)
   } else {
     data = checkExportedData(false, 'caches/rcba_0.3.0-0.5.0_cache.json')
   }
@@ -198,11 +201,12 @@ it('Should match ordered DESC', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(octokit, options)
+    data = await pullData(githubRepository, options)
   } else {
     data = checkExportedData(false, 'caches/rcba_0.3.0-0.5.0_cache.json')
   }
@@ -225,11 +229,12 @@ it('Should match ordered by title ASC', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(octokit, options)
+    data = await pullData(githubRepository, options)
   } else {
     data = checkExportedData(false, 'caches/rcba_0.3.0-0.5.0_cache.json')
   }
@@ -254,11 +259,12 @@ it('Should match ordered by title DESC', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(octokit, options)
+    data = await pullData(githubRepository, options)
   } else {
     data = checkExportedData(false, 'caches/rcba_0.3.0-0.5.0_cache.json')
   }
@@ -283,11 +289,12 @@ it('Should ignore PRs not merged into develop branch', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(octokit, options)
+    data = await pullData(githubRepository, options)
   } else {
     data = checkExportedData(false, 'caches/rcba_1.3.1-1.4.0_base_develop_cache.json')
   }
@@ -310,11 +317,12 @@ it('Should ignore PRs not merged into main branch', async () => {
     fetchReleaseInformation: false,
     fetchReviews: false,
     commitMode: false,
-    configuration
+    configuration,
+    repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(octokit, options)
+    data = await pullData(githubRepository, options)
   } else {
     data = checkExportedData(false, 'caches/rcba_1.3.1-1.4.0_base_main_cache.json')
   }

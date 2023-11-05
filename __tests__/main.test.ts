@@ -6,17 +6,19 @@ import * as fs from 'fs'
 jest.setTimeout(180000)
 
 test('missing values should result in failure', () => {
+  expect.assertions(1)
+
   process.env['GITHUB_WORKSPACE'] = '.'
-  process.env['INPUT_CONFIGURATION'] = 'configuration.json'
+  process.env['INPUT_OWNER'] = undefined
+  process.env['INPUT_CONFIGURATION'] = 'configs/configuration.json'
   const ip = path.join(__dirname, '..', 'lib', 'main.js')
   const options: cp.ExecSyncOptions = {
     env: process.env
   }
   try {
     cp.execSync(`node ${ip}`, options).toString()
-    fail('Should not succeed, because values miss')
-  } catch (error) {
-    console.log(`correctly failed due to: ${error}`)
+  } catch (error: any) {
+    expect(true).toBe(true)
   }
 })
 
@@ -27,6 +29,7 @@ test('complete input should succeed', () => {
   process.env['INPUT_REPO'] = 'release-changelog-builder-action'
   process.env['INPUT_FROMTAG'] = 'v0.3.0'
   process.env['INPUT_TOTAG'] = 'v0.5.0'
+  process.env['INPUT_CACHE'] = 'caches/rcba_0.3.0-0.5.0_cache.json'
 
   const ip = path.join(__dirname, '..', 'lib', 'main.js')
   const options: cp.ExecSyncOptions = {
@@ -45,6 +48,7 @@ test('should write result to file', () => {
   process.env['INPUT_FROMTAG'] = 'v0.3.0'
   process.env['INPUT_TOTAG'] = 'v0.5.0'
   process.env['INPUT_OUTPUTFILE'] = 'test.md'
+  process.env['INPUT_CACHE'] = 'caches/rcba_0.3.0-0.5.0_cache.json'
 
   const ip = path.join(__dirname, '..', 'lib', 'main.js')
   const options: cp.ExecSyncOptions = {

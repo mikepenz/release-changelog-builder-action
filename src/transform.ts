@@ -11,7 +11,7 @@ import {
 } from './pr-collector/pullRequests'
 import {DiffInfo} from './pr-collector/commits'
 import {validateTransformer} from './pr-collector/regexUtils'
-import {Transformer, RegexTransformer} from './pr-collector/types'
+import {RegexTransformer, Transformer} from './pr-collector/types'
 import {ReleaseNotesOptions} from './releaseNotesBuilder'
 import {matchesRules} from './regexUtils'
 
@@ -388,7 +388,7 @@ function fillAdditionalPlaceholders(
   }
   placeholderMap.set(
     'RELEASE_DIFF',
-    `https://github.com/${options.owner}/${options.repo}/compare/${options.fromTag.name}...${options.toTag.name}`
+    `${options.repositoryUtils.homeUrl}/${options.owner}/${options.repo}/compare/${options.fromTag.name}...${options.toTag.name}`
   )
 }
 
