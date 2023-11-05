@@ -100,7 +100,8 @@ Below is a complete example showcasing how to define a build, which is executed 
 - Build changelog, given the tag
 - Create release on GitHub - specifying body with constructed changelog
 
-> Note: Pre v4 PRs will only show up in the changelog if assigned one of the default label categories "feature", "fix" or "test". Starting with v4 these PRs will be in the `Uncategorized` section. 
+> [!NOTE]  
+> Pre v4 PRs will only show up in the changelog if assigned one of the default label categories "feature", "fix" or "test". Starting with v4 these PRs will be in the `Uncategorized` section. 
 
 <details><summary><b>Example</b></summary>
 <p>
@@ -169,15 +170,19 @@ jobs:
 
 ### Note
 
-> **Warning**: When running this action for non tags trigger the `toTag` will be automatically resolved using the latest tag as retrieved by the git API.
+> [!IMPORTANT]  
+> When running this action for non tags trigger the `toTag` will be automatically resolved using the latest tag as retrieved by the git API.
 
-> **Note**: The first release tag is a special case since there is no previous release the action can reference to. For this case, there are 2 options:
+> [!NOTE]  
+> The first release tag is a special case since there is no previous release the action can reference to. For this case, there are 2 options:
 > 1. When checking out the source via `git` (E.g.: `actions/checkout`), the action will use the first commit.
 > 2. Create a initial tag on the commit you want to begin a changelog from (for example `v0.0.1`).
 
-> **Note**: By default not specifying `fromTag` or `toTag` will resolve `toTag` from either the `ref` or alternatively fallback to the latest tag from the git API. `fromTag` is resolved by sorting tags using [semver](https://semver.org/). Check the [configuration](#configuration-specification) for alternatives.
+> [!NOTE]  
+> By default not specifying `fromTag` or `toTag` will resolve `toTag` from either the `ref` or alternatively fallback to the latest tag from the git API. `fromTag` is resolved by sorting tags using [semver](https://semver.org/). Check the [configuration](#configuration-specification) for alternatives.
 
-> **Note**: If you are behind a corporate HTTP proxy, you can set the `https_proxy` environment variable to the proxy URL. For reference, please see the Octokit [documentation](https://github.com/octokit/octokit.js/#proxy-servers-nodejs-only).
+> [!NOTE]  
+> If you are behind a corporate HTTP proxy, you can set the `https_proxy` environment variable to the proxy URL. For reference, please see the Octokit [documentation](https://github.com/octokit/octokit.js/#proxy-servers-nodejs-only).
 
 ### Configuration
 
@@ -192,11 +197,14 @@ The action supports flexible configuration options to modify vast areas of its b
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-> **Note** Defaults for the configuration can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
+> [!NOTE]  
+> Defaults for the configuration can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
 
-> **Warning** It is required to have a `checkout` step prior to the changelog step if `configuration` is used, to allow the action to discover the configuration file. Use `configurationJson` as alternative.
+> [!WARNING]  
+> It is required to have a `checkout` step prior to the changelog step if `configuration` is used, to allow the action to discover the configuration file. Use `configurationJson` as alternative.
 
-> **Note** It is possible to provide the configuration as file and as json via the yml file. The order of config values used: `configurationJson` > `configuration` > `DefaultConfiguration`. 
+> [!NOTE]  
+> It is possible to provide the configuration as file and as json via the yml file. The order of config values used: `configurationJson` > `configuration` > `DefaultConfiguration`. 
 
 This configuration is a `JSON` in the following format. (The below showcases *example* configurations for all possible options. In most scenarios most of the settings will not be needed, and the defaults will be appropiate.)
 
@@ -293,7 +301,8 @@ This configuration is a `JSON` in the following format. (The below showcases *ex
 
 Any section of the configuration can be omitted to have defaults apply.
 
-> **Warning**: `ignore_labels` take precedence over category labels, allowing to specifically exclude certain PRs.
+> [!WARNING]  
+> `ignore_labels` take precedence over category labels, allowing to specifically exclude certain PRs.
 
 Please see the [Configuration Specification](#configuration-specification) for detailed descriptions on the offered configuration options.
 
@@ -316,7 +325,8 @@ For advanced use cases additional settings can be provided to the action
     token: ${{ secrets.PAT }}
 ```
 
-> **Note**: All input values are optional. It is only required to provide the `token` either via the input, or as `env` variable.
+> [!NOTE]  
+> All input values are optional. It is only required to provide the `token` either via the input, or as `env` variable.
 
 | **Input**                 | **Description**                                                                                                                                                             |
 |---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -342,7 +352,8 @@ For advanced use cases additional settings can be provided to the action
 | `exportOnly`              | When enabled, will result in only exporting the cache, without genearting a changelog. Default: false (Requires `exportCache` to be enabled)                                |
 | `cache`                   | The file path to write/read the cache to/from.                                                                                                                              |
 
-> **Warning**: `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repositories please use a PAT (Personal Access Token).
+> [!WARNING]  
+> `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repositories please use a PAT (Personal Access Token).
 
 ### PR Template placeholders
 
@@ -365,7 +376,8 @@ Table of supported placeholders allowed to be used in the `pr_template` configur
 | `#{{REVIEWERS}}`  | GitHub Login names of specified reviewers, joined by `,`. Requires `fetchReviewers` to be enabled. |
 | `#{{APPROVERS}}`  | GitHub Login names of users who approved the PR, joined by `,`.                                    |
 
-> **Note**: `v4` updates the default placeholders format to `#{{}}`. The old format `${{}}` will be supported until v5 for backwards compatiblity.
+> [!IMPORTANT]  
+> `v4` updates the default placeholders format to `#{{}}`. The old format `${{}}` will be supported until v5 for backwards compatiblity.
 
 <details><summary><b>Array Placeholders</b></summary>
 <p>
@@ -404,7 +416,6 @@ Similar to `REVIEWS`, `REFERENCED` PRs also offer special placeholders.
 
 </p>
 </details>
-
 
 
 ### Template placeholders
@@ -482,10 +493,10 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | tag_resolver.transformer    | Defines a regex transformer used to optionally transform the tag after the filter was applied. Allows to adjust the format to e.g. semver.                                                                                         |
 | base_branches               | The target branches for the merged PR, ingnores PRs with different target branch. Values can be a `regex`. Default: allow all base branches                                                                                        |
 | trim_values                 | Defines if all values inserted in templates are `trimmed`. Default: false                                                                                                                                                          |
+### Custom placeholders 🧪
 
-## Experimental 🧪
+Starting with v3.2.0 the action provides a feature of defining `CUSTOM_PLACEHOLDERS`. 
 
-Starting with v3.2.0 the action provides an experimental feature of defining `CUSTOM_PLACEHOLDERS`. 
 Custom placeholders allow to extract values from any existing placeholder and insert them into the target template.
 
 <details><summary><b>Example</b></summary>
@@ -529,6 +540,26 @@ Custom placeholders offer one new feature though. PR related placeholders can be
 
 </p>
 </details>
+
+### Gitea support 🧪
+
+Starting with v4.1.0 the action is also compatible with [gitea](https://github.com/go-gitea/gitea).
+
+> [!WARNING]  
+> The API from gitea does not allow to retrieve the `diff` via its API, requiring the repo to be checked out
+
+The API for gitea is equal to the one from GitHub, however it requires the `platform` to be specified.
+
+```yml
+- name: Build Changelog
+  uses: https://github.com/mikepenz/release-changelog-builder-action@v4.1.0
+  with:
+    platform: "gitea" # gitea or github, default is github
+    commitMode: true
+    configuration: "configuration.json"
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Do not change this
+```
 
 ## Contribute 🧬
 
