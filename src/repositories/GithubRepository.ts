@@ -177,6 +177,10 @@ export class GithubRepository extends BaseRepository {
     return 'https://api.github.com'
   }
 
+  get homeUrl(): string {
+    return this.url?.replace('api.', '') || 'https://github.com'
+  }
+
   private octokit: Octokit
 
   constructor(token: string, url: string | undefined, repositoryPath: string) {
@@ -296,8 +300,5 @@ export class GithubRepository extends BaseRepository {
       }
     }
     return false
-  }
-  get homeUrl(): string {
-    return 'https://github.com'
   }
 }

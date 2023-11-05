@@ -18,6 +18,10 @@ export class GiteaRepository extends BaseRepository {
     return 'https://gitea.com'
   }
 
+  get homeUrl(): string {
+    return 'https://gitea.com'
+  }
+
   constructor(token: string, url: string | undefined, repositoryPath: string) {
     super(token, url, repositoryPath)
     this.url = url || this.defaultUrl
@@ -236,9 +240,5 @@ export class GiteaRepository extends BaseRepository {
     }
     core.info(`ℹ️ Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`)
     return tagsInfo
-  }
-
-  get homeUrl(): string {
-    return 'https://gitea.com'
   }
 }
