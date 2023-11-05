@@ -58,6 +58,9 @@ inputs:
     default: "false"
   cache:
     description: 'Provide the cache of a previous run. Allows to re-use collected information multiple times to generate different release notes. Requires `exportCache` to be enabled for the previous run.'
+  platform:
+    description: 'Defines the platform the action is run on. Available options: [`github`, `gitea`]. Defaults to `github`.'
+    default: "github"
 outputs:
   changelog:
     description: The built release changelog built from the merged pull requests

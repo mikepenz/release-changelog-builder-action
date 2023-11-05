@@ -39,7 +39,7 @@ class GitCommandManager {
     return result
   }
 
-  private async execGit(args: string[], allowAllExitCodes = false, silent = false): Promise<GitOutput> {
+  async execGit(args: string[], allowAllExitCodes = false, silent = false): Promise<GitOutput> {
     directoryExistsSync(this.workingDirectory, true)
 
     const result = new GitOutput()

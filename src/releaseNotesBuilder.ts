@@ -1,13 +1,13 @@
 import * as core from '@actions/core'
 import {Configuration} from './configuration'
 import {checkExportedData, writeCacheData} from './utils'
-import {PullRequestData, buildChangelog} from './transform'
+import {buildChangelog, PullRequestData} from './transform'
 import {PullRequestCollector} from './pr-collector/prCollector'
 import {failOrError} from './pr-collector/utils'
 import {TagInfo} from './pr-collector/tags'
 import {DiffInfo} from './pr-collector/commits'
 import {PullRequestInfo} from './pr-collector/pullRequests'
-import * as fs from 'fs'
+import {BaseRepository} from './repositories/BaseRepository'
 
 export interface ReleaseNotesOptions {
   owner: string // the owner of the repository
@@ -21,6 +21,7 @@ export interface ReleaseNotesOptions {
   fetchReviews: boolean // defines if the action should fetch the reviews for the PR.
   commitMode: boolean // defines if we use the alternative commit based mode. note: this is only partially supported
   configuration: Configuration // the configuration as defined in `configuration.ts`
+  repositoryUtils: BaseRepository // the repository implementation used to generate the changelog
 }
 
 export interface Data {
@@ -32,7 +33,7 @@ export interface Data {
 export class ReleaseNotesBuilder {
   constructor(
     private baseUrl: string | null,
-    private token: string | null,
+    private repositoryUtils: BaseRepository,
     private repositoryPath: string,
     private owner: string | null,
     private repo: string | null,
@@ -78,7 +79,7 @@ export class ReleaseNotesBuilder {
 
       const prData = await new PullRequestCollector(
         this.baseUrl,
-        this.token,
+        this.repositoryUtils,
         this.repositoryPath,
         this.owner,
         this.repo,
@@ -110,7 +111,8 @@ export class ReleaseNotesBuilder {
         fetchReleaseInformation: this.fetchReleaseInformation,
         fetchReviews: this.fetchReviews,
         commitMode: this.commitMode,
-        configuration: this.configuration
+        configuration: this.configuration,
+        repositoryUtils: this.repositoryUtils
       }
       const mergedPullRequests = prData.mergedPullRequests
       const diffInfo = prData.diffInfo
@@ -163,7 +165,8 @@ export class ReleaseNotesBuilder {
         fetchReleaseInformation: this.fetchReleaseInformation || orgOptions.fetchReleaseInformation,
         fetchReviews: this.fetchReviews || orgOptions.fetchReviews,
         commitMode: this.commitMode || orgOptions.commitMode,
-        configuration: this.configuration || orgOptions.configuration
+        configuration: this.configuration || orgOptions.configuration,
+        repositoryUtils: this.repositoryUtils || orgOptions.repositoryUtils
       }
 
       this.setOutputs(options, diffInfo, mergedPullRequests)

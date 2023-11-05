@@ -1,9 +1,9 @@
 import * as core from '@actions/core'
-import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import moment from 'moment'
 import {failOrError} from './utils'
 import {PullRequestInfo} from './pullRequests'
 import {Options} from './prCollector'
+import {BaseRepository} from '../repositories/BaseRepository'
 
 export interface DiffInfo {
   changedFiles: number
@@ -34,7 +34,7 @@ export interface CommitInfo {
 }
 
 export class Commits {
-  constructor(private octokit: Octokit) {}
+  constructor(private repositoryUtils: BaseRepository) {}
 
   async getDiff(owner: string, repo: string, base: string, head: string): Promise<DiffInfo> {
     const diff: DiffInfo = await this.getDiffRemote(owner, repo, base, head)
@@ -43,62 +43,7 @@ export class Commits {
   }
 
   private async getDiffRemote(owner: string, repo: string, base: string, head: string): Promise<DiffInfo> {
-    let changedFilesCount = 0
-    let additionCount = 0
-    let deletionCount = 0
-    let changeCount = 0
-    let commitCount = 0
-
-    // Fetch comparisons recursively until we don't find any commits
-    // This is because the GitHub API limits the number of commits returned in a single response.
-    let commits: RestEndpointMethodTypes['repos']['compareCommits']['response']['data']['commits'] = []
-    let compareHead = head
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const compareResult = await this.octokit.repos.compareCommits({
-        owner,
-        repo,
-        base,
-        head: compareHead
-      })
-      if (compareResult.data.total_commits === 0) {
-        break
-      }
-      changedFilesCount += compareResult.data.files?.length ?? 0
-      const files = compareResult.data.files
-      if (files !== undefined) {
-        for (const file of files) {
-          additionCount += file.additions
-          deletionCount += file.deletions
-          changeCount += file.changes
-        }
-      }
-      commitCount += compareResult.data.commits.length
-      commits = compareResult.data.commits.concat(commits)
-      compareHead = `${commits[0].sha}^`
-    }
-
-    core.info(`ℹ️ Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`)
-
-    return {
-      changedFiles: changedFilesCount,
-      additions: additionCount,
-      deletions: deletionCount,
-      changes: changeCount,
-      commits: commitCount,
-      commitInfo: commits
-        .filter(commit => commit.sha)
-        .map(commit => ({
-          sha: commit.sha || '',
-          summary: commit.commit.message.split('\n')[0],
-          message: commit.commit.message,
-          author: commit.author?.login || '',
-          authorDate: moment(commit.commit.author?.date),
-          committer: commit.committer?.login || '',
-          commitDate: moment(commit.commit.committer?.date),
-          prNumber: undefined
-        }))
-    }
+    return this.repositoryUtils.getDiffRemote(owner, repo, base, head)
   }
 
   private sortCommits(commits: CommitInfo[]): CommitInfo[] {
@@ -129,7 +74,7 @@ export class Commits {
     const {owner, repo, fromTag, toTag, failOnError} = options
     core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag.name}...${toTag.name}'`)
 
-    const commitsApi = new Commits(this.octokit)
+    const commitsApi = new Commits(this.repositoryUtils)
     let diffInfo: DiffInfo
     try {
       diffInfo = await commitsApi.getDiff(owner, repo, fromTag.name, toTag.name)

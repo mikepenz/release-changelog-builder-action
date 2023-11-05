@@ -1,4 +1,4 @@
-import {Rule, Extractor, Regex, Transformer, Sort, PullConfiguration} from './pr-collector/types'
+import {Extractor, PullConfiguration, Regex, Rule, Sort, Transformer} from './pr-collector/types'
 
 export interface Configuration extends PullConfiguration {
   max_tags_to_fetch: number

@@ -1,0 +1,708 @@
+{
+    "mergedPullRequests": [
+        {
+            "number": 1,
+            "title": "Clean up and polish",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/1",
+            "baseBranch": "master",
+            "branch": "20df4b7f69f8dc609e98e3274739b49dc756884c",
+            "mergedAt": "2020-02-18T05:27:54.000Z",
+            "mergeCommitSha": "427ecdb7f1f4e289cb820ce2fbafe158b9b30012",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "enhancement"
+            ],
+            "milestone": "0.1.1",
+            "body": "",
+            "approvedReviewers": [],
+            "createdAt": "2020-02-18T05:27:13.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 2,
+            "title": "Add Drone and releases",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/2",
+            "baseBranch": "master",
+            "branch": "427ecdb7f1f4e289cb820ce2fbafe158b9b30012",
+            "mergedAt": "2020-02-18T15:51:14.000Z",
+            "mergeCommitSha": "5929bebe01e7b8c7c57b3c8fdfd41d4038bb85a1",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "build"
+            ],
+            "milestone": "0.2.0",
+            "body": "",
+            "approvedReviewers": [],
+            "createdAt": "2020-02-18T15:41:58.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 6,
+            "title": "Update Beaver and fix bugs",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/6",
+            "baseBranch": "master",
+            "branch": "5929bebe01e7b8c7c57b3c8fdfd41d4038bb85a1",
+            "mergedAt": "2020-02-27T02:53:14.000Z",
+            "mergeCommitSha": "bb773780df3488204df93228bdd72eb59418029b",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "bug"
+            ],
+            "milestone": "0.2.0",
+            "body": "Fixes #3  \nFixes #4  \nFixes #5",
+            "approvedReviewers": [],
+            "createdAt": "2020-02-27T02:45:46.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 7,
+            "title": "Fix PR head nil panic",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/7",
+            "baseBranch": "master",
+            "branch": "bb773780df3488204df93228bdd72eb59418029b",
+            "mergedAt": "2020-02-27T03:03:34.000Z",
+            "mergeCommitSha": "1956062791dae3e66c0c11d6fa86c59b031e51ee",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "bug"
+            ],
+            "milestone": "0.2.0",
+            "body": "When checking PR status, retrieved PRs may have a nil head if the branch has been deleted.",
+            "approvedReviewers": [],
+            "createdAt": "2020-02-27T03:01:09.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 8,
+            "title": "Add search filters",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/8",
+            "baseBranch": "master",
+            "branch": "1956062791dae3e66c0c11d6fa86c59b031e51ee",
+            "mergedAt": "2020-02-27T04:58:04.000Z",
+            "mergeCommitSha": "df58f223f25edd30ce8d15328d9d99fc9f98954b",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "enhancement"
+            ],
+            "milestone": "0.2.0",
+            "body": "Adds search filters for state, author, labels, and milestone\n\nCheck the updated README for more details.",
+            "approvedReviewers": [],
+            "createdAt": "2020-02-27T04:39:37.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 9,
+            "title": "Changelog 0.2.0",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/9",
+            "baseBranch": "master",
+            "branch": "df58f223f25edd30ce8d15328d9d99fc9f98954b",
+            "mergedAt": "2020-02-27T05:20:31.000Z",
+            "mergeCommitSha": "222dcf402b1cc0b57dbd4e2e9bc34196410c8a6b",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "docs"
+            ],
+            "milestone": "0.2.0",
+            "body": "As title",
+            "approvedReviewers": [],
+            "createdAt": "2020-02-27T05:17:31.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 10,
+            "title": "Add qualifier module",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/10",
+            "baseBranch": "master",
+            "branch": "222dcf402b1cc0b57dbd4e2e9bc34196410c8a6b",
+            "mergedAt": "2020-03-06T04:18:38.000Z",
+            "mergeCommitSha": "4490cc9888b4e39e14ce1c8fe9bdf64de348de71",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "enhancement"
+            ],
+            "milestone": "0.2.1",
+            "body": "Better support for search query qualifiers",
+            "approvedReviewers": [],
+            "createdAt": "2020-02-28T03:33:43.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 13,
+            "title": "Add create repo command",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/13",
+            "baseBranch": "master",
+            "branch": "4490cc9888b4e39e14ce1c8fe9bdf64de348de71",
+            "mergedAt": "2020-03-06T04:21:58.000Z",
+            "mergeCommitSha": "03fb319d3989c68a39c0652d8ff972e0957c5e6c",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "feature"
+            ],
+            "milestone": "0.3.0",
+            "body": "Resolves #12",
+            "approvedReviewers": [],
+            "createdAt": "2020-03-06T04:17:46.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 14,
+            "title": "Fix Drone release",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/14",
+            "baseBranch": "master",
+            "branch": "03fb319d3989c68a39c0652d8ff972e0957c5e6c",
+            "mergedAt": "2020-03-31T20:17:02.000Z",
+            "mergeCommitSha": "5ea204fb61cdb30501f8a6686b7132473f743b69",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "build"
+            ],
+            "milestone": "0.2.1",
+            "body": "\r\nSigned-off-by: jolheiser <john.olheiser@gmail.com>",
+            "approvedReviewers": [],
+            "createdAt": "2020-03-31T20:11:46.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 16,
+            "title": "Add release support and CSV output",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/16",
+            "baseBranch": "master",
+            "branch": "5ea204fb61cdb30501f8a6686b7132473f743b69",
+            "mergedAt": "2020-04-17T03:59:15.000Z",
+            "mergeCommitSha": "0a6162ad05900394d381eef9ec05704b3941c5c4",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "feature"
+            ],
+            "milestone": "0.3.0",
+            "body": "Resolves #15\r\n\r\nThis PR adds support for listing and creating releases.\r\n\r\nIt also adds a `--csv <file>` flag to issue/PR/release searches, which will instead dump CSV-formatting information to the specified file.",
+            "approvedReviewers": [],
+            "createdAt": "2020-04-17T03:54:27.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 17,
+            "title": "Imp formatting",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/17",
+            "baseBranch": "master",
+            "branch": "0a6162ad05900394d381eef9ec05704b3941c5c4",
+            "mergedAt": "2020-05-07T01:09:33.000Z",
+            "mergeCommitSha": "448e12ce38128909c32f30b29dc560ac44d1d7a5",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "docs"
+            ],
+            "milestone": "0.3.0",
+            "body": "This PR is the result of running [imp](https://gitea.com/jolheiser/imp) against the repo.",
+            "approvedReviewers": [],
+            "createdAt": "2020-05-07T01:07:19.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 19,
+            "title": "Update Gitea SDK and other modules",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/19",
+            "baseBranch": "master",
+            "branch": "448e12ce38128909c32f30b29dc560ac44d1d7a5",
+            "mergedAt": "2020-07-15T18:15:49.000Z",
+            "mergeCommitSha": "e4303d76389f45d9d7a5da29b504200038c46eb4",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "enhancement"
+            ],
+            "milestone": "0.3.0",
+            "body": "As title",
+            "approvedReviewers": [],
+            "createdAt": "2020-05-28T03:21:56.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 20,
+            "title": "Update modules",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/20",
+            "baseBranch": "master",
+            "branch": "e4303d76389f45d9d7a5da29b504200038c46eb4",
+            "mergedAt": "2020-09-13T03:59:45.000Z",
+            "mergeCommitSha": "dac69ffbd020f83a39b8fadcf3dcb928ed0826f1",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "build"
+            ],
+            "milestone": "0.4.0",
+            "body": "",
+            "approvedReviewers": [],
+            "createdAt": "2020-09-13T03:36:59.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 21,
+            "title": "Add open functionality",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/21",
+            "baseBranch": "master",
+            "branch": "dac69ffbd020f83a39b8fadcf3dcb928ed0826f1",
+            "mergedAt": "2020-09-13T04:34:13.000Z",
+            "mergeCommitSha": "b4d7ff5775e913e3681c6c2f1009e37591a060cf",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "feature"
+            ],
+            "milestone": "0.4.0",
+            "body": "Closes #11\n\nThis PR adds functionality to open a repo/issue/PR\n\nTo open the current repo `sip open`\n\nTo open an issue `sip open 1234`\n\nTo open a different repo `sip open jolheiser/vanity`",
+            "approvedReviewers": [],
+            "createdAt": "2020-09-13T04:23:10.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 22,
+            "title": "Add changelog for 0.3.0 and 0.4.0",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/22",
+            "baseBranch": "master",
+            "branch": "b4d7ff5775e913e3681c6c2f1009e37591a060cf",
+            "mergedAt": "2020-09-13T04:42:13.000Z",
+            "mergeCommitSha": "40e256e8b9da14692f348ec10db17f773569c66f",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "docs",
+                "skip-changelog"
+            ],
+            "milestone": "0.4.0",
+            "body": "",
+            "approvedReviewers": [],
+            "createdAt": "2020-09-13T04:41:50.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 23,
+            "title": "Update Gitea SDK",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/23",
+            "baseBranch": "master",
+            "branch": "40e256e8b9da14692f348ec10db17f773569c66f",
+            "mergedAt": "2020-09-15T18:02:46.000Z",
+            "mergeCommitSha": "8db0c08253f7e30ef86a8ba67169ea4d3e4cf72b",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "build"
+            ],
+            "milestone": "0.5.0",
+            "body": "",
+            "approvedReviewers": [],
+            "createdAt": "2020-09-15T17:57:59.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 24,
+            "title": "Update repo info",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/24",
+            "baseBranch": "master",
+            "branch": "8db0c08253f7e30ef86a8ba67169ea4d3e4cf72b",
+            "mergedAt": "2020-09-16T03:54:50.000Z",
+            "mergeCommitSha": "3e49adf6047960a03f53346bbececb3ce7e0809b",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "enhancement"
+            ],
+            "milestone": "0.5.0",
+            "body": "Now that the SDK supports forks, watchers, stars, etc.\n\nThis PR updates the `sip repo` information",
+            "approvedReviewers": [],
+            "createdAt": "2020-09-16T03:48:01.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 26,
+            "title": "Add release attachments",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/26",
+            "baseBranch": "master",
+            "branch": "3e49adf6047960a03f53346bbececb3ce7e0809b",
+            "mergedAt": "2020-09-16T18:07:32.000Z",
+            "mergeCommitSha": "a51305f8162b0a5ec80387db0b5ecc8a89e209be",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "enhancement"
+            ],
+            "milestone": "0.5.0",
+            "body": "Resolves #25",
+            "approvedReviewers": [],
+            "createdAt": "2020-09-16T17:57:57.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 29,
+            "title": "Refactor",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/29",
+            "baseBranch": "master",
+            "branch": "a51305f8162b0a5ec80387db0b5ecc8a89e209be",
+            "mergedAt": "2020-09-17T16:25:11.000Z",
+            "mergeCommitSha": "894a641ef86c444dccfa55eca457186b5e10da95",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "enhancement"
+            ],
+            "milestone": "0.5.0",
+            "body": "Fixes #27\n\nFixes #28\n\nThis PR refactors and cleans up packages.\n\nIt also scans CLI flags into variables for fewer footguns.",
+            "approvedReviewers": [],
+            "createdAt": "2020-09-17T04:11:50.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 30,
+            "title": "Changelog 0.5.0",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/30",
+            "baseBranch": "master",
+            "branch": "894a641ef86c444dccfa55eca457186b5e10da95",
+            "mergedAt": "2020-09-17T16:34:42.000Z",
+            "mergeCommitSha": "cce2360f0fcec4f63c66e5b05bac25a7ba42f942",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "docs"
+            ],
+            "milestone": "0.5.0",
+            "body": "## [0.5.0](https://gitea.com/jolheiser/sip/pulls?q=&type=all&state=closed&milestone=1311) - 2020-09-17\r\n\r\n<details><summary>ENHANCEMENTS</summary>\r\n\r\n* Refactor (#29)\r\n* Add release attachments (#26)\r\n* Update repo info (#24)\r\n</details>\r\n<details><summary>BUILD</summary>\r\n\r\n* Update Gitea SDK (#23)\r\n</details>\r\n",
+            "approvedReviewers": [],
+            "createdAt": "2020-09-17T16:34:05.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 36,
+            "title": "Add attachment removal and change message",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/36",
+            "baseBranch": "master",
+            "branch": "cce2360f0fcec4f63c66e5b05bac25a7ba42f942",
+            "mergedAt": "2020-09-21T14:19:38.000Z",
+            "mergeCommitSha": "0bbe2e35ff5b482bae10ecf7abcd89815274c217",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "enhancement"
+            ],
+            "milestone": "0.5.1",
+            "body": "Fixes #35\r\n\r\nChanges the message to instead tell the user how many files were added/removed from the release.\r\n\r\nThis PR also adds a way to multi-select attachments to be removed from a release via `sip release attach remove` since `sip release remove` will be reserved for removing a release in the future.",
+            "approvedReviewers": [],
+            "createdAt": "2020-09-21T03:59:49.000Z",
+            "status": "merged"
+        },
+        {
+            "number": 37,
+            "title": "Change to vanity URL",
+            "htmlURL": "https://gitea.com/jolheiser/sip/pulls/37",
+            "baseBranch": "master",
+            "branch": "0bbe2e35ff5b482bae10ecf7abcd89815274c217",
+            "mergedAt": "2020-09-21T19:21:09.000Z",
+            "mergeCommitSha": "5ecbcde5180e4a3b12bdc35416c2f050cd0808f1",
+            "author": "jolheiser",
+            "repoName": "jolheiser/sip",
+            "labels": [
+                "build"
+            ],
+            "milestone": "",
+            "body": "",
+            "approvedReviewers": [],
+            "createdAt": "2020-09-21T04:07:33.000Z",
+            "status": "merged"
+        }
+    ],
+    "diffInfo": {
+        "changedFiles": 43,
+        "additions": 1942,
+        "deletions": 418,
+        "changes": 0,
+        "commits": 24,
+        "commitInfo": [
+            {
+                "sha": "427ecdb7f1f4e289cb820ce2fbafe158b9b30012",
+                "summary": "Clean up and polish (#1)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-02-18T05:27:52.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-02-18T05:27:52.000Z"
+            },
+            {
+                "sha": "5929bebe01e7b8c7c57b3c8fdfd41d4038bb85a1",
+                "summary": "Add Drone and releases (#2)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-02-18T15:51:10.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-02-18T15:51:10.000Z"
+            },
+            {
+                "sha": "bb773780df3488204df93228bdd72eb59418029b",
+                "summary": "Update Beaver and fix bugs (#6)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-02-27T02:53:11.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-02-27T02:53:11.000Z"
+            },
+            {
+                "sha": "1956062791dae3e66c0c11d6fa86c59b031e51ee",
+                "summary": "Fix PR head nil panic (#7)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-02-27T03:03:32.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-02-27T03:03:32.000Z"
+            },
+            {
+                "sha": "df58f223f25edd30ce8d15328d9d99fc9f98954b",
+                "summary": "Add search filters (#8)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-02-27T04:58:02.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-02-27T04:58:02.000Z"
+            },
+            {
+                "sha": "222dcf402b1cc0b57dbd4e2e9bc34196410c8a6b",
+                "summary": "Changelog 0.2.0 (#9)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-02-27T05:20:29.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-02-27T05:20:29.000Z"
+            },
+            {
+                "sha": "4490cc9888b4e39e14ce1c8fe9bdf64de348de71",
+                "summary": "Add qualifier module (#10)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-03-06T04:18:36.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-03-06T04:18:36.000Z"
+            },
+            {
+                "sha": "03fb319d3989c68a39c0652d8ff972e0957c5e6c",
+                "summary": "Add create repo command (#13)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-03-06T04:21:56.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-03-06T04:21:56.000Z"
+            },
+            {
+                "sha": "64b0335e0ae45a4bd264bbab008551b7820f8811",
+                "summary": "Fix Drone release",
+                "message": "",
+                "author": "jolheiser",
+                "authorDate": "2020-03-31T20:10:18.000Z",
+                "committer": "jolheiser",
+                "commitDate": "2020-03-31T20:10:18.000Z"
+            },
+            {
+                "sha": "5ea204fb61cdb30501f8a6686b7132473f743b69",
+                "summary": "Merge pull request 'Fix Drone release' (#14) from drone-release into master",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-03-31T20:17:01.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-03-31T20:17:01.000Z"
+            },
+            {
+                "sha": "0a6162ad05900394d381eef9ec05704b3941c5c4",
+                "summary": "Add release support and CSV output (#16)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-04-17T03:59:12.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-04-17T03:59:12.000Z"
+            },
+            {
+                "sha": "448e12ce38128909c32f30b29dc560ac44d1d7a5",
+                "summary": "Imp formatting (#17)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-05-07T01:09:31.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-05-07T01:09:31.000Z"
+            },
+            {
+                "sha": "e4303d76389f45d9d7a5da29b504200038c46eb4",
+                "summary": "Update Gitea SDK and other modules (#19)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-07-15T18:15:46.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-07-15T18:15:46.000Z"
+            },
+            {
+                "sha": "dac69ffbd020f83a39b8fadcf3dcb928ed0826f1",
+                "summary": "Update modules (#20)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-09-13T03:59:43.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-09-13T03:59:43.000Z"
+            },
+            {
+                "sha": "b4d7ff5775e913e3681c6c2f1009e37591a060cf",
+                "summary": "Add open functionality (#21)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-09-13T04:34:11.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-09-13T04:34:11.000Z"
+            },
+            {
+                "sha": "40e256e8b9da14692f348ec10db17f773569c66f",
+                "summary": "Add changelog for 0.3.0 and 0.4.0 (#22)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-09-13T04:42:11.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-09-13T04:42:11.000Z"
+            },
+            {
+                "sha": "8db0c08253f7e30ef86a8ba67169ea4d3e4cf72b",
+                "summary": "Update Gitea SDK (#23)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-09-15T18:02:45.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-09-15T18:02:45.000Z"
+            },
+            {
+                "sha": "3e49adf6047960a03f53346bbececb3ce7e0809b",
+                "summary": "Update repo info (#24)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-09-16T03:54:48.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-09-16T03:54:48.000Z"
+            },
+            {
+                "sha": "a51305f8162b0a5ec80387db0b5ecc8a89e209be",
+                "summary": "Add release attachments (#26)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-09-16T18:07:30.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-09-16T18:07:30.000Z"
+            },
+            {
+                "sha": "894a641ef86c444dccfa55eca457186b5e10da95",
+                "summary": "Refactor (#29)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-09-17T16:25:09.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-09-17T16:25:09.000Z"
+            },
+            {
+                "sha": "cce2360f0fcec4f63c66e5b05bac25a7ba42f942",
+                "summary": "Changelog 0.5.0 (#30)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-09-17T16:34:40.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-09-17T16:34:40.000Z"
+            },
+            {
+                "sha": "0bbe2e35ff5b482bae10ecf7abcd89815274c217",
+                "summary": "Add attachment removal and change message (#36)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-09-21T14:19:36.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-09-21T14:19:36.000Z"
+            },
+            {
+                "sha": "5ecbcde5180e4a3b12bdc35416c2f050cd0808f1",
+                "summary": "Change to vanity URL (#37)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-09-21T19:21:07.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-09-21T19:21:07.000Z"
+            },
+            {
+                "sha": "1742fcc37c35faca189eae173cd803e9623a8b80",
+                "summary": "Fix drone-gitea-main (#38)",
+                "message": "",
+                "author": "John Olheiser",
+                "authorDate": "2020-09-21T19:30:21.000Z",
+                "committer": "John Olheiser",
+                "commitDate": "2020-09-21T19:30:21.000Z"
+            }
+        ]
+    },
+    "options": {
+        "owner": "jolheiser",
+        "repo": "sip",
+        "fromTag": {
+            "name": "v0.1.0"
+        },
+        "toTag": {
+            "name": "master"
+        },
+        "includeOpen": false,
+        "failOnError": false,
+        "fetchViaCommits": false,
+        "fetchReviewers": false,
+        "fetchReleaseInformation": false,
+        "fetchReviews": false,
+        "commitMode": false,
+        "configuration": {
+            "max_tags_to_fetch": 200,
+            "max_pull_requests": 1000,
+            "max_back_track_time_days": 1000,
+            "exclude_merge_branches": [],
+            "sort": "ASC",
+            "template": "#{{CHANGELOG}}",
+            "pr_template": "- #{{TITLE}}\n   - PR: ##{{NUMBER}}",
+            "empty_template": "- no changes",
+            "categories": [
+                {
+                    "title": "## 🚀 Features",
+                    "labels": [
+                        "add",
+                        "Add"
+                    ]
+                },
+                {
+                    "title": "## 🐛 Fixes",
+                    "labels": [
+                        "fix",
+                        "Fix"
+                    ]
+                }
+            ],
+            "ignore_labels": [
+                "ignore"
+            ],
+            "label_extractor": [
+                {
+                    "pattern": "(\\w+) (.+)",
+                    "target": "$1",
+                    "on_property": "title"
+                }
+            ],
+            "transformers": [],
+            "tag_resolver": {
+                "method": "semver"
+            },
+            "base_branches": [],
+            "custom_placeholders": [],
+            "trim_values": false
+        }
+    }
+}
