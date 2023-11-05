@@ -41,11 +41,19 @@ export function writeCacheData(data: Data, cacheOutput: string | null): void {
   }
 
   try {
-    fs.writeFileSync(cacheFile, JSON.stringify(data))
+    // use replacer to not cache the repositoryUtils (as that would contain token information)
+    fs.writeFileSync(cacheFile, JSON.stringify(data, replacer))
     core.setOutput(`cache`, cacheFile)
   } catch (error) {
     core.warning(`Failed to write cache file. (${error})`)
   }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function replacer(key: string, value: any): any {
+  if (key === 'repositoryUtils') return undefined
+  if (key === 'token') return undefined
+  else return value
 }
 
 /**

@@ -14,9 +14,10 @@ async function run(): Promise<void> {
   function isSupportedPlatform(type: string): type is keyof typeof supportedPlatform {
     return type in supportedPlatform
   }
-  core.setOutput('failed', false) // mark the action not failed by default
 
+  core.setOutput('failed', false) // mark the action not failed by default
   core.startGroup(`📘 Reading input values`)
+
   try {
     // read in path specification, resolve github workspace, and repo path
     const platform = core.getInput('platform') || 'github'

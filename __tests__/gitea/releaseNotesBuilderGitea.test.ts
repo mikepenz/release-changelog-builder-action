@@ -1,12 +1,14 @@
-import {mergeConfiguration, resolveConfiguration} from '../src/utils'
-import {ReleaseNotesBuilder} from '../src/releaseNotesBuilder'
-import {GiteaRepository} from '../src/repositories/GiteaRepository'
+import {mergeConfiguration, resolveConfiguration} from '../../src/utils'
+import {ReleaseNotesBuilder} from '../../src/releaseNotesBuilder'
+import {GiteaRepository} from '../../src/repositories/GiteaRepository'
 
 jest.setTimeout(180000)
 
 /**
  * Before starting testing, you should manually clone the repository
- * cd /tmp && git clone https://gitea.com/jolheiser/sip
+ * cd /tmp && git clone https://gitea.com/mikepenz/sip
+ *
+ * (Forked from: https://gitea.com/jolheiser/sip)
  */
 
 const token = process.env.GITEA_TOKEN || ''
@@ -14,6 +16,47 @@ const workingDirectory = '/tmp/sip/'
 const owner = 'jolheiser'
 const repo = 'sip'
 const configurationFile = 'configs/configuration_gitea.json'
+
+it('[Gitea] Verify reviewers who approved are fetched and also release information', async () => {
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_approvers.json'))
+
+  const giteaRepository = new GiteaRepository(token, undefined, workingDirectory)
+  const releaseNotesBuilder = new ReleaseNotesBuilder(
+    null, // baseUrl
+    giteaRepository, // token
+    workingDirectory, // repoPath
+    owner, // user
+    repo, // repo
+    'v0.5.0', // fromTag
+    'master', // toTag
+    true, // includeOpen
+    false, // failOnError
+    false, // ignorePrePrelease
+    false, // enable to fetch via commits
+    true, // enable to fetch reviewers
+    true, // enable to fetch tag release information
+    false, // enable to fetch reviews
+    false, // enable commitMode
+    false, // enable exportCache
+    false, // enable exportOnly
+    null, // path to the cache
+    configuration // configuration
+  )
+
+  const changeLog = await releaseNotesBuilder.build()
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(
+    `## 📦 Uncategorized
+
+- Add attachment removal and change message -- (#36) [merged]  --- 
+- Change to vanity URL -- (#37) [merged]  --- 
+
+
+
+4`
+  )
+})
+
 it('[Gitea] Should match generated changelog (unspecified fromTag)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', configurationFile))
 
@@ -679,46 +722,6 @@ it('[Gitea] Verify custom categorisation of open PRs', async () => {
   const changeLog = await releaseNotesBuilder.build()
   console.log(changeLog)
   expect(changeLog).toStrictEqual(``)
-})
-
-it('[Gitea] Verify reviewers who approved are fetched and also release information', async () => {
-  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_approvers.json'))
-
-  const giteaRepository = new GiteaRepository(token, undefined, workingDirectory)
-  const releaseNotesBuilder = new ReleaseNotesBuilder(
-    null, // baseUrl
-    giteaRepository, // token
-    workingDirectory, // repoPath
-    owner, // user
-    repo, // repo
-    'v0.5.0', // fromTag
-    'master', // toTag
-    true, // includeOpen
-    false, // failOnError
-    false, // ignorePrePrelease
-    false, // enable to fetch via commits
-    true, // enable to fetch reviewers
-    true, // enable to fetch tag release information
-    false, // enable to fetch reviews
-    false, // enable commitMode
-    false, // enable exportCache
-    false, // enable exportOnly
-    null, // path to the cache
-    configuration // configuration
-  )
-
-  const changeLog = await releaseNotesBuilder.build()
-  console.log(changeLog)
-  expect(changeLog).toStrictEqual(
-    `## 📦 Uncategorized
-
-- Add attachment removal and change message -- (#36) [merged]  --- 
-- Change to vanity URL -- (#37) [merged]  --- 
-
-
-
-4`
-  )
 })
 
 it('[Gitea] Fetch release information', async () => {

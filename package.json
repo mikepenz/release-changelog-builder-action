@@ -6,13 +6,15 @@
   "main": "lib/main.js",
   "scripts": {
     "build": "tsc",
-    "format": "prettier --write **/*.ts",
+    "format": "prettier --write **/*.ts **/**/*.ts",
     "format-check": "prettier --check **/*.ts",
     "format-fix": "eslint --fix src/**/*.ts",
     "lint": "eslint src/**/*.ts",
     "package": "ncc build --source-map --license licenses.txt",
     "test": "jest",
-    "all": "npm run build && npm run format && npm run lint && npm run package && npm test"
+    "test-github": "jest __tests__/*.test.ts",
+    "test-gitea": "jest __tests__/gitea/*.test.ts",
+    "all": "npm run build && npm run format && npm run lint && npm run package && npm run test-github"
   },
   "repository": {
     "type": "git",
@@ -37,7 +39,6 @@
     "@actions/exec": "^1.1.1",
     "@actions/github": "^6.0.0",
     "@octokit/rest": "^20.0.2",
-    "cross-fetch": "^4.0.0",
     "gitea-js": "^1.20.1",
     "https-proxy-agent": "^7.0.2",
     "moment": "^2.29.4",

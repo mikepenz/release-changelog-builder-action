@@ -2,12 +2,10 @@ import {BaseRepository} from './BaseRepository'
 import {TagInfo} from '../pr-collector/tags'
 import {CommentInfo, PullRequestInfo} from '../pr-collector/pullRequests'
 import {DiffInfo} from '../pr-collector/commits'
-import  {Api, PullRequest, PullReview} from 'gitea-js'
+import {Api, PullRequest, PullReview, giteaApi} from 'gitea-js'
 import moment from 'moment'
 import * as core from '@actions/core'
 import {createCommandManager} from '../pr-collector/gitHelper'
-import { giteaApi } from 'gitea-js';
-import fetch from 'cross-fetch';
 interface Pulls {
   closed: PullRequest[]
   open: PullRequest[]
@@ -23,9 +21,8 @@ export class GiteaRepository extends BaseRepository {
   constructor(token: string, url: string | undefined, repositoryPath: string) {
     super(token, url, repositoryPath)
     this.url = url || this.defaultUrl
-    this.api =  giteaApi(this.url,{
-      token:token,
-      customFetch: fetch
+    this.api = giteaApi(this.url, {
+      token
     })
   }
 
@@ -75,7 +72,6 @@ export class GiteaRepository extends BaseRepository {
       labels: pr.labels?.map(label => label.name) as string[],
       milestone: pr.milestone?.title || '',
       body: pr.body || '',
-
       assignees: pr.assignees?.map(user => user.full_name) as string[],
       requestedReviewers: pr.requested_reviewers?.map(user => user.full_name) as string[],
       approvedReviewers: [],
@@ -100,7 +96,7 @@ export class GiteaRepository extends BaseRepository {
 
     for (const line of diffStatLines) {
       // Extract the addition and deletion counts from each line of the git diff output
-      const match = line.match(/(\d+) insertions?\(\+\), (\d+) deletions?\(\-\)/)
+      const match = line.match(/(\d+) insertions?\(\+\), (\d+) deletions?\(-\)/)
       if (match) {
         additionCount += parseInt(match[1], 10)
         deletionCount += parseInt(match[2], 10)
@@ -121,8 +117,9 @@ export class GiteaRepository extends BaseRepository {
     const commitLogs = log.stdout.trim().split('\n')
 
     // Process commit logs
-    const commitInfo = commitLogs.map(log => {
-      const [sha, authorName, authorEmail, authorDate, committerName, committerEmail, committerDate, subject] = log.split('||||')
+    const commitInfo = commitLogs.map(commitLog => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const [sha, authorName, authorEmail, authorDate, committerName, committerEmail, committerDate, subject] = commitLog.split('||||')
       return {
         sha,
         summary: subject,
@@ -150,7 +147,7 @@ export class GiteaRepository extends BaseRepository {
     open: []
   }
 
-  private async getAllPullRequest(owner: string, repo: string, state: 'closed' | 'open', maxPullRequests: number) {
+  private async getAllPullRequest(owner: string, repo: string, state: 'closed' | 'open', maxPullRequests: number): Promise<void> {
     if (GiteaRepository.pulls[state].length === 0) {
       let page = 1
       let count = 0
@@ -164,8 +161,8 @@ export class GiteaRepository extends BaseRepository {
         })
         if (response.error === null) {
           GiteaRepository.pulls[state].push(...response.data)
-        }else{
-          core.error(`ℹ️ Some errors. ${response.error!!.message}`)
+        } else {
+          core.error(`ℹ️ Some errors. ${response.error.message}`)
         }
         page++
         count += response.data.length
@@ -184,7 +181,7 @@ export class GiteaRepository extends BaseRepository {
       }
     }
 
-    core.debug(`⚠️ No more PRs retrieved from API. Fetched so far: ${mergedPRs.length}`)
+    core.debug(`Completed fetching PRs from API. Fetched: ${mergedPRs.length}`)
 
     return mergedPRs
   }
@@ -206,9 +203,8 @@ export class GiteaRepository extends BaseRepository {
       for (const comment of response.data) {
         prReviews.push(this.mapComment(comment))
       }
-    }else{
-
-      core.error(`ℹ️ Some errors. ${response.error!!.message}`)
+    } else {
+      core.error(`ℹ️ Some errors. ${response.error.message}`)
     }
     pr.reviews = prReviews
   }
@@ -235,9 +231,8 @@ export class GiteaRepository extends BaseRepository {
           commit: tag.commit?.sha
         })
       }
-    }else{
-
-      core.error(`ℹ️ Some errors. ${response.error!!.message}`)
+    } else {
+      core.error(`ℹ️ Some errors. ${response.error.message}`)
     }
     core.info(`ℹ️ Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`)
     return tagsInfo

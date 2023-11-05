@@ -21,7 +21,7 @@ export interface ReleaseNotesOptions {
   fetchReviews: boolean // defines if the action should fetch the reviews for the PR.
   commitMode: boolean // defines if we use the alternative commit based mode. note: this is only partially supported
   configuration: Configuration // the configuration as defined in `configuration.ts`
-  repositoryUtils: BaseRepository
+  repositoryUtils: BaseRepository // the repository implementation used to generate the changelog
 }
 
 export interface Data {

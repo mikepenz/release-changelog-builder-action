@@ -1,15 +1,28 @@
-import {checkExportedData, mergeConfiguration, resolveConfiguration} from '../src/utils'
-import {buildChangelog} from '../src/transform'
-import {pullData} from '../src/pr-collector/prCollector'
-import {GiteaRepository} from '../src/repositories/GiteaRepository'
+import {checkExportedData, mergeConfiguration, resolveConfiguration} from '../../src/utils'
+import {buildChangelog} from '../../src/transform'
+import {pullData} from '../../src/pr-collector/prCollector'
+import {GiteaRepository} from '../../src/repositories/GiteaRepository'
 
 jest.setTimeout(180000)
 
 // load octokit instance
-const enablePullData = true // if false -> use cache for data
+const enablePullData = false
+/**
+ * if false -> use cache for data
+ * Use the below snippet to export the cache:
+ *
+ *  writeCacheData({
+ *    mergedPullRequests: data.mergedPullRequests,
+ *    diffInfo: data.diffInfo,
+ *    options
+ *  }, 'caches/gitea_rcba_0.1.0-master_cache.json')
+ */
+
 /**
  * Before starting testing, you should manually clone the repository
- * cd /tmp && git clone https://gitea.com/jolheiser/sip
+ * cd /tmp && git clone https://gitea.com/mikepenz/sip
+ *
+ * (Forked from: https://gitea.com/jolheiser/sip)
  */
 
 const token = process.env.GITEA_TOKEN || ''
@@ -40,7 +53,7 @@ it('[Gitea] Should have  changelog (tags)', async () => {
   if (enablePullData) {
     data = await pullData(giteaRepository, options)
   } else {
-    data = checkExportedData(false, 'caches/rcba_0.0.2-0.0.3_cache.json')
+    data = checkExportedData(false, 'caches/gitea_rcba_0.5.0-master_cache.json')
   }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
@@ -78,7 +91,7 @@ it('[Gitea] Should match generated changelog (tags)', async () => {
   if (enablePullData) {
     data = await pullData(giteaRepository, options)
   } else {
-    data = checkExportedData(false, 'caches/rcba_0.0.1-0.0.3_cache.json')
+    data = checkExportedData(false, 'caches/gitea_rcba_0.5.0-master_cache.json')
   }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
@@ -117,7 +130,7 @@ it('[Gitea] Should match generated changelog (refs)', async () => {
   if (enablePullData) {
     data = await pullData(giteaRepository, options)
   } else {
-    data = checkExportedData(false, 'caches/rcba_5ec7a2-fa3788_cache.json')
+    data = checkExportedData(false, 'caches/gitea_rcba_3e49adf-894a64_cache.json')
   }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
@@ -174,7 +187,7 @@ it('[Gitea] Should match generated changelog and replace all occurrences (refs)'
   if (enablePullData) {
     data = await pullData(giteaRepository, options)
   } else {
-    data = checkExportedData(false, 'caches/rcba_5ec7a2-fa3788_cache.json')
+    data = checkExportedData(false, 'caches/gitea_rcba_3e49adf-894a64_cache.json')
   }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
@@ -236,7 +249,7 @@ it('[Gitea] Should match ordered ASC', async () => {
   if (enablePullData) {
     data = await pullData(giteaRepository, options)
   } else {
-    data = checkExportedData(false, 'caches/rcba_0.3.0-0.5.0_cache.json')
+    data = checkExportedData(false, 'caches/gitea_rcba_0.1.0-master_cache.json')
   }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
@@ -293,7 +306,7 @@ it('[Gitea] Should match ordered DESC', async () => {
   if (enablePullData) {
     data = await pullData(giteaRepository, options)
   } else {
-    data = checkExportedData(false, 'caches/rcba_0.3.0-0.5.0_cache.json')
+    data = checkExportedData(false, 'caches/gitea_rcba_0.1.0-master_cache.json')
   }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
   console.log(changeLog)
