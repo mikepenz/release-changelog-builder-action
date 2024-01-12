@@ -710,13 +710,13 @@ For `Fine-grained personal access tokens` this means:
 ## License
 
     Copyright for portions of pr-release-notes are held by Nikolay Blagoev, 2019-2020 as part of project pull-release-notes.
-    All other copyright for project pr-release-notes are held by Mike Penz, 2023.
+    All other copyright for project pr-release-notes are held by Mike Penz, 2024.
 
 ## Fork License
 
 All patches and changes applied to the original source are licensed under the Apache 2.0 license.
 
-    Copyright 2023 Mike Penz
+    Copyright 2024 Mike Penz
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
