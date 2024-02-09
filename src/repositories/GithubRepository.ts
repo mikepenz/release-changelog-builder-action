@@ -100,7 +100,7 @@ export class GithubRepository extends BaseRepository {
       owner,
       repo,
       state: 'closed',
-      sort: 'merged',
+      sort: 'updated',
       per_page: `${Math.min(100, maxPullRequests)}`,
       direction: 'desc'
     })
@@ -291,10 +291,12 @@ export class GithubRepository extends BaseRepository {
 
   private fetchedEnough(pullRequests: PullsListData, fromDate: moment.Moment): boolean {
     for (let i = 0; i < Math.min(pullRequests.length, 3); i++) {
+      // we get PRs paged by updated timestamp, there is a chance that PRs come out of merged order as a result of this
+      // ensure we get enough PRs to cover the expected spectrum.
       const firstPR = pullRequests[i]
-      if (!firstPR.merged_at) {
-        // no merged_at timestamp -> look for the next
-      } else if (fromDate.isAfter(moment(firstPR.merged_at))) {
+      if (!firstPR.updated_at) {
+        // no updated_at timestamp -> look for the next
+      } else if (fromDate.isAfter(moment(firstPR.updated_at))) {
         return true
       } else {
         break // not enough PRs yet, go further
