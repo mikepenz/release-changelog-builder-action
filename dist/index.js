@@ -2145,7 +2145,7 @@ class GithubRepository extends BaseRepository_1.BaseRepository {
                 owner,
                 repo,
                 state: 'closed',
-                sort: 'merged',
+                sort: 'updated',
                 per_page: `${Math.min(100, maxPullRequests)}`,
                 direction: 'desc'
             });
@@ -2379,11 +2379,13 @@ class GithubRepository extends BaseRepository_1.BaseRepository {
     }
     fetchedEnough(pullRequests, fromDate) {
         for (let i = 0; i < Math.min(pullRequests.length, 3); i++) {
+            // we get PRs paged by updated timestamp, there is a chance that PRs come out of merged order as a result of this
+            // ensure we get enough PRs to cover the expected spectrum.
             const firstPR = pullRequests[i];
-            if (!firstPR.merged_at) {
-                // no merged_at timestamp -> look for the next
+            if (!firstPR.updated_at) {
+                // no updated_at timestamp -> look for the next
             }
-            else if (fromDate.isAfter((0, moment_1.default)(firstPR.merged_at))) {
+            else if (fromDate.isAfter((0, moment_1.default)(firstPR.updated_at))) {
                 return true;
             }
             else {
