@@ -211,7 +211,7 @@ export function filterTags(tags: TagInfo[], tagResolver: TagResolver): TagInfo[]
 /**
  * Helper function to transform the tag name given the transformer
  */
-function transformTags(tags: TagInfo[], transformer: RegexTransformer): TagInfo[] {
+export function transformTags(tags: TagInfo[], transformer: RegexTransformer): TagInfo[] {
   return tags.map(function (tag) {
     if (transformer.pattern) {
       const transformedName = tag.name.replace(transformer.pattern, transformer.target)
