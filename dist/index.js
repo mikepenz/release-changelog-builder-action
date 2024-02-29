@@ -1020,7 +1020,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.prepareAndSortTags = exports.filterTags = exports.Tags = void 0;
+exports.prepareAndSortTags = exports.transformTags = exports.filterTags = exports.Tags = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const semver = __importStar(__nccwpck_require__(1383));
@@ -1219,6 +1219,7 @@ function transformTags(tags, transformer) {
         }
     });
 }
+exports.transformTags = transformTags;
 /*
   Sorts an array of tags as shown below:
   
