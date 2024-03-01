@@ -472,12 +472,8 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | pr_template                 | Defines the per pull request template. See [PR Template placeholders](#pr-template-placeholders) for possible values                                                                                                               |
 | empty_template              | Template to pick if no changes are detected. See [Template placeholders](#template-placeholders) for possible values                                                                                                               |
 | label_extractor             | An array of `Extractor` specifications, offering a flexible API to extract additinal labels from a PR (Default: `body`, Default in commit mode: `commit message`).                                                                 |
-| label_extractor.pattern     | A `regex` pattern, extracting values of the change message.                                                                                                                                                                        |
-| label_extractor.target      | The result pattern. The result text will be used as label. If empty, no label is created. (Unused for `match` method)                                                                                                              |
+| label_extractor.<REGEX>     | Please see the documentation related to `Regex Configuration` for more details.                                                                                                                                                    |
 | label_extractor.on_property | The property to retrieve the text from. This is optional. Defaults to: `body`. Alternative values: `title`, `author`, `milestone`.                                                                                                 |
-| label_extractor.method      | The extraction method used. Defaults to: `replace`. Alternative value: `match`. The method specified references the JavaScript String method.                                                                                      |
-| label_extractor.flags       | Defines the regex flags specified for the pattern. Default: `gu`.                                                                                                                                                                  |
-| label_extractor.on_empty    | Defines the placeholder to be filled in, if the regex does not lead to a result.                                                                                                                                                   |
 | duplicate_filter            | Defines the `Extractor` to use for retrieving the identifier for a PR. In case of duplicates will keep the last matching pull request (depends on `sort`). See `label_extractor` for details on `Extractor` properties.            |
 | reference                   | Defines the `Extractor` to use for resolving the "PR-number" for a parent PR. In case of a match, the child PR will not be included in the release notes. See `label_extractor` for details on `Extractor` properties.            |
 | transformers                | An array of `transform` specifications, offering a flexible API to modify the text per pull request. This is applied on the change text created with `pr_template`. `transformers` are executed per change, in the order specified |
@@ -489,11 +485,61 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | exclude_merge_branches      | An array of branches to be ignored from processing as merge commits                                                                                                                                                                |
 | tag_resolver                | Section to provide configuration for the tag resolving logic. Used if no `fromTag` is provided                                                                                                                                     |
 | tag_resolver.method         | Defines the method to use. Current options are: `semver`, `sort`. Default: `semver`                                                                                                                                                |
-| tag_resolver.filter         | Defines a regex which is used to filter out tags not matching.                                                                                                                                                                     |
+| tag_resolver.filter         | Defines a regex object which is used to filter out tags not matching.                                                                                                                                                              |
 | tag_resolver.transformer    | Defines a regex transformer used to optionally transform the tag after the filter was applied. Allows to adjust the format to e.g. semver.                                                                                         |
 | base_branches               | The target branches for the merged PR, ingnores PRs with different target branch. Values can be a `regex`. Default: allow all base branches                                                                                        |
 | trim_values                 | Defines if all values inserted in templates are `trimmed`. Default: false                                                                                                                                                          |
-### Custom placeholders 🧪
+
+### Regex Configuration
+
+Since v5.x or newer, the regex configuration was unified to allow the same functionalities to be used for the various usecases.
+This applies to all configurations outlined in `Configuration Specification` and `Custom placeholders` that allow a regex object. 
+
+| **Input**                   | **Description**                                                                                                                                                                                                                    |
+|-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <parent>.pattern     | The `regex` pattern to use                                                                                                                                                                                                                |
+| <parent>.target      | The result pattern. The result text will be used as label. If empty, no label is created. (Usage depends on the `method` used for the regex)                                                                                              |
+| <parent>.method      | The extraction method used. Defaults to: `replace`. Alternative values: `replaceAll`, `match`. These methods specified references the JavaScript String method. And a special method  `regexr`, that functions similar to the `list` within the regexr tool.                                                       |
+| <parent>.flags       | Defines the regex flags specified for the pattern. Default: `gu`.                                                                                                                                                                         |
+| <parent>.on_empty    | Defines the placeholder to be filled in, if the regex does not lead to a result.                                                                                                                                                          |
+
+Example regex configuration block (Sample extracts a ticket number from the title)
+
+PR title input
+
+```
+[XYZ-1234] This is my PR title
+```
+
+Regex replace pattern
+```
+{
+  "name": "TICKET",
+  "source": "TITLE",
+  "transformer": {
+    "pattern": "\\s*\\[([A-Z].{2,4}-.{2,5})\\][\\S\\s]*",
+    "target": ", [$1](https://corp.ticket-system.com/browse/$1)"
+  }
+}
+```
+
+Regex replace pattern
+```
+{
+  "name": "TICKET",
+  "source": "TITLE",
+  "transformer": {
+    "pattern": "\\[([A-Z]{2,4}-.{2,5})\\]",
+    "method": "regexr",
+    "target": '- [$1](https://corp.ticket-system.com/browse/$1)'
+  }
+}
+```
+
+> [!WARNING]  
+> Usages of `\` in the json have to be escaped. E.g. `\` becomes `\\`.
+
+### Custom placeholders
 
 Starting with v3.2.0 the action provides a feature of defining `CUSTOM_PLACEHOLDERS`. 
 
@@ -523,12 +569,12 @@ Custom placeholders can be defined via the `configuration.json` as `custom_place
 
 This example will look for JIRA tickets in the EPIC project, and extract all of these tickets. The exciting part for that case is, that the ticket is PR bound, but can be used in the global TEMPLATE, but equally also in the PR template. This is unique for CUSTOM PLACEHOLDERS as standard palceholders do not offer this functionality. 
 
-| **Input**                       | **Description**                                                                                                              |
-|---------------------------------|------------------------------------------------------------------------------------------------------------------------------|
-| custom_placeholders             | An array of `Placeholder` specifications, offering a flexible API to extract custom placeholders from existing placeholders. |
-| custom_placeholders.name        | The name of the custom placeholder. Will be used within the template.                                                        |
-| custom_placeholders.source      | The source PLACEHOLDER, requires to be one of the existing Template or PR Template placeholders.                             |
-| custom_placeholders.transformer | The transformer specification used to extract the value from the original source PLACEHOLDER.                                |
+| **Input**                               | **Description**                                                                                                              |
+|-----------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
+| custom_placeholders                     | An array of `Placeholder` specifications, offering a flexible API to extract custom placeholders from existing placeholders. |
+| custom_placeholders.name                | The name of the custom placeholder. Will be used within the template.                                                        |
+| custom_placeholders.source              | The source PLACEHOLDER, requires to be one of the existing Template or PR Template placeholders.                             |
+| custom_placeholders.transformer.<REGEX> | The transformer specification used to extract the value from the original source PLACEHOLDER.                                |
 
 A placeholder with the name as `CUSTOM_PLACEHOLDER` can be used as `#{{CUSTOM_PLACEHOLDER}}` in the target template. 
 By default the same restriction applies as for PR vs template placeholder. E.g. a global placeholder can only be used in the global template (and not in the PR template).

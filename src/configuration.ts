@@ -1,4 +1,4 @@
-import {Extractor, PullConfiguration, Regex, Rule, Sort, Transformer} from './pr-collector/types'
+import {Extractor, PullConfiguration, Regex, Rule, Sort} from './pr-collector/types'
 
 export interface Configuration extends PullConfiguration {
   max_tags_to_fetch: number
@@ -14,7 +14,7 @@ export interface Configuration extends PullConfiguration {
   label_extractor: Extractor[]
   duplicate_filter?: Extractor // extract an identifier from a PR used to detect duplicates, will keep the last match (depends on `sort`)
   reference?: Extractor // extracts a reference from a PR, used to establish parent child relations. This will remove the child from the main PR list.
-  transformers: Transformer[]
+  transformers: Regex[]
   tag_resolver: TagResolver
   base_branches: string[]
   custom_placeholders?: Placeholder[]
@@ -51,13 +51,13 @@ export type Property =
 export interface TagResolver {
   method: string // semver, sort
   filter?: Regex // the regex to filter the tags, prior to sorting
-  transformer?: Transformer // transforms the tag name using the regex, run after the filter
+  transformer?: Regex // transforms the tag name using the regex, run after the filter
 }
 
 export interface Placeholder {
   name: string // the name of the new placeholder
   source: string // the src placeholder which will be used to apply the transformer on
-  transformer: Transformer // the transformer to use to transform the original placeholder into the custom placheolder
+  transformer: Regex // the transformer to use to transform the original placeholder into the custom placheolder
 }
 
 export const DefaultConfiguration: Configuration = {
