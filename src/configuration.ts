@@ -32,6 +32,7 @@ export interface Category {
   empty_content?: string // if the category has no matching PRs, this content will be used. If not set, the category will be skipped in the changelog.
   categories?: Category[] // allows for nested categories, items matched for a child category won't show up in the parent
   consume?: boolean // defines if the matched PR will be consumed by this category. Consumed PRs won't show up in any category *after*
+  entries?: string[] // array of single changelog entries, used to construc the changelog. (this is filled during the build)
 }
 
 /**

@@ -135,21 +135,24 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
   core.info(`✒️ Wrote messages for ${prs.length} pull requests`)
 
   // bring PRs into the order of categories
-  const categorized = new Map<Category, string[]>()
   const categories = config.categories
   const ignoredLabels = config.ignore_labels
 
-  for (const category of categories) {
-    categorized.set(category, [])
-  }
-
+  const flatCategories = flatten(config.categories)
   const categorizedPrs: string[] = []
   const ignoredPrs: string[] = []
   const openPrs: string[] = []
   const uncategorizedPrs: string[] = []
 
+  // set-up the category object
+  for (const category of flatCategories) {
+    if (!category.entries) {
+      category.entries = []
+    }
+  }
+
   // bring elements in order
-  for (const [pr, body] of transformedMap) {
+  prLoop: for (const [pr, body] of transformedMap) {
     if (
       haveCommonElementsArr(
         ignoredLabels.map(lbl => lbl.toLocaleLowerCase('en')),
@@ -165,17 +168,18 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
     }
 
     let matchedOnce = false // in case we matched once at least, the PR can't be uncategorized
-    for (const [category, pullRequests] of categorized) {
-      const matched = categorizePr(category, pr)
-      if (matched) {
-        pullRequests.push(body) // if matched add the PR to the list
+    for (const category of categories) {
+      const [matched, consumed] = recursiveCategorizePr(category, pr, body)
+      if (consumed) {
+        continue prLoop
       }
       matchedOnce = matchedOnce || matched
     }
 
     if (!matchedOnce) {
       // we allow to have pull requests included in an "uncategorized" category
-      for (const [category, pullRequests] of categorized) {
+      for (const category of flatCategories) {
+        const pullRequests = category.entries || []
         if ((category.labels === undefined || category.labels.length === 0) && category.rules === undefined) {
           // check if any exclude label matches for the "uncategorized" category
           if (category.exclude_labels !== undefined) {
@@ -209,15 +213,16 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
   core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`)
 
   // serialize and provide the categorized content as json
-  const transformedCategorized = Array.from(categorized).reduce(
-    (obj, [key, value]) => Object.assign(obj, {[key.key || key.title]: value}),
-    {}
-  )
+  const transformedCategorized = {}
+  for (const category of flatCategories) {
+    Object.assign(transformedCategorized, {[category.key || category.title]: category.entries})
+  }
   core.setOutput('categorized', JSON.stringify(transformedCategorized))
 
   // construct final changelog
   let changelog = ''
-  for (const [category, pullRequests] of categorized) {
+  for (const category of flatCategories) {
+    const pullRequests = category.entries || []
     changelog = attachCategoryChangelog(changelog, category, pullRequests)
   }
   core.info(`✒️ Wrote ${categorizedPrs.length} categorized pull requests down`)
@@ -292,6 +297,33 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
   core.info(`ℹ️ Filled template`)
   core.endGroup()
   return transformedChangelog
+}
+
+function recursiveCategorizePr(category: Category, pr: PullRequestInfo, body: string): boolean[] {
+  let matched = false
+  let consumed = false
+  if (category.categories) {
+    for (const childCategory of category.categories) {
+      const pullRequests = childCategory.entries || []
+      matched = categorizePr(childCategory, pr)
+      if (matched) {
+        pullRequests.push(body) // if matched add the PR to the list
+      }
+      if (childCategory.consume) {
+        consumed = true
+        continue
+      }
+    }
+  }
+
+  if (!consumed) {
+    const pullRequests = category.entries || []
+    matched = categorizePr(category, pr)
+    if (matched) {
+      pullRequests.push(body) // if matched add the PR to the list
+    }
+  }
+  return [matched, consumed]
 }
 
 function categorizePr(category: Category, pr: PullRequestInfo): boolean {
@@ -635,4 +667,13 @@ function extractValuesFromString(value: string, extractor: RegexTransformer): st
   } else {
     return null
   }
+}
+
+function flatten(categories?: Category[]): Category[] {
+  if (!categories) {
+    return []
+  }
+  return categories.reduce(function (r: Category[], i) {
+    return r.concat([i]).concat(flatten(i.categories))
+  }, [])
 }
