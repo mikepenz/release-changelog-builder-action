@@ -922,27 +922,19 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.buildRegex = exports.validateTransformer = void 0;
+exports.transformStringToValue = exports.transformStringToOptionalValue = exports.transformStringToValues = exports.applyCaptureGroup = exports.buildRegex = exports.validateRegex = void 0;
 const core = __importStar(__nccwpck_require__(2186));
-function validateTransformer(transformer) {
-    if (transformer === undefined) {
+function validateRegex(regex) {
+    if (regex === undefined) {
         return null;
     }
     try {
-        let target = undefined;
-        if (transformer.hasOwnProperty('target')) {
-            target = transformer.target;
-        }
+        const target = regex.target;
+        const method = regex.method;
+        const onEmpty = regex.on_empty;
         let onProperty = undefined;
-        let method = undefined;
-        let onEmpty = undefined;
-        if (transformer.hasOwnProperty('method')) {
-            method = transformer.method;
-            onEmpty = transformer.on_empty;
-            onProperty = transformer.on_property;
-        }
-        else if (transformer.hasOwnProperty('on_property')) {
-            onProperty = transformer.on_property;
+        if (regex.hasOwnProperty('on_property')) {
+            onProperty = regex.on_property;
         }
         // legacy handling, transform single value input to array
         if (!Array.isArray(onProperty)) {
@@ -950,14 +942,14 @@ function validateTransformer(transformer) {
                 onProperty = [onProperty];
             }
         }
-        return buildRegex(transformer, target, onProperty, method, onEmpty);
+        return buildRegex(regex, target, onProperty, method, onEmpty);
     }
     catch (e) {
-        core.warning(`⚠️ Failed to validate transformer: ${transformer.pattern}`);
+        core.warning(`⚠️ Failed to validate transformer: ${regex.pattern}`);
         return null;
     }
 }
-exports.validateTransformer = validateTransformer;
+exports.validateRegex = validateRegex;
 /**
  * Constructs the RegExp, providing the configured Regex and additional values
  */
@@ -978,6 +970,100 @@ function buildRegex(regex, target, onProperty, method, onEmpty) {
     }
 }
 exports.buildRegex = buildRegex;
+// eslint-disable-next-line no-undef
+function applyCaptureGroup(value, target) {
+    const groups = value['groups'];
+    if (groups) {
+        const matched = groups[target];
+        if (matched) {
+            // if we had a perfect group match return that.
+            return matched;
+        }
+    }
+    if (target.startsWith('$') && !target.startsWith('$$')) {
+        // if we start with $ offer support for matching index based capture groups
+        const index = Number(target.substring(1));
+        if (!isNaN(index) && index < value.length) {
+            return value[index];
+        }
+    }
+    return null;
+}
+exports.applyCaptureGroup = applyCaptureGroup;
+function transformStringToValues(value, extractor) {
+    if (extractor.pattern == null) {
+        return null;
+    }
+    if (extractor.method === 'exec' || extractor.method === 'execAll') {
+        // eslint-disable-next-line no-undef
+        let matches;
+        const result = new Set();
+        // match regex to all occurrences in the string if we run `execAll`
+        // otherwise just do the first match with exec
+        do {
+            matches = extractor.pattern.exec(value);
+            if (matches) {
+                if (extractor.target) {
+                    const matchedGroup = applyCaptureGroup(matches, extractor.target);
+                    if (matchedGroup) {
+                        result.add(matchedGroup);
+                    }
+                }
+                else {
+                    for (const match of matches) {
+                        result.add(match);
+                    }
+                }
+            }
+        } while (matches && extractor.method === 'execAll');
+        if (result.size > 0) {
+            return [...result];
+        }
+    }
+    else if (extractor.method === 'match') {
+        const matches = value.match(extractor.pattern);
+        if (matches !== null && matches.length > 0) {
+            if (extractor.target) {
+                const matchedGroup = applyCaptureGroup(matches, extractor.target);
+                if (matchedGroup) {
+                    return [matchedGroup];
+                }
+            }
+            return matches.map(match => match || '');
+        }
+    }
+    else if (extractor.method === 'replaceAll') {
+        const match = value.replaceAll(extractor.pattern, extractor.target);
+        if (match !== '') {
+            return [match];
+        }
+    }
+    else {
+        const match = value.replace(extractor.pattern, extractor.target);
+        if (match !== '') {
+            return [match];
+        }
+    }
+    if (extractor.onEmpty !== undefined) {
+        return [extractor.onEmpty];
+    }
+    return null;
+}
+exports.transformStringToValues = transformStringToValues;
+function transformStringToOptionalValue(value, extractor) {
+    const result = transformStringToValues(value, extractor);
+    if (result != null && result.length > 0) {
+        return result[0];
+    }
+    else {
+        return null;
+    }
+}
+exports.transformStringToOptionalValue = transformStringToOptionalValue;
+function transformStringToValue(value, extractor) {
+    return transformStringToOptionalValue(value, extractor) || '';
+}
+exports.transformStringToValue = transformStringToValue;
 
 
 /***/ }),
@@ -1084,10 +1170,11 @@ class Tags {
         return __awaiter(this, void 0, void 0, function* () {
             let tags = [];
             if (!toTag || !fromTag) {
+                const filterRegex = (0, regexUtils_1.validateRegex)(tagResolver.filter);
                 // filter out tags not matching the specified filter
                 const filteredTags = filterTags(
                 // retrieve the tags from the API
-                yield this.getTags(owner, repo, maxTagsToFetch), tagResolver);
+                yield this.getTags(owner, repo, maxTagsToFetch), filterRegex);
                 // check if a transformer, legacy handling, transform single value input to array
                 let tagTransfomers = undefined;
                 if (tagResolver.transformer !== undefined) {
@@ -1102,7 +1189,7 @@ class Tags {
                 let transformedTags = filteredTags;
                 if (tagTransfomers !== undefined && tagTransfomers.length > 0) {
                     for (const transformer of tagTransfomers) {
-                        const tagTransformer = (0, regexUtils_1.validateTransformer)(transformer);
+                        const tagTransformer = (0, regexUtils_1.validateRegex)(transformer);
                         if (tagTransformer != null) {
                             core.debug(`ℹ️ Using configured tagTransformer (${transformer.pattern})`);
                             transformedTags = transformTags(transformedTags, tagTransformer);
@@ -1186,12 +1273,9 @@ exports.Tags = Tags;
  * Uses the provided filter (if available) to filter out any tags not currently relevant.
  * https://github.com/mikepenz/release-changelog-builder-action/issues/566
  */
-function filterTags(tags, tagResolver) {
-    var _a;
-    const filter = tagResolver.filter;
-    if (filter !== undefined) {
-        const regex = new RegExp(filter.pattern.replace('\\\\', '\\'), (_a = filter.flags) !== null && _a !== void 0 ? _a : 'gu');
-        const filteredTags = tags.filter(tag => tag.name.match(regex) !== null);
+function filterTags(tags, filterRegex) {
+    if (filterRegex !== null) {
+        const filteredTags = tags.filter(tag => (0, regexUtils_1.transformStringToOptionalValue)(tag.name, filterRegex) !== null);
         core.debug(`ℹ️ Filtered tags count: ${filteredTags.length}, original count: ${tags.length}`);
         return filteredTags;
     }
@@ -1206,7 +1290,7 @@ exports.filterTags = filterTags;
 function transformTags(tags, transformer) {
     return tags.map(function (tag) {
         if (transformer.pattern) {
-            const transformedName = tag.name.replace(transformer.pattern, transformer.target);
+            const transformedName = (0, regexUtils_1.transformStringToValue)(tag.name, transformer);
             core.debug(`ℹ️ Transformed ${tag.name} to ${transformedName}`);
             return {
                 tmp: tag.name, // remember the original name
@@ -1414,7 +1498,7 @@ const regexUtils_1 = __nccwpck_require__(5351);
  * Checks if any of the rules match the given PR
  */
 function matchesRules(rules, pr, exhaustive) {
-    const transformers = rules.map(rule => (0, regexUtils_1.validateTransformer)(rule)).filter(t => t !== null);
+    const transformers = rules.map(rule => (0, regexUtils_1.validateRegex)(rule)).filter(t => t !== null);
     if (exhaustive) {
         return transformers.every(transformer => {
             return matches(pr, transformer, 'rule');
@@ -2453,7 +2537,7 @@ function buildChangelog(diffInfo, origPrs, options) {
     core.info(`ℹ️ Sorted all pull requests ascending: ${JSON.stringify(sort)}`);
     // establish parent child PR relations
     if (config.reference !== undefined) {
-        const reference = (0, regexUtils_1.validateTransformer)(config.reference);
+        const reference = (0, regexUtils_1.validateRegex)(config.reference);
         if (reference !== null) {
             core.info(`ℹ️ Identifying PR references using \`reference\``);
             const mapped = new Map();
@@ -2491,7 +2575,7 @@ function buildChangelog(diffInfo, origPrs, options) {
     }
     // drop duplicate pull requests
     if (config.duplicate_filter !== undefined) {
-        const extractor = (0, regexUtils_1.validateTransformer)(config.duplicate_filter);
+        const extractor = (0, regexUtils_1.validateRegex)(config.duplicate_filter);
         if (extractor !== null) {
             core.info(`ℹ️ Remove duplicated pull requests using \`duplicate_filter\``);
             const deduplicatedMap = new Map();
@@ -2804,17 +2888,18 @@ function handlePlaceholder(template, key, value, placeholders /* placeholders to
     const phs = placeholders.get(key);
     if (phs) {
         for (const placeholder of phs) {
-            const transformer = (0, regexUtils_1.validateTransformer)(placeholder.transformer);
+            const transformer = (0, regexUtils_1.validateRegex)(placeholder.transformer);
             if (transformer === null || transformer === void 0 ? void 0 : transformer.pattern) {
-                const extractedValue = value.replace(transformer.pattern, transformer.target);
+                const extractedValue = (0, regexUtils_1.transformStringToOptionalValue)(value, transformer);
                 // note: `.replace` will return the full string again if there was no match
-                if (extractedValue && (extractedValue !== value || (extractedValue === value && value.match(transformer.pattern)))) {
+                // note: This is mostly backwards compatiblity
+                if (extractedValue && ((transformer.method && transformer.method !== 'replace') || extractedValue !== value)) {
                     if (placeholderPrMap) {
                         (0, utils_1.createOrSet)(placeholderPrMap, placeholder.name, extractedValue);
                     }
                     transformed = transformed.replaceAll(`#{{${placeholder.name}}}`, configuration.trim_values ? extractedValue.trim() : extractedValue);
                     if (core.isDebug()) {
-                        core.debug(`    Custom Placeholder successfully matched data - ${extractValues} (${placeholder.name})`);
+                        core.debug(`    Custom Placeholder successfully matched data - ${extractedValue} (${placeholder.name})`);
                     }
                 }
                 else if (core.isDebug() && extractedValue === value) {
@@ -2899,7 +2984,7 @@ function validateTransformers(specifiedTransformers) {
     const transformers = specifiedTransformers;
     return transformers
         .map(transformer => {
-        return (0, regexUtils_1.validateTransformer)(transformer);
+        return (0, regexUtils_1.validateRegex)(transformer);
     })
         .filter(transformer => (transformer === null || transformer === void 0 ? void 0 : transformer.pattern) != null)
         .map(transformer => {
@@ -2932,22 +3017,13 @@ function extractValuesFromString(value, extractor) {
     if (extractor.pattern == null) {
         return null;
     }
-    if (extractor.method === 'match') {
-        const lables = value.match(extractor.pattern);
-        if (lables !== null && lables.length > 0) {
-            return lables.map(label => (label === null || label === void 0 ? void 0 : label.toLocaleLowerCase('en')) || '');
-        }
+    const transformed = (0, regexUtils_1.transformStringToValues)(value, extractor);
+    if (transformed) {
+        return transformed.map(val => (val === null || val === void 0 ? void 0 : val.toLocaleLowerCase('en')) || '');
     }
     else {
-        const label = value.replace(extractor.pattern, extractor.target);
-        if (label !== '') {
-            return [label.toLocaleLowerCase('en')];
-        }
+        return null;
     }
-    if (extractor.onEmpty !== undefined) {
-        return [extractor.onEmpty.toLocaleLowerCase('en')];
-    }
-    return null;
 }
 
 
