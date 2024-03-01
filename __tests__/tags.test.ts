@@ -1,8 +1,10 @@
 import { TagResolver } from '../src/configuration'
 import { validateRegex } from '../src/pr-collector/regexUtils'
 import {filterTags, prepareAndSortTags, TagInfo, transformTags} from '../src/pr-collector/tags'
+import { clear } from '../src/transform'
 
 jest.setTimeout(180000)
+clear()
 
 it('Should order tags correctly using semver', async () => {
   const tags: TagInfo[] = [

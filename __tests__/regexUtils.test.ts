@@ -1,7 +1,9 @@
 import { transformStringToValue, validateRegex } from '../src/pr-collector/regexUtils'
 import { Regex } from '../src/pr-collector/types'
+import { clear } from '../src/transform'
 
 jest.setTimeout(180000)
+clear()
 
 it('Replace into target', async () => {
   const regex: Regex = {

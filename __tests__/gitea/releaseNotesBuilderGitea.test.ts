@@ -1,8 +1,10 @@
 import {mergeConfiguration, resolveConfiguration} from '../../src/utils'
 import {ReleaseNotesBuilder} from '../../src/releaseNotesBuilder'
 import {GiteaRepository} from '../../src/repositories/GiteaRepository'
+import { clear } from '../../src/transform'
 
 jest.setTimeout(180000)
+clear()
 
 /**
  * Before starting testing, you should manually clone the repository

@@ -16,6 +16,11 @@ import {ReleaseNotesOptions} from './releaseNotesBuilder'
 import {matchesRules} from './regexUtils'
 
 const EMPTY_MAP = new Map<string, string>()
+let CLEAR = false
+
+export function clear(): void {
+  CLEAR = true
+}
 
 export interface PullRequestData extends PullRequestInfo {
   childPrs?: PullRequestInfo[]
@@ -146,7 +151,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
 
   // set-up the category object
   for (const category of flatCategories) {
-    if (!category.entries) {
+    if (CLEAR || !category.entries) {
       category.entries = []
     }
   }

@@ -1,8 +1,10 @@
 import {mergeConfiguration, resolveConfiguration} from '../src/utils'
 import {ReleaseNotesBuilder} from '../src/releaseNotesBuilder'
 import {GithubRepository} from '../src/repositories/GithubRepository'
+import { clear } from '../src/transform'
 
 jest.setTimeout(180000)
+clear()
 
 const token = process.env.GITHUB_TOKEN || ''
 const githubRepository = new GithubRepository(token, undefined, '.')
