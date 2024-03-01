@@ -1,4 +1,5 @@
-import {filterTags, prepareAndSortTags, TagInfo} from '../src/pr-collector/tags'
+import { validateTransformer } from '../src/pr-collector/regexUtils'
+import {filterTags, prepareAndSortTags, TagInfo, transformTags} from '../src/pr-collector/tags'
 
 jest.setTimeout(180000)
 
@@ -113,4 +114,68 @@ it('Should filter tags correctly using the regex', async () => {
     .join(',')
 
   expect(filtered).toStrictEqual(`api-0.0.1,api-0.0.1-rc01,api-10.1.0-2`)
+})
+
+it('Should filter tags correctly using the regex (inverse)', async () => {
+  const tags: TagInfo[] = [
+    {name: 'api-0.0.1', commit: ''},
+    {name: 'api-0.0.1-rc01', commit: ''},
+    {name: 'config-0.1.0', commit: ''},
+    {name: '0.1.0-b01', commit: ''},
+    {name: '1.0.0', commit: ''},
+    {name: '1.0.0-a01', commit: ''},
+    {name: '2.0.0', commit: ''},
+    {name: 'ap-10.0.0', commit: ''},
+    {name: '10.1.0', commit: ''},
+    {name: 'api-10.1.0-2', commit: ''},
+    {name: '20.0.2', commit: ''}
+  ]
+
+  const tagResolver = {
+    method: 'non-existing-method',
+    filter: {
+      pattern: '^(?!\\w+-)(.+)',
+      flags: 'gu'
+    }
+  }
+  const filtered = filterTags(tags, tagResolver)
+    .map(function (tag) {
+      return tag.name
+    })
+    .join(',')
+
+  expect(filtered).toStrictEqual(`0.1.0-b01,1.0.0,1.0.0-a01,2.0.0,10.1.0,20.0.2`)
+})
+
+
+it('Should transform tags correctly using the regex', async () => {
+  const tags: TagInfo[] = [
+    {name: 'api-0.0.1', commit: ''},
+    {name: 'api-0.0.1-rc01', commit: ''},
+    {name: 'config-0.1.0', commit: ''},
+    {name: '0.1.0-b01', commit: ''},
+    {name: '2.0.0', commit: ''},
+    {name: '10.1.0', commit: ''},
+    {name: 'api-10.1.0-2', commit: ''},
+    {name: '20.0.2', commit: ''}
+  ]
+
+  const tagResolver = {
+    method: 'non-existing-method',
+    transformer: {
+      pattern: '(api\-)?(.+)',
+      target: "$2"
+    }
+  }
+
+  const transformer = validateTransformer(tagResolver.transformer)
+  if(transformer != null) {
+    const transformed = transformTags(tags, transformer)
+      .map(function (tag) {
+        return tag.name
+      })
+      .join(',')
+
+    expect(transformed).toStrictEqual(`0.0.1,0.0.1-rc01,config-0.1.0,0.1.0-b01,2.0.0,10.1.0,10.1.0-2,20.0.2`)
+  }
 })
