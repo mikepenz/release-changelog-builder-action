@@ -922,7 +922,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.transformStringToValue = exports.transformStringToOptionalValue = exports.transformStringToValues = exports.applyCaptureGroup = exports.buildRegex = exports.validateRegex = void 0;
+exports.transformStringToValue = exports.transformStringToOptionalValue = exports.transformStringToValues = exports.buildRegex = exports.validateRegex = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 function validateRegex(regex) {
     if (regex === undefined) {
@@ -970,65 +970,19 @@ function buildRegex(regex, target, onProperty, method, onEmpty) {
     }
 }
 exports.buildRegex = buildRegex;
-// eslint-disable-next-line no-undef
-function applyCaptureGroup(value, target) {
-    const groups = value['groups'];
-    if (groups) {
-        const matched = groups[target];
-        if (matched) {
-            // if we had a perfect group match return that.
-            return matched;
-        }
-    }
-    if (target.startsWith('$') && !target.startsWith('$$')) {
-        // if we start with $ offer support for matching index based capture groups
-        const index = Number(target.substring(1));
-        if (!isNaN(index) && index < value.length) {
-            return value[index];
-        }
-    }
-    return null;
-}
-exports.applyCaptureGroup = applyCaptureGroup;
 function transformStringToValues(value, extractor) {
     if (extractor.pattern == null) {
         return null;
     }
-    if (extractor.method === 'exec' || extractor.method === 'execAll') {
-        // eslint-disable-next-line no-undef
-        let matches;
-        const result = new Set();
-        // match regex to all occurrences in the string if we run `execAll`
-        // otherwise just do the first match with exec
-        do {
-            matches = extractor.pattern.exec(value);
-            if (matches) {
-                if (extractor.target) {
-                    const matchedGroup = applyCaptureGroup(matches, extractor.target);
-                    if (matchedGroup) {
-                        result.add(matchedGroup);
-                    }
-                }
-                else {
-                    for (const match of matches) {
-                        result.add(match);
-                    }
-                }
-            }
-        } while (matches && extractor.method === 'execAll');
-        if (result.size > 0) {
-            return [...result];
+    if (extractor.method === 'regexr') {
+        const matches = transformRegexr(extractor.pattern, value, extractor.target);
+        if (matches !== null && matches.size > 0) {
+            return [...matches];
         }
     }
     else if (extractor.method === 'match') {
         const matches = value.match(extractor.pattern);
         if (matches !== null && matches.length > 0) {
-            if (extractor.target) {
-                const matchedGroup = applyCaptureGroup(matches, extractor.target);
-                if (matchedGroup) {
-                    return [matchedGroup];
-                }
-            }
             return matches.map(match => match || '');
         }
     }
@@ -1064,6 +1018,38 @@ function transformStringToValue(value, extractor) {
     return transformStringToOptionalValue(value, extractor) || '';
 }
 exports.transformStringToValue = transformStringToValue;
+function transformRegexr(regex, source, target) {
+    /**
+     * Util funtion extracted from regexr and is licensed under:
+     *
+     * RegExr: Learn, Build, & Test RegEx
+     * Copyright (C) 2017  gskinner.com, inc.
+     * https://github.com/gskinner/regexr/blob/master/dev/src/helpers/BrowserSolver.js#L111-L136
+     */
+    let repl;
+    let ref;
+    if (target.search(/\$[&1-9`']/) === -1) {
+        target = `$&${target}`;
+    }
+    const firstOnly = true; // for now we don't support multi matches for PRs, future improvement
+    const adaptedRegex = new RegExp(regex.source, regex.flags.replace('g', ''));
+    const result = new Set();
+    do {
+        ref = source.replace(adaptedRegex, '\b'); // bell char - just a placeholder to find
+        const index = ref.indexOf('\b');
+        const empty = ref.length > source.length;
+        if (index === -1) {
+            break;
+        }
+        repl = source.replace(adaptedRegex, target);
+        result.add(repl.substr(index, repl.length - ref.length + 1));
+        source = ref.substr(index + (empty ? 2 : 1));
+        if (firstOnly) {
+            break;
+        }
+    } while (source.length);
+    return result;
+}
 
 
 /***/ }),

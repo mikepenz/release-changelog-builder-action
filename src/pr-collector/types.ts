@@ -43,7 +43,7 @@ export interface Regex {
   pattern: string // the regex pattern to match
   flags?: string // the regex flag to use for RegExp
   target?: string // the target string to transform the source string using the regex to
-  method?: 'replace' | 'replaceAll' | 'match' | 'exec' | 'execAll' | undefined // the method to use to extract the value, `match` will not use the `target` property
+  method?: 'replace' | 'replaceAll' | 'match' | 'regexr' | undefined // the method to use to extract the value, `match` will not use the `target` property
   on_empty?: string | undefined // in case the regex results in an empty string, this value is gonna be used instead (only for label_extractor currently)
 }
 
@@ -55,6 +55,6 @@ export interface RegexTransformer {
   pattern: RegExp | null
   target: string
   onProperty?: Property[]
-  method?: 'replace' | 'replaceAll' | 'match' | 'exec' | 'execAll'
+  method?: 'replace' | 'replaceAll' | 'match' | 'regexr'
   onEmpty?: string
 }

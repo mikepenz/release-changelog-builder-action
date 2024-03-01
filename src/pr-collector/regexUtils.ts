@@ -34,7 +34,7 @@ export function buildRegex(
   regex: Regex,
   target: string | undefined,
   onProperty?: Property[] | undefined,
-  method?: 'replace' | 'replaceAll' | 'match' | 'exec' | 'execAll' | undefined,
+  method?: 'replace' | 'replaceAll' | 'match' | 'regexr' | undefined,
   onEmpty?: string | undefined
 ): RegexTransformer | null {
   try {
@@ -51,66 +51,19 @@ export function buildRegex(
   }
 }
 
-// eslint-disable-next-line no-undef
-export function applyCaptureGroup(value: RegExpMatchArray, target: string): string | null {
-  const groups = value['groups']
-  if (groups) {
-    const matched = groups[target]
-    if (matched) {
-      // if we had a perfect group match return that.
-      return matched
-    }
-  }
-
-  if (target.startsWith('$') && !target.startsWith('$$')) {
-    // if we start with $ offer support for matching index based capture groups
-    const index = Number(target.substring(1))
-    if (!isNaN(index) && index < value.length) {
-      return value[index]
-    }
-  }
-
-  return null
-}
-
 export function transformStringToValues(value: string, extractor: RegexTransformer): string[] | null {
   if (extractor.pattern == null) {
     return null
   }
 
-  if (extractor.method === 'exec' || extractor.method === 'execAll') {
-    // eslint-disable-next-line no-undef
-    let matches: RegExpMatchArray | null
-    const result: Set<string> = new Set()
-    // match regex to all occurrences in the string if we run `execAll`
-    // otherwise just do the first match with exec
-    do {
-      matches = extractor.pattern.exec(value)
-      if (matches) {
-        if (extractor.target) {
-          const matchedGroup = applyCaptureGroup(matches, extractor.target)
-          if (matchedGroup) {
-            result.add(matchedGroup)
-          }
-        } else {
-          for (const match of matches) {
-            result.add(match)
-          }
-        }
-      }
-    } while (matches && extractor.method === 'execAll')
-    if (result.size > 0) {
-      return [...result]
+  if (extractor.method === 'regexr') {
+    const matches = transformRegexr(extractor.pattern, value, extractor.target)
+    if (matches !== null && matches.size > 0) {
+      return [...matches]
     }
   } else if (extractor.method === 'match') {
     const matches = value.match(extractor.pattern)
     if (matches !== null && matches.length > 0) {
-      if (extractor.target) {
-        const matchedGroup = applyCaptureGroup(matches, extractor.target)
-        if (matchedGroup) {
-          return [matchedGroup]
-        }
-      }
       return matches.map(match => match || '')
     }
   } else if (extractor.method === 'replaceAll') {
@@ -141,4 +94,39 @@ export function transformStringToOptionalValue(value: string, extractor: RegexTr
 
 export function transformStringToValue(value: string, extractor: RegexTransformer): string {
   return transformStringToOptionalValue(value, extractor) || ''
+}
+
+function transformRegexr(regex: RegExp, source: string, target: string): Set<string> | null {
+  /**
+   * Util funtion extracted from regexr and is licensed under:
+   *
+   * RegExr: Learn, Build, & Test RegEx
+   * Copyright (C) 2017  gskinner.com, inc.
+   * https://github.com/gskinner/regexr/blob/master/dev/src/helpers/BrowserSolver.js#L111-L136
+   */
+
+  let repl
+  let ref
+  if (target.search(/\$[&1-9`']/) === -1) {
+    target = `$&${target}`
+  }
+
+  const firstOnly = true // for now we don't support multi matches for PRs, future improvement
+  const adaptedRegex = new RegExp(regex.source, regex.flags.replace('g', ''))
+  const result = new Set<string>()
+  do {
+    ref = source.replace(adaptedRegex, '\b') // bell char - just a placeholder to find
+    const index = ref.indexOf('\b')
+    const empty = ref.length > source.length
+    if (index === -1) {
+      break
+    }
+    repl = source.replace(adaptedRegex, target)
+    result.add(repl.substr(index, repl.length - ref.length + 1))
+    source = ref.substr(index + (empty ? 2 : 1))
+    if (firstOnly) {
+      break
+    }
+  } while (source.length)
+  return result
 }
