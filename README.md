@@ -518,7 +518,7 @@ Regex replace pattern
   "source": "TITLE",
   "transformer": {
     "pattern": "\\s*\\[([A-Z].{2,4}-.{2,5})\\][\\S\\s]*",
-    "target": ", [$1](https://corp.ticket-system.com/browse/$1)"
+    "target": "- [$1](https://corp.ticket-system.com/browse/$1)"
   }
 }
 ```

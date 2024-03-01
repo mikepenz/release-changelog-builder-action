@@ -2500,13 +2500,18 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.replaceEmptyTemplate = exports.buildChangelog = void 0;
+exports.replaceEmptyTemplate = exports.buildChangelog = exports.clear = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const utils_1 = __nccwpck_require__(918);
 const pullRequests_1 = __nccwpck_require__(4012);
 const regexUtils_1 = __nccwpck_require__(5351);
 const regexUtils_2 = __nccwpck_require__(2364);
 const EMPTY_MAP = new Map();
+let CLEAR = false;
+function clear() {
+    CLEAR = true;
+}
+exports.clear = clear;
 function buildChangelog(diffInfo, origPrs, options) {
     core.startGroup('📦 Build changelog');
     let prs = origPrs;
@@ -2616,18 +2621,21 @@ function buildChangelog(diffInfo, origPrs, options) {
     core.info(`ℹ️ Used ${validatedTransformers.length} transformers to adjust message`);
     core.info(`✒️ Wrote messages for ${prs.length} pull requests`);
     // bring PRs into the order of categories
-    const categorized = new Map();
     const categories = config.categories;
     const ignoredLabels = config.ignore_labels;
-    for (const category of categories) {
-        categorized.set(category, []);
-    }
+    const flatCategories = flatten(config.categories);
     const categorizedPrs = [];
     const ignoredPrs = [];
     const openPrs = [];
     const uncategorizedPrs = [];
+    // set-up the category object
+    for (const category of flatCategories) {
+        if (CLEAR || !category.entries) {
+            category.entries = [];
+        }
+    }
     // bring elements in order
-    for (const [pr, body] of transformedMap) {
+    prLoop: for (const [pr, body] of transformedMap) {
         if ((0, utils_1.haveCommonElementsArr)(ignoredLabels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
             ignoredPrs.push(body);
             continue;
@@ -2636,55 +2644,17 @@ function buildChangelog(diffInfo, origPrs, options) {
             openPrs.push(body);
         }
         let matchedOnce = false; // in case we matched once at least, the PR can't be uncategorized
-        for (const [category, pullRequests] of categorized) {
-            let matched = false; // check if we matched within the given category
-            // check if any exclude label matches
-            if (category.exclude_labels !== undefined) {
-                if ((0, utils_1.haveCommonElementsArr)(category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
-                    if (core.isDebug()) {
-                        const excludeLabels = JSON.stringify(category.exclude_labels);
-                        core.debug(`    PR ${pr.number} with labels: ${pr.labels} excluded from category via exclude label: ${excludeLabels}`);
-                    }
-                    continue; // one of the exclude labels matched, skip the PR for this category
-                }
-            }
-            // in case we have exhaustive matching enabled, and have labels and/or rules
-            // validate for an exhaustive match (e.g. every provided rule applies)
-            if (category.exhaustive === true && (category.labels !== undefined || category.rules !== undefined)) {
-                if (category.labels !== undefined) {
-                    matched = (0, utils_1.haveEveryElementsArr)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels);
-                }
-                let exhaustive_rules = true;
-                if (category.exhaustive_rules !== undefined) {
-                    exhaustive_rules = category.exhaustive_rules;
-                }
-                if ((matched || category.labels === undefined) && category.rules !== undefined) {
-                    matched = (0, regexUtils_2.matchesRules)(category.rules, pr, exhaustive_rules);
-                }
-            }
-            else {
-                // if not exhaustive, do individual matches
-                if (category.labels !== undefined) {
-                    // check if either any of the labels applies
-                    matched = (0, utils_1.haveCommonElementsArr)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels);
-                }
-                let exhaustive_rules = false;
-                if (category.exhaustive_rules !== undefined) {
-                    exhaustive_rules = category.exhaustive_rules;
-                }
-                if (!matched && category.rules !== undefined) {
-                    // if no label did apply, check if any rule applies
-                    matched = (0, regexUtils_2.matchesRules)(category.rules, pr, exhaustive_rules);
-                }
-            }
-            if (matched) {
-                pullRequests.push(body); // if matched add the PR to the list
+        for (const category of categories) {
+            const [matched, consumed] = recursiveCategorizePr(category, pr, body);
+            if (consumed) {
+                continue prLoop;
             }
             matchedOnce = matchedOnce || matched;
         }
         if (!matchedOnce) {
             // we allow to have pull requests included in an "uncategorized" category
-            for (const [category, pullRequests] of categorized) {
+            for (const category of flatCategories) {
+                const pullRequests = category.entries || [];
                 if ((category.labels === undefined || category.labels.length === 0) && category.rules === undefined) {
                     // check if any exclude label matches for the "uncategorized" category
                     if (category.exclude_labels !== undefined) {
@@ -2711,26 +2681,16 @@ function buildChangelog(diffInfo, origPrs, options) {
     }
     core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`);
     // serialize and provide the categorized content as json
-    const transformedCategorized = Array.from(categorized).reduce((obj, [key, value]) => Object.assign(obj, { [key.key || key.title]: value }), {});
+    const transformedCategorized = {};
+    for (const category of flatCategories) {
+        Object.assign(transformedCategorized, { [category.key || category.title]: category.entries });
+    }
     core.setOutput('categorized', JSON.stringify(transformedCategorized));
     // construct final changelog
     let changelog = '';
-    for (const [category, pullRequests] of categorized) {
-        if (pullRequests.length > 0) {
-            if (category.title) {
-                changelog = `${changelog + category.title}\n\n`;
-            }
-            for (const pr of pullRequests) {
-                changelog = `${changelog + pr}\n`;
-            }
-            changelog = `${changelog}\n`; // add space between sections
-        }
-        else if (category.empty_content !== undefined) {
-            if (category.title) {
-                changelog = `${changelog + category.title}\n\n`;
-            }
-            changelog = `${changelog + category.empty_content}\n\n`;
-        }
+    for (const category of flatCategories) {
+        const pullRequests = category.entries || [];
+        changelog = attachCategoryChangelog(changelog, category, pullRequests);
     }
     core.info(`✒️ Wrote ${categorizedPrs.length} categorized pull requests down`);
     if (core.isDebug()) {
@@ -2801,6 +2761,92 @@ function buildChangelog(diffInfo, origPrs, options) {
     return transformedChangelog;
 }
 exports.buildChangelog = buildChangelog;
+function recursiveCategorizePr(category, pr, body) {
+    let matched = false;
+    let consumed = false;
+    const matchesParent = categorizePr(category, pr);
+    // only do children if parent also matches
+    if (category.categories && matchesParent) {
+        for (const childCategory of category.categories) {
+            const [childMatched, childConsumed] = recursiveCategorizePr(childCategory, pr, body);
+            matched = matched || childMatched; // at least one time it matched
+            consumed = childConsumed;
+        }
+    }
+    // if consumed we don't handle it anymore, as it was matched in a child, don't handle anymore
+    if (!consumed && !matched) {
+        const pullRequests = category.entries || [];
+        matched = matchesParent;
+        if (matched) {
+            pullRequests.push(body); // if matched add the PR to the list
+        }
+    }
+    if (matched && category.consume) {
+        consumed = true;
+    }
+    return [matched, consumed];
+}
+function categorizePr(category, pr) {
+    let matched = false; // check if we matched within the given category
+    // check if any exclude label matches
+    if (category.exclude_labels !== undefined) {
+        if ((0, utils_1.haveCommonElementsArr)(category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
+            if (core.isDebug()) {
+                const excludeLabels = JSON.stringify(category.exclude_labels);
+                core.debug(`    PR ${pr.number} with labels: ${pr.labels} excluded from category via exclude label: ${excludeLabels}`);
+            }
+            return false; // one of the exclude labels matched, skip the PR for this category
+        }
+    }
+    // in case we have exhaustive matching enabled, and have labels and/or rules
+    // validate for an exhaustive match (e.g. every provided rule applies)
+    if (category.exhaustive === true && (category.labels !== undefined || category.rules !== undefined)) {
+        if (category.labels !== undefined) {
+            matched = (0, utils_1.haveEveryElementsArr)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels);
+        }
+        let exhaustive_rules = true;
+        if (category.exhaustive_rules !== undefined) {
+            exhaustive_rules = category.exhaustive_rules;
+        }
+        if ((matched || category.labels === undefined) && category.rules !== undefined) {
+            matched = (0, regexUtils_2.matchesRules)(category.rules, pr, exhaustive_rules);
+        }
+    }
+    else {
+        // if not exhaustive, do individual matches
+        if (category.labels !== undefined) {
+            // check if either any of the labels applies
+            matched = (0, utils_1.haveCommonElementsArr)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels);
+        }
+        let exhaustive_rules = false;
+        if (category.exhaustive_rules !== undefined) {
+            exhaustive_rules = category.exhaustive_rules;
+        }
+        if (!matched && category.rules !== undefined) {
+            // if no label did apply, check if any rule applies
+            matched = (0, regexUtils_2.matchesRules)(category.rules, pr, exhaustive_rules);
+        }
+    }
+    return matched;
+}
+function attachCategoryChangelog(changelog, category, pullRequests) {
+    if (pullRequests.length > 0 || hasChildWithEntries(category)) {
+        if (category.title) {
+            changelog = `${changelog + category.title}\n\n`;
+        }
+        for (const pr of pullRequests) {
+            changelog = `${changelog + pr}\n`;
+        }
+        changelog = `${changelog}\n`; // add space between sections
+    }
+    else if (category.empty_content !== undefined) {
+        if (category.title) {
+            changelog = `${changelog + category.title}\n\n`;
+        }
+        changelog = `${changelog + category.empty_content}\n\n`;
+    }
+    return changelog;
+}
 function replaceEmptyTemplate(template, options) {
     const placeholders = new Map();
     for (const ph of options.configuration.custom_placeholders || []) {
@@ -3010,6 +3056,26 @@ function extractValuesFromString(value, extractor) {
     else {
         return null;
     }
+}
+function flatten(categories) {
+    if (!categories) {
+        return [];
+    }
+    return categories.reduce(function (r, i) {
+        return r.concat([i]).concat(flatten(i.categories));
+    }, []);
+}
+function hasChildWithEntries(category) {
+    var _a;
+    const categories = category.categories;
+    if (!categories || categories.length === 0) {
+        return (((_a = category.entries) === null || _a === void 0 ? void 0 : _a.length) || 0) > 0;
+    }
+    let hasEntries = false;
+    for (const cat of categories) {
+        hasEntries = hasEntries || hasChildWithEntries(cat);
+    }
+    return hasEntries;
 }
 
 

@@ -2,8 +2,10 @@ import {checkExportedData, mergeConfiguration, resolveConfiguration} from '../..
 import {buildChangelog} from '../../src/transform'
 import {pullData} from '../../src/pr-collector/prCollector'
 import {GiteaRepository} from '../../src/repositories/GiteaRepository'
+import {clear} from '../../src/transform'
 
 jest.setTimeout(180000)
+clear()
 
 // load octokit instance
 const enablePullData = false

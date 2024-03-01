@@ -1,6 +1,8 @@
+import {clear} from '../src/transform'
 import {mergeConfiguration, parseConfiguration, resolveConfiguration} from '../src/utils'
 
 jest.setTimeout(180000)
+clear()
 
 it('Configurations are merged correctly', async () => {
   const configurationJson = parseConfiguration(`{
