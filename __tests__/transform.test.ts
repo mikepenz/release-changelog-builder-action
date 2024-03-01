@@ -4,7 +4,7 @@ import {Configuration, DefaultConfiguration} from '../src/configuration'
 import {PullRequestInfo} from '../src/pr-collector/pullRequests'
 import {DefaultDiffInfo} from '../src/pr-collector/commits'
 import {GithubRepository} from '../src/repositories/GithubRepository'
-import { clear } from '../src/transform'
+import {clear} from '../src/transform'
 
 jest.setTimeout(180000)
 clear()

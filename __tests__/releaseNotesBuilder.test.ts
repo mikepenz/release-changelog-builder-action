@@ -1,7 +1,7 @@
 import {mergeConfiguration, resolveConfiguration} from '../src/utils'
 import {ReleaseNotesBuilder} from '../src/releaseNotesBuilder'
 import {GithubRepository} from '../src/repositories/GithubRepository'
-import { clear } from '../src/transform'
+import {clear} from '../src/transform'
 
 jest.setTimeout(180000)
 clear()

@@ -2,7 +2,7 @@ import {checkExportedData, mergeConfiguration, resolveConfiguration} from '../sr
 import {buildChangelog} from '../src/transform'
 import {pullData} from '../src/pr-collector/prCollector'
 import {GithubRepository} from '../src/repositories/GithubRepository'
-import { clear } from '../src/transform'
+import {clear} from '../src/transform'
 
 jest.setTimeout(180000)
 clear()

@@ -2,7 +2,7 @@ import * as path from 'path'
 import * as process from 'process'
 import * as cp from 'child_process'
 import * as fs from 'fs'
-import { clear } from '../src/transform'
+import {clear} from '../src/transform'
 
 jest.setTimeout(180000)
 clear()
