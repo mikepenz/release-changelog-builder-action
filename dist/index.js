@@ -2764,25 +2764,25 @@ exports.buildChangelog = buildChangelog;
 function recursiveCategorizePr(category, pr, body) {
     let matched = false;
     let consumed = false;
-    if (category.categories) {
+    const matchesParent = categorizePr(category, pr);
+    // only do children if parent also matches
+    if (category.categories && matchesParent) {
         for (const childCategory of category.categories) {
-            const pullRequests = childCategory.entries || [];
-            matched = categorizePr(childCategory, pr);
-            if (matched) {
-                pullRequests.push(body); // if matched add the PR to the list
-            }
-            if (childCategory.consume) {
-                consumed = true;
-                continue;
-            }
+            const [childMatched, childConsumed] = recursiveCategorizePr(childCategory, pr, body);
+            matched = matched || childMatched; // at least one time it matched
+            consumed = childConsumed;
         }
     }
-    if (!consumed) {
+    // if consumed we don't handle it anymore, as it was matched in a child, don't handle anymore
+    if (!consumed && !matched) {
         const pullRequests = category.entries || [];
-        matched = categorizePr(category, pr);
+        matched = matchesParent;
         if (matched) {
             pullRequests.push(body); // if matched add the PR to the list
         }
+    }
+    if (matched && category.consume) {
+        consumed = true;
     }
     return [matched, consumed];
 }
@@ -2830,7 +2830,7 @@ function categorizePr(category, pr) {
     return matched;
 }
 function attachCategoryChangelog(changelog, category, pullRequests) {
-    if (pullRequests.length > 0) {
+    if (pullRequests.length > 0 || hasChildWithEntries(category)) {
         if (category.title) {
             changelog = `${changelog + category.title}\n\n`;
         }
@@ -3064,6 +3064,18 @@ function flatten(categories) {
     return categories.reduce(function (r, i) {
         return r.concat([i]).concat(flatten(i.categories));
     }, []);
+}
+function hasChildWithEntries(category) {
+    var _a;
+    const categories = category.categories;
+    if (!categories || categories.length === 0) {
+        return (((_a = category.entries) === null || _a === void 0 ? void 0 : _a.length) || 0) > 0;
+    }
+    let hasEntries = false;
+    for (const cat of categories) {
+        hasEntries = hasEntries || hasChildWithEntries(cat);
+    }
+    return hasEntries;
 }
 
 
