@@ -10,8 +10,8 @@ import {
   sortPullRequests
 } from './pr-collector/pullRequests'
 import {DiffInfo} from './pr-collector/commits'
-import {validateTransformer} from './pr-collector/regexUtils'
-import {RegexTransformer, Transformer} from './pr-collector/types'
+import {transformStringToOptionalValue, transformStringToValues, validateRegex} from './pr-collector/regexUtils'
+import {Regex, RegexTransformer} from './pr-collector/types'
 import {ReleaseNotesOptions} from './releaseNotesBuilder'
 import {matchesRules} from './regexUtils'
 
@@ -40,7 +40,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
 
   // establish parent child PR relations
   if (config.reference !== undefined) {
-    const reference = validateTransformer(config.reference)
+    const reference = validateRegex(config.reference)
     if (reference !== null) {
       core.info(`ℹ️ Identifying PR references using \`reference\``)
 
@@ -77,7 +77,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
 
   // drop duplicate pull requests
   if (config.duplicate_filter !== undefined) {
-    const extractor = validateTransformer(config.duplicate_filter)
+    const extractor = validateRegex(config.duplicate_filter)
     if (extractor !== null) {
       core.info(`ℹ️ Remove duplicated pull requests using \`duplicate_filter\``)
 
@@ -461,11 +461,12 @@ function handlePlaceholder(
   const phs = placeholders.get(key)
   if (phs) {
     for (const placeholder of phs) {
-      const transformer = validateTransformer(placeholder.transformer)
+      const transformer = validateRegex(placeholder.transformer)
       if (transformer?.pattern) {
-        const extractedValue = value.replace(transformer.pattern, transformer.target)
+        const extractedValue = transformStringToOptionalValue(value, transformer)
         // note: `.replace` will return the full string again if there was no match
-        if (extractedValue && (extractedValue !== value || (extractedValue === value && value.match(transformer.pattern)))) {
+        // note: This is mostly backwards compatiblity
+        if (extractedValue && ((transformer.method && transformer.method !== 'replace') || extractedValue !== value)) {
           if (placeholderPrMap) {
             createOrSet(placeholderPrMap, placeholder.name, extractedValue)
           }
@@ -475,7 +476,7 @@ function handlePlaceholder(
           )
 
           if (core.isDebug()) {
-            core.debug(`    Custom Placeholder successfully matched data - ${extractValues} (${placeholder.name})`)
+            core.debug(`    Custom Placeholder successfully matched data - ${extractedValue} (${placeholder.name})`)
           }
         } else if (core.isDebug() && extractedValue === value) {
           core.debug(`    Custom Placeholder did result in the full original value returned. Skipping. (${placeholder.name})`)
@@ -580,11 +581,11 @@ function transform(filled: string, transformers: RegexTransformer[]): string {
   return transformed
 }
 
-function validateTransformers(specifiedTransformers: Transformer[]): RegexTransformer[] {
+function validateTransformers(specifiedTransformers: Regex[]): RegexTransformer[] {
   const transformers = specifiedTransformers
   return transformers
     .map(transformer => {
-      return validateTransformer(transformer)
+      return validateRegex(transformer)
     })
     .filter(transformer => transformer?.pattern != null)
     .map(transformer => {
@@ -619,20 +620,10 @@ function extractValuesFromString(value: string, extractor: RegexTransformer): st
   if (extractor.pattern == null) {
     return null
   }
-
-  if (extractor.method === 'match') {
-    const lables = value.match(extractor.pattern)
-    if (lables !== null && lables.length > 0) {
-      return lables.map(label => label?.toLocaleLowerCase('en') || '')
-    }
+  const transformed = transformStringToValues(value, extractor)
+  if (transformed) {
+    return transformed.map(val => val?.toLocaleLowerCase('en') || '')
   } else {
-    const label = value.replace(extractor.pattern, extractor.target)
-    if (label !== '') {
-      return [label.toLocaleLowerCase('en')]
-    }
+    return null
   }
-  if (extractor.onEmpty !== undefined) {
-    return [extractor.onEmpty.toLocaleLowerCase('en')]
-  }
-  return null
 }

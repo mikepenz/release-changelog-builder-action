@@ -1,4 +1,5 @@
-import { validateTransformer } from '../src/pr-collector/regexUtils'
+import { TagResolver } from '../src/configuration'
+import { validateRegex } from '../src/pr-collector/regexUtils'
 import {filterTags, prepareAndSortTags, TagInfo, transformTags} from '../src/pr-collector/tags'
 
 jest.setTimeout(180000)
@@ -100,14 +101,16 @@ it('Should filter tags correctly using the regex', async () => {
     {name: '20.0.2', commit: ''}
   ]
 
-  const tagResolver = {
+  const tagResolver: TagResolver = {
     method: 'non-existing-method',
     filter: {
       pattern: 'api-(.+)',
+      method: 'match',
       flags: 'gu'
     }
   }
-  const filtered = filterTags(tags, tagResolver)
+  const filter = validateRegex(tagResolver.filter)
+  const filtered = filterTags(tags, filter)
     .map(function (tag) {
       return tag.name
     })
@@ -131,14 +134,16 @@ it('Should filter tags correctly using the regex (inverse)', async () => {
     {name: '20.0.2', commit: ''}
   ]
 
-  const tagResolver = {
+  const tagResolver: TagResolver = {
     method: 'non-existing-method',
     filter: {
       pattern: '^(?!\\w+-)(.+)',
+      method: 'match',
       flags: 'gu'
     }
   }
-  const filtered = filterTags(tags, tagResolver)
+  const filter = validateRegex(tagResolver.filter)
+  const filtered = filterTags(tags, filter)
     .map(function (tag) {
       return tag.name
     })
@@ -160,7 +165,7 @@ it('Should transform tags correctly using the regex', async () => {
     {name: '20.0.2', commit: ''}
   ]
 
-  const tagResolver = {
+  const tagResolver: TagResolver = {
     method: 'non-existing-method',
     transformer: {
       pattern: '(api\-)?(.+)',
@@ -168,7 +173,7 @@ it('Should transform tags correctly using the regex', async () => {
     }
   }
 
-  const transformer = validateTransformer(tagResolver.transformer)
+  const transformer = validateRegex(tagResolver.transformer)
   if(transformer != null) {
     const transformed = transformTags(tags, transformer)
       .map(function (tag) {
