@@ -108,3 +108,44 @@ export const DefaultConfiguration: Configuration = {
   custom_placeholders: [],
   trim_values: false // defines if values are being trimmed prior to inserting
 }
+
+export const DefaultCommitConfiguration: Configuration = {
+  max_tags_to_fetch: DefaultConfiguration.max_tags_to_fetch,
+  max_pull_requests: DefaultConfiguration.max_pull_requests,
+  max_back_track_time_days: DefaultConfiguration.max_back_track_time_days,
+  exclude_merge_branches: DefaultConfiguration.exclude_merge_branches,
+  sort: DefaultConfiguration.sort,
+  template: '#{{CHANGELOG}}', // the global template to host the changelog
+  pr_template: '- #{{TITLE}}', // the per PR template to pick for commit based mode
+  empty_template: DefaultConfiguration.empty_template,
+  categories: [
+    {
+      title: '## 🚀 Features',
+      labels: ['feature', 'feat']
+    },
+    {
+      title: '## 🐛 Fixes',
+      labels: ['fix', 'bug']
+    },
+    {
+      title: '## 🧪 Tests',
+      labels: ['test']
+    },
+    {
+      title: '## 📦 Other',
+      labels: []
+    }
+  ], // the categories to support for the ordering
+  ignore_labels: DefaultConfiguration.ignore_labels,
+  label_extractor: [
+    {
+      pattern: '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\\([\\w\\-\\.]+\\))?(!)?: ([\\w ])+([\\s\\S]*)',
+      target: '$1'
+    }
+  ],
+  transformers: DefaultConfiguration.transformers,
+  tag_resolver: DefaultConfiguration.tag_resolver,
+  base_branches: DefaultConfiguration.base_branches,
+  custom_placeholders: DefaultConfiguration.custom_placeholders,
+  trim_values: DefaultConfiguration.trim_values
+}

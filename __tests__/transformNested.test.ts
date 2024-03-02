@@ -81,5 +81,7 @@ it('Match multiple labels exhaustive for category', async () => {
   ]
 
   const built = buildChangelogTest(customConfig, pullRequestsWithLabels, repositoryUtils)
-  expect(built).toStrictEqual(`## Core\n\n- Core Ticket\n\n### 🚀 Features\n\n- Core Feature Ticket\n- Mobile & Core Feature Ticket\n\n### 🧪 Bug\n\n- Core Bug Ticket\n- Mobile & Core Bug Ticket\n\n#### 🧪 Bug Bug\n\n- Mobile & Core Bug Bug Ticket\n\n## Mobile\n\n\n### 🚀 Features\n\n- Mobile Feature Ticket\n\n### 🧪 Bug\n\n- Mobile Bug Ticket\n\n`)
+  expect(built).toStrictEqual(
+    `## Core\n\n- Core Ticket\n\n### 🚀 Features\n\n- Core Feature Ticket\n- Mobile & Core Feature Ticket\n\n### 🧪 Bug\n\n- Core Bug Ticket\n- Mobile & Core Bug Ticket\n\n#### 🧪 Bug Bug\n\n- Mobile & Core Bug Bug Ticket\n\n## Mobile\n\n\n### 🚀 Features\n\n- Mobile Feature Ticket\n\n### 🧪 Bug\n\n- Mobile Bug Ticket\n\n`
+  )
 })

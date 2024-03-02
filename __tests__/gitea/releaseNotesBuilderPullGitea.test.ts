@@ -1,8 +1,9 @@
 import {checkExportedData, mergeConfiguration, resolveConfiguration} from '../../src/utils'
 import {buildChangelog} from '../../src/transform'
-import {pullData} from '../../src/pr-collector/prCollector'
+import {Options, pullData} from '../../src/pr-collector/prCollector'
 import {GiteaRepository} from '../../src/repositories/GiteaRepository'
 import {clear} from '../../src/transform'
+import {ReleaseNotesOptions} from '../../src/releaseNotesBuilder'
 
 jest.setTimeout(180000)
 clear()
@@ -47,17 +48,17 @@ it('[Gitea] Should have  changelog (tags)', async () => {
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
-    commitMode: false,
+    mode: 'PR',
     configuration,
     repositoryUtils: giteaRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(giteaRepository, options)
+    data = await pullData(giteaRepository, options as Options)
   } else {
     data = checkExportedData(false, 'caches/gitea_rcba_0.5.0-master_cache.json')
   }
-  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options as ReleaseNotesOptions)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 🚀 Features
 
@@ -85,17 +86,17 @@ it('[Gitea] Should match generated changelog (tags)', async () => {
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
-    commitMode: false,
+    mode: 'PR',
     configuration,
     repositoryUtils: giteaRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(giteaRepository, options)
+    data = await pullData(giteaRepository, options as Options)
   } else {
     data = checkExportedData(false, 'caches/gitea_rcba_0.5.0-master_cache.json')
   }
-  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options as ReleaseNotesOptions)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 🚀 Features
 
@@ -124,17 +125,17 @@ it('[Gitea] Should match generated changelog (refs)', async () => {
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
-    commitMode: false,
+    mode: 'PR',
     configuration,
     repositoryUtils: giteaRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(giteaRepository, options)
+    data = await pullData(giteaRepository, options as Options)
   } else {
     data = checkExportedData(false, 'caches/gitea_rcba_3e49adf-894a64_cache.json')
   }
-  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options as ReleaseNotesOptions)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 📦 Uncategorized
 
@@ -181,17 +182,17 @@ it('[Gitea] Should match generated changelog and replace all occurrences (refs)'
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
-    commitMode: false,
+    mode: 'PR',
     configuration,
     repositoryUtils: giteaRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(giteaRepository, options)
+    data = await pullData(giteaRepository, options as Options)
   } else {
     data = checkExportedData(false, 'caches/gitea_rcba_3e49adf-894a64_cache.json')
   }
-  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options as ReleaseNotesOptions)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 📦 Uncategorized
 
@@ -243,17 +244,17 @@ it('[Gitea] Should match ordered ASC', async () => {
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
-    commitMode: false,
+    mode: 'PR',
     configuration,
     repositoryUtils: giteaRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(giteaRepository, options)
+    data = await pullData(giteaRepository, options as Options)
   } else {
     data = checkExportedData(false, 'caches/gitea_rcba_0.1.0-master_cache.json')
   }
-  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options as ReleaseNotesOptions)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 🚀 Features
 
@@ -300,17 +301,17 @@ it('[Gitea] Should match ordered DESC', async () => {
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
-    commitMode: false,
+    mode: 'PR',
     configuration,
     repositoryUtils: giteaRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(giteaRepository, options)
+    data = await pullData(giteaRepository, options as Options)
   } else {
     data = checkExportedData(false, 'caches/gitea_rcba_0.1.0-master_cache.json')
   }
-  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options as ReleaseNotesOptions)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 🚀 Features
 

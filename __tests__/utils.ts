@@ -16,7 +16,7 @@ export const buildChangelogTest = (config: Configuration, prs: PullRequestInfo[]
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
-    commitMode: false,
+    mode: 'PR',
     configuration: config,
     repositoryUtils
   })

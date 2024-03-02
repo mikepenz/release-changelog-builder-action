@@ -168,11 +168,7 @@ jobs:
               ],
               "label_extractor": [
                 {
-                  "pattern": "^(build|ci|chore|doc|docs|wiki|remove|deprecate|security|dependency|package|feat|feature|fix|bug|perf|optimize|refactor|revert|style|test):(.*)",
-                  "target": "$1"
-                },
-                {
-                  "pattern": "^(build|ci|chore|doc|docs|wiki|remove|deprecate|security|dependency|package|feat|feature|fix|bug|perf|optimize|refactor|revert|style|test){1}(\\([\\w\\-\\.]+\\))?(!)?:(.*)",
+                  "pattern": "^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\\([\\w\\-\\.]+\\))?(!)?: ([\\w ])+([\\s\\S]*)",
                   "target": "$1"
                 }
               ],
@@ -776,7 +772,7 @@ it('Test custom changelog builder', async () => {
     false, // enable to fetch reviewers
     false, // enable to fetch release information
     false, // enable to fetch reviews
-    false, // enable commitMode
+    'PR',  // set the mode to use [PR, COMMIT, HYBRID]
     false, // enable exportCache
     false, // enable exportOnly
     null,  // path to the cache

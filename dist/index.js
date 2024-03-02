@@ -7,7 +7,7 @@ require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.DefaultConfiguration = void 0;
+exports.DefaultCommitConfiguration = exports.DefaultConfiguration = void 0;
 exports.DefaultConfiguration = {
     max_tags_to_fetch: 200, // the amount of tags to fetch from the github API
     max_pull_requests: 200, // the amount of pull requests to process
@@ -52,6 +52,46 @@ exports.DefaultConfiguration = {
     base_branches: [], // target branches for the merged PR ignoring PRs with different target branch, by default it will get all PRs
     custom_placeholders: [],
     trim_values: false // defines if values are being trimmed prior to inserting
+};
+exports.DefaultCommitConfiguration = {
+    max_tags_to_fetch: exports.DefaultConfiguration.max_tags_to_fetch,
+    max_pull_requests: exports.DefaultConfiguration.max_pull_requests,
+    max_back_track_time_days: exports.DefaultConfiguration.max_back_track_time_days,
+    exclude_merge_branches: exports.DefaultConfiguration.exclude_merge_branches,
+    sort: exports.DefaultConfiguration.sort,
+    template: '#{{CHANGELOG}}', // the global template to host the changelog
+    pr_template: '- #{{TITLE}}', // the per PR template to pick for commit based mode
+    empty_template: exports.DefaultConfiguration.empty_template,
+    categories: [
+        {
+            title: '## 🚀 Features',
+            labels: ['feature', 'feat']
+        },
+        {
+            title: '## 🐛 Fixes',
+            labels: ['fix', 'bug']
+        },
+        {
+            title: '## 🧪 Tests',
+            labels: ['test']
+        },
+        {
+            title: '## 📦 Other',
+            labels: []
+        }
+    ], // the categories to support for the ordering
+    ignore_labels: exports.DefaultConfiguration.ignore_labels,
+    label_extractor: [
+        {
+            pattern: '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\\([\\w\\-\\.]+\\))?(!)?: ([\\w ])+([\\s\\S]*)',
+            target: '$1'
+        }
+    ],
+    transformers: exports.DefaultConfiguration.transformers,
+    tag_resolver: exports.DefaultConfiguration.tag_resolver,
+    base_branches: exports.DefaultConfiguration.base_branches,
+    custom_placeholders: exports.DefaultConfiguration.custom_placeholders,
+    trim_values: exports.DefaultConfiguration.trim_values
 };
 
 
@@ -141,8 +181,11 @@ function run() {
             if (!configJson && !configFile) {
                 core.info(`ℹ️ No configuration provided. Using Defaults.`);
             }
+            // mode of the action (PR, COMMIT, HYBRID)
+            const mode = (0, utils_1.resolveMode)(core.getInput('mode'), core.getInput('commitMode') === 'true');
+            core.info(`ℹ️ Running in ${mode} mode.`);
             // merge configs, use default values from DefaultConfig on missing definition
-            const configuration = (0, utils_1.mergeConfiguration)(configJson, configFile);
+            const configuration = (0, utils_1.mergeConfiguration)(configJson, configFile, mode);
             // read in repository inputs
             const baseUrl = core.getInput('baseUrl');
             const token = core.getInput('token') || process.env.GITHUB_TOKEN || '';
@@ -159,12 +202,11 @@ function run() {
             const fetchReviewers = core.getInput('fetchReviewers') === 'true';
             const fetchReleaseInformation = core.getInput('fetchReleaseInformation') === 'true';
             const fetchReviews = core.getInput('fetchReviews') === 'true';
-            const commitMode = core.getInput('commitMode') === 'true';
             const exportCache = core.getInput('exportCache') === 'true';
             const exportOnly = core.getInput('exportOnly') === 'true';
             const cache = core.getInput('cache');
             const repositoryUtils = new supportedPlatform[platform](token, baseUrl, repositoryPath);
-            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchViaCommits, fetchReviewers, fetchReleaseInformation, fetchReviews, commitMode, exportCache, exportOnly, cache, configuration).build();
+            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchViaCommits, fetchReviewers, fetchReleaseInformation, fetchReviews, mode, exportCache, exportOnly, cache, configuration).build();
             core.setOutput('changelog', result);
             // write the result in changelog to file if possible
             const outputFile = core.getInput('outputFile');
@@ -221,7 +263,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.filterCommits = exports.Commits = exports.DefaultDiffInfo = void 0;
+exports.filterCommits = exports.convertCommitsToPrs = exports.Commits = exports.DefaultDiffInfo = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const utils_1 = __nccwpck_require__(9613);
 exports.DefaultDiffInfo = {
@@ -291,39 +333,43 @@ class Commits {
     }
     generateCommitPRs(options) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { owner, repo, configuration } = options;
             const diffInfo = yield this.getCommitHistory(options);
-            const commits = diffInfo.commitInfo;
-            if (commits.length === 0) {
-                return [diffInfo, []];
-            }
-            const prCommits = filterCommits(commits, configuration.exclude_merge_branches);
-            core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`);
-            const prs = prCommits.map(function (commit) {
-                return {
-                    number: 0,
-                    title: commit.summary,
-                    htmlURL: '',
-                    baseBranch: '',
-                    createdAt: commit.commitDate,
-                    mergedAt: commit.commitDate,
-                    mergeCommitSha: commit.sha,
-                    author: commit.author || '',
-                    repoName: '',
-                    labels: [],
-                    milestone: '',
-                    body: commit.message || '',
-                    assignees: [],
-                    requestedReviewers: [],
-                    approvedReviewers: [],
-                    status: 'merged'
-                };
-            });
-            return [diffInfo, prs];
+            return convertCommitsToPrs(options, diffInfo);
         });
     }
 }
 exports.Commits = Commits;
+function convertCommitsToPrs(options, diffInfo) {
+    const { owner, repo, configuration } = options;
+    const commits = diffInfo.commitInfo;
+    if (commits.length === 0) {
+        return [diffInfo, []];
+    }
+    const prCommits = filterCommits(commits, configuration.exclude_merge_branches);
+    core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`);
+    const prs = prCommits.map(function (commit) {
+        return {
+            number: 0,
+            title: commit.summary,
+            htmlURL: '',
+            baseBranch: '',
+            createdAt: commit.commitDate,
+            mergedAt: commit.commitDate,
+            mergeCommitSha: commit.sha,
+            author: commit.author || '',
+            repoName: '',
+            labels: [],
+            milestone: '',
+            body: commit.message || '',
+            assignees: [],
+            requestedReviewers: [],
+            approvedReviewers: [],
+            status: 'merged'
+        };
+    });
+    return [diffInfo, prs];
+}
+exports.convertCommitsToPrs = convertCommitsToPrs;
 /**
  * Filters out all commits which match the exclude pattern
  */
@@ -516,7 +562,7 @@ const utils_1 = __nccwpck_require__(9613);
 const pullRequests_1 = __nccwpck_require__(4012);
 const commits_1 = __nccwpck_require__(234);
 class PullRequestCollector {
-    constructor(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode = false, configuration) {
+    constructor(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, mode = 'PR', configuration) {
         this.baseUrl = baseUrl;
         this.repositoryUtils = repositoryUtils;
         this.repositoryPath = repositoryPath;
@@ -531,7 +577,7 @@ class PullRequestCollector {
         this.fetchReviewers = fetchReviewers;
         this.fetchReleaseInformation = fetchReleaseInformation;
         this.fetchReviews = fetchReviews;
-        this.commitMode = commitMode;
+        this.mode = mode;
         this.configuration = configuration;
     }
     build() {
@@ -576,7 +622,7 @@ class PullRequestCollector {
                 fetchReviewers: this.fetchReviewers,
                 fetchReleaseInformation: this.fetchReleaseInformation,
                 fetchReviews: this.fetchReviews,
-                commitMode: this.commitMode,
+                mode: this.mode,
                 configuration: this.configuration
             });
         });
@@ -585,22 +631,28 @@ class PullRequestCollector {
 exports.PullRequestCollector = PullRequestCollector;
 function pullData(repositoryUtils, options) {
     return __awaiter(this, void 0, void 0, function* () {
-        let mergedPullRequests;
-        let diffInfo;
+        let mergedPullRequests = [];
+        let diffInfo = Object.assign({}, commits_1.DefaultDiffInfo);
         const commitsApi = new commits_1.Commits(repositoryUtils);
-        if (!options.commitMode) {
-            core.startGroup(`🚀 Load pull requests`);
+        core.startGroup(`🚀 Load data`);
+        if (options.mode === 'COMMIT') {
+            core.info(`🚀 Load commit history (⚠️ Executing experimental commit mode)`);
+            const [info, prs] = yield commitsApi.generateCommitPRs(options);
+            mergedPullRequests = mergedPullRequests.concat(prs);
+            diffInfo = info;
+        }
+        else {
+            // PR mode, HYBRID mode
+            core.info(`🚀 Load pull requests`);
             const pullRequestsApi = new pullRequests_1.PullRequests(repositoryUtils, commitsApi);
             const [info, prs] = yield pullRequestsApi.getMergedPullRequests(options);
             mergedPullRequests = prs;
             diffInfo = info;
-        }
-        else {
-            core.startGroup(`🚀 Load commit history`);
-            core.info(`⚠️ Executing experimental commit mode`);
-            const [info, prs] = yield commitsApi.generateCommitPRs(options);
-            mergedPullRequests = prs;
-            diffInfo = info;
+            if (options.mode === 'HYBRID') {
+                core.info(`🚀 Converting commits to pull requests`);
+                const [, fakeCommitPrs] = (0, commits_1.convertCommitsToPrs)(options, info);
+                mergedPullRequests = mergedPullRequests.concat(fakeCommitPrs);
+            }
         }
         core.endGroup();
         return {
@@ -1564,7 +1616,7 @@ const transform_1 = __nccwpck_require__(1644);
 const prCollector_1 = __nccwpck_require__(2267);
 const utils_2 = __nccwpck_require__(9613);
 class ReleaseNotesBuilder {
-    constructor(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode = false, exportCache = false, exportOnly = false, cache = null, configuration) {
+    constructor(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, mode = 'PR', exportCache = false, exportOnly = false, cache = null, configuration) {
         this.baseUrl = baseUrl;
         this.repositoryUtils = repositoryUtils;
         this.repositoryPath = repositoryPath;
@@ -1579,7 +1631,7 @@ class ReleaseNotesBuilder {
         this.fetchReviewers = fetchReviewers;
         this.fetchReleaseInformation = fetchReleaseInformation;
         this.fetchReviews = fetchReviews;
-        this.commitMode = commitMode;
+        this.mode = mode;
         this.exportCache = exportCache;
         this.exportOnly = exportOnly;
         this.cache = cache;
@@ -1611,7 +1663,7 @@ class ReleaseNotesBuilder {
                     core.debug(`Resolved 'repo' as ${this.repo}`);
                 }
                 core.endGroup();
-                const prData = yield new prCollector_1.PullRequestCollector(this.baseUrl, this.repositoryUtils, this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.includeOpen, this.failOnError, this.ignorePreReleases, this.fetchViaCommits, this.fetchReviewers, this.fetchReleaseInformation, this.fetchReviews, this.commitMode, this.configuration).build();
+                const prData = yield new prCollector_1.PullRequestCollector(this.baseUrl, this.repositoryUtils, this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.includeOpen, this.failOnError, this.ignorePreReleases, this.fetchViaCommits, this.fetchReviewers, this.fetchReleaseInformation, this.fetchReviews, this.mode, this.configuration).build();
                 if (prData == null) {
                     return null;
                 }
@@ -1625,7 +1677,7 @@ class ReleaseNotesBuilder {
                     fetchReviewers: this.fetchReviewers,
                     fetchReleaseInformation: this.fetchReleaseInformation,
                     fetchReviews: this.fetchReviews,
-                    commitMode: this.commitMode,
+                    mode: this.mode,
                     configuration: this.configuration,
                     repositoryUtils: this.repositoryUtils
                 };
@@ -1673,7 +1725,7 @@ class ReleaseNotesBuilder {
                     fetchReviewers: this.fetchReviewers || orgOptions.fetchReviewers,
                     fetchReleaseInformation: this.fetchReleaseInformation || orgOptions.fetchReleaseInformation,
                     fetchReviews: this.fetchReviews || orgOptions.fetchReviews,
-                    commitMode: this.commitMode || orgOptions.commitMode,
+                    mode: this.mode || orgOptions.mode,
                     configuration: this.configuration || orgOptions.configuration,
                     repositoryUtils: this.repositoryUtils || orgOptions.repositoryUtils
                 };
@@ -3113,7 +3165,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.haveEveryElementsArr = exports.haveEveryElements = exports.haveCommonElementsArr = exports.haveCommonElements = exports.createOrSet = exports.writeOutput = exports.mergeConfiguration = exports.parseConfiguration = exports.resolveConfiguration = exports.checkExportedData = exports.writeCacheData = exports.retrieveRepositoryPath = void 0;
+exports.haveEveryElementsArr = exports.haveEveryElements = exports.haveCommonElementsArr = exports.haveCommonElements = exports.createOrSet = exports.writeOutput = exports.mergeConfiguration = exports.parseConfiguration = exports.resolveConfiguration = exports.resolveMode = exports.checkExportedData = exports.writeCacheData = exports.retrieveRepositoryPath = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
@@ -3226,6 +3278,27 @@ function checkExportedData(exportCache, cacheInput) {
     }
 }
 exports.checkExportedData = checkExportedData;
+function resolveMode(mode, commitMode) {
+    if (commitMode === false || mode === undefined) {
+        if (commitMode === true) {
+            return 'COMMIT';
+        }
+        else {
+            return 'PR';
+        }
+    }
+    else {
+        const upperCaseMode = mode.toUpperCase();
+        if (upperCaseMode === 'COMMIT') {
+            return 'COMMIT';
+        }
+        else if (upperCaseMode === 'HYBRID') {
+            return 'HYBRID';
+        }
+    }
+    return 'PR';
+}
+exports.resolveMode = resolveMode;
 /**
  * Retrieves the configuration given the file path, if not found it will fallback to the `DefaultConfiguration`
  */
@@ -3286,25 +3359,32 @@ exports.parseConfiguration = parseConfiguration;
 /**
  * Merges the configurations, will fallback to the DefaultConfiguration value
  */
-function mergeConfiguration(jc, fc) {
+function mergeConfiguration(jc, fc, mode) {
+    let def;
+    if (mode === 'COMMIT') {
+        def = configuration_1.DefaultCommitConfiguration;
+    }
+    else {
+        def = configuration_1.DefaultConfiguration;
+    }
     return {
-        max_tags_to_fetch: (jc === null || jc === void 0 ? void 0 : jc.max_tags_to_fetch) || (fc === null || fc === void 0 ? void 0 : fc.max_tags_to_fetch) || configuration_1.DefaultConfiguration.max_tags_to_fetch,
-        max_pull_requests: (jc === null || jc === void 0 ? void 0 : jc.max_pull_requests) || (fc === null || fc === void 0 ? void 0 : fc.max_pull_requests) || configuration_1.DefaultConfiguration.max_pull_requests,
-        max_back_track_time_days: (jc === null || jc === void 0 ? void 0 : jc.max_back_track_time_days) || (fc === null || fc === void 0 ? void 0 : fc.max_back_track_time_days) || configuration_1.DefaultConfiguration.max_back_track_time_days,
-        exclude_merge_branches: (jc === null || jc === void 0 ? void 0 : jc.exclude_merge_branches) || (fc === null || fc === void 0 ? void 0 : fc.exclude_merge_branches) || configuration_1.DefaultConfiguration.exclude_merge_branches,
-        sort: (jc === null || jc === void 0 ? void 0 : jc.sort) || (fc === null || fc === void 0 ? void 0 : fc.sort) || configuration_1.DefaultConfiguration.sort,
-        template: (jc === null || jc === void 0 ? void 0 : jc.template) || (fc === null || fc === void 0 ? void 0 : fc.template) || configuration_1.DefaultConfiguration.template,
-        pr_template: (jc === null || jc === void 0 ? void 0 : jc.pr_template) || (fc === null || fc === void 0 ? void 0 : fc.pr_template) || configuration_1.DefaultConfiguration.pr_template,
-        empty_template: (jc === null || jc === void 0 ? void 0 : jc.empty_template) || (fc === null || fc === void 0 ? void 0 : fc.empty_template) || configuration_1.DefaultConfiguration.empty_template,
-        categories: (jc === null || jc === void 0 ? void 0 : jc.categories) || (fc === null || fc === void 0 ? void 0 : fc.categories) || configuration_1.DefaultConfiguration.categories,
-        ignore_labels: (jc === null || jc === void 0 ? void 0 : jc.ignore_labels) || (fc === null || fc === void 0 ? void 0 : fc.ignore_labels) || configuration_1.DefaultConfiguration.ignore_labels,
-        label_extractor: (jc === null || jc === void 0 ? void 0 : jc.label_extractor) || (fc === null || fc === void 0 ? void 0 : fc.label_extractor) || configuration_1.DefaultConfiguration.label_extractor,
-        duplicate_filter: (jc === null || jc === void 0 ? void 0 : jc.duplicate_filter) || (fc === null || fc === void 0 ? void 0 : fc.duplicate_filter) || configuration_1.DefaultConfiguration.duplicate_filter,
-        transformers: (jc === null || jc === void 0 ? void 0 : jc.transformers) || (fc === null || fc === void 0 ? void 0 : fc.transformers) || configuration_1.DefaultConfiguration.transformers,
-        tag_resolver: (jc === null || jc === void 0 ? void 0 : jc.tag_resolver) || (fc === null || fc === void 0 ? void 0 : fc.tag_resolver) || configuration_1.DefaultConfiguration.tag_resolver,
-        base_branches: (jc === null || jc === void 0 ? void 0 : jc.base_branches) || (fc === null || fc === void 0 ? void 0 : fc.base_branches) || configuration_1.DefaultConfiguration.base_branches,
-        custom_placeholders: (jc === null || jc === void 0 ? void 0 : jc.custom_placeholders) || (fc === null || fc === void 0 ? void 0 : fc.custom_placeholders) || configuration_1.DefaultConfiguration.custom_placeholders,
-        trim_values: (jc === null || jc === void 0 ? void 0 : jc.trim_values) || (fc === null || fc === void 0 ? void 0 : fc.trim_values) || configuration_1.DefaultConfiguration.trim_values
+        max_tags_to_fetch: (jc === null || jc === void 0 ? void 0 : jc.max_tags_to_fetch) || (fc === null || fc === void 0 ? void 0 : fc.max_tags_to_fetch) || def.max_tags_to_fetch,
+        max_pull_requests: (jc === null || jc === void 0 ? void 0 : jc.max_pull_requests) || (fc === null || fc === void 0 ? void 0 : fc.max_pull_requests) || def.max_pull_requests,
+        max_back_track_time_days: (jc === null || jc === void 0 ? void 0 : jc.max_back_track_time_days) || (fc === null || fc === void 0 ? void 0 : fc.max_back_track_time_days) || def.max_back_track_time_days,
+        exclude_merge_branches: (jc === null || jc === void 0 ? void 0 : jc.exclude_merge_branches) || (fc === null || fc === void 0 ? void 0 : fc.exclude_merge_branches) || def.exclude_merge_branches,
+        sort: (jc === null || jc === void 0 ? void 0 : jc.sort) || (fc === null || fc === void 0 ? void 0 : fc.sort) || def.sort,
+        template: (jc === null || jc === void 0 ? void 0 : jc.template) || (fc === null || fc === void 0 ? void 0 : fc.template) || def.template,
+        pr_template: (jc === null || jc === void 0 ? void 0 : jc.pr_template) || (fc === null || fc === void 0 ? void 0 : fc.pr_template) || def.pr_template,
+        empty_template: (jc === null || jc === void 0 ? void 0 : jc.empty_template) || (fc === null || fc === void 0 ? void 0 : fc.empty_template) || def.empty_template,
+        categories: (jc === null || jc === void 0 ? void 0 : jc.categories) || (fc === null || fc === void 0 ? void 0 : fc.categories) || def.categories,
+        ignore_labels: (jc === null || jc === void 0 ? void 0 : jc.ignore_labels) || (fc === null || fc === void 0 ? void 0 : fc.ignore_labels) || def.ignore_labels,
+        label_extractor: (jc === null || jc === void 0 ? void 0 : jc.label_extractor) || (fc === null || fc === void 0 ? void 0 : fc.label_extractor) || def.label_extractor,
+        duplicate_filter: (jc === null || jc === void 0 ? void 0 : jc.duplicate_filter) || (fc === null || fc === void 0 ? void 0 : fc.duplicate_filter) || def.duplicate_filter,
+        transformers: (jc === null || jc === void 0 ? void 0 : jc.transformers) || (fc === null || fc === void 0 ? void 0 : fc.transformers) || def.transformers,
+        tag_resolver: (jc === null || jc === void 0 ? void 0 : jc.tag_resolver) || (fc === null || fc === void 0 ? void 0 : fc.tag_resolver) || def.tag_resolver,
+        base_branches: (jc === null || jc === void 0 ? void 0 : jc.base_branches) || (fc === null || fc === void 0 ? void 0 : fc.base_branches) || def.base_branches,
+        custom_placeholders: (jc === null || jc === void 0 ? void 0 : jc.custom_placeholders) || (fc === null || fc === void 0 ? void 0 : fc.custom_placeholders) || def.custom_placeholders,
+        trim_values: (jc === null || jc === void 0 ? void 0 : jc.trim_values) || (fc === null || fc === void 0 ? void 0 : fc.trim_values) || def.trim_values
     };
 }
 exports.mergeConfiguration = mergeConfiguration;
