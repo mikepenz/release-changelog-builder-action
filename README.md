@@ -62,6 +62,182 @@ Specify the action as part of your GitHub actions workflow:
   uses: mikepenz/release-changelog-builder-action@{latest-release}
 ```
 
+## Full Sample 🖥️
+
+Below is a complete example showcasing how to define a build, which is executed when tagging the project. It consists of:
+- Prepare tag, via the GITHUB_REF environment variable
+- Build changelog, given the tag
+- Create release on GitHub - specifying body with constructed changelog
+
+> [!NOTE]  
+> Pre v4 PRs will only show up in the changelog if assigned one of the default label categories "feature", "fix" or "test". Starting with v4 these PRs will be in the `Uncategorized` section. 
+
+<details><summary><b>Example</b></summary>
+<p>
+
+```yml
+name: 'CI'
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Changelog
+        id: github_release
+        uses: mikepenz/release-changelog-builder-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        uses: mikepenz/action-gh-release@v0.2.0-a03 #softprops/action-gh-release
+        with:
+          body: ${{steps.github_release.outputs.changelog}}
+```
+
+</p>
+</details>
+
+<details><summary><b>Example w/ Configuration</b></summary>
+<p>
+
+```yml
+jobs:
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Changelog
+        uses: mikepenz/release-changelog-builder-action@v4
+        with:
+          configurationJson: |
+            {
+              "template": "#{{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n#{{UNCATEGORIZED}}\n</details>",
+              "categories": [
+                {
+                    "title": "## 💬 Other",
+                    "labels": ["other"]
+                },
+                {
+                    "title": "## 📦 Dependencies",
+                    "labels": ["dependencies"]
+                }
+              ]
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+</p>
+</details>
+
+
+<details><summary><b>Example Commit Mode w/ Configuration</b></summary>
+<p>
+
+```yml
+jobs:
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Changelog
+        uses: mikepenz/release-changelog-builder-action@v4
+        with:
+          commitMode: true
+          configurationJson: |
+            {
+              "template": "#{{CHANGELOG}}",
+              "categories": [
+                {
+                    "title": "## Feature",
+                    "labels": ["feat", "feature"]
+                },
+                {
+                    "title": "## Fix",
+                    "labels": ["fix", "bug"]
+                },
+                {
+                    "title": "## Other",
+                    "labels": []
+                }
+              ],
+              "label_extractor": [
+                {
+                  "pattern": "^(build|ci|chore|doc|docs|wiki|remove|deprecate|security|dependency|package|feat|feature|fix|bug|perf|optimize|refactor|revert|style|test):(.*)",
+                  "target": "$1"
+                },
+                {
+                  "pattern": "^(build|ci|chore|doc|docs|wiki|remove|deprecate|security|dependency|package|feat|feature|fix|bug|perf|optimize|refactor|revert|style|test){1}(\\([\\w\\-\\.]+\\))?(!)?:(.*)",
+                  "target": "$1"
+                }
+              ],
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+This example defines a regex to extract the label from the commit message. Handling flags from the [Conventional Commit Standards](https://www.conventionalcommits.org/en/v1.0.0/).
+
+</p>
+</details>
+
+## Action Inputs/Outputs
+
+### Action inputs
+
+Depending on the usecase additional settings can be provided to the action
+
+```yml
+- name: "Complex Configuration"
+  id: build_changelog
+  if: startsWith(github.ref, 'refs/tags/')
+  uses: mikepenz/release-changelog-builder-action@{latest-release}
+  with:
+    configuration: "configuration_complex.json"
+    owner: "mikepenz"
+    repo: "release-changelog-builder-action"
+    ignorePreReleases: "false"
+    fromTag: "0.3.0"
+    toTag: "0.5.0"
+    token: ${{ secrets.PAT }}
+```
+
+> [!NOTE]  
+> All input values are optional. It is only required to provide the `token` either via the input, or as `env` variable.
+
+| **Input**                 | **Description**                                                                                                                                                             |
+|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `configurationJson`       | Provide the configuration directly via the build `yml` file. Please note that `${{}}`  has to be written as `#{{}}` within the `yml` file.                                  |
+| `configuration`           | Relative path, to the `configuration.json` file, providing additional configurations                                                                                        |
+| `outputFile`              | Optional relative path to a file to store the resulting changelog in.                                                                                                       |
+| `owner`                   | The owner of the repository to generate the changelog for                                                                                                                   |
+| `repo`                    | Name of the repository we want to process                                                                                                                                   |
+| `fromTag`                 | Defines the 'start' from where the changelog will consider merged pull requests (can be a tag or a valid git ref)                                                           |
+| `toTag`                   | Defines until which tag the changelog will consider merged pull requests  (can be a tag or a valid git ref)                                                                 |
+| `path`                    | Allows to specify an alternative sub directory, to use as base                                                                                                              |
+| `token`                   | Alternative config to specify token. You should prefer `env.GITHUB_TOKEN` instead though                                                                                    |
+| `baseUrl`                 | Alternative config to specify base url for GitHub Enterprise authentication. Default value set to `https://api.github.com`                                                  |
+| `includeOpen`             | Enables to also fetch currently open PRs. Default: false                                                                                                                    |
+| `ignorePreReleases`       | Allows to ignore pre-releases for changelog generation (E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick). Only used if `fromTag` was not specified. Default: false    |
+| `failOnError`             | Defines if the action will result in a build failure if problems occurred. Default: false                                                                                   |
+| `fetchViaCommits`          | Enables PRs to get fetched via the commits identified between from->to tag. This will do 1 API request per commit -> Best for scenarios with squash merges | Or shorter from->to diffs (< 10 commits) | Also effective for shorters diffs for very old PRs. Default: false                                                                                                |
+| `fetchReviewers`          | Will enable fetching the users/reviewers who approved the PR. Default: false                                                                                                |
+| `fetchReleaseInformation` | Will enable fetching additional release information from tags. Default: false                                                                                               |
+| `fetchReviews`            | Will enable fetching the reviews on of the PR. Default: false                                                                                                               |
+| `commitMode`              | Special configuration for projects which work without PRs. Uses commit messages as changelog. This mode looses access to information only available for PRs. Default: false |
+| `exportCache`             | Will enable exporting the fetched PR information to a cache, which can be re-used by later runs. Default: false                                                             |
+| `exportOnly`              | When enabled, will result in only exporting the cache, without genearting a changelog. Default: false (Requires `exportCache` to be enabled)                                |
+| `cache`                   | The file path to write/read the cache to/from.                                                                                                                              |
+
+> [!WARNING]  
+> `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repositories please use a PAT (Personal Access Token).
+
+
 ### Action outputs
 
 After action execution it will return the `changelog` and additional information as step output. You can use it in any follow-up step by referencing the output by referencing it via the id of the step. For example `build_changelog`.
@@ -93,79 +269,6 @@ A full set list of possible output values for this action.
 | `outputs.categorized`       | The categorized pull requests used to build the changelog as serialized JSON.                                             |
 | `outputs.cache`             | The file pointing to the cache for the current fetched data. Can be provided to another action step.                      |
 
-## Full Sample 🖥️
-
-Below is a complete example showcasing how to define a build, which is executed when tagging the project. It consists of:
-- Prepare tag, via the GITHUB_REF environment variable
-- Build changelog, given the tag
-- Create release on GitHub - specifying body with constructed changelog
-
-> [!NOTE]  
-> Pre v4 PRs will only show up in the changelog if assigned one of the default label categories "feature", "fix" or "test". Starting with v4 these PRs will be in the `Uncategorized` section. 
-
-<details><summary><b>Example</b></summary>
-<p>
-
-```yml
-name: 'CI'
-on:
-  push:
-    tags:
-      - '*'
-
-jobs:
-  release:
-    if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Build Changelog
-        id: github_release
-        uses: mikepenz/release-changelog-builder-action@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create Release
-        uses: mikepenz/action-gh-release@v0.2.0-a03 #softprops/action-gh-release
-        with:
-          body: ${{steps.github_release.outputs.changelog}}
-```
-
-</p>
-</details>
-
-<details><summary><b>Example w/ Configuration</b></summary>
-<p>
-
-```yml
-jobs:
-  release:
-    if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Build Changelog
-        uses: mikepenz/release-changelog-builder-action@v3
-        with:
-          configurationJson: |
-            {
-              "template": "#{{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n#{{UNCATEGORIZED}}\n</details>",
-              "categories": [
-                {
-                    "title": "## 💬 Other",
-                    "labels": ["other"]
-                },
-                {
-                    "title": "## 📦 Dependencies",
-                    "labels": ["dependencies"]
-                }
-              ]
-            }
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-```
-
-</p>
-</details>
-
 ## Customization 🖍️
 
 ### Note
@@ -186,27 +289,60 @@ jobs:
 
 ### Configuration
 
-The action supports flexible configuration options to modify vast areas of its behavior. To do so, provide the configuration file to the workflow using the `configuration` setting.
+The action supports flexible and extensive configuration options, to finetune it for the specific projects needs. To do so provide the configuration either directly to the step via `configurationJson` or as file via the `configuration`. 
+
+</p>
+</details>
+
+<details><summary><b>Configuration in .yml</b></summary>
+<p>
+
+```yml
+- name: Build Changelog
+  uses: mikepenz/release-changelog-builder-action@v4
+  with:
+    configurationJson: |
+      {
+        "template": "#{{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n#{{UNCATEGORIZED}}\n</details>",
+        "categories": [
+          {
+              "title": "## 💬 Other",
+              "labels": ["other"]
+          }
+        ]
+      }
+```
+
+</p>
+</details>
+
+
+</p>
+</details>
+
+<details><summary><b>Configuration as json file</b></summary>
+<p>
 
 ```yml
 - name: "Build Changelog"
   uses: mikepenz/release-changelog-builder-action@{latest-release}
   with:
     configuration: "configuration.json"
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
-
-> [!NOTE]  
-> Defaults for the configuration can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
 
 > [!WARNING]  
 > It is required to have a `checkout` step prior to the changelog step if `configuration` is used, to allow the action to discover the configuration file. Use `configurationJson` as alternative.
 
+</p>
+</details>
+
+> [!NOTE]  
+> Defaults for the configuration can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
+
 > [!NOTE]  
 > It is possible to provide the configuration as file and as json via the yml file. The order of config values used: `configurationJson` > `configuration` > `DefaultConfiguration`. 
 
-This configuration is a `JSON` in the following format. (The below showcases *example* configurations for all possible options. In most scenarios most of the settings will not be needed, and the defaults will be appropiate.)
+The configuration is a `JSON` in the following format. (The below showcases *example* configurations for all possible options. In most scenarios most of the settings will not be needed, and the defaults will be appropiate.)
 
 ```json
 {
@@ -306,54 +442,34 @@ Any section of the configuration can be omitted to have defaults apply.
 
 Please see the [Configuration Specification](#configuration-specification) for detailed descriptions on the offered configuration options.
 
-### Advanced workflow specification
 
-For advanced use cases additional settings can be provided to the action
+### Template placeholders
 
-```yml
-- name: "Complex Configuration"
-  id: build_changelog
-  if: startsWith(github.ref, 'refs/tags/')
-  uses: mikepenz/release-changelog-builder-action@{latest-release}
-  with:
-    configuration: "configuration_complex.json"
-    owner: "mikepenz"
-    repo: "release-changelog-builder-action"
-    ignorePreReleases: "false"
-    fromTag: "0.3.0"
-    toTag: "0.5.0"
-    token: ${{ secrets.PAT }}
-```
+Table of supported placeholders allowed to be used in the `template` and `empty_template` (only supports placeholder marked for empty) configuration, to give additional control on defining the contents of the release notes / changelog.
 
-> [!NOTE]  
-> All input values are optional. It is only required to provide the `token` either via the input, or as `env` variable.
-
-| **Input**                 | **Description**                                                                                                                                                             |
-|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `configurationJson`       | Provide the configuration directly via the build `yml` file. Please note that `${{}}`  has to be written as `#{{}}` within the `yml` file.                                  |
-| `configuration`           | Relative path, to the `configuration.json` file, providing additional configurations                                                                                        |
-| `outputFile`              | Optional relative path to a file to store the resulting changelog in.                                                                                                       |
-| `owner`                   | The owner of the repository to generate the changelog for                                                                                                                   |
-| `repo`                    | Name of the repository we want to process                                                                                                                                   |
-| `fromTag`                 | Defines the 'start' from where the changelog will consider merged pull requests (can be a tag or a valid git ref)                                                           |
-| `toTag`                   | Defines until which tag the changelog will consider merged pull requests  (can be a tag or a valid git ref)                                                                 |
-| `path`                    | Allows to specify an alternative sub directory, to use as base                                                                                                              |
-| `token`                   | Alternative config to specify token. You should prefer `env.GITHUB_TOKEN` instead though                                                                                    |
-| `baseUrl`                 | Alternative config to specify base url for GitHub Enterprise authentication. Default value set to `https://api.github.com`                                                  |
-| `includeOpen`             | Enables to also fetch currently open PRs. Default: false                                                                                                                    |
-| `ignorePreReleases`       | Allows to ignore pre-releases for changelog generation (E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick). Only used if `fromTag` was not specified. Default: false    |
-| `failOnError`             | Defines if the action will result in a build failure if problems occurred. Default: false                                                                                   |
-| `fetchViaCommits`          | Enables PRs to get fetched via the commits identified between from->to tag. This will do 1 API request per commit -> Best for scenarios with squash merges | Or shorter from->to diffs (< 10 commits) | Also effective for shorters diffs for very old PRs. Default: false                                                                                                |
-| `fetchReviewers`          | Will enable fetching the users/reviewers who approved the PR. Default: false                                                                                                |
-| `fetchReleaseInformation` | Will enable fetching additional release information from tags. Default: false                                                                                               |
-| `fetchReviews`            | Will enable fetching the reviews on of the PR. Default: false                                                                                                               |
-| `commitMode`              | Special configuration for projects which work without PRs. Uses commit messages as changelog. This mode looses access to information only available for PRs. Default: false |
-| `exportCache`             | Will enable exporting the fetched PR information to a cache, which can be re-used by later runs. Default: false                                                             |
-| `exportOnly`              | When enabled, will result in only exporting the cache, without genearting a changelog. Default: false (Requires `exportCache` to be enabled)                                |
-| `cache`                   | The file path to write/read the cache to/from.                                                                                                                              |
-
-> [!WARNING]  
-> `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repositories please use a PAT (Personal Access Token).
+| **Placeholder**            | **Description**                                                                                    | **Empty** |
+|----------------------------|----------------------------------------------------------------------------------------------------|:---------:|
+| `#{{CHANGELOG}}`           | The contents of the changelog, matching the labels as specified in the categories configuration    |           |
+| `#{{UNCATEGORIZED}}`       | All pull requests not matching a specified label in categories                                     |           |
+| `#{{OPEN}}`                | All open pull requests. Will only be fetched if `includeOpen` is enabled.                          |           |
+| `#{{IGNORED}}`             | All pull requests defining labels matching the `ignore_labels` configuration                       |           |
+| `#{{OWNER}}`               | Describes the owner of the repository the changelog was generated for                              | x         |
+| `#{{REPO}}`                | The repository name of the repo the changelog was generated for                                    | x         |
+| `#{{FROM_TAG}}`            | Defines the 'start' from where the changelog did consider merged pull requests                     | x         |
+| `#{{FROM_TAG_DATE}}`       | Defines the date at which the 'start' tag was created. Requires `fetchReleaseInformation`.         | x         |
+| `#{{TO_TAG}}`              | Defines until which tag the changelog did consider merged pull requests                            | x         |
+| `#{{TO_TAG_DATE}}`         | Defines the date at which the 'until' tag was created. Requires `fetchReleaseInformation`.         | x         |
+| `#{{RELEASE_DIFF}}`        | Introduces a link to the full diff between from tag and to tag releases                            | x         |
+| `#{{CHANGED_FILES}}`       | The count of changed files.                                                                        |           |
+| `#{{ADDITIONS}}`           | The count of code additions (lines).                                                               |           |
+| `#{{DELETIONS}}`           | The count of code deletions (lines).                                                               |           |
+| `#{{CHANGES}}`             | The count of total changes (lines).                                                                |           |
+| `#{{COMMITS}}`             | The count of commits in this release.                                                              |           |
+| `#{{CATEGORIZED_COUNT}}`   | The count of PRs which were categorized                                                            |           |
+| `#{{UNCATEGORIZED_COUNT}}` | The count of PRs and changes which were not categorized. No label overlapping with category labels |           |
+| `#{{OPEN_COUNT}}`          | The count of open PRs. Will only be fetched if `includeOpen` is configured.                        |           |
+| `#{{IGNORED_COUNT}}`       | The count of PRs and changes which were specifically ignored from the changelog.                   |           |
+| `#{{DAYS_SINCE}}`          | Days between the 2 releases. Requires `fetchReleaseInformation` to be enabled.                     | x         |
 
 ### PR Template placeholders
 
@@ -417,35 +533,6 @@ Similar to `REVIEWS`, `REFERENCED` PRs also offer special placeholders.
 </p>
 </details>
 
-
-### Template placeholders
-
-Table of supported placeholders allowed to be used in the `template` and `empty_template` (only supports placeholder marked for empty) configuration, to give additional control on defining the contents of the release notes / changelog.
-
-| **Placeholder**            | **Description**                                                                                    | **Empty** |
-|----------------------------|----------------------------------------------------------------------------------------------------|:---------:|
-| `#{{CHANGELOG}}`           | The contents of the changelog, matching the labels as specified in the categories configuration    |           |
-| `#{{UNCATEGORIZED}}`       | All pull requests not matching a specified label in categories                                     |           |
-| `#{{OPEN}}`                | All open pull requests. Will only be fetched if `includeOpen` is enabled.                          |           |
-| `#{{IGNORED}}`             | All pull requests defining labels matching the `ignore_labels` configuration                       |           |
-| `#{{OWNER}}`               | Describes the owner of the repository the changelog was generated for                              | x         |
-| `#{{REPO}}`                | The repository name of the repo the changelog was generated for                                    | x         |
-| `#{{FROM_TAG}}`            | Defines the 'start' from where the changelog did consider merged pull requests                     | x         |
-| `#{{FROM_TAG_DATE}}`       | Defines the date at which the 'start' tag was created. Requires `fetchReleaseInformation`.         | x         |
-| `#{{TO_TAG}}`              | Defines until which tag the changelog did consider merged pull requests                            | x         |
-| `#{{TO_TAG_DATE}}`         | Defines the date at which the 'until' tag was created. Requires `fetchReleaseInformation`.         | x         |
-| `#{{RELEASE_DIFF}}`        | Introduces a link to the full diff between from tag and to tag releases                            | x         |
-| `#{{CHANGED_FILES}}`       | The count of changed files.                                                                        |           |
-| `#{{ADDITIONS}}`           | The count of code additions (lines).                                                               |           |
-| `#{{DELETIONS}}`           | The count of code deletions (lines).                                                               |           |
-| `#{{CHANGES}}`             | The count of total changes (lines).                                                                |           |
-| `#{{COMMITS}}`             | The count of commits in this release.                                                              |           |
-| `#{{CATEGORIZED_COUNT}}`   | The count of PRs which were categorized                                                            |           |
-| `#{{UNCATEGORIZED_COUNT}}` | The count of PRs and changes which were not categorized. No label overlapping with category labels |           |
-| `#{{OPEN_COUNT}}`          | The count of open PRs. Will only be fetched if `includeOpen` is configured.                        |           |
-| `#{{IGNORED_COUNT}}`       | The count of PRs and changes which were specifically ignored from the changelog.                   |           |
-| `#{{DAYS_SINCE}}`          | Days between the 2 releases. Requires `fetchReleaseInformation` to be enabled.                     | x         |
-
 ### Configuration Specification
 
 Table of descriptions for the `configuration.json` options to configure the resulting release notes / changelog.
@@ -503,15 +590,19 @@ This applies to all configurations outlined in `Configuration Specification` and
 | <parent>.flags       | Defines the regex flags specified for the pattern. Default: `gu`.                                                                                                                                                                         |
 | <parent>.on_empty    | Defines the placeholder to be filled in, if the regex does not lead to a result.                                                                                                                                                          |
 
-Example regex configuration block (Sample extracts a ticket number from the title)
+<details><summary><b>Example regex configuration block</b></summary>
+<p>
 
-PR title input
+Sample extracts a ticket number from the title
+
+Sample PR title input
 
 ```
 [XYZ-1234] This is my PR title
 ```
 
 Regex replace pattern
+
 ```
 {
   "name": "TICKET",
@@ -523,7 +614,9 @@ Regex replace pattern
 }
 ```
 
-Regex replace pattern
+Regexr style pattern (Use [regexr.com](https://regexr.com/) to test).
+To test on regexr inverse the escaping of `\\` to `\`
+
 ```
 {
   "name": "TICKET",
@@ -535,6 +628,9 @@ Regex replace pattern
   }
 }
 ```
+
+</p>
+</details>
 
 > [!WARNING]  
 > Usages of `\` in the json have to be escaped. E.g. `\` becomes `\\`.
@@ -601,10 +697,9 @@ The API for gitea is equal to the one from GitHub, however it requires the `plat
   uses: https://github.com/mikepenz/release-changelog-builder-action@v4.1.0
   with:
     platform: "gitea" # gitea or github, default is github
-    commitMode: true
     configuration: "configuration.json"
   env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Do not change this
+    token: ${{ secrets.GITEA_TOKEN }}
 ```
 
 ## Contribute 🧬
@@ -732,8 +827,6 @@ For `Fine-grained personal access tokens` this means:
  ### Classic tokens
  
  For Classic tokens you only have to create the token without special permissions.
-
-
 
 ## Developed By
 
