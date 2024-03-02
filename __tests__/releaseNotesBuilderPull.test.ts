@@ -333,3 +333,73 @@ it('Should ignore PRs not merged into main branch', async () => {
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`153\n\n`)
 })
+
+it('Default configuration with commit mode', async () => {
+  const configuration = Object.assign({}, mergeConfiguration(undefined, undefined, 'COMMIT'))
+  const options = {
+    owner: 'conventional-commits',
+    repo: 'conventionalcommits.org',
+    fromTag: {name: '56cdc85d01fd11aa164bd958bbf6114a51abfcf6'},
+    toTag: {name: '325b74fbc44bf34d9fa645951d076a450b4e26be'},
+    includeOpen: false,
+    failOnError: false,
+    fetchViaCommits: false,
+    fetchReviewers: false,
+    fetchReleaseInformation: false,
+    fetchReviews: false,
+    mode: 'COMMIT',
+    configuration,
+    repositoryUtils: githubRepository
+  }
+  let data: any
+  if (enablePullData) {
+    data = await pullData(githubRepository, options as Options)
+  } else {
+    data = checkExportedData(false, 'caches/github_conventional-commits-1e1c8e-325b74.json')
+  }
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options as ReleaseNotesOptions)
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(`## 🚀 Features\n\n- feat(lang): add Bengali\n- feat(lang): add uzbek translation (#558)\n\n## 🐛 Fixes\n\n- fix: Fix grammar and consistency in french translation (#546)\n- fix(ja): fix typo\n- fix(zh-hant): Distinguish translations of 'Release/Publish'\n- fix(ko): fix translation typo for message (#567)\n\n## 📦 Other\n\n- doc: new thi.ng links and descriptions\n- docs: add link to git-changelog-command-line docker image\n- docs: Add descriptions for commit types\n\n`)
+})
+
+it('Default configuration with commit mode and custom placeholder', async () => {
+  const configuration = Object.assign({}, mergeConfiguration(undefined, undefined, 'COMMIT'))
+  configuration.pr_template = "- #{{TITLE_ONLY}}"
+  configuration.trim_values = true
+  configuration.custom_placeholders = [
+    {
+      "name": "TITLE_ONLY",
+      "source": "TITLE",
+      "transformer": {
+        "method": "regexr",
+        "pattern": "(\\w+(\\(.+\\))?: ?)?(.+)",
+        "target": "$3"
+      }
+    }
+  ]
+
+  const options = {
+    owner: 'conventional-commits',
+    repo: 'conventionalcommits.org',
+    fromTag: {name: '56cdc85d01fd11aa164bd958bbf6114a51abfcf6'},
+    toTag: {name: '325b74fbc44bf34d9fa645951d076a450b4e26be'},
+    includeOpen: false,
+    failOnError: false,
+    fetchViaCommits: false,
+    fetchReviewers: false,
+    fetchReleaseInformation: false,
+    fetchReviews: false,
+    mode: 'COMMIT',
+    configuration,
+    repositoryUtils: githubRepository
+  }
+  let data: any
+  if (enablePullData) {
+    data = await pullData(githubRepository, options as Options)
+  } else {
+    data = checkExportedData(false, 'caches/github_conventional-commits-1e1c8e-325b74.json')
+  }
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options as ReleaseNotesOptions)
+  console.log(changeLog)
+  expect(changeLog).toStrictEqual(`## 🚀 Features\n\n- add Bengali\n- add uzbek translation (#558)\n\n## 🐛 Fixes\n\n- Fix grammar and consistency in french translation (#546)\n- fix typo\n- Distinguish translations of 'Release/Publish'\n- fix translation typo for message (#567)\n\n## 📦 Other\n\n- new thi.ng links and descriptions\n- add link to git-changelog-command-line docker image\n- Add descriptions for commit types`)
+})
