@@ -3,7 +3,7 @@ import {buildChangelog} from '../src/transform'
 import {Options, pullData} from '../src/pr-collector/prCollector'
 import {GithubRepository} from '../src/repositories/GithubRepository'
 import {clear} from '../src/transform'
-import { ReleaseNotesOptions } from '../src/releaseNotesBuilder'
+import {ReleaseNotesOptions} from '../src/releaseNotesBuilder'
 
 jest.setTimeout(180000)
 clear()
@@ -359,21 +359,23 @@ it('Default configuration with commit mode', async () => {
   }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options as ReleaseNotesOptions)
   console.log(changeLog)
-  expect(changeLog).toStrictEqual(`## 🚀 Features\n\n- feat(lang): add Bengali\n- feat(lang): add uzbek translation (#558)\n\n## 🐛 Fixes\n\n- fix: Fix grammar and consistency in french translation (#546)\n- fix(ja): fix typo\n- fix(zh-hant): Distinguish translations of 'Release/Publish'\n- fix(ko): fix translation typo for message (#567)\n\n## 📦 Other\n\n- doc: new thi.ng links and descriptions\n- docs: add link to git-changelog-command-line docker image\n- docs: Add descriptions for commit types\n\n`)
+  expect(changeLog).toStrictEqual(
+    `## 🚀 Features\n\n- feat(lang): add Bengali\n- feat(lang): add uzbek translation (#558)\n\n## 🐛 Fixes\n\n- fix: Fix grammar and consistency in french translation (#546)\n- fix(ja): fix typo\n- fix(zh-hant): Distinguish translations of 'Release/Publish'\n- fix(ko): fix translation typo for message (#567)\n\n## 📦 Other\n\n- doc: new thi.ng links and descriptions\n- docs: add link to git-changelog-command-line docker image\n- docs: Add descriptions for commit types\n\n`
+  )
 })
 
 it('Default configuration with commit mode and custom placeholder', async () => {
   const configuration = Object.assign({}, mergeConfiguration(undefined, undefined, 'COMMIT'))
-  configuration.pr_template = "- #{{TITLE_ONLY}}"
+  configuration.pr_template = '- #{{TITLE_ONLY}}'
   configuration.trim_values = true
   configuration.custom_placeholders = [
     {
-      "name": "TITLE_ONLY",
-      "source": "TITLE",
-      "transformer": {
-        "method": "regexr",
-        "pattern": "(\\w+(\\(.+\\))?: ?)?(.+)",
-        "target": "$3"
+      name: 'TITLE_ONLY',
+      source: 'TITLE',
+      transformer: {
+        method: 'regexr',
+        pattern: '(\\w+(\\(.+\\))?: ?)?(.+)',
+        target: '$3'
       }
     }
   ]
@@ -401,5 +403,7 @@ it('Default configuration with commit mode and custom placeholder', async () => 
   }
   const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options as ReleaseNotesOptions)
   console.log(changeLog)
-  expect(changeLog).toStrictEqual(`## 🚀 Features\n\n- add Bengali\n- add uzbek translation (#558)\n\n## 🐛 Fixes\n\n- Fix grammar and consistency in french translation (#546)\n- fix typo\n- Distinguish translations of 'Release/Publish'\n- fix translation typo for message (#567)\n\n## 📦 Other\n\n- new thi.ng links and descriptions\n- add link to git-changelog-command-line docker image\n- Add descriptions for commit types`)
+  expect(changeLog).toStrictEqual(
+    `## 🚀 Features\n\n- add Bengali\n- add uzbek translation (#558)\n\n## 🐛 Fixes\n\n- Fix grammar and consistency in french translation (#546)\n- fix typo\n- Distinguish translations of 'Release/Publish'\n- fix translation typo for message (#567)\n\n## 📦 Other\n\n- new thi.ng links and descriptions\n- add link to git-changelog-command-line docker image\n- Add descriptions for commit types`
+  )
 })

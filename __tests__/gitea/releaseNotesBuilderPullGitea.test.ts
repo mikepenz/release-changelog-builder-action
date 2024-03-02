@@ -3,7 +3,7 @@ import {buildChangelog} from '../../src/transform'
 import {Options, pullData} from '../../src/pr-collector/prCollector'
 import {GiteaRepository} from '../../src/repositories/GiteaRepository'
 import {clear} from '../../src/transform'
-import { ReleaseNotesOptions } from '../../src/releaseNotesBuilder'
+import {ReleaseNotesOptions} from '../../src/releaseNotesBuilder'
 
 jest.setTimeout(180000)
 clear()
