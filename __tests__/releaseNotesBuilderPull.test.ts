@@ -1,8 +1,9 @@
 import {checkExportedData, mergeConfiguration, resolveConfiguration} from '../src/utils'
 import {buildChangelog} from '../src/transform'
-import {pullData} from '../src/pr-collector/prCollector'
+import {Options, pullData} from '../src/pr-collector/prCollector'
 import {GithubRepository} from '../src/repositories/GithubRepository'
 import {clear} from '../src/transform'
+import { ReleaseNotesOptions } from '../src/releaseNotesBuilder'
 
 jest.setTimeout(180000)
 clear()
@@ -26,17 +27,17 @@ it('Should have empty changelog (tags)', async () => {
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
-    commitMode: false,
+    mode: 'PR',
     configuration,
     repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(githubRepository, options)
+    data = await pullData(githubRepository, options as Options)
   } else {
     data = checkExportedData(false, 'caches/rcba_0.0.2-0.0.3_cache.json')
   }
-  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options as ReleaseNotesOptions)
   console.log(changeLog)
   expect(changeLog).toStrictEqual('- no changes')
 })
@@ -54,17 +55,17 @@ it('Should match generated changelog (tags)', async () => {
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
-    commitMode: false,
+    mode: 'PR',
     configuration,
     repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(githubRepository, options)
+    data = await pullData(githubRepository, options as Options)
   } else {
     data = checkExportedData(false, 'caches/rcba_0.0.1-0.0.3_cache.json')
   }
-  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options as ReleaseNotesOptions)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 🧪 Tests
 
@@ -88,17 +89,17 @@ it('Should match generated changelog (refs)', async () => {
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
-    commitMode: false,
+    mode: 'PR',
     configuration,
     repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(githubRepository, options)
+    data = await pullData(githubRepository, options as Options)
   } else {
     data = checkExportedData(false, 'caches/rcba_5ec7a2-fa3788_cache.json')
   }
-  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options as ReleaseNotesOptions)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 🧪 Tests
 
@@ -129,17 +130,17 @@ it('Should match generated changelog and replace all occurrences (refs)', async 
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
-    commitMode: false,
+    mode: 'PR',
     configuration,
     repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(githubRepository, options)
+    data = await pullData(githubRepository, options as Options)
   } else {
     data = checkExportedData(false, 'caches/rcba_5ec7a2-fa3788_cache.json')
   }
-  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options as ReleaseNotesOptions)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 🧪 Tests
 
@@ -173,17 +174,17 @@ it('Should match ordered ASC', async () => {
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
-    commitMode: false,
+    mode: 'PR',
     configuration,
     repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(githubRepository, options)
+    data = await pullData(githubRepository, options as Options)
   } else {
     data = checkExportedData(false, 'caches/rcba_0.3.0-0.5.0_cache.json')
   }
-  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options as ReleaseNotesOptions)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 🚀 Features\n\n22\n24\n25\n26\n28\n\n## 🐛 Fixes\n\n23\n\n`)
 })
@@ -202,17 +203,17 @@ it('Should match ordered DESC', async () => {
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
-    commitMode: false,
+    mode: 'PR',
     configuration,
     repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(githubRepository, options)
+    data = await pullData(githubRepository, options as Options)
   } else {
     data = checkExportedData(false, 'caches/rcba_0.3.0-0.5.0_cache.json')
   }
-  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options as ReleaseNotesOptions)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`## 🚀 Features\n\n28\n26\n25\n24\n22\n\n## 🐛 Fixes\n\n23\n\n`)
 })
@@ -230,17 +231,17 @@ it('Should match ordered by title ASC', async () => {
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
-    commitMode: false,
+    mode: 'PR',
     configuration,
     repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(githubRepository, options)
+    data = await pullData(githubRepository, options as Options)
   } else {
     data = checkExportedData(false, 'caches/rcba_0.3.0-0.5.0_cache.json')
   }
-  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options as ReleaseNotesOptions)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(
     `## 🚀 Features\n\nEnhanced action logs\nImprove README\nImproved configuration failure handling\nImproved defaults if no configuration is provided\nIntroduce additional placeholders [milestone, labels, assignees, reviewers]\n\n## 🐛 Fixes\n\nImproved handling for non existing tags\n\n`
@@ -260,17 +261,17 @@ it('Should match ordered by title DESC', async () => {
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
-    commitMode: false,
+    mode: 'PR',
     configuration,
     repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(githubRepository, options)
+    data = await pullData(githubRepository, options as Options)
   } else {
     data = checkExportedData(false, 'caches/rcba_0.3.0-0.5.0_cache.json')
   }
-  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options as ReleaseNotesOptions)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(
     `## 🚀 Features\n\nIntroduce additional placeholders [milestone, labels, assignees, reviewers]\nImproved defaults if no configuration is provided\nImproved configuration failure handling\nImprove README\nEnhanced action logs\n\n## 🐛 Fixes\n\nImproved handling for non existing tags\n\n`
@@ -290,17 +291,17 @@ it('Should ignore PRs not merged into develop branch', async () => {
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
-    commitMode: false,
+    mode: 'PR',
     configuration,
     repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(githubRepository, options)
+    data = await pullData(githubRepository, options as Options)
   } else {
     data = checkExportedData(false, 'caches/rcba_1.3.1-1.4.0_base_develop_cache.json')
   }
-  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options as ReleaseNotesOptions)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`150\n\n`)
 })
@@ -318,17 +319,17 @@ it('Should ignore PRs not merged into main branch', async () => {
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
-    commitMode: false,
+    mode: 'PR',
     configuration,
     repositoryUtils: githubRepository
   }
   let data: any
   if (enablePullData) {
-    data = await pullData(githubRepository, options)
+    data = await pullData(githubRepository, options as Options)
   } else {
     data = checkExportedData(false, 'caches/rcba_1.3.1-1.4.0_base_main_cache.json')
   }
-  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options)
+  const changeLog = buildChangelog(data!.diffInfo, data!.mergedPullRequests, options as ReleaseNotesOptions)
   console.log(changeLog)
   expect(changeLog).toStrictEqual(`153\n\n`)
 })

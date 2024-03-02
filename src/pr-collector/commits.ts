@@ -91,40 +91,43 @@ export class Commits {
   }
 
   async generateCommitPRs(options: Options): Promise<[DiffInfo, PullRequestInfo[]]> {
-    const {owner, repo, configuration} = options
-
     const diffInfo = await this.getCommitHistory(options)
-    const commits = diffInfo.commitInfo
-    if (commits.length === 0) {
-      return [diffInfo, []]
-    }
-
-    const prCommits = filterCommits(commits, configuration.exclude_merge_branches)
-
-    core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`)
-
-    const prs = prCommits.map(function (commit): PullRequestInfo {
-      return {
-        number: 0,
-        title: commit.summary,
-        htmlURL: '',
-        baseBranch: '',
-        createdAt: commit.commitDate,
-        mergedAt: commit.commitDate,
-        mergeCommitSha: commit.sha,
-        author: commit.author || '',
-        repoName: '',
-        labels: [],
-        milestone: '',
-        body: commit.message || '',
-        assignees: [],
-        requestedReviewers: [],
-        approvedReviewers: [],
-        status: 'merged'
-      }
-    })
-    return [diffInfo, prs]
+    return convertCommitsToPrs(options, diffInfo)
   }
+}
+
+export function convertCommitsToPrs(options: Options, diffInfo: DiffInfo): [DiffInfo, PullRequestInfo[]] {
+  const {owner, repo, configuration} = options
+  const commits = diffInfo.commitInfo
+  if (commits.length === 0) {
+    return [diffInfo, []]
+  }
+
+  const prCommits = filterCommits(commits, configuration.exclude_merge_branches)
+
+  core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`)
+
+  const prs = prCommits.map(function (commit): PullRequestInfo {
+    return {
+      number: 0,
+      title: commit.summary,
+      htmlURL: '',
+      baseBranch: '',
+      createdAt: commit.commitDate,
+      mergedAt: commit.commitDate,
+      mergeCommitSha: commit.sha,
+      author: commit.author || '',
+      repoName: '',
+      labels: [],
+      milestone: '',
+      body: commit.message || '',
+      assignees: [],
+      requestedReviewers: [],
+      approvedReviewers: [],
+      status: 'merged'
+    }
+  })
+  return [diffInfo, prs]
 }
 
 /**

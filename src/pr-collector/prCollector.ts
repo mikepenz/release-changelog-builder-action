@@ -3,7 +3,7 @@ import {PullConfiguration} from './types'
 import {TagInfo, Tags} from './tags'
 import {failOrError} from './utils'
 import {PullRequestInfo, PullRequests} from './pullRequests'
-import {Commits, DiffInfo} from './commits'
+import {Commits, DefaultDiffInfo, DiffInfo, convertCommitsToPrs} from './commits'
 import {BaseRepository} from '../repositories/BaseRepository'
 
 export interface Options {
@@ -17,7 +17,7 @@ export interface Options {
   fetchReviewers: boolean // defines if the action should fetch the reviewers for PRs - approved reviewers are not included in the default PR listing
   fetchReleaseInformation: boolean // defines if the action should fetch the release information for the from and to tag - e.g. the creation date for the associated release
   fetchReviews: boolean // defines if the action should fetch the reviews for the PR.
-  commitMode: boolean // defines if we use the alternative commit based mode. note: this is only partially supported
+  mode: 'PR' | 'COMMIT' | 'HYBRID' // defines the mode used. note: the commit or hybrid modes are not fully supported
   configuration: PullConfiguration // the configuration as defined in `configuration.ts`
 }
 
@@ -44,7 +44,7 @@ export class PullRequestCollector {
     private fetchReviewers = false,
     private fetchReleaseInformation = false,
     private fetchReviews = false,
-    private commitMode = false,
+    private mode: 'PR' | 'COMMIT' | 'HYBRID' = 'PR',
     private configuration: PullConfiguration
   ) {}
 
@@ -102,29 +102,37 @@ export class PullRequestCollector {
       fetchReviewers: this.fetchReviewers,
       fetchReleaseInformation: this.fetchReleaseInformation,
       fetchReviews: this.fetchReviews,
-      commitMode: this.commitMode,
+      mode: this.mode,
       configuration: this.configuration
     })
   }
 }
 
 export async function pullData(repositoryUtils: BaseRepository, options: Options): Promise<Data | null> {
-  let mergedPullRequests: PullRequestInfo[]
-  let diffInfo: DiffInfo
+  let mergedPullRequests: PullRequestInfo[] = []
+  let diffInfo: DiffInfo = Object.assign({}, DefaultDiffInfo)
 
   const commitsApi = new Commits(repositoryUtils)
-  if (!options.commitMode) {
-    core.startGroup(`🚀 Load pull requests`)
+
+  core.startGroup(`🚀 Load data`)
+  if (options.mode === 'COMMIT') {
+    core.info(`🚀 Load commit history (⚠️ Executing experimental commit mode)`)
+    const [info, prs] = await commitsApi.generateCommitPRs(options)
+    mergedPullRequests = mergedPullRequests.concat(prs)
+    diffInfo = info
+  } else {
+    // PR mode, HYBRID mode
+    core.info(`🚀 Load pull requests`)
     const pullRequestsApi = new PullRequests(repositoryUtils, commitsApi)
     const [info, prs] = await pullRequestsApi.getMergedPullRequests(options)
     mergedPullRequests = prs
     diffInfo = info
-  } else {
-    core.startGroup(`🚀 Load commit history`)
-    core.info(`⚠️ Executing experimental commit mode`)
-    const [info, prs] = await commitsApi.generateCommitPRs(options)
-    mergedPullRequests = prs
-    diffInfo = info
+
+    if (options.mode === 'HYBRID') {
+      core.info(`🚀 Converting commits to pull requests`)
+      const [, fakeCommitPrs] = convertCommitsToPrs(options, info)
+      mergedPullRequests = mergedPullRequests.concat(fakeCommitPrs)
+    }
   }
   core.endGroup()
 
