@@ -730,7 +730,7 @@ Doing so is a great way to test the action and/or your custom configurations loc
 
 To run locally, or to access private repositories (GitHub Codespaces has automatic access to public repos with the default token), you will require to provide a valid `GITHUB_TOKEN` with read only permissions to access the repositories you want to run this action towards. (See more details in [Token Permission](#Token-Permission))
 
-To test your own configuration and usecase, the project contains a [__tests__/demo/demo.test.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/__tests__/demo/demo.test.ts) file, modify this one to your needs. (e.g. change repo, change token, change settings, ...), and then run it via:
+To test your own configuration and usecase, the project contains a [\_\_tests\_\_/demo/demo.test.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/__tests__/demo/demo.test.ts) file, modify this one to your needs. (e.g. change repo, change token, change settings, ...), and then run it via:
 
 ```bash
 npm test -- demo.test.ts
