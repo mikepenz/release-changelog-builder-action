@@ -14,6 +14,7 @@
     "test": "jest",
     "test-github": "jest __tests__/*.test.ts",
     "test-gitea": "jest __tests__/gitea/*.test.ts",
+    "test-demo": "jest __tests__/demo/*.test.ts",
     "all": "npm run build && npm run format && npm run lint && npm run package && npm run test-github"
   },
   "repository": {

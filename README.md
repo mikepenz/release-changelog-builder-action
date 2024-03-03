@@ -722,7 +722,7 @@ export GITHUB_TOKEN=your_personal_github_pat
 
 ## Local Testing 🧪 
 
-This GitHub action is fully developed in Typescript and can be run locally via npm or right from the browser using GitHub Codespace. 
+This GitHub action is fully developed in Typescript and can be run locally via `npm` or right from the browser using `GitHub Codespace`.
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/mikepenz/release-changelog-builder-action)
 
@@ -730,66 +730,40 @@ Doing so is a great way to test the action and/or your custom configurations loc
 
 To run locally, or to access private repositories (GitHub Codespaces has automatic access to public repos with the default token), you will require to provide a valid `GITHUB_TOKEN` with read only permissions to access the repositories you want to run this action towards. (See more details in [Token Permission](#Token-Permission))
 
+To test your own configuration and usecase, the project contains a [__tests__/demo/demo.test.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/__tests__/demo/demo.test.ts) file, modify this one to your needs. (e.g. change repo, change token, change settings, ...), and then run it via:
+
+```bash
+npm test -- demo.test.ts
+```
+
+<details><summary><b>Debugging with Breakpoints</b></summary>
+<p>
+
+One major benefit of setting up a custom test is that it will allow you to use javascripts full debugging support, including the option of breakpoints via (for example) Visual Code. 
+
+From GitHub codespaces, open the terminal panel -> Click the small arrow down beside `+` and pick `JavaScript Debug Terminal` (make sure to export the token again). Now execute the test with this terminal. (This is very similar to local Visual Code environments).
+
+</p>
+</details>
+
+<details><summary><b>Run common tests</b></summary>
+<p>
+
+To run the common tests of the action, you require to export a valid github token.
+
 ```
 # Export the token in the CLI you use to execute.
 export GITHUB_TOKEN=your_read_only_github_token
 ```
 
-Afterwards it is possible to run the tests included in the project:
+Afterwards it is possible to run any test included in the project:
 
 ```bash
 npm test -- main.test.ts # modify the file name to run other testcases
 ```
 
-To test your own configuration, it's adviced to create a new `__tests__/custom.test.ts` file, modify it to your needs (e.g. change repo, change token, change settings, ...), and then run it via `npm test -- custom.test.ts`
-
-<details><summary><b>custom.test.ts</b></summary>
-<p>
-
-```typescript
-import {mergeConfiguration, resolveConfiguration} from '../src/utils'
-import {ReleaseNotesBuilder} from '../src/releaseNotesBuilder'
-
-jest.setTimeout(180000)
-
-it('Test custom changelog builder', async () => {
-  const configuration = mergeConfiguration(undefined, resolveConfiguration(
-    '',
-    'configs_test/configuration_approvers.json'
-  ))
-  const releaseNotesBuilder = new ReleaseNotesBuilder(
-    null, // baseUrl
-    null, // token
-    '.',  // repoPath
-    'mikepenz',                                         // user
-    'release-changelog-builder-action-playground',      // repo
-    '1.5.0',         // fromTag
-    '2.0.0',         // toTag
-    false, // includeOpen
-    false, // failOnError
-    false, // ignorePrePrelease
-    false, // enable to fetch via commits
-    false, // enable to fetch reviewers
-    false, // enable to fetch release information
-    false, // enable to fetch reviews
-    'PR',  // set the mode to use [PR, COMMIT, HYBRID]
-    false, // enable exportCache
-    false, // enable exportOnly
-    null,  // path to the cache
-    configuration  // configuration
-  )
-
-  const changeLog = await releaseNotesBuilder.build()
-  console.log(changeLog)
-})
-```
-
 </p>
 </details>
-
-One major benefit of setting up a custom test is that it will allow you to use javascripts full debugging support, including the option of breakpoints via (for example) Visual Code. 
-
-From GitHub codespaces, open the terminal panel -> Click the small arrow down beside `+` and pick `JavaScript Debug Terminal` (make sure to export the token again). Now execute the test with this terminal. (This is very similar to local Visual Code environments).
 
 ## Token Permission
 
