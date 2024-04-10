@@ -2091,15 +2091,15 @@ class GithubRepository extends BaseRepository_1.BaseRepository {
                 commitInfo: commits
                     .filter(commit => commit.sha)
                     .map(commit => {
-                    var _a, _b, _c, _d;
+                    var _a, _b, _c, _d, _e;
                     return ({
                         sha: commit.sha || '',
                         summary: commit.commit.message.split('\n')[0],
                         message: commit.commit.message,
-                        author: ((_a = commit.author) === null || _a === void 0 ? void 0 : _a.login) || '',
-                        authorDate: (0, moment_1.default)((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.date),
-                        committer: ((_c = commit.committer) === null || _c === void 0 ? void 0 : _c.login) || '',
-                        commitDate: (0, moment_1.default)((_d = commit.commit.committer) === null || _d === void 0 ? void 0 : _d.date),
+                        author: ((_a = commit.author) === null || _a === void 0 ? void 0 : _a.login) || ((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.name) || '',
+                        authorDate: (0, moment_1.default)((_c = commit.commit.author) === null || _c === void 0 ? void 0 : _c.date),
+                        committer: ((_d = commit.committer) === null || _d === void 0 ? void 0 : _d.login) || '',
+                        commitDate: (0, moment_1.default)((_e = commit.commit.committer) === null || _e === void 0 ? void 0 : _e.date),
                         prNumber: undefined
                     });
                 })
