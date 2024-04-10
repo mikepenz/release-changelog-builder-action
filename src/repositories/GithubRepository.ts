@@ -59,7 +59,7 @@ export class GithubRepository extends BaseRepository {
           sha: commit.sha || '',
           summary: commit.commit.message.split('\n')[0],
           message: commit.commit.message,
-          author: commit.author?.login || '',
+          author: commit.author?.login || commit.commit.author?.name || '',
           authorDate: moment(commit.commit.author?.date),
           committer: commit.committer?.login || '',
           commitDate: moment(commit.commit.committer?.date),
