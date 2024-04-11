@@ -111,6 +111,7 @@ async function run(): Promise<void> {
     }
   } catch (error: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
     core.setFailed(error.message)
+    core.error(`🔥 Failed to generate changelog due to ${JSON.stringify(error)}`)
   }
 }
 
