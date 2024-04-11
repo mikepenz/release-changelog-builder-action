@@ -1,4 +1,4 @@
-import { validateTransformer } from '../src/pr-collector/regexUtils'
+import {validateTransformer} from '../src/pr-collector/regexUtils'
 import {filterTags, prepareAndSortTags, TagInfo, transformTags} from '../src/pr-collector/tags'
 
 jest.setTimeout(180000)
@@ -147,7 +147,6 @@ it('Should filter tags correctly using the regex (inverse)', async () => {
   expect(filtered).toStrictEqual(`0.1.0-b01,1.0.0,1.0.0-a01,2.0.0,10.1.0,20.0.2`)
 })
 
-
 it('Should transform tags correctly using the regex', async () => {
   const tags: TagInfo[] = [
     {name: 'api-0.0.1', commit: ''},
@@ -163,13 +162,13 @@ it('Should transform tags correctly using the regex', async () => {
   const tagResolver = {
     method: 'non-existing-method',
     transformer: {
-      pattern: '(api\-)?(.+)',
-      target: "$2"
+      pattern: '(api-)?(.+)',
+      target: '$2'
     }
   }
 
   const transformer = validateTransformer(tagResolver.transformer)
-  if(transformer != null) {
+  if (transformer != null) {
     const transformed = transformTags(tags, transformer)
       .map(function (tag) {
         return tag.name
