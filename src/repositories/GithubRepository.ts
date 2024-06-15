@@ -273,7 +273,7 @@ export class GithubRepository extends BaseRepository {
     labels: this.attachSpecialLabels(status, pr.labels?.map(lbl => lbl.name?.toLocaleLowerCase('en') || '') || []),
     milestone: pr.milestone?.title || '',
     body: pr.body || '',
-    assignees: pr.assignees?.map(asignee => asignee?.login || '') || [],
+    assignees: pr.assignees?.map(assignee => assignee?.login || '') || [],
     requestedReviewers: pr.requested_reviewers?.map(reviewer => reviewer?.login || '') || [],
     approvedReviewers: [],
     reviews: undefined,

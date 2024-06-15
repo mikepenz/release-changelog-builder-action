@@ -37,14 +37,14 @@ async function run(): Promise<void> {
     if (configurationJson) {
       configJson = parseConfiguration(configurationJson)
       if (configJson) {
-        core.info(`ℹ️ Retreived configuration via 'configurationJson'.`)
+        core.info(`ℹ️ Retrieved configuration via 'configurationJson'.`)
       }
     }
     // read in the configuration from the file if possible
     const configurationFile: string = core.getInput('configuration')
     const configFile = resolveConfiguration(repositoryPath, configurationFile)
     if (configFile) {
-      core.info(`ℹ️ Retreived configuration via 'configuration' (via file).`)
+      core.info(`ℹ️ Retrieved configuration via 'configuration' (via file).`)
     }
 
     if (!configJson && !configFile) {
