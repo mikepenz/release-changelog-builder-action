@@ -25,6 +25,7 @@ export interface PullRequestInfo {
   approvedReviewers: string[]
   reviews?: CommentInfo[]
   status: 'open' | 'merged'
+  committers: string[]
 }
 
 export interface CommentInfo {
@@ -52,7 +53,8 @@ export const EMPTY_PULL_REQUEST_INFO: PullRequestInfo = {
   assignees: [],
   requestedReviewers: [],
   approvedReviewers: [],
-  status: 'open'
+  status: 'open',
+  committers: []
 }
 
 export const EMPTY_COMMENT_INFO: CommentInfo = {
@@ -123,7 +125,22 @@ export class PullRequests {
 
     const prCommits = filterCommits(commits, configuration.exclude_merge_branches)
     core.info(`ℹ️ Retrieved ${prCommits.length} release commits for ${owner}/${repo}`)
+    
+    
+    const prCommittersMap = new Map<string, string[]>();
+    const uniqueAuthors = new Set<string>();
 
+    // Iterate over each entry in prCommittersMap
+    for (const [commitSha, authors] of prCommittersMap.entries()) {
+      // Iterate over each author in the array and add to the set
+      authors.forEach(author => {
+        uniqueAuthors.add(author);
+      });
+    }
+
+    // Convert Set to array (if needed)
+    const uniqueAuthorsList = Array.from(uniqueAuthors);
+    
     // create array of commits for this release
     const releaseCommitHashes = prCommits.map(commit => {
       return commit.sha
@@ -173,6 +190,15 @@ export class PullRequests {
       }
       pullRequests = allPullRequests
     }
+
+    // Update each pull request with its committers
+    pullRequests.forEach(pr => {
+      if (prCommittersMap.has(pr.number)) {
+        pr.committers = prCommittersMap.get(pr.number);
+      } else {
+        pr.committers = [];
+      }
+    });
 
     // retrieve base branches we allow
     const baseBranches = configuration.base_branches
