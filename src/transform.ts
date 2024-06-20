@@ -278,7 +278,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
   // collect all contributors
   let contributors: string[] = []
   for (const pr of prs) {
-    contributors = contributors.concat(pr.author)
+    contributors = contributors.concat(`@${pr.author}`)
   }
   const contributorsString = contributors.join(', ')
   core.setOutput('contributors', JSON.stringify(contributors))
