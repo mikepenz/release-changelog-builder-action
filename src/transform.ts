@@ -275,12 +275,22 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
   }
   core.info(`✒️ Wrote ${ignoredPrs.length} ignored pull requests down`)
 
+  // collect all contributors
+  let contributors: string[] = []
+  for (const pr of prs) {
+    contributors = contributors.concat(`@${pr.author}`)
+  }
+  const contributorsString = contributors.join(', ')
+  core.setOutput('contributors', JSON.stringify(contributors))
+
   // fill template
   const placeholderMap = new Map<string, string>()
   placeholderMap.set('CHANGELOG', changelog)
   placeholderMap.set('UNCATEGORIZED', changelogUncategorized)
   placeholderMap.set('OPEN', changelogOpen)
   placeholderMap.set('IGNORED', changelogIgnored)
+  // fill special collected contributors
+  placeholderMap.set('CONTRIBUTORS', contributorsString)
   // fill other placeholders
   placeholderMap.set('CATEGORIZED_COUNT', categorizedPrs.length.toString())
   placeholderMap.set('UNCATEGORIZED_COUNT', uncategorizedPrs.length.toString())

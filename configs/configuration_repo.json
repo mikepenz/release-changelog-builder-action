@@ -21,6 +21,7 @@
             "labels": ["dependencies"]
         }
     ],
+    "template": "${{CHANGELOG}}\n\nContributors:\n${{CONTRIBUTORS}}",
     "max_pull_requests": 1000,
     "max_back_track_time_days": 1000
 }
