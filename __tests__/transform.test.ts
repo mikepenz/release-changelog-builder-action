@@ -49,7 +49,8 @@ mergedPullRequests.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged'
+    status: 'merged',
+    committers: []
   },
   {
     number: 2,
@@ -67,7 +68,8 @@ mergedPullRequests.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged'
+    status: 'merged',
+    committers: []
   },
   {
     number: 3,
@@ -85,7 +87,8 @@ mergedPullRequests.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged'
+    status: 'merged',
+    committers: []
   },
   {
     number: 4,
@@ -103,7 +106,8 @@ mergedPullRequests.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged'
+    status: 'merged',
+    committers: []
   }
 )
 
@@ -123,7 +127,8 @@ const pullRequestWithLabelInBody: PullRequestInfo = {
   assignees: [],
   requestedReviewers: [],
   approvedReviewers: [],
-  status: 'merged'
+  status: 'merged',
+  committers: []
 }
 
 const openPullRequest: PullRequestInfo = {
@@ -142,7 +147,8 @@ const openPullRequest: PullRequestInfo = {
   assignees: [],
   requestedReviewers: [],
   approvedReviewers: [],
-  status: 'open'
+  status: 'open',
+  committers: []
 }
 
 it('Extract label from title, combined regex', async () => {
@@ -256,7 +262,8 @@ pullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged'
+    status: 'merged',
+    committers: []
   },
   {
     number: 2,
@@ -274,7 +281,8 @@ pullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged'
+    status: 'merged',
+    committers: []
   },
   {
     number: 3,
@@ -292,7 +300,8 @@ pullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged'
+    status: 'merged',
+    committers: []
   },
   {
     number: 4,
@@ -310,7 +319,8 @@ pullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged'
+    status: 'merged',
+    committers: []
   }
 )
 
@@ -332,7 +342,8 @@ openPullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'open'
+    status: 'open',
+    committers: []
   },
   {
     number: 7,
@@ -350,7 +361,8 @@ openPullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'open'
+    status: 'open',
+    committers: []
   }
 )
 
