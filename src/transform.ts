@@ -89,7 +89,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
       const deduplicatedMap = new Map<string, PullRequestInfo>()
       const unmatched: PullRequestInfo[] = []
       for (const pr of prs) {
-        const extracted = extractValues(pr, extractor, 'dupliate_filter')
+        const extracted = extractValues(pr, extractor, 'duplicate_filter')
         if (extracted !== null && extracted.length > 0) {
           deduplicatedMap.set(extracted[0], pr)
         } else {
@@ -513,7 +513,7 @@ function handlePlaceholder(
       if (transformer?.pattern) {
         const extractedValue = transformStringToOptionalValue(value, transformer)
         // note: `.replace` will return the full string again if there was no match
-        // note: This is mostly backwards compatiblity
+        // note: This is mostly backwards compatibility
         if (extractedValue && ((transformer.method && transformer.method !== 'replace') || extractedValue !== value)) {
           if (placeholderPrMap) {
             createOrSet(placeholderPrMap, placeholder.name, extractedValue)

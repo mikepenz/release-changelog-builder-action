@@ -98,7 +98,7 @@ export function transformStringToValue(value: string, extractor: RegexTransforme
 
 function transformRegexr(regex: RegExp, source: string, target: string): Set<string> | null {
   /**
-   * Util funtion extracted from regexr and is licensed under:
+   * Util function extracted from regexr and is licensed under:
    *
    * RegExr: Learn, Build, & Test RegEx
    * Copyright (C) 2017  gskinner.com, inc.
