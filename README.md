@@ -245,8 +245,8 @@ ${{steps.build_changelog.outputs.changelog}}
 
 A full set list of possible output values for this action.
 
-| **Output**            | **Description**                                                                                                           |
-|-----------------------|---------------------------------------------------------------------------------------------------------------------------|
+| **Output**                  | **Description**                                                                                                           |
+|-----------------------------|---------------------------------------------------------------------------------------------------------------------------|
 | `outputs.changelog`         | The built release changelog built from the merged pull requests                                                           |
 | `outputs.owner`             | Specifies the owner of the repository processed                                                                           |
 | `outputs.repo`              | Describes the repository name, which was processed                                                                        |
@@ -255,13 +255,14 @@ A full set list of possible output values for this action.
 | `outputs.failed`            | Defines if there was an issue with the action run, and the changelog may not have been generated correctly. [true, false] |
 | `outputs.pull_requests`     | Defines a `,` joined array with all PR IDs associated with the generated changelog.                                       |
 | `outputs.categorized_prs`   | Count of PRs which were successfully categorized as part of the action.                                                   |
-| `outputs.open_prs` | Count of open PRs. Only fetched if `includeOpen` is enabled.                                                                       |
+| `outputs.open_prs`          | Count of open PRs. Only fetched if `includeOpen` is enabled.                                                              |
 | `outputs.uncategorized_prs` | Count of PRs which were not categorized as part of the action.                                                            |
 | `outputs.changed_files`     | Count of changed files in this release.                                                                                   |
 | `outputs.additions`         | Count of code additions in this release (lines).                                                                          |
 | `outputs.deletions`         | Count of code deletions in this release (lines).                                                                          |
 | `outputs.changes`           | Total count of changes in this release (lines).                                                                           |
 | `outputs.commits`           | Count of commits which have been added in this release.                                                                   |
+| `outputs.contributors`      | The contributors of this release. Based on PR authors only.                                                               |
 | `outputs.categorized`       | The categorized pull requests used to build the changelog as serialized JSON.                                             |
 | `outputs.cache`             | The file pointing to the cache for the current fetched data. Can be provided to another action step.                      |
 
@@ -449,23 +450,24 @@ Table of supported placeholders allowed to be used in the `template` and `empty_
 | `#{{UNCATEGORIZED}}`       | All pull requests not matching a specified label in categories                                     |           |
 | `#{{OPEN}}`                | All open pull requests. Will only be fetched if `includeOpen` is enabled.                          |           |
 | `#{{IGNORED}}`             | All pull requests defining labels matching the `ignore_labels` configuration                       |           |
-| `#{{OWNER}}`               | Describes the owner of the repository the changelog was generated for                              | x         |
-| `#{{REPO}}`                | The repository name of the repo the changelog was generated for                                    | x         |
-| `#{{FROM_TAG}}`            | Defines the 'start' from where the changelog did consider merged pull requests                     | x         |
-| `#{{FROM_TAG_DATE}}`       | Defines the date at which the 'start' tag was created. Requires `fetchReleaseInformation`.         | x         |
-| `#{{TO_TAG}}`              | Defines until which tag the changelog did consider merged pull requests                            | x         |
-| `#{{TO_TAG_DATE}}`         | Defines the date at which the 'until' tag was created. Requires `fetchReleaseInformation`.         | x         |
-| `#{{RELEASE_DIFF}}`        | Introduces a link to the full diff between from tag and to tag releases                            | x         |
+| `#{{OWNER}}`               | Describes the owner of the repository the changelog was generated for                              |     x     |
+| `#{{REPO}}`                | The repository name of the repo the changelog was generated for                                    |     x     |
+| `#{{FROM_TAG}}`            | Defines the 'start' from where the changelog did consider merged pull requests                     |     x     |
+| `#{{FROM_TAG_DATE}}`       | Defines the date at which the 'start' tag was created. Requires `fetchReleaseInformation`.         |     x     |
+| `#{{TO_TAG}}`              | Defines until which tag the changelog did consider merged pull requests                            |     x     |
+| `#{{TO_TAG_DATE}}`         | Defines the date at which the 'until' tag was created. Requires `fetchReleaseInformation`.         |     x     |
+| `#{{RELEASE_DIFF}}`        | Introduces a link to the full diff between from tag and to tag releases                            |     x     |
 | `#{{CHANGED_FILES}}`       | The count of changed files.                                                                        |           |
 | `#{{ADDITIONS}}`           | The count of code additions (lines).                                                               |           |
 | `#{{DELETIONS}}`           | The count of code deletions (lines).                                                               |           |
 | `#{{CHANGES}}`             | The count of total changes (lines).                                                                |           |
 | `#{{COMMITS}}`             | The count of commits in this release.                                                              |           |
+| `#{{CONTRIBUTORS}}`        | The contributors of this release. Based on PR Authors only.                                        |           |
 | `#{{CATEGORIZED_COUNT}}`   | The count of PRs which were categorized                                                            |           |
 | `#{{UNCATEGORIZED_COUNT}}` | The count of PRs and changes which were not categorized. No label overlapping with category labels |           |
 | `#{{OPEN_COUNT}}`          | The count of open PRs. Will only be fetched if `includeOpen` is configured.                        |           |
 | `#{{IGNORED_COUNT}}`       | The count of PRs and changes which were specifically ignored from the changelog.                   |           |
-| `#{{DAYS_SINCE}}`          | Days between the 2 releases. Requires `fetchReleaseInformation` to be enabled.                     | x         |
+| `#{{DAYS_SINCE}}`          | Days between the 2 releases. Requires `fetchReleaseInformation` to be enabled.                     |     x     |
 
 ### PR Template placeholders
 
@@ -505,7 +507,7 @@ When using `*` values are joined by `,`.
 | `#{{REVIEWERS[*]}}` | GitHub Login names of specified reviewers. Requires `fetchReviewers` to be enabled. |
 | `#{{APPROVERS[*]}}` | GitHub Login names of users who approved the PR.                                    |
 
-Additionally there are special array placeholders like `REVIEWS` which allows access to it's properties via
+Additionally, there are special array placeholders like `REVIEWS` which allows access to it's properties via
 `(KEY)[(*/index)].(property)`.
 
 For example: `REVIEWS[*].author` or `REVIEWS[*].body`
@@ -536,17 +538,17 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | **Input**                   | **Description**                                                                                                                                                                                                                    |
 |-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | categories                  | An array of `category` specifications, offering a flexible way to group changes into categories.                                                                                                                                   |
-| category.key                | Optional key used for the `categorized` json output.                                                                                                                                                                                    |
+| category.key                | Optional key used for the `categorized` json output.                                                                                                                                                                               |
 | category.title              | The display name of a category in the changelog.                                                                                                                                                                                   |
 | category.labels             | An array of labels, to match pull request labels against. If any PR label matches any category label, the pull request will show up under this category. (See `exhaustive` to change this)                                         |
 | category.exclude_labels     | Similar to `labels`, an array of labels to match PRs against, but if a match occurs the PR is excluded from this category.                                                                                                         |
 | category.exhaustive         | Will require all labels defined within this category to be present on the matching PR.                                                                                                                                             |
-| category.exhaustive_rules    | Will require all rules defined within this category to be valid on the matching PR. If not defined, defaults to the value of `exhaustive`                                                                                                                                             |
+| category.exhaustive_rules   | Will require all rules defined within this category to be valid on the matching PR. If not defined, defaults to the value of `exhaustive`                                                                                          |
 | category.empty_content      | If the category has no matching PRs, this content will be used. When not set, the category will be skipped in the changelog.                                                                                                       |
 | category.rules              | An array of `rules` used to match PRs against. Any match will include the PR. (See `exhaustive` to change this)                                                                                                                    |
 | category.rules.pattern      | A `regex` pattern to match the property value towards. Uses `RegExp.test("val")`                                                                                                                                                   |
 | category.rules.flags        | Defines the regex flags specified for the pattern. Default: `gu`.                                                                                                                                                                  |
-| category.rules.on_property  | The PR property to match against. [Possible values](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts#L33-L43).                                                        |
+| category.rules.on_property  | The PR property to match against. [Possible values](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts#L33-L43).                                                                       |
 | ignore_labels               | An array of labels, to match pull request labels against. If any PR label overlaps, the pull request will be ignored from the changelog. This takes precedence over category labels                                                |
 | sort                        | A `sort` specification, offering the ability to define sort order and property.                                                                                                                                                    |
 | sort.order                  | The sort order. Allowed values: `ASC`, `DESC`                                                                                                                                                                                      |
@@ -558,7 +560,7 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | label_extractor.<REGEX>     | Please see the documentation related to `Regex Configuration` for more details.                                                                                                                                                    |
 | label_extractor.on_property | The property to retrieve the text from. This is optional. Defaults to: `body`. Alternative values: `title`, `author`, `milestone`.                                                                                                 |
 | duplicate_filter            | Defines the `Extractor` to use for retrieving the identifier for a PR. In case of duplicates will keep the last matching pull request (depends on `sort`). See `label_extractor` for details on `Extractor` properties.            |
-| reference                   | Defines the `Extractor` to use for resolving the "PR-number" for a parent PR. In case of a match, the child PR will not be included in the release notes. See `label_extractor` for details on `Extractor` properties.            |
+| reference                   | Defines the `Extractor` to use for resolving the "PR-number" for a parent PR. In case of a match, the child PR will not be included in the release notes. See `label_extractor` for details on `Extractor` properties.             |
 | transformers                | An array of `transform` specifications, offering a flexible API to modify the text per pull request. This is applied on the change text created with `pr_template`. `transformers` are executed per change, in the order specified |
 | transformer.pattern         | A `regex` pattern, extracting values of the change message.                                                                                                                                                                        |
 | transformer.target          | The result pattern, the regex groups will be filled into. Allows for full transformation of a pull request message. Including potentially specified texts                                                                          |
@@ -578,13 +580,13 @@ Table of descriptions for the `configuration.json` options to configure the resu
 Since v5.x or newer, the regex configuration was unified to allow the same functionalities to be used for the various usecases.
 This applies to all configurations outlined in `Configuration Specification` and `Custom placeholders` that allow a regex object. 
 
-| **Input**                   | **Description**                                                                                                                                                                                                                    |
-|-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| <parent>.pattern     | The `regex` pattern to use                                                                                                                                                                                                                |
-| <parent>.target      | The result pattern. The result text will be used as label. If empty, no label is created. (Usage depends on the `method` used for the regex)                                                                                              |
-| <parent>.method      | The extraction method used. Defaults to: `replace`. Alternative values: `replaceAll`, `match`. These methods specified references the JavaScript String method. And a special method  `regexr`, that functions similar to the `list` within the regexr tool.                                                       |
-| <parent>.flags       | Defines the regex flags specified for the pattern. Default: `gu`.                                                                                                                                                                         |
-| <parent>.on_empty    | Defines the placeholder to be filled in, if the regex does not lead to a result.                                                                                                                                                          |
+| **Input**         | **Description**                                                                                                                                                                                                                                              |
+|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <parent>.pattern  | The `regex` pattern to use                                                                                                                                                                                                                                   |
+| <parent>.target   | The result pattern. The result text will be used as label. If empty, no label is created. (Usage depends on the `method` used for the regex)                                                                                                                 |
+| <parent>.method   | The extraction method used. Defaults to: `replace`. Alternative values: `replaceAll`, `match`. These methods specified references the JavaScript String method. And a special method  `regexr`, that functions similar to the `list` within the regexr tool. |
+| <parent>.flags    | Defines the regex flags specified for the pattern. Default: `gu`.                                                                                                                                                                                            |
+| <parent>.on_empty | Defines the placeholder to be filled in, if the regex does not lead to a result.                                                                                                                                                                             |
 
 <details><summary><b>Example regex configuration block</b></summary>
 <p>
