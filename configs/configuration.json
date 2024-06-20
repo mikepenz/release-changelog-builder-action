@@ -14,7 +14,7 @@
         }
     ],
     "sort": "ASC",
-    "template": "${{CHANGELOG}}\n\nContributors:\n${{CONTRIBUTORS}}",
+    "template": "${{CHANGELOG}}",
     "pr_template": "- ${{TITLE}}\n   - PR: #${{NUMBER}}",
     "empty_template": "- no changes",
     "max_pull_requests": 1000,
