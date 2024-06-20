@@ -39,13 +39,13 @@ exports.DefaultConfiguration = {
             labels: []
         }
     ], // the categories to support for the ordering
-    ignore_labels: ['ignore'], // list of lables being ignored from the changelog
+    ignore_labels: ['ignore'], // list of labels being ignored from the changelog
     label_extractor: [], // extracts additional labels from the commit message given a regex
     duplicate_filter: undefined, // extract an identifier from a PR used to detect duplicates, will keep the last match (depends on `sort`)
     transformers: [], // transformers to apply on the PR description according to the `pr_template`
     tag_resolver: {
         // defines the logic on how to resolve the previous tag, only relevant if `fromTag` is not specified
-        method: 'semver', // defines which method to use, by default it will use `semver` (dropping all non matching tags). Alternative `sort` is also available.
+        method: 'semver', // defines which method to use, by default it will use `semver` (dropping all non-matching tags). Alternative `sort` is also available.
         filter: undefined, // filter out all tags not matching the regex
         transformer: undefined // transforms the tag name using the regex, run after the filter
     },
@@ -169,14 +169,14 @@ function run() {
             if (configurationJson) {
                 configJson = (0, utils_1.parseConfiguration)(configurationJson);
                 if (configJson) {
-                    core.info(`ℹ️ Retreived configuration via 'configurationJson'.`);
+                    core.info(`ℹ️ Retrieved configuration via 'configurationJson'.`);
                 }
             }
             // read in the configuration from the file if possible
             const configurationFile = core.getInput('configuration');
             const configFile = (0, utils_1.resolveConfiguration)(repositoryPath, configurationFile);
             if (configFile) {
-                core.info(`ℹ️ Retreived configuration via 'configuration' (via file).`);
+                core.info(`ℹ️ Retrieved configuration via 'configuration' (via file).`);
             }
             if (!configJson && !configFile) {
                 core.info(`ℹ️ No configuration provided. Using Defaults.`);
@@ -856,7 +856,7 @@ class PullRequests {
                     const reviews = pr.reviews;
                     if (reviews && ((reviews === null || reviews === void 0 ? void 0 : reviews.length) || 0) > 0) {
                         core.info(`ℹ️ Retrieved ${reviews.length || 0} review(s) for PR ${owner}/${repo}/#${pr.number}`);
-                        // backwards compatiblity
+                        // backwards compatibility
                         pr.approvedReviewers = reviews.filter(r => r.state === 'APPROVED').map(r => r.author);
                     }
                     else {
@@ -1073,7 +1073,7 @@ function transformStringToValue(value, extractor) {
 exports.transformStringToValue = transformStringToValue;
 function transformRegexr(regex, source, target) {
     /**
-     * Util funtion extracted from regexr and is licensed under:
+     * Util function extracted from regexr and is licensed under:
      *
      * RegExr: Learn, Build, & Test RegEx
      * Copyright (C) 2017  gskinner.com, inc.
@@ -2404,7 +2404,7 @@ class GithubRepository extends BaseRepository_1.BaseRepository {
                 labels: this.attachSpecialLabels(status, ((_b = pr.labels) === null || _b === void 0 ? void 0 : _b.map(lbl => { var _a; return ((_a = lbl.name) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase('en')) || ''; })) || []),
                 milestone: ((_c = pr.milestone) === null || _c === void 0 ? void 0 : _c.title) || '',
                 body: pr.body || '',
-                assignees: ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.map(asignee => (asignee === null || asignee === void 0 ? void 0 : asignee.login) || '')) || [],
+                assignees: ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.map(assignee => (assignee === null || assignee === void 0 ? void 0 : assignee.login) || '')) || [],
                 requestedReviewers: ((_e = pr.requested_reviewers) === null || _e === void 0 ? void 0 : _e.map(reviewer => (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '')) || [],
                 approvedReviewers: [],
                 reviews: undefined,
@@ -2625,7 +2625,7 @@ function buildChangelog(diffInfo, origPrs, options) {
             const deduplicatedMap = new Map();
             const unmatched = [];
             for (const pr of prs) {
-                const extracted = extractValues(pr, extractor, 'dupliate_filter');
+                const extracted = extractValues(pr, extractor, 'duplicate_filter');
                 if (extracted !== null && extracted.length > 0) {
                     deduplicatedMap.set(extracted[0], pr);
                 }
@@ -2977,7 +2977,7 @@ function handlePlaceholder(template, key, value, placeholders /* placeholders to
             if (transformer === null || transformer === void 0 ? void 0 : transformer.pattern) {
                 const extractedValue = (0, regexUtils_1.transformStringToOptionalValue)(value, transformer);
                 // note: `.replace` will return the full string again if there was no match
-                // note: This is mostly backwards compatiblity
+                // note: This is mostly backwards compatibility
                 if (extractedValue && ((transformer.method && transformer.method !== 'replace') || extractedValue !== value)) {
                     if (placeholderPrMap) {
                         (0, utils_1.createOrSet)(placeholderPrMap, placeholder.name, extractedValue);
@@ -3347,7 +3347,7 @@ function readConfiguration(filename) {
  */
 function parseConfiguration(config) {
     try {
-        // for compatiblity with the `yml` file we require to use `#{{}}` instead of `${{}}` - replace it here.
+        // for compatibility with the `yml` file we require to use `#{{}}` instead of `${{}}` - replace it here.
         const configurationJSON = JSON.parse(config.replace(/\${{/g, '#{{'));
         return configurationJSON;
     }
