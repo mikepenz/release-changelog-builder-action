@@ -24,7 +24,7 @@ it('Test custom changelog builder', async () => {
     'mikepenz', // The owner of the repo to test
     'release-changelog-builder-action-playground', // The repository name
     '1.5.0', // `fromTag`  The from tag name or the SHA1 of the from commit
-    '4.2.2', // `toTag`    The to tag name or the SHA1 of the to commit
+    '2.0.0', // `toTag`    The to tag name or the SHA1 of the to commit
     false, // `includeOpen` Define if you want to include open PRs into the changelog
     false, // `failOnError` Define if the action should fail on errors
     false, // `ignorePrePrerelease` used if no `fromTag` is defined to resolve the prior tag
