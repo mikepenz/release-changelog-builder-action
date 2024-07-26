@@ -40,8 +40,10 @@ inputs:
   fetchReviews:
     description: 'Will enable fetching the reviews (comments) attached to the PR'
     default: "false"
+  mode:
+    description: 'Defines the mode used to retrieve the information. Available options: [`PR`, `COMMIT`, `HYBRID`]. Defaults to `PR`.'
   commitMode:
-    description: 'Enables a `light` commit based mode. This mode generates changelogs based on the commits. Please note that this is not officially supported, and lacks a lot of features only possible with PRs.'
+    description: '[Deprecated] Enables the commit based mode. This mode generates changelogs based on the commits. Please note that this lacks a lot of features only possible with PRs.'
     default: "false"
   outputFile:
     description: 'If defined, the changelog will get written to this file. (relative to the checkout dir)'

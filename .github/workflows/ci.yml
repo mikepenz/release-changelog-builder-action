@@ -177,6 +177,7 @@ jobs:
         uses: mikepenz/release-changelog-builder-action@v4
         with:
           configuration: "configs/configuration_repo.json"
+          ignorePreReleases: ${{ !contains(github.ref, '-') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

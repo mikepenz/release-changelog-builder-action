@@ -7,7 +7,7 @@ require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.DefaultConfiguration = void 0;
+exports.DefaultCommitConfiguration = exports.DefaultConfiguration = void 0;
 exports.DefaultConfiguration = {
     max_tags_to_fetch: 200, // the amount of tags to fetch from the github API
     max_pull_requests: 200, // the amount of pull requests to process
@@ -39,19 +39,59 @@ exports.DefaultConfiguration = {
             labels: []
         }
     ], // the categories to support for the ordering
-    ignore_labels: ['ignore'], // list of lables being ignored from the changelog
+    ignore_labels: ['ignore'], // list of labels being ignored from the changelog
     label_extractor: [], // extracts additional labels from the commit message given a regex
     duplicate_filter: undefined, // extract an identifier from a PR used to detect duplicates, will keep the last match (depends on `sort`)
     transformers: [], // transformers to apply on the PR description according to the `pr_template`
     tag_resolver: {
         // defines the logic on how to resolve the previous tag, only relevant if `fromTag` is not specified
-        method: 'semver', // defines which method to use, by default it will use `semver` (dropping all non matching tags). Alternative `sort` is also available.
+        method: 'semver', // defines which method to use, by default it will use `semver` (dropping all non-matching tags). Alternative `sort` is also available.
         filter: undefined, // filter out all tags not matching the regex
         transformer: undefined // transforms the tag name using the regex, run after the filter
     },
     base_branches: [], // target branches for the merged PR ignoring PRs with different target branch, by default it will get all PRs
     custom_placeholders: [],
     trim_values: false // defines if values are being trimmed prior to inserting
+};
+exports.DefaultCommitConfiguration = {
+    max_tags_to_fetch: exports.DefaultConfiguration.max_tags_to_fetch,
+    max_pull_requests: exports.DefaultConfiguration.max_pull_requests,
+    max_back_track_time_days: exports.DefaultConfiguration.max_back_track_time_days,
+    exclude_merge_branches: exports.DefaultConfiguration.exclude_merge_branches,
+    sort: exports.DefaultConfiguration.sort,
+    template: '#{{CHANGELOG}}', // the global template to host the changelog
+    pr_template: '- #{{TITLE}}', // the per PR template to pick for commit based mode
+    empty_template: exports.DefaultConfiguration.empty_template,
+    categories: [
+        {
+            title: '## 🚀 Features',
+            labels: ['feature', 'feat']
+        },
+        {
+            title: '## 🐛 Fixes',
+            labels: ['fix', 'bug']
+        },
+        {
+            title: '## 🧪 Tests',
+            labels: ['test']
+        },
+        {
+            title: '## 📦 Other',
+            labels: []
+        }
+    ], // the categories to support for the ordering
+    ignore_labels: exports.DefaultConfiguration.ignore_labels,
+    label_extractor: [
+        {
+            pattern: '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\\([\\w\\-\\.]+\\))?(!)?: ([\\w ])+([\\s\\S]*)',
+            target: '$1'
+        }
+    ],
+    transformers: exports.DefaultConfiguration.transformers,
+    tag_resolver: exports.DefaultConfiguration.tag_resolver,
+    base_branches: exports.DefaultConfiguration.base_branches,
+    custom_placeholders: exports.DefaultConfiguration.custom_placeholders,
+    trim_values: exports.DefaultConfiguration.trim_values
 };
 
 
@@ -129,20 +169,23 @@ function run() {
             if (configurationJson) {
                 configJson = (0, utils_1.parseConfiguration)(configurationJson);
                 if (configJson) {
-                    core.info(`ℹ️ Retreived configuration via 'configurationJson'.`);
+                    core.info(`ℹ️ Retrieved configuration via 'configurationJson'.`);
                 }
             }
             // read in the configuration from the file if possible
             const configurationFile = core.getInput('configuration');
             const configFile = (0, utils_1.resolveConfiguration)(repositoryPath, configurationFile);
             if (configFile) {
-                core.info(`ℹ️ Retreived configuration via 'configuration' (via file).`);
+                core.info(`ℹ️ Retrieved configuration via 'configuration' (via file).`);
             }
             if (!configJson && !configFile) {
                 core.info(`ℹ️ No configuration provided. Using Defaults.`);
             }
+            // mode of the action (PR, COMMIT, HYBRID)
+            const mode = (0, utils_1.resolveMode)(core.getInput('mode'), core.getInput('commitMode') === 'true');
+            core.info(`ℹ️ Running in ${mode} mode.`);
             // merge configs, use default values from DefaultConfig on missing definition
-            const configuration = (0, utils_1.mergeConfiguration)(configJson, configFile);
+            const configuration = (0, utils_1.mergeConfiguration)(configJson, configFile, mode);
             // read in repository inputs
             const baseUrl = core.getInput('baseUrl');
             const token = core.getInput('token') || process.env.GITHUB_TOKEN || '';
@@ -159,12 +202,11 @@ function run() {
             const fetchReviewers = core.getInput('fetchReviewers') === 'true';
             const fetchReleaseInformation = core.getInput('fetchReleaseInformation') === 'true';
             const fetchReviews = core.getInput('fetchReviews') === 'true';
-            const commitMode = core.getInput('commitMode') === 'true';
             const exportCache = core.getInput('exportCache') === 'true';
             const exportOnly = core.getInput('exportOnly') === 'true';
             const cache = core.getInput('cache');
             const repositoryUtils = new supportedPlatform[platform](token, baseUrl, repositoryPath);
-            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchViaCommits, fetchReviewers, fetchReleaseInformation, fetchReviews, commitMode, exportCache, exportOnly, cache, configuration).build();
+            const result = yield new releaseNotesBuilder_1.ReleaseNotesBuilder(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchViaCommits, fetchReviewers, fetchReleaseInformation, fetchReviews, mode, exportCache, exportOnly, cache, configuration).build();
             core.setOutput('changelog', result);
             // write the result in changelog to file if possible
             const outputFile = core.getInput('outputFile');
@@ -175,6 +217,7 @@ function run() {
         }
         catch (error /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
             core.setFailed(error.message);
+            core.error(`🔥 Failed to generate changelog due to ${JSON.stringify(error)}`);
         }
     });
 }
@@ -221,7 +264,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.filterCommits = exports.Commits = exports.DefaultDiffInfo = void 0;
+exports.Commits = exports.DefaultDiffInfo = void 0;
+exports.convertCommitsToPrs = convertCommitsToPrs;
+exports.filterCommits = filterCommits;
 const core = __importStar(__nccwpck_require__(2186));
 const utils_1 = __nccwpck_require__(9613);
 exports.DefaultDiffInfo = {
@@ -291,39 +336,42 @@ class Commits {
     }
     generateCommitPRs(options) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { owner, repo, configuration } = options;
             const diffInfo = yield this.getCommitHistory(options);
-            const commits = diffInfo.commitInfo;
-            if (commits.length === 0) {
-                return [diffInfo, []];
-            }
-            const prCommits = filterCommits(commits, configuration.exclude_merge_branches);
-            core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`);
-            const prs = prCommits.map(function (commit) {
-                return {
-                    number: 0,
-                    title: commit.summary,
-                    htmlURL: '',
-                    baseBranch: '',
-                    createdAt: commit.commitDate,
-                    mergedAt: commit.commitDate,
-                    mergeCommitSha: commit.sha,
-                    author: commit.author || '',
-                    repoName: '',
-                    labels: [],
-                    milestone: '',
-                    body: commit.message || '',
-                    assignees: [],
-                    requestedReviewers: [],
-                    approvedReviewers: [],
-                    status: 'merged'
-                };
-            });
-            return [diffInfo, prs];
+            return convertCommitsToPrs(options, diffInfo);
         });
     }
 }
 exports.Commits = Commits;
+function convertCommitsToPrs(options, diffInfo) {
+    const { owner, repo, configuration } = options;
+    const commits = diffInfo.commitInfo;
+    if (commits.length === 0) {
+        return [diffInfo, []];
+    }
+    const prCommits = filterCommits(commits, configuration.exclude_merge_branches);
+    core.info(`ℹ️ Retrieved ${prCommits.length} commits for ${owner}/${repo}`);
+    const prs = prCommits.map(function (commit) {
+        return {
+            number: 0,
+            title: commit.summary,
+            htmlURL: '',
+            baseBranch: '',
+            createdAt: commit.commitDate,
+            mergedAt: commit.commitDate,
+            mergeCommitSha: commit.sha,
+            author: commit.author || '',
+            repoName: '',
+            labels: [],
+            milestone: '',
+            body: commit.message || '',
+            assignees: [],
+            requestedReviewers: [],
+            approvedReviewers: [],
+            status: 'merged'
+        };
+    });
+    return [diffInfo, prs];
+}
 /**
  * Filters out all commits which match the exclude pattern
  */
@@ -346,7 +394,6 @@ function filterCommits(commits, excludeMergeBranches) {
     }
     return filteredCommits;
 }
-exports.filterCommits = filterCommits;
 
 
 /***/ }),
@@ -389,7 +436,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createCommandManager = void 0;
+exports.createCommandManager = createCommandManager;
 const exec = __importStar(__nccwpck_require__(1514));
 const io = __importStar(__nccwpck_require__(7436));
 const utils_1 = __nccwpck_require__(9613);
@@ -398,7 +445,6 @@ function createCommandManager(workingDirectory) {
         return yield GitCommandManager.createCommandManager(workingDirectory);
     });
 }
-exports.createCommandManager = createCommandManager;
 class GitCommandManager {
     // Private constructor; use createCommandManager()
     constructor() {
@@ -434,8 +480,8 @@ class GitCommandManager {
             return result;
         });
     }
-    execGit(args, allowAllExitCodes = false, silent = false) {
-        return __awaiter(this, void 0, void 0, function* () {
+    execGit(args_1) {
+        return __awaiter(this, arguments, void 0, function* (args, allowAllExitCodes = false, silent = false) {
             (0, utils_1.directoryExistsSync)(this.workingDirectory, true);
             const result = new GitOutput();
             const stdout = [];
@@ -509,14 +555,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pullData = exports.PullRequestCollector = void 0;
+exports.PullRequestCollector = void 0;
+exports.pullData = pullData;
 const core = __importStar(__nccwpck_require__(2186));
 const tags_1 = __nccwpck_require__(6906);
 const utils_1 = __nccwpck_require__(9613);
 const pullRequests_1 = __nccwpck_require__(4012);
 const commits_1 = __nccwpck_require__(234);
 class PullRequestCollector {
-    constructor(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode = false, configuration) {
+    constructor(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, mode = 'PR', configuration) {
         this.baseUrl = baseUrl;
         this.repositoryUtils = repositoryUtils;
         this.repositoryPath = repositoryPath;
@@ -531,7 +578,7 @@ class PullRequestCollector {
         this.fetchReviewers = fetchReviewers;
         this.fetchReleaseInformation = fetchReleaseInformation;
         this.fetchReviews = fetchReviews;
-        this.commitMode = commitMode;
+        this.mode = mode;
         this.configuration = configuration;
     }
     build() {
@@ -576,7 +623,7 @@ class PullRequestCollector {
                 fetchReviewers: this.fetchReviewers,
                 fetchReleaseInformation: this.fetchReleaseInformation,
                 fetchReviews: this.fetchReviews,
-                commitMode: this.commitMode,
+                mode: this.mode,
                 configuration: this.configuration
             });
         });
@@ -585,22 +632,28 @@ class PullRequestCollector {
 exports.PullRequestCollector = PullRequestCollector;
 function pullData(repositoryUtils, options) {
     return __awaiter(this, void 0, void 0, function* () {
-        let mergedPullRequests;
-        let diffInfo;
+        let mergedPullRequests = [];
+        let diffInfo = Object.assign({}, commits_1.DefaultDiffInfo);
         const commitsApi = new commits_1.Commits(repositoryUtils);
-        if (!options.commitMode) {
-            core.startGroup(`🚀 Load pull requests`);
+        core.startGroup(`🚀 Load data`);
+        if (options.mode === 'COMMIT') {
+            core.info(`🚀 Load commit history (⚠️ Executing experimental commit mode)`);
+            const [info, prs] = yield commitsApi.generateCommitPRs(options);
+            mergedPullRequests = mergedPullRequests.concat(prs);
+            diffInfo = info;
+        }
+        else {
+            // PR mode, HYBRID mode
+            core.info(`🚀 Load pull requests`);
             const pullRequestsApi = new pullRequests_1.PullRequests(repositoryUtils, commitsApi);
             const [info, prs] = yield pullRequestsApi.getMergedPullRequests(options);
             mergedPullRequests = prs;
             diffInfo = info;
-        }
-        else {
-            core.startGroup(`🚀 Load commit history`);
-            core.info(`⚠️ Executing experimental commit mode`);
-            const [info, prs] = yield commitsApi.generateCommitPRs(options);
-            mergedPullRequests = prs;
-            diffInfo = info;
+            if (options.mode === 'HYBRID') {
+                core.info(`🚀 Converting commits to pull requests`);
+                const [, fakeCommitPrs] = (0, commits_1.convertCommitsToPrs)(options, info);
+                mergedPullRequests = mergedPullRequests.concat(fakeCommitPrs);
+            }
         }
         core.endGroup();
         return {
@@ -611,7 +664,6 @@ function pullData(repositoryUtils, options) {
         };
     });
 }
-exports.pullData = pullData;
 
 
 /***/ }),
@@ -657,7 +709,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.retrieveProperty = exports.compare = exports.sortPullRequests = exports.PullRequests = exports.EMPTY_COMMENT_INFO = exports.EMPTY_PULL_REQUEST_INFO = void 0;
+exports.PullRequests = exports.EMPTY_COMMENT_INFO = exports.EMPTY_PULL_REQUEST_INFO = void 0;
+exports.sortPullRequests = sortPullRequests;
+exports.compare = compare;
+exports.retrieveProperty = retrieveProperty;
 const core = __importStar(__nccwpck_require__(2186));
 const moment_1 = __importDefault(__nccwpck_require__(9623));
 const commits_1 = __nccwpck_require__(234);
@@ -803,7 +858,7 @@ class PullRequests {
                     const reviews = pr.reviews;
                     if (reviews && ((reviews === null || reviews === void 0 ? void 0 : reviews.length) || 0) > 0) {
                         core.info(`ℹ️ Retrieved ${reviews.length || 0} review(s) for PR ${owner}/${repo}/#${pr.number}`);
-                        // backwards compatiblity
+                        // backwards compatibility
                         pr.approvedReviewers = reviews.filter(r => r.state === 'APPROVED').map(r => r.author);
                     }
                     else {
@@ -849,7 +904,6 @@ function sortPullRequests(pullRequests, sort) {
     }
     return pullRequests;
 }
-exports.sortPullRequests = sortPullRequests;
 function compare(a, b, sort) {
     if (sort.on_property === 'mergedAt') {
         const aa = a.mergedAt || a.createdAt;
@@ -867,7 +921,6 @@ function compare(a, b, sort) {
         return a.title.localeCompare(b.title);
     }
 }
-exports.compare = compare;
 /**
  * Helper function to retrieve a property from the PullRequestInfo
  */
@@ -888,7 +941,6 @@ function retrieveProperty(pr, property, useCase) {
     }
     return value;
 }
-exports.retrieveProperty = retrieveProperty;
 
 
 /***/ }),
@@ -922,27 +974,23 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.buildRegex = exports.validateTransformer = void 0;
+exports.validateRegex = validateRegex;
+exports.buildRegex = buildRegex;
+exports.transformStringToValues = transformStringToValues;
+exports.transformStringToOptionalValue = transformStringToOptionalValue;
+exports.transformStringToValue = transformStringToValue;
 const core = __importStar(__nccwpck_require__(2186));
-function validateTransformer(transformer) {
-    if (transformer === undefined) {
+function validateRegex(regex) {
+    if (regex === undefined) {
         return null;
     }
     try {
-        let target = undefined;
-        if (transformer.hasOwnProperty('target')) {
-            target = transformer.target;
-        }
+        const target = regex.target;
+        const method = regex.method;
+        const onEmpty = regex.on_empty;
         let onProperty = undefined;
-        let method = undefined;
-        let onEmpty = undefined;
-        if (transformer.hasOwnProperty('method')) {
-            method = transformer.method;
-            onEmpty = transformer.on_empty;
-            onProperty = transformer.on_property;
-        }
-        else if (transformer.hasOwnProperty('on_property')) {
-            onProperty = transformer.on_property;
+        if (regex.hasOwnProperty('on_property')) {
+            onProperty = regex.on_property;
         }
         // legacy handling, transform single value input to array
         if (!Array.isArray(onProperty)) {
@@ -950,14 +998,13 @@ function validateTransformer(transformer) {
                 onProperty = [onProperty];
             }
         }
-        return buildRegex(transformer, target, onProperty, method, onEmpty);
+        return buildRegex(regex, target, onProperty, method, onEmpty);
     }
     catch (e) {
-        core.warning(`⚠️ Failed to validate transformer: ${transformer.pattern}`);
+        core.warning(`⚠️ Failed to validate transformer: ${regex.pattern}`);
         return null;
     }
 }
-exports.validateTransformer = validateTransformer;
 /**
  * Constructs the RegExp, providing the configured Regex and additional values
  */
@@ -977,7 +1024,83 @@ function buildRegex(regex, target, onProperty, method, onEmpty) {
         return null;
     }
 }
-exports.buildRegex = buildRegex;
+function transformStringToValues(value, extractor) {
+    if (extractor.pattern == null) {
+        return null;
+    }
+    if (extractor.method === 'regexr') {
+        const matches = transformRegexr(extractor.pattern, value, extractor.target);
+        if (matches !== null && matches.size > 0) {
+            return [...matches];
+        }
+    }
+    else if (extractor.method === 'match') {
+        const matches = value.match(extractor.pattern);
+        if (matches !== null && matches.length > 0) {
+            return matches.map(match => match || '');
+        }
+    }
+    else if (extractor.method === 'replaceAll') {
+        const match = value.replaceAll(extractor.pattern, extractor.target);
+        if (match !== '') {
+            return [match];
+        }
+    }
+    else {
+        const match = value.replace(extractor.pattern, extractor.target);
+        if (match !== '') {
+            return [match];
+        }
+    }
+    if (extractor.onEmpty !== undefined) {
+        return [extractor.onEmpty];
+    }
+    return null;
+}
+function transformStringToOptionalValue(value, extractor) {
+    const result = transformStringToValues(value, extractor);
+    if (result != null && result.length > 0) {
+        return result[0];
+    }
+    else {
+        return null;
+    }
+}
+function transformStringToValue(value, extractor) {
+    return transformStringToOptionalValue(value, extractor) || '';
+}
+function transformRegexr(regex, source, target) {
+    /**
+     * Util function extracted from regexr and is licensed under:
+     *
+     * RegExr: Learn, Build, & Test RegEx
+     * Copyright (C) 2017  gskinner.com, inc.
+     * https://github.com/gskinner/regexr/blob/master/dev/src/helpers/BrowserSolver.js#L111-L136
+     */
+    let repl;
+    let ref;
+    if (target.search(/\$[&1-9`']/) === -1) {
+        target = `$&${target}`;
+    }
+    const firstOnly = true; // for now we don't support multi matches for PRs, future improvement
+    const adaptedRegex = new RegExp(regex.source, regex.flags.replace('g', ''));
+    const result = new Set();
+    do {
+        ref = source.replace(adaptedRegex, '\b'); // bell char - just a placeholder to find
+        const index = ref.indexOf('\b');
+        const empty = ref.length > source.length;
+        if (index === -1) {
+            break;
+        }
+        repl = source.replace(adaptedRegex, target);
+        result.add(repl.substr(index, repl.length - ref.length + 1));
+        source = ref.substr(index + (empty ? 2 : 1));
+        if (firstOnly) {
+            break;
+        }
+    } while (source.length);
+    return result;
+}
 
 
 /***/ }),
@@ -1020,7 +1143,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.prepareAndSortTags = exports.transformTags = exports.filterTags = exports.Tags = void 0;
+exports.Tags = void 0;
+exports.filterTags = filterTags;
+exports.transformTags = transformTags;
+exports.prepareAndSortTags = prepareAndSortTags;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const semver = __importStar(__nccwpck_require__(1383));
@@ -1080,14 +1206,15 @@ class Tags {
         });
     }
     retrieveRange(repositoryPath, owner, repo, fromTag, toTag, ignorePreReleases, maxTagsToFetch, tagResolver) {
-        var _a;
         return __awaiter(this, void 0, void 0, function* () {
+            var _a;
             let tags = [];
             if (!toTag || !fromTag) {
+                const filterRegex = (0, regexUtils_1.validateRegex)(tagResolver.filter);
                 // filter out tags not matching the specified filter
                 const filteredTags = filterTags(
                 // retrieve the tags from the API
-                yield this.getTags(owner, repo, maxTagsToFetch), tagResolver);
+                yield this.getTags(owner, repo, maxTagsToFetch), filterRegex);
                 // check if a transformer, legacy handling, transform single value input to array
                 let tagTransfomers = undefined;
                 if (tagResolver.transformer !== undefined) {
@@ -1102,7 +1229,7 @@ class Tags {
                 let transformedTags = filteredTags;
                 if (tagTransfomers !== undefined && tagTransfomers.length > 0) {
                     for (const transformer of tagTransfomers) {
-                        const tagTransformer = (0, regexUtils_1.validateTransformer)(transformer);
+                        const tagTransformer = (0, regexUtils_1.validateRegex)(transformer);
                         if (tagTransformer != null) {
                             core.debug(`ℹ️ Using configured tagTransformer (${transformer.pattern})`);
                             transformedTags = transformTags(transformedTags, tagTransformer);
@@ -1186,12 +1313,9 @@ exports.Tags = Tags;
  * Uses the provided filter (if available) to filter out any tags not currently relevant.
  * https://github.com/mikepenz/release-changelog-builder-action/issues/566
  */
-function filterTags(tags, tagResolver) {
-    var _a;
-    const filter = tagResolver.filter;
-    if (filter !== undefined) {
-        const regex = new RegExp(filter.pattern.replace('\\\\', '\\'), (_a = filter.flags) !== null && _a !== void 0 ? _a : 'gu');
-        const filteredTags = tags.filter(tag => tag.name.match(regex) !== null);
+function filterTags(tags, filterRegex) {
+    if (filterRegex !== null) {
+        const filteredTags = tags.filter(tag => (0, regexUtils_1.transformStringToOptionalValue)(tag.name, filterRegex) !== null);
         core.debug(`ℹ️ Filtered tags count: ${filteredTags.length}, original count: ${tags.length}`);
         return filteredTags;
     }
@@ -1199,14 +1323,13 @@ function filterTags(tags, tagResolver) {
         return tags;
     }
 }
-exports.filterTags = filterTags;
 /**
  * Helper function to transform the tag name given the transformer
  */
 function transformTags(tags, transformer) {
     return tags.map(function (tag) {
         if (transformer.pattern) {
-            const transformedName = tag.name.replace(transformer.pattern, transformer.target);
+            const transformedName = (0, regexUtils_1.transformStringToValue)(tag.name, transformer);
             core.debug(`ℹ️ Transformed ${tag.name} to ${transformedName}`);
             return {
                 tmp: tag.name, // remember the original name
@@ -1219,7 +1342,6 @@ function transformTags(tags, transformer) {
         }
     });
 }
-exports.transformTags = transformTags;
 /*
   Sorts an array of tags as shown below:
   
@@ -1243,7 +1365,6 @@ function prepareAndSortTags(tags, tagResolver) {
         return semVerTags(tags);
     }
 }
-exports.prepareAndSortTags = prepareAndSortTags;
 function semVerTags(tags) {
     // filter out tags which do not follow semver
     const validatedTags = tags.filter(tag => {
@@ -1327,7 +1448,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.directoryExistsSync = exports.failOrError = void 0;
+exports.failOrError = failOrError;
+exports.directoryExistsSync = directoryExistsSync;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
 /**
@@ -1343,7 +1465,6 @@ function failOrError(message, failOnError) {
         core.error(message);
     }
 }
-exports.failOrError = failOrError;
 /**
  * Checks if a given directory exists
  */
@@ -1372,7 +1493,6 @@ function directoryExistsSync(inputPath, required) {
     }
     throw new Error(`Directory '${inputPath}' does not exist`);
 }
-exports.directoryExistsSync = directoryExistsSync;
 
 
 /***/ }),
@@ -1406,7 +1526,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.matchesRules = void 0;
+exports.matchesRules = matchesRules;
 const core = __importStar(__nccwpck_require__(2186));
 const pullRequests_1 = __nccwpck_require__(4012);
 const regexUtils_1 = __nccwpck_require__(5351);
@@ -1414,7 +1534,7 @@ const regexUtils_1 = __nccwpck_require__(5351);
  * Checks if any of the rules match the given PR
  */
 function matchesRules(rules, pr, exhaustive) {
-    const transformers = rules.map(rule => (0, regexUtils_1.validateTransformer)(rule)).filter(t => t !== null);
+    const transformers = rules.map(rule => (0, regexUtils_1.validateRegex)(rule)).filter(t => t !== null);
     if (exhaustive) {
         return transformers.every(transformer => {
             return matches(pr, transformer, 'rule');
@@ -1426,7 +1546,6 @@ function matchesRules(rules, pr, exhaustive) {
         });
     }
 }
-exports.matchesRules = matchesRules;
 /**
  * Checks if the configured property results in a positive `test` with the regex.
  */
@@ -1494,7 +1613,7 @@ const transform_1 = __nccwpck_require__(1644);
 const prCollector_1 = __nccwpck_require__(2267);
 const utils_2 = __nccwpck_require__(9613);
 class ReleaseNotesBuilder {
-    constructor(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, commitMode = false, exportCache = false, exportOnly = false, cache = null, configuration) {
+    constructor(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, mode = 'PR', exportCache = false, exportOnly = false, cache = null, configuration) {
         this.baseUrl = baseUrl;
         this.repositoryUtils = repositoryUtils;
         this.repositoryPath = repositoryPath;
@@ -1509,7 +1628,7 @@ class ReleaseNotesBuilder {
         this.fetchReviewers = fetchReviewers;
         this.fetchReleaseInformation = fetchReleaseInformation;
         this.fetchReviews = fetchReviews;
-        this.commitMode = commitMode;
+        this.mode = mode;
         this.exportCache = exportCache;
         this.exportOnly = exportOnly;
         this.cache = cache;
@@ -1541,7 +1660,7 @@ class ReleaseNotesBuilder {
                     core.debug(`Resolved 'repo' as ${this.repo}`);
                 }
                 core.endGroup();
-                const prData = yield new prCollector_1.PullRequestCollector(this.baseUrl, this.repositoryUtils, this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.includeOpen, this.failOnError, this.ignorePreReleases, this.fetchViaCommits, this.fetchReviewers, this.fetchReleaseInformation, this.fetchReviews, this.commitMode, this.configuration).build();
+                const prData = yield new prCollector_1.PullRequestCollector(this.baseUrl, this.repositoryUtils, this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.includeOpen, this.failOnError, this.ignorePreReleases, this.fetchViaCommits, this.fetchReviewers, this.fetchReleaseInformation, this.fetchReviews, this.mode, this.configuration).build();
                 if (prData == null) {
                     return null;
                 }
@@ -1555,7 +1674,7 @@ class ReleaseNotesBuilder {
                     fetchReviewers: this.fetchReviewers,
                     fetchReleaseInformation: this.fetchReleaseInformation,
                     fetchReviews: this.fetchReviews,
-                    commitMode: this.commitMode,
+                    mode: this.mode,
                     configuration: this.configuration,
                     repositoryUtils: this.repositoryUtils
                 };
@@ -1603,7 +1722,7 @@ class ReleaseNotesBuilder {
                     fetchReviewers: this.fetchReviewers || orgOptions.fetchReviewers,
                     fetchReleaseInformation: this.fetchReleaseInformation || orgOptions.fetchReleaseInformation,
                     fetchReviews: this.fetchReviews || orgOptions.fetchReviews,
-                    commitMode: this.commitMode || orgOptions.commitMode,
+                    mode: this.mode || orgOptions.mode,
                     configuration: this.configuration || orgOptions.configuration,
                     repositoryUtils: this.repositoryUtils || orgOptions.repositoryUtils
                 };
@@ -1823,7 +1942,7 @@ class GiteaRepository extends BaseRepository_1.BaseRepository {
             mergeCommitSha: pr.merge_commit_sha || '',
             author: ((_c = pr.user) === null || _c === void 0 ? void 0 : _c.login) || '',
             repoName: ((_e = (_d = pr.base) === null || _d === void 0 ? void 0 : _d.repo) === null || _e === void 0 ? void 0 : _e.full_name) || '',
-            labels: (_f = pr.labels) === null || _f === void 0 ? void 0 : _f.map(label => label.name),
+            labels: (_f = pr.labels) === null || _f === void 0 ? void 0 : _f.map(label => { var _a; return (_a = label.name) === null || _a === void 0 ? void 0 : _a.toLowerCase(); }),
             milestone: ((_g = pr.milestone) === null || _g === void 0 ? void 0 : _g.title) || '',
             body: pr.body || '',
             assignees: (_h = pr.assignees) === null || _h === void 0 ? void 0 : _h.map(user => user.full_name),
@@ -1958,8 +2077,8 @@ class GiteaRepository extends BaseRepository_1.BaseRepository {
         });
     }
     getTags(owner, repo, maxTagsToFetch) {
-        var _a;
         return __awaiter(this, void 0, void 0, function* () {
+            var _a;
             core.debug(`Start to get tag from gitea`);
             const response = yield this.api.repos.repoListTags(owner, repo, {
                 limit: maxTagsToFetch
@@ -2046,8 +2165,8 @@ const core = __importStar(__nccwpck_require__(2186));
 const moment_1 = __importDefault(__nccwpck_require__(9623));
 class GithubRepository extends BaseRepository_1.BaseRepository {
     getDiffRemote(owner, repo, base, head) {
-        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
             let changedFilesCount = 0;
             let additionCount = 0;
             let deletionCount = 0;
@@ -2091,15 +2210,15 @@ class GithubRepository extends BaseRepository_1.BaseRepository {
                 commitInfo: commits
                     .filter(commit => commit.sha)
                     .map(commit => {
-                    var _a, _b, _c, _d;
+                    var _a, _b, _c, _d, _e;
                     return ({
                         sha: commit.sha || '',
                         summary: commit.commit.message.split('\n')[0],
                         message: commit.commit.message,
-                        author: ((_a = commit.author) === null || _a === void 0 ? void 0 : _a.login) || '',
-                        authorDate: (0, moment_1.default)((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.date),
-                        committer: ((_c = commit.committer) === null || _c === void 0 ? void 0 : _c.login) || '',
-                        commitDate: (0, moment_1.default)((_d = commit.commit.committer) === null || _d === void 0 ? void 0 : _d.date),
+                        author: ((_a = commit.author) === null || _a === void 0 ? void 0 : _a.login) || ((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.name) || '',
+                        authorDate: (0, moment_1.default)((_c = commit.commit.author) === null || _c === void 0 ? void 0 : _c.date),
+                        committer: ((_d = commit.committer) === null || _d === void 0 ? void 0 : _d.login) || '',
+                        commitDate: (0, moment_1.default)((_e = commit.commit.committer) === null || _e === void 0 ? void 0 : _e.date),
                         prNumber: undefined
                     });
                 })
@@ -2107,8 +2226,8 @@ class GithubRepository extends BaseRepository_1.BaseRepository {
         });
     }
     getForCommitHash(owner, repo, commit_sha, maxPullRequests) {
-        var _a, e_1, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
+            var _a, e_1, _b, _c;
             const mergedPRs = [];
             const options = this.octokit.repos.listPullRequestsAssociatedWithCommit.endpoint.merge({
                 owner,
@@ -2139,8 +2258,8 @@ class GithubRepository extends BaseRepository_1.BaseRepository {
         });
     }
     getBetweenDates(owner, repo, fromDate, toDate, maxPullRequests) {
-        var _a, e_2, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
+            var _a, e_2, _b, _c;
             const mergedPRs = [];
             const options = this.octokit.pulls.list.endpoint.merge({
                 owner,
@@ -2185,8 +2304,8 @@ class GithubRepository extends BaseRepository_1.BaseRepository {
         });
     }
     getOpen(owner, repo, maxPullRequests) {
-        var _a, e_3, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
+            var _a, e_3, _b, _c;
             const openPrs = [];
             const options = this.octokit.pulls.list.endpoint.merge({
                 owner,
@@ -2225,8 +2344,8 @@ class GithubRepository extends BaseRepository_1.BaseRepository {
         });
     }
     getReviews(owner, repo, pr) {
-        var _a, e_4, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
+            var _a, e_4, _b, _c;
             const options = this.octokit.pulls.listReviews.endpoint.merge({
                 owner,
                 repo,
@@ -2281,7 +2400,7 @@ class GithubRepository extends BaseRepository_1.BaseRepository {
                 labels: this.attachSpecialLabels(status, ((_b = pr.labels) === null || _b === void 0 ? void 0 : _b.map(lbl => { var _a; return ((_a = lbl.name) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase('en')) || ''; })) || []),
                 milestone: ((_c = pr.milestone) === null || _c === void 0 ? void 0 : _c.title) || '',
                 body: pr.body || '',
-                assignees: ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.map(asignee => (asignee === null || asignee === void 0 ? void 0 : asignee.login) || '')) || [],
+                assignees: ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.map(assignee => (assignee === null || assignee === void 0 ? void 0 : assignee.login) || '')) || [],
                 requestedReviewers: ((_e = pr.requested_reviewers) === null || _e === void 0 ? void 0 : _e.map(reviewer => (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '')) || [],
                 approvedReviewers: [],
                 reviews: undefined,
@@ -2316,8 +2435,8 @@ class GithubRepository extends BaseRepository_1.BaseRepository {
         }
     }
     getTags(owner, repo, maxTagsToFetch) {
-        var _a, e_5, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
+            var _a, e_5, _b, _c;
             const tagsInfo = [];
             const options = this.octokit.repos.listTags.endpoint.merge({
                 owner,
@@ -2430,13 +2549,19 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.replaceEmptyTemplate = exports.buildChangelog = void 0;
+exports.clear = clear;
+exports.buildChangelog = buildChangelog;
+exports.replaceEmptyTemplate = replaceEmptyTemplate;
 const core = __importStar(__nccwpck_require__(2186));
 const utils_1 = __nccwpck_require__(918);
 const pullRequests_1 = __nccwpck_require__(4012);
 const regexUtils_1 = __nccwpck_require__(5351);
 const regexUtils_2 = __nccwpck_require__(2364);
 const EMPTY_MAP = new Map();
+let CLEAR = false;
+function clear() {
+    CLEAR = true;
+}
 function buildChangelog(diffInfo, origPrs, options) {
     core.startGroup('📦 Build changelog');
     let prs = origPrs;
@@ -2453,7 +2578,7 @@ function buildChangelog(diffInfo, origPrs, options) {
     core.info(`ℹ️ Sorted all pull requests ascending: ${JSON.stringify(sort)}`);
     // establish parent child PR relations
     if (config.reference !== undefined) {
-        const reference = (0, regexUtils_1.validateTransformer)(config.reference);
+        const reference = (0, regexUtils_1.validateRegex)(config.reference);
         if (reference !== null) {
             core.info(`ℹ️ Identifying PR references using \`reference\``);
             const mapped = new Map();
@@ -2491,13 +2616,13 @@ function buildChangelog(diffInfo, origPrs, options) {
     }
     // drop duplicate pull requests
     if (config.duplicate_filter !== undefined) {
-        const extractor = (0, regexUtils_1.validateTransformer)(config.duplicate_filter);
+        const extractor = (0, regexUtils_1.validateRegex)(config.duplicate_filter);
         if (extractor !== null) {
             core.info(`ℹ️ Remove duplicated pull requests using \`duplicate_filter\``);
             const deduplicatedMap = new Map();
             const unmatched = [];
             for (const pr of prs) {
-                const extracted = extractValues(pr, extractor, 'dupliate_filter');
+                const extracted = extractValues(pr, extractor, 'duplicate_filter');
                 if (extracted !== null && extracted.length > 0) {
                     deduplicatedMap.set(extracted[0], pr);
                 }
@@ -2546,18 +2671,21 @@ function buildChangelog(diffInfo, origPrs, options) {
     core.info(`ℹ️ Used ${validatedTransformers.length} transformers to adjust message`);
     core.info(`✒️ Wrote messages for ${prs.length} pull requests`);
     // bring PRs into the order of categories
-    const categorized = new Map();
     const categories = config.categories;
     const ignoredLabels = config.ignore_labels;
-    for (const category of categories) {
-        categorized.set(category, []);
-    }
+    const flatCategories = flatten(config.categories);
     const categorizedPrs = [];
     const ignoredPrs = [];
     const openPrs = [];
     const uncategorizedPrs = [];
+    // set-up the category object
+    for (const category of flatCategories) {
+        if (CLEAR || !category.entries) {
+            category.entries = [];
+        }
+    }
     // bring elements in order
-    for (const [pr, body] of transformedMap) {
+    prLoop: for (const [pr, body] of transformedMap) {
         if ((0, utils_1.haveCommonElementsArr)(ignoredLabels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
             ignoredPrs.push(body);
             continue;
@@ -2566,55 +2694,17 @@ function buildChangelog(diffInfo, origPrs, options) {
             openPrs.push(body);
         }
         let matchedOnce = false; // in case we matched once at least, the PR can't be uncategorized
-        for (const [category, pullRequests] of categorized) {
-            let matched = false; // check if we matched within the given category
-            // check if any exclude label matches
-            if (category.exclude_labels !== undefined) {
-                if ((0, utils_1.haveCommonElementsArr)(category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
-                    if (core.isDebug()) {
-                        const excludeLabels = JSON.stringify(category.exclude_labels);
-                        core.debug(`    PR ${pr.number} with labels: ${pr.labels} excluded from category via exclude label: ${excludeLabels}`);
-                    }
-                    continue; // one of the exclude labels matched, skip the PR for this category
-                }
-            }
-            // in case we have exhaustive matching enabled, and have labels and/or rules
-            // validate for an exhaustive match (e.g. every provided rule applies)
-            if (category.exhaustive === true && (category.labels !== undefined || category.rules !== undefined)) {
-                if (category.labels !== undefined) {
-                    matched = (0, utils_1.haveEveryElementsArr)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels);
-                }
-                let exhaustive_rules = true;
-                if (category.exhaustive_rules !== undefined) {
-                    exhaustive_rules = category.exhaustive_rules;
-                }
-                if ((matched || category.labels === undefined) && category.rules !== undefined) {
-                    matched = (0, regexUtils_2.matchesRules)(category.rules, pr, exhaustive_rules);
-                }
-            }
-            else {
-                // if not exhaustive, do individual matches
-                if (category.labels !== undefined) {
-                    // check if either any of the labels applies
-                    matched = (0, utils_1.haveCommonElementsArr)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels);
-                }
-                let exhaustive_rules = false;
-                if (category.exhaustive_rules !== undefined) {
-                    exhaustive_rules = category.exhaustive_rules;
-                }
-                if (!matched && category.rules !== undefined) {
-                    // if no label did apply, check if any rule applies
-                    matched = (0, regexUtils_2.matchesRules)(category.rules, pr, exhaustive_rules);
-                }
-            }
-            if (matched) {
-                pullRequests.push(body); // if matched add the PR to the list
+        for (const category of categories) {
+            const [matched, consumed] = recursiveCategorizePr(category, pr, body);
+            if (consumed) {
+                continue prLoop;
             }
             matchedOnce = matchedOnce || matched;
         }
         if (!matchedOnce) {
             // we allow to have pull requests included in an "uncategorized" category
-            for (const [category, pullRequests] of categorized) {
+            for (const category of flatCategories) {
+                const pullRequests = category.entries || [];
                 if ((category.labels === undefined || category.labels.length === 0) && category.rules === undefined) {
                     // check if any exclude label matches for the "uncategorized" category
                     if (category.exclude_labels !== undefined) {
@@ -2641,26 +2731,16 @@ function buildChangelog(diffInfo, origPrs, options) {
     }
     core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`);
     // serialize and provide the categorized content as json
-    const transformedCategorized = Array.from(categorized).reduce((obj, [key, value]) => Object.assign(obj, { [key.key || key.title]: value }), {});
+    const transformedCategorized = {};
+    for (const category of flatCategories) {
+        Object.assign(transformedCategorized, { [category.key || category.title]: category.entries });
+    }
     core.setOutput('categorized', JSON.stringify(transformedCategorized));
     // construct final changelog
     let changelog = '';
-    for (const [category, pullRequests] of categorized) {
-        if (pullRequests.length > 0) {
-            if (category.title) {
-                changelog = `${changelog + category.title}\n\n`;
-            }
-            for (const pr of pullRequests) {
-                changelog = `${changelog + pr}\n`;
-            }
-            changelog = `${changelog}\n`; // add space between sections
-        }
-        else if (category.empty_content !== undefined) {
-            if (category.title) {
-                changelog = `${changelog + category.title}\n\n`;
-            }
-            changelog = `${changelog + category.empty_content}\n\n`;
-        }
+    for (const category of flatCategories) {
+        const pullRequests = category.entries || [];
+        changelog = attachCategoryChangelog(changelog, category, pullRequests);
     }
     core.info(`✒️ Wrote ${categorizedPrs.length} categorized pull requests down`);
     if (core.isDebug()) {
@@ -2703,12 +2783,24 @@ function buildChangelog(diffInfo, origPrs, options) {
         }
     }
     core.info(`✒️ Wrote ${ignoredPrs.length} ignored pull requests down`);
+    // collect all contributors
+    const contributorsSet = new Set();
+    for (const pr of prs) {
+        contributorsSet.add(`@${pr.author}`);
+    }
+    const contributorsArray = Array.from(contributorsSet);
+    const contributorsString = contributorsArray.join(', ');
+    const externalContributorString = contributorsArray.filter(value => value !== options.owner).join(', ');
+    core.setOutput('contributors', JSON.stringify(contributorsSet));
     // fill template
     const placeholderMap = new Map();
     placeholderMap.set('CHANGELOG', changelog);
     placeholderMap.set('UNCATEGORIZED', changelogUncategorized);
     placeholderMap.set('OPEN', changelogOpen);
     placeholderMap.set('IGNORED', changelogIgnored);
+    // fill special collected contributors
+    placeholderMap.set('CONTRIBUTORS', contributorsString);
+    placeholderMap.set('EXTERNAL_CONTRIBUTORS', externalContributorString);
     // fill other placeholders
     placeholderMap.set('CATEGORIZED_COUNT', categorizedPrs.length.toString());
     placeholderMap.set('UNCATEGORIZED_COUNT', uncategorizedPrs.length.toString());
@@ -2730,7 +2822,92 @@ function buildChangelog(diffInfo, origPrs, options) {
     core.endGroup();
     return transformedChangelog;
 }
-exports.buildChangelog = buildChangelog;
+function recursiveCategorizePr(category, pr, body) {
+    let matched = false;
+    let consumed = false;
+    const matchesParent = categorizePr(category, pr);
+    // only do children if parent also matches
+    if (category.categories && matchesParent) {
+        for (const childCategory of category.categories) {
+            const [childMatched, childConsumed] = recursiveCategorizePr(childCategory, pr, body);
+            matched = matched || childMatched; // at least one time it matched
+            consumed = childConsumed;
+        }
+    }
+    // if consumed we don't handle it anymore, as it was matched in a child, don't handle anymore
+    if (!consumed && !matched) {
+        const pullRequests = category.entries || [];
+        matched = matchesParent;
+        if (matched) {
+            pullRequests.push(body); // if matched add the PR to the list
+        }
+    }
+    if (matched && category.consume) {
+        consumed = true;
+    }
+    return [matched, consumed];
+}
+function categorizePr(category, pr) {
+    let matched = false; // check if we matched within the given category
+    // check if any exclude label matches
+    if (category.exclude_labels !== undefined) {
+        if ((0, utils_1.haveCommonElementsArr)(category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
+            if (core.isDebug()) {
+                const excludeLabels = JSON.stringify(category.exclude_labels);
+                core.debug(`    PR ${pr.number} with labels: ${pr.labels} excluded from category via exclude label: ${excludeLabels}`);
+            }
+            return false; // one of the exclude labels matched, skip the PR for this category
+        }
+    }
+    // in case we have exhaustive matching enabled, and have labels and/or rules
+    // validate for an exhaustive match (e.g. every provided rule applies)
+    if (category.exhaustive === true && (category.labels !== undefined || category.rules !== undefined)) {
+        if (category.labels !== undefined) {
+            matched = (0, utils_1.haveEveryElementsArr)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels);
+        }
+        let exhaustive_rules = true;
+        if (category.exhaustive_rules !== undefined) {
+            exhaustive_rules = category.exhaustive_rules;
+        }
+        if ((matched || category.labels === undefined) && category.rules !== undefined) {
+            matched = (0, regexUtils_2.matchesRules)(category.rules, pr, exhaustive_rules);
+        }
+    }
+    else {
+        // if not exhaustive, do individual matches
+        if (category.labels !== undefined) {
+            // check if either any of the labels applies
+            matched = (0, utils_1.haveCommonElementsArr)(category.labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels);
+        }
+        let exhaustive_rules = false;
+        if (category.exhaustive_rules !== undefined) {
+            exhaustive_rules = category.exhaustive_rules;
+        }
+        if (!matched && category.rules !== undefined) {
+            // if no label did apply, check if any rule applies
+            matched = (0, regexUtils_2.matchesRules)(category.rules, pr, exhaustive_rules);
+        }
+    }
+    return matched;
+}
+function attachCategoryChangelog(changelog, category, pullRequests) {
+    if (pullRequests.length > 0 || hasChildWithEntries(category)) {
+        if (category.title) {
+            changelog = `${changelog + category.title}\n\n`;
+        }
+        for (const pr of pullRequests) {
+            changelog = `${changelog + pr}\n`;
+        }
+        changelog = `${changelog}\n`; // add space between sections
+    }
+    else if (category.empty_content !== undefined) {
+        if (category.title) {
+            changelog = `${changelog + category.title}\n\n`;
+        }
+        changelog = `${changelog + category.empty_content}\n\n`;
+    }
+    return changelog;
+}
 function replaceEmptyTemplate(template, options) {
     const placeholders = new Map();
     for (const ph of options.configuration.custom_placeholders || []) {
@@ -2740,7 +2917,6 @@ function replaceEmptyTemplate(template, options) {
     fillAdditionalPlaceholders(options, placeholderMap);
     return replacePlaceholders(template, EMPTY_MAP, placeholderMap, placeholders, undefined, options.configuration);
 }
-exports.replaceEmptyTemplate = replaceEmptyTemplate;
 function fillAdditionalPlaceholders(options, placeholderMap /* placeholderKey and original value */) {
     var _a, _b;
     placeholderMap.set('OWNER', options.owner);
@@ -2804,17 +2980,18 @@ function handlePlaceholder(template, key, value, placeholders /* placeholders to
     const phs = placeholders.get(key);
     if (phs) {
         for (const placeholder of phs) {
-            const transformer = (0, regexUtils_1.validateTransformer)(placeholder.transformer);
+            const transformer = (0, regexUtils_1.validateRegex)(placeholder.transformer);
             if (transformer === null || transformer === void 0 ? void 0 : transformer.pattern) {
-                const extractedValue = value.replace(transformer.pattern, transformer.target);
+                const extractedValue = (0, regexUtils_1.transformStringToOptionalValue)(value, transformer);
                 // note: `.replace` will return the full string again if there was no match
-                if (extractedValue && (extractedValue !== value || (extractedValue === value && value.match(transformer.pattern)))) {
+                // note: This is mostly backwards compatibility
+                if (extractedValue && ((transformer.method && transformer.method !== 'replace') || extractedValue !== value)) {
                     if (placeholderPrMap) {
                         (0, utils_1.createOrSet)(placeholderPrMap, placeholder.name, extractedValue);
                     }
                     transformed = transformed.replaceAll(`#{{${placeholder.name}}}`, configuration.trim_values ? extractedValue.trim() : extractedValue);
                     if (core.isDebug()) {
-                        core.debug(`    Custom Placeholder successfully matched data - ${extractValues} (${placeholder.name})`);
+                        core.debug(`    Custom Placeholder successfully matched data - ${extractedValue} (${placeholder.name})`);
                     }
                 }
                 else if (core.isDebug() && extractedValue === value) {
@@ -2899,7 +3076,7 @@ function validateTransformers(specifiedTransformers) {
     const transformers = specifiedTransformers;
     return transformers
         .map(transformer => {
-        return (0, regexUtils_1.validateTransformer)(transformer);
+        return (0, regexUtils_1.validateRegex)(transformer);
     })
         .filter(transformer => (transformer === null || transformer === void 0 ? void 0 : transformer.pattern) != null)
         .map(transformer => {
@@ -2932,22 +3109,33 @@ function extractValuesFromString(value, extractor) {
     if (extractor.pattern == null) {
         return null;
     }
-    if (extractor.method === 'match') {
-        const lables = value.match(extractor.pattern);
-        if (lables !== null && lables.length > 0) {
-            return lables.map(label => (label === null || label === void 0 ? void 0 : label.toLocaleLowerCase('en')) || '');
-        }
+    const transformed = (0, regexUtils_1.transformStringToValues)(value, extractor);
+    if (transformed) {
+        return transformed.map(val => (val === null || val === void 0 ? void 0 : val.toLocaleLowerCase('en')) || '');
     }
     else {
-        const label = value.replace(extractor.pattern, extractor.target);
-        if (label !== '') {
-            return [label.toLocaleLowerCase('en')];
-        }
+        return null;
     }
-    if (extractor.onEmpty !== undefined) {
-        return [extractor.onEmpty.toLocaleLowerCase('en')];
+}
+function flatten(categories) {
+    if (!categories) {
+        return [];
     }
-    return null;
+    return categories.reduce(function (r, i) {
+        return r.concat([i]).concat(flatten(i.categories));
+    }, []);
+}
+function hasChildWithEntries(category) {
+    var _a;
+    const categories = category.categories;
+    if (!categories || categories.length === 0) {
+        return (((_a = category.entries) === null || _a === void 0 ? void 0 : _a.length) || 0) > 0;
+    }
+    let hasEntries = false;
+    for (const cat of categories) {
+        hasEntries = hasEntries || hasChildWithEntries(cat);
+    }
+    return hasEntries;
 }
 
 
@@ -2985,7 +3173,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.haveEveryElementsArr = exports.haveEveryElements = exports.haveCommonElementsArr = exports.haveCommonElements = exports.createOrSet = exports.writeOutput = exports.mergeConfiguration = exports.parseConfiguration = exports.resolveConfiguration = exports.checkExportedData = exports.writeCacheData = exports.retrieveRepositoryPath = void 0;
+exports.retrieveRepositoryPath = retrieveRepositoryPath;
+exports.writeCacheData = writeCacheData;
+exports.checkExportedData = checkExportedData;
+exports.resolveMode = resolveMode;
+exports.resolveConfiguration = resolveConfiguration;
+exports.parseConfiguration = parseConfiguration;
+exports.mergeConfiguration = mergeConfiguration;
+exports.writeOutput = writeOutput;
+exports.createOrSet = createOrSet;
+exports.haveCommonElements = haveCommonElements;
+exports.haveCommonElementsArr = haveCommonElementsArr;
+exports.haveEveryElements = haveEveryElements;
+exports.haveEveryElementsArr = haveEveryElementsArr;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
@@ -3007,7 +3207,6 @@ function retrieveRepositoryPath(providedPath) {
     core.debug(`repositoryPath = '${repositoryPath}'`);
     return repositoryPath;
 }
-exports.retrieveRepositoryPath = retrieveRepositoryPath;
 function writeCacheData(data, cacheOutput) {
     let cacheFile;
     if (cacheOutput && !cacheOutput.startsWith('{')) {
@@ -3031,7 +3230,6 @@ function writeCacheData(data, cacheOutput) {
         core.warning(`Failed to write cache file. (${error})`);
     }
 }
-exports.writeCacheData = writeCacheData;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function replacer(key, value) {
     if (key === 'repositoryUtils')
@@ -3097,7 +3295,26 @@ function checkExportedData(exportCache, cacheInput) {
         return null;
     }
 }
-exports.checkExportedData = checkExportedData;
+function resolveMode(mode, commitMode) {
+    if (commitMode === false || mode === undefined) {
+        if (commitMode === true) {
+            return 'COMMIT';
+        }
+        else {
+            return 'PR';
+        }
+    }
+    else {
+        const upperCaseMode = mode.toUpperCase();
+        if (upperCaseMode === 'COMMIT') {
+            return 'COMMIT';
+        }
+        else if (upperCaseMode === 'HYBRID') {
+            return 'HYBRID';
+        }
+    }
+    return 'PR';
+}
 /**
  * Retrieves the configuration given the file path, if not found it will fallback to the `DefaultConfiguration`
  */
@@ -3123,7 +3340,6 @@ function resolveConfiguration(githubWorkspacePath, configurationFile) {
     }
     return undefined;
 }
-exports.resolveConfiguration = resolveConfiguration;
 /**
  * Reads in the configuration from the JSON file
  */
@@ -3145,7 +3361,7 @@ function readConfiguration(filename) {
  */
 function parseConfiguration(config) {
     try {
-        // for compatiblity with the `yml` file we require to use `#{{}}` instead of `${{}}` - replace it here.
+        // for compatibility with the `yml` file we require to use `#{{}}` instead of `${{}}` - replace it here.
         const configurationJSON = JSON.parse(config.replace(/\${{/g, '#{{'));
         return configurationJSON;
     }
@@ -3154,32 +3370,37 @@ function parseConfiguration(config) {
         return undefined;
     }
 }
-exports.parseConfiguration = parseConfiguration;
 /**
  * Merges the configurations, will fallback to the DefaultConfiguration value
  */
-function mergeConfiguration(jc, fc) {
+function mergeConfiguration(jc, fc, mode) {
+    let def;
+    if (mode === 'COMMIT') {
+        def = configuration_1.DefaultCommitConfiguration;
+    }
+    else {
+        def = configuration_1.DefaultConfiguration;
+    }
     return {
-        max_tags_to_fetch: (jc === null || jc === void 0 ? void 0 : jc.max_tags_to_fetch) || (fc === null || fc === void 0 ? void 0 : fc.max_tags_to_fetch) || configuration_1.DefaultConfiguration.max_tags_to_fetch,
-        max_pull_requests: (jc === null || jc === void 0 ? void 0 : jc.max_pull_requests) || (fc === null || fc === void 0 ? void 0 : fc.max_pull_requests) || configuration_1.DefaultConfiguration.max_pull_requests,
-        max_back_track_time_days: (jc === null || jc === void 0 ? void 0 : jc.max_back_track_time_days) || (fc === null || fc === void 0 ? void 0 : fc.max_back_track_time_days) || configuration_1.DefaultConfiguration.max_back_track_time_days,
-        exclude_merge_branches: (jc === null || jc === void 0 ? void 0 : jc.exclude_merge_branches) || (fc === null || fc === void 0 ? void 0 : fc.exclude_merge_branches) || configuration_1.DefaultConfiguration.exclude_merge_branches,
-        sort: (jc === null || jc === void 0 ? void 0 : jc.sort) || (fc === null || fc === void 0 ? void 0 : fc.sort) || configuration_1.DefaultConfiguration.sort,
-        template: (jc === null || jc === void 0 ? void 0 : jc.template) || (fc === null || fc === void 0 ? void 0 : fc.template) || configuration_1.DefaultConfiguration.template,
-        pr_template: (jc === null || jc === void 0 ? void 0 : jc.pr_template) || (fc === null || fc === void 0 ? void 0 : fc.pr_template) || configuration_1.DefaultConfiguration.pr_template,
-        empty_template: (jc === null || jc === void 0 ? void 0 : jc.empty_template) || (fc === null || fc === void 0 ? void 0 : fc.empty_template) || configuration_1.DefaultConfiguration.empty_template,
-        categories: (jc === null || jc === void 0 ? void 0 : jc.categories) || (fc === null || fc === void 0 ? void 0 : fc.categories) || configuration_1.DefaultConfiguration.categories,
-        ignore_labels: (jc === null || jc === void 0 ? void 0 : jc.ignore_labels) || (fc === null || fc === void 0 ? void 0 : fc.ignore_labels) || configuration_1.DefaultConfiguration.ignore_labels,
-        label_extractor: (jc === null || jc === void 0 ? void 0 : jc.label_extractor) || (fc === null || fc === void 0 ? void 0 : fc.label_extractor) || configuration_1.DefaultConfiguration.label_extractor,
-        duplicate_filter: (jc === null || jc === void 0 ? void 0 : jc.duplicate_filter) || (fc === null || fc === void 0 ? void 0 : fc.duplicate_filter) || configuration_1.DefaultConfiguration.duplicate_filter,
-        transformers: (jc === null || jc === void 0 ? void 0 : jc.transformers) || (fc === null || fc === void 0 ? void 0 : fc.transformers) || configuration_1.DefaultConfiguration.transformers,
-        tag_resolver: (jc === null || jc === void 0 ? void 0 : jc.tag_resolver) || (fc === null || fc === void 0 ? void 0 : fc.tag_resolver) || configuration_1.DefaultConfiguration.tag_resolver,
-        base_branches: (jc === null || jc === void 0 ? void 0 : jc.base_branches) || (fc === null || fc === void 0 ? void 0 : fc.base_branches) || configuration_1.DefaultConfiguration.base_branches,
-        custom_placeholders: (jc === null || jc === void 0 ? void 0 : jc.custom_placeholders) || (fc === null || fc === void 0 ? void 0 : fc.custom_placeholders) || configuration_1.DefaultConfiguration.custom_placeholders,
-        trim_values: (jc === null || jc === void 0 ? void 0 : jc.trim_values) || (fc === null || fc === void 0 ? void 0 : fc.trim_values) || configuration_1.DefaultConfiguration.trim_values
+        max_tags_to_fetch: (jc === null || jc === void 0 ? void 0 : jc.max_tags_to_fetch) || (fc === null || fc === void 0 ? void 0 : fc.max_tags_to_fetch) || def.max_tags_to_fetch,
+        max_pull_requests: (jc === null || jc === void 0 ? void 0 : jc.max_pull_requests) || (fc === null || fc === void 0 ? void 0 : fc.max_pull_requests) || def.max_pull_requests,
+        max_back_track_time_days: (jc === null || jc === void 0 ? void 0 : jc.max_back_track_time_days) || (fc === null || fc === void 0 ? void 0 : fc.max_back_track_time_days) || def.max_back_track_time_days,
+        exclude_merge_branches: (jc === null || jc === void 0 ? void 0 : jc.exclude_merge_branches) || (fc === null || fc === void 0 ? void 0 : fc.exclude_merge_branches) || def.exclude_merge_branches,
+        sort: (jc === null || jc === void 0 ? void 0 : jc.sort) || (fc === null || fc === void 0 ? void 0 : fc.sort) || def.sort,
+        template: (jc === null || jc === void 0 ? void 0 : jc.template) || (fc === null || fc === void 0 ? void 0 : fc.template) || def.template,
+        pr_template: (jc === null || jc === void 0 ? void 0 : jc.pr_template) || (fc === null || fc === void 0 ? void 0 : fc.pr_template) || def.pr_template,
+        empty_template: (jc === null || jc === void 0 ? void 0 : jc.empty_template) || (fc === null || fc === void 0 ? void 0 : fc.empty_template) || def.empty_template,
+        categories: (jc === null || jc === void 0 ? void 0 : jc.categories) || (fc === null || fc === void 0 ? void 0 : fc.categories) || def.categories,
+        ignore_labels: (jc === null || jc === void 0 ? void 0 : jc.ignore_labels) || (fc === null || fc === void 0 ? void 0 : fc.ignore_labels) || def.ignore_labels,
+        label_extractor: (jc === null || jc === void 0 ? void 0 : jc.label_extractor) || (fc === null || fc === void 0 ? void 0 : fc.label_extractor) || def.label_extractor,
+        duplicate_filter: (jc === null || jc === void 0 ? void 0 : jc.duplicate_filter) || (fc === null || fc === void 0 ? void 0 : fc.duplicate_filter) || def.duplicate_filter,
+        transformers: (jc === null || jc === void 0 ? void 0 : jc.transformers) || (fc === null || fc === void 0 ? void 0 : fc.transformers) || def.transformers,
+        tag_resolver: (jc === null || jc === void 0 ? void 0 : jc.tag_resolver) || (fc === null || fc === void 0 ? void 0 : fc.tag_resolver) || def.tag_resolver,
+        base_branches: (jc === null || jc === void 0 ? void 0 : jc.base_branches) || (fc === null || fc === void 0 ? void 0 : fc.base_branches) || def.base_branches,
+        custom_placeholders: (jc === null || jc === void 0 ? void 0 : jc.custom_placeholders) || (fc === null || fc === void 0 ? void 0 : fc.custom_placeholders) || def.custom_placeholders,
+        trim_values: (jc === null || jc === void 0 ? void 0 : jc.trim_values) || (fc === null || fc === void 0 ? void 0 : fc.trim_values) || def.trim_values
     };
 }
-exports.mergeConfiguration = mergeConfiguration;
 /**
  * Writes the changelog to the given the file
  */
@@ -3195,7 +3416,6 @@ function writeOutput(githubWorkspacePath, outputFile, changelog) {
         }
     }
 }
-exports.writeOutput = writeOutput;
 function createOrSet(map, key, value) {
     const entry = map.get(key);
     if (!entry) {
@@ -3205,23 +3425,18 @@ function createOrSet(map, key, value) {
         entry.push(value);
     }
 }
-exports.createOrSet = createOrSet;
 function haveCommonElements(arr1, arr2) {
     return arr1.some(item => arr2.has(item));
 }
-exports.haveCommonElements = haveCommonElements;
 function haveCommonElementsArr(arr1, arr2) {
     return haveCommonElements(arr1, new Set(arr2));
 }
-exports.haveCommonElementsArr = haveCommonElementsArr;
 function haveEveryElements(arr1, arr2) {
     return arr1.every(item => arr2.has(item));
 }
-exports.haveEveryElements = haveEveryElements;
 function haveEveryElementsArr(arr1, arr2) {
     return haveEveryElements(arr1, new Set(arr2));
 }
-exports.haveEveryElementsArr = haveEveryElementsArr;
 
 
 /***/ }),
@@ -5803,7 +6018,7 @@ class HttpClient {
         if (this._keepAlive && useProxy) {
             agent = this._proxyAgent;
         }
-        if (this._keepAlive && !useProxy) {
+        if (!useProxy) {
             agent = this._agent;
         }
         // if agent is already assigned use that agent.
@@ -5835,15 +6050,11 @@ class HttpClient {
             agent = tunnelAgent(agentOptions);
             this._proxyAgent = agent;
         }
-        // if reusing agent across request and tunneling agent isn't assigned create a new agent
-        if (this._keepAlive && !agent) {
+        // if tunneling agent isn't assigned create a new agent
+        if (!agent) {
             const options = { keepAlive: this._keepAlive, maxSockets };
             agent = usingSsl ? new https.Agent(options) : new http.Agent(options);
             this._agent = agent;
-        }
-        // if not using private agent and tunnel agent isn't setup then use global agent
-        if (!agent) {
-            agent = usingSsl ? https.globalAgent : http.globalAgent;
         }
         if (usingSsl && this._ignoreSslError) {
             // we don't want to set NODE_TLS_REJECT_UNAUTHORIZED=0 since that will affect request for entire process
@@ -6664,7 +6875,7 @@ var import_graphql = __nccwpck_require__(8467);
 var import_auth_token = __nccwpck_require__(334);
 
 // pkg/dist-src/version.js
-var VERSION = "5.1.0";
+var VERSION = "5.2.0";
 
 // pkg/dist-src/index.js
 var noop = () => {
@@ -6831,7 +7042,7 @@ module.exports = __toCommonJS(dist_src_exports);
 var import_universal_user_agent = __nccwpck_require__(5030);
 
 // pkg/dist-src/version.js
-var VERSION = "9.0.4";
+var VERSION = "9.0.5";
 
 // pkg/dist-src/defaults.js
 var userAgent = `octokit-endpoint.js/${VERSION} ${(0, import_universal_user_agent.getUserAgent)()}`;
@@ -7216,7 +7427,7 @@ var import_request3 = __nccwpck_require__(6234);
 var import_universal_user_agent = __nccwpck_require__(5030);
 
 // pkg/dist-src/version.js
-var VERSION = "7.0.2";
+var VERSION = "7.1.0";
 
 // pkg/dist-src/with-defaults.js
 var import_request2 = __nccwpck_require__(6234);
@@ -7373,7 +7584,7 @@ __export(dist_src_exports, {
 module.exports = __toCommonJS(dist_src_exports);
 
 // pkg/dist-src/version.js
-var VERSION = "9.1.5";
+var VERSION = "9.2.1";
 
 // pkg/dist-src/normalize-paginated-list-response.js
 function normalizePaginatedListResponse(response) {
@@ -7534,6 +7745,8 @@ var paginatingEndpoints = [
   "GET /orgs/{org}/members/{username}/codespaces",
   "GET /orgs/{org}/migrations",
   "GET /orgs/{org}/migrations/{migration_id}/repositories",
+  "GET /orgs/{org}/organization-roles/{role_id}/teams",
+  "GET /orgs/{org}/organization-roles/{role_id}/users",
   "GET /orgs/{org}/outside_collaborators",
   "GET /orgs/{org}/packages",
   "GET /orgs/{org}/packages/{package_type}/{package_name}/versions",
@@ -7769,7 +7982,7 @@ __export(dist_src_exports, {
 module.exports = __toCommonJS(dist_src_exports);
 
 // pkg/dist-src/version.js
-var VERSION = "4.0.0";
+var VERSION = "4.0.1";
 
 // pkg/dist-src/index.js
 function requestLog(octokit) {
@@ -7830,7 +8043,7 @@ __export(dist_src_exports, {
 module.exports = __toCommonJS(dist_src_exports);
 
 // pkg/dist-src/version.js
-var VERSION = "10.2.0";
+var VERSION = "10.4.1";
 
 // pkg/dist-src/generated/endpoints.js
 var Endpoints = {
@@ -7957,6 +8170,9 @@ var Endpoints = {
       "GET /repos/{owner}/{repo}/actions/permissions/selected-actions"
     ],
     getArtifact: ["GET /repos/{owner}/{repo}/actions/artifacts/{artifact_id}"],
+    getCustomOidcSubClaimForRepo: [
+      "GET /repos/{owner}/{repo}/actions/oidc/customization/sub"
+    ],
     getEnvironmentPublicKey: [
       "GET /repositories/{repository_id}/environments/{environment_name}/secrets/public-key"
     ],
@@ -8109,6 +8325,9 @@ var Endpoints = {
     setCustomLabelsForSelfHostedRunnerForRepo: [
       "PUT /repos/{owner}/{repo}/actions/runners/{runner_id}/labels"
     ],
+    setCustomOidcSubClaimForRepo: [
+      "PUT /repos/{owner}/{repo}/actions/oidc/customization/sub"
+    ],
     setGithubActionsDefaultWorkflowPermissionsOrganization: [
       "PUT /orgs/{org}/actions/permissions/workflow"
     ],
@@ -8178,6 +8397,7 @@ var Endpoints = {
     listWatchersForRepo: ["GET /repos/{owner}/{repo}/subscribers"],
     markNotificationsAsRead: ["PUT /notifications"],
     markRepoNotificationsAsRead: ["PUT /repos/{owner}/{repo}/notifications"],
+    markThreadAsDone: ["DELETE /notifications/threads/{thread_id}"],
     markThreadAsRead: ["PATCH /notifications/threads/{thread_id}"],
     setRepoSubscription: ["PUT /repos/{owner}/{repo}/subscription"],
     setThreadSubscription: [
@@ -8454,10 +8674,10 @@ var Endpoints = {
     updateForAuthenticatedUser: ["PATCH /user/codespaces/{codespace_name}"]
   },
   copilot: {
-    addCopilotForBusinessSeatsForTeams: [
+    addCopilotSeatsForTeams: [
       "POST /orgs/{org}/copilot/billing/selected_teams"
     ],
-    addCopilotForBusinessSeatsForUsers: [
+    addCopilotSeatsForUsers: [
       "POST /orgs/{org}/copilot/billing/selected_users"
     ],
     cancelCopilotSeatAssignmentForTeams: [
@@ -8770,9 +8990,23 @@ var Endpoints = {
       }
     ]
   },
+  oidc: {
+    getOidcCustomSubTemplateForOrg: [
+      "GET /orgs/{org}/actions/oidc/customization/sub"
+    ],
+    updateOidcCustomSubTemplateForOrg: [
+      "PUT /orgs/{org}/actions/oidc/customization/sub"
+    ]
+  },
   orgs: {
     addSecurityManagerTeam: [
       "PUT /orgs/{org}/security-managers/teams/{team_slug}"
+    ],
+    assignTeamToOrgRole: [
+      "PUT /orgs/{org}/organization-roles/teams/{team_slug}/{role_id}"
+    ],
+    assignUserToOrgRole: [
+      "PUT /orgs/{org}/organization-roles/users/{username}/{role_id}"
     ],
     blockUser: ["PUT /orgs/{org}/blocks/{username}"],
     cancelInvitation: ["DELETE /orgs/{org}/invitations/{invitation_id}"],
@@ -8782,6 +9016,7 @@ var Endpoints = {
     convertMemberToOutsideCollaborator: [
       "PUT /orgs/{org}/outside_collaborators/{username}"
     ],
+    createCustomOrganizationRole: ["POST /orgs/{org}/organization-roles"],
     createInvitation: ["POST /orgs/{org}/invitations"],
     createOrUpdateCustomProperties: ["PATCH /orgs/{org}/properties/schema"],
     createOrUpdateCustomPropertiesValuesForRepos: [
@@ -8792,6 +9027,9 @@ var Endpoints = {
     ],
     createWebhook: ["POST /orgs/{org}/hooks"],
     delete: ["DELETE /orgs/{org}"],
+    deleteCustomOrganizationRole: [
+      "DELETE /orgs/{org}/organization-roles/{role_id}"
+    ],
     deleteWebhook: ["DELETE /orgs/{org}/hooks/{hook_id}"],
     enableOrDisableSecurityProductOnAllOrgRepos: [
       "POST /orgs/{org}/{security_product}/{enablement}"
@@ -8803,6 +9041,7 @@ var Endpoints = {
     ],
     getMembershipForAuthenticatedUser: ["GET /user/memberships/orgs/{org}"],
     getMembershipForUser: ["GET /orgs/{org}/memberships/{username}"],
+    getOrgRole: ["GET /orgs/{org}/organization-roles/{role_id}"],
     getWebhook: ["GET /orgs/{org}/hooks/{hook_id}"],
     getWebhookConfigForOrg: ["GET /orgs/{org}/hooks/{hook_id}/config"],
     getWebhookDelivery: [
@@ -8818,6 +9057,12 @@ var Endpoints = {
     listInvitationTeams: ["GET /orgs/{org}/invitations/{invitation_id}/teams"],
     listMembers: ["GET /orgs/{org}/members"],
     listMembershipsForAuthenticatedUser: ["GET /user/memberships/orgs"],
+    listOrgRoleTeams: ["GET /orgs/{org}/organization-roles/{role_id}/teams"],
+    listOrgRoleUsers: ["GET /orgs/{org}/organization-roles/{role_id}/users"],
+    listOrgRoles: ["GET /orgs/{org}/organization-roles"],
+    listOrganizationFineGrainedPermissions: [
+      "GET /orgs/{org}/organization-fine-grained-permissions"
+    ],
     listOutsideCollaborators: ["GET /orgs/{org}/outside_collaborators"],
     listPatGrantRepositories: [
       "GET /orgs/{org}/personal-access-tokens/{pat_id}/repositories"
@@ -8832,6 +9077,9 @@ var Endpoints = {
     listSecurityManagerTeams: ["GET /orgs/{org}/security-managers"],
     listWebhookDeliveries: ["GET /orgs/{org}/hooks/{hook_id}/deliveries"],
     listWebhooks: ["GET /orgs/{org}/hooks"],
+    patchCustomOrganizationRole: [
+      "PATCH /orgs/{org}/organization-roles/{role_id}"
+    ],
     pingWebhook: ["POST /orgs/{org}/hooks/{hook_id}/pings"],
     redeliverWebhookDelivery: [
       "POST /orgs/{org}/hooks/{hook_id}/deliveries/{delivery_id}/attempts"
@@ -8855,6 +9103,18 @@ var Endpoints = {
     ],
     reviewPatGrantRequestsInBulk: [
       "POST /orgs/{org}/personal-access-token-requests"
+    ],
+    revokeAllOrgRolesTeam: [
+      "DELETE /orgs/{org}/organization-roles/teams/{team_slug}"
+    ],
+    revokeAllOrgRolesUser: [
+      "DELETE /orgs/{org}/organization-roles/users/{username}"
+    ],
+    revokeOrgRoleTeam: [
+      "DELETE /orgs/{org}/organization-roles/teams/{team_slug}/{role_id}"
+    ],
+    revokeOrgRoleUser: [
+      "DELETE /orgs/{org}/organization-roles/users/{username}/{role_id}"
     ],
     setMembershipForUser: ["PUT /orgs/{org}/memberships/{username}"],
     setPublicMembershipForAuthenticatedUser: [
@@ -9146,6 +9406,9 @@ var Endpoints = {
       {},
       { mapToData: "users" }
     ],
+    cancelPagesDeployment: [
+      "POST /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}/cancel"
+    ],
     checkAutomatedSecurityFixes: [
       "GET /repos/{owner}/{repo}/automated-security-fixes"
     ],
@@ -9181,12 +9444,15 @@ var Endpoints = {
     createForAuthenticatedUser: ["POST /user/repos"],
     createFork: ["POST /repos/{owner}/{repo}/forks"],
     createInOrg: ["POST /orgs/{org}/repos"],
+    createOrUpdateCustomPropertiesValues: [
+      "PATCH /repos/{owner}/{repo}/properties/values"
+    ],
     createOrUpdateEnvironment: [
       "PUT /repos/{owner}/{repo}/environments/{environment_name}"
     ],
     createOrUpdateFileContents: ["PUT /repos/{owner}/{repo}/contents/{path}"],
     createOrgRuleset: ["POST /orgs/{org}/rulesets"],
-    createPagesDeployment: ["POST /repos/{owner}/{repo}/pages/deployment"],
+    createPagesDeployment: ["POST /repos/{owner}/{repo}/pages/deployments"],
     createPagesSite: ["POST /repos/{owner}/{repo}/pages"],
     createRelease: ["POST /repos/{owner}/{repo}/releases"],
     createRepoRuleset: ["POST /repos/{owner}/{repo}/rulesets"],
@@ -9339,6 +9605,9 @@ var Endpoints = {
     getOrgRulesets: ["GET /orgs/{org}/rulesets"],
     getPages: ["GET /repos/{owner}/{repo}/pages"],
     getPagesBuild: ["GET /repos/{owner}/{repo}/pages/builds/{build_id}"],
+    getPagesDeployment: [
+      "GET /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}"
+    ],
     getPagesHealthCheck: ["GET /repos/{owner}/{repo}/pages/health"],
     getParticipationStats: ["GET /repos/{owner}/{repo}/stats/participation"],
     getPullRequestReviewProtection: [
@@ -9549,6 +9818,9 @@ var Endpoints = {
     ]
   },
   securityAdvisories: {
+    createFork: [
+      "POST /repos/{owner}/{repo}/security-advisories/{ghsa_id}/forks"
+    ],
     createPrivateVulnerabilityReport: [
       "POST /repos/{owner}/{repo}/security-advisories/reports"
     ],
@@ -10040,7 +10312,7 @@ var import_endpoint = __nccwpck_require__(9440);
 var import_universal_user_agent = __nccwpck_require__(5030);
 
 // pkg/dist-src/version.js
-var VERSION = "8.2.0";
+var VERSION = "8.4.0";
 
 // pkg/dist-src/is-plain-object.js
 function isPlainObject(value) {
@@ -10065,7 +10337,7 @@ function getBufferResponse(response) {
 
 // pkg/dist-src/fetch-wrapper.js
 function fetchWrapper(requestOptions) {
-  var _a, _b, _c;
+  var _a, _b, _c, _d;
   const log = requestOptions.request && requestOptions.request.log ? requestOptions.request.log : console;
   const parseSuccessResponseBody = ((_a = requestOptions.request) == null ? void 0 : _a.parseSuccessResponseBody) !== false;
   if (isPlainObject(requestOptions.body) || Array.isArray(requestOptions.body)) {
@@ -10086,8 +10358,9 @@ function fetchWrapper(requestOptions) {
   return fetch(requestOptions.url, {
     method: requestOptions.method,
     body: requestOptions.body,
+    redirect: (_c = requestOptions.request) == null ? void 0 : _c.redirect,
     headers: requestOptions.headers,
-    signal: (_c = requestOptions.request) == null ? void 0 : _c.signal,
+    signal: (_d = requestOptions.request) == null ? void 0 : _d.signal,
     // duplex must be set if request.body is ReadableStream or Async Iterables.
     // See https://fetch.spec.whatwg.org/#dom-requestinit-duplex.
     ...requestOptions.body && { duplex: "half" }
@@ -10267,11 +10540,11 @@ __export(dist_src_exports, {
 module.exports = __toCommonJS(dist_src_exports);
 var import_core = __nccwpck_require__(6762);
 var import_plugin_request_log = __nccwpck_require__(8883);
-var import_plugin_paginate_rest = __nccwpck_require__(4193);
-var import_plugin_rest_endpoint_methods = __nccwpck_require__(3044);
+var import_plugin_paginate_rest = __nccwpck_require__(606);
+var import_plugin_rest_endpoint_methods = __nccwpck_require__(4923);
 
 // pkg/dist-src/version.js
-var VERSION = "20.0.2";
+var VERSION = "20.1.1";
 
 // pkg/dist-src/index.js
 var Octokit = import_core.Octokit.plugin(
@@ -10281,6 +10554,2530 @@ var Octokit = import_core.Octokit.plugin(
 ).defaults({
   userAgent: `octokit-rest.js/${VERSION}`
 });
+// Annotate the CommonJS export names for ESM import in node:
+0 && (0);
+
+
+/***/ }),
+
+/***/ 606:
+/***/ ((module) => {
+
+"use strict";
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// pkg/dist-src/index.js
+var dist_src_exports = {};
+__export(dist_src_exports, {
+  composePaginateRest: () => composePaginateRest,
+  isPaginatingEndpoint: () => isPaginatingEndpoint,
+  paginateRest: () => paginateRest,
+  paginatingEndpoints: () => paginatingEndpoints
+});
+module.exports = __toCommonJS(dist_src_exports);
+
+// pkg/dist-src/version.js
+var VERSION = "11.3.1";
+
+// pkg/dist-src/normalize-paginated-list-response.js
+function normalizePaginatedListResponse(response) {
+  if (!response.data) {
+    return {
+      ...response,
+      data: []
+    };
+  }
+  const responseNeedsNormalization = "total_count" in response.data && !("url" in response.data);
+  if (!responseNeedsNormalization)
+    return response;
+  const incompleteResults = response.data.incomplete_results;
+  const repositorySelection = response.data.repository_selection;
+  const totalCount = response.data.total_count;
+  delete response.data.incomplete_results;
+  delete response.data.repository_selection;
+  delete response.data.total_count;
+  const namespaceKey = Object.keys(response.data)[0];
+  const data = response.data[namespaceKey];
+  response.data = data;
+  if (typeof incompleteResults !== "undefined") {
+    response.data.incomplete_results = incompleteResults;
+  }
+  if (typeof repositorySelection !== "undefined") {
+    response.data.repository_selection = repositorySelection;
+  }
+  response.data.total_count = totalCount;
+  return response;
+}
+
+// pkg/dist-src/iterator.js
+function iterator(octokit, route, parameters) {
+  const options = typeof route === "function" ? route.endpoint(parameters) : octokit.request.endpoint(route, parameters);
+  const requestMethod = typeof route === "function" ? route : octokit.request;
+  const method = options.method;
+  const headers = options.headers;
+  let url = options.url;
+  return {
+    [Symbol.asyncIterator]: () => ({
+      async next() {
+        if (!url)
+          return { done: true };
+        try {
+          const response = await requestMethod({ method, url, headers });
+          const normalizedResponse = normalizePaginatedListResponse(response);
+          url = ((normalizedResponse.headers.link || "").match(
+            /<([^>]+)>;\s*rel="next"/
+          ) || [])[1];
+          return { value: normalizedResponse };
+        } catch (error) {
+          if (error.status !== 409)
+            throw error;
+          url = "";
+          return {
+            value: {
+              status: 200,
+              headers: {},
+              data: []
+            }
+          };
+        }
+      }
+    })
+  };
+}
+
+// pkg/dist-src/paginate.js
+function paginate(octokit, route, parameters, mapFn) {
+  if (typeof parameters === "function") {
+    mapFn = parameters;
+    parameters = void 0;
+  }
+  return gather(
+    octokit,
+    [],
+    iterator(octokit, route, parameters)[Symbol.asyncIterator](),
+    mapFn
+  );
+}
+function gather(octokit, results, iterator2, mapFn) {
+  return iterator2.next().then((result) => {
+    if (result.done) {
+      return results;
+    }
+    let earlyExit = false;
+    function done() {
+      earlyExit = true;
+    }
+    results = results.concat(
+      mapFn ? mapFn(result.value, done) : result.value.data
+    );
+    if (earlyExit) {
+      return results;
+    }
+    return gather(octokit, results, iterator2, mapFn);
+  });
+}
+
+// pkg/dist-src/compose-paginate.js
+var composePaginateRest = Object.assign(paginate, {
+  iterator
+});
+
+// pkg/dist-src/generated/paginating-endpoints.js
+var paginatingEndpoints = [
+  "GET /advisories",
+  "GET /app/hook/deliveries",
+  "GET /app/installation-requests",
+  "GET /app/installations",
+  "GET /assignments/{assignment_id}/accepted_assignments",
+  "GET /classrooms",
+  "GET /classrooms/{classroom_id}/assignments",
+  "GET /enterprises/{enterprise}/copilot/usage",
+  "GET /enterprises/{enterprise}/dependabot/alerts",
+  "GET /enterprises/{enterprise}/secret-scanning/alerts",
+  "GET /events",
+  "GET /gists",
+  "GET /gists/public",
+  "GET /gists/starred",
+  "GET /gists/{gist_id}/comments",
+  "GET /gists/{gist_id}/commits",
+  "GET /gists/{gist_id}/forks",
+  "GET /installation/repositories",
+  "GET /issues",
+  "GET /licenses",
+  "GET /marketplace_listing/plans",
+  "GET /marketplace_listing/plans/{plan_id}/accounts",
+  "GET /marketplace_listing/stubbed/plans",
+  "GET /marketplace_listing/stubbed/plans/{plan_id}/accounts",
+  "GET /networks/{owner}/{repo}/events",
+  "GET /notifications",
+  "GET /organizations",
+  "GET /orgs/{org}/actions/cache/usage-by-repository",
+  "GET /orgs/{org}/actions/permissions/repositories",
+  "GET /orgs/{org}/actions/runners",
+  "GET /orgs/{org}/actions/secrets",
+  "GET /orgs/{org}/actions/secrets/{secret_name}/repositories",
+  "GET /orgs/{org}/actions/variables",
+  "GET /orgs/{org}/actions/variables/{name}/repositories",
+  "GET /orgs/{org}/blocks",
+  "GET /orgs/{org}/code-scanning/alerts",
+  "GET /orgs/{org}/codespaces",
+  "GET /orgs/{org}/codespaces/secrets",
+  "GET /orgs/{org}/codespaces/secrets/{secret_name}/repositories",
+  "GET /orgs/{org}/copilot/billing/seats",
+  "GET /orgs/{org}/copilot/usage",
+  "GET /orgs/{org}/dependabot/alerts",
+  "GET /orgs/{org}/dependabot/secrets",
+  "GET /orgs/{org}/dependabot/secrets/{secret_name}/repositories",
+  "GET /orgs/{org}/events",
+  "GET /orgs/{org}/failed_invitations",
+  "GET /orgs/{org}/hooks",
+  "GET /orgs/{org}/hooks/{hook_id}/deliveries",
+  "GET /orgs/{org}/installations",
+  "GET /orgs/{org}/invitations",
+  "GET /orgs/{org}/invitations/{invitation_id}/teams",
+  "GET /orgs/{org}/issues",
+  "GET /orgs/{org}/members",
+  "GET /orgs/{org}/members/{username}/codespaces",
+  "GET /orgs/{org}/migrations",
+  "GET /orgs/{org}/migrations/{migration_id}/repositories",
+  "GET /orgs/{org}/organization-roles/{role_id}/teams",
+  "GET /orgs/{org}/organization-roles/{role_id}/users",
+  "GET /orgs/{org}/outside_collaborators",
+  "GET /orgs/{org}/packages",
+  "GET /orgs/{org}/packages/{package_type}/{package_name}/versions",
+  "GET /orgs/{org}/personal-access-token-requests",
+  "GET /orgs/{org}/personal-access-token-requests/{pat_request_id}/repositories",
+  "GET /orgs/{org}/personal-access-tokens",
+  "GET /orgs/{org}/personal-access-tokens/{pat_id}/repositories",
+  "GET /orgs/{org}/projects",
+  "GET /orgs/{org}/properties/values",
+  "GET /orgs/{org}/public_members",
+  "GET /orgs/{org}/repos",
+  "GET /orgs/{org}/rulesets",
+  "GET /orgs/{org}/rulesets/rule-suites",
+  "GET /orgs/{org}/secret-scanning/alerts",
+  "GET /orgs/{org}/security-advisories",
+  "GET /orgs/{org}/team/{team_slug}/copilot/usage",
+  "GET /orgs/{org}/teams",
+  "GET /orgs/{org}/teams/{team_slug}/discussions",
+  "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments",
+  "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}/reactions",
+  "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/reactions",
+  "GET /orgs/{org}/teams/{team_slug}/invitations",
+  "GET /orgs/{org}/teams/{team_slug}/members",
+  "GET /orgs/{org}/teams/{team_slug}/projects",
+  "GET /orgs/{org}/teams/{team_slug}/repos",
+  "GET /orgs/{org}/teams/{team_slug}/teams",
+  "GET /projects/columns/{column_id}/cards",
+  "GET /projects/{project_id}/collaborators",
+  "GET /projects/{project_id}/columns",
+  "GET /repos/{owner}/{repo}/actions/artifacts",
+  "GET /repos/{owner}/{repo}/actions/caches",
+  "GET /repos/{owner}/{repo}/actions/organization-secrets",
+  "GET /repos/{owner}/{repo}/actions/organization-variables",
+  "GET /repos/{owner}/{repo}/actions/runners",
+  "GET /repos/{owner}/{repo}/actions/runs",
+  "GET /repos/{owner}/{repo}/actions/runs/{run_id}/artifacts",
+  "GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}/jobs",
+  "GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs",
+  "GET /repos/{owner}/{repo}/actions/secrets",
+  "GET /repos/{owner}/{repo}/actions/variables",
+  "GET /repos/{owner}/{repo}/actions/workflows",
+  "GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs",
+  "GET /repos/{owner}/{repo}/activity",
+  "GET /repos/{owner}/{repo}/assignees",
+  "GET /repos/{owner}/{repo}/branches",
+  "GET /repos/{owner}/{repo}/check-runs/{check_run_id}/annotations",
+  "GET /repos/{owner}/{repo}/check-suites/{check_suite_id}/check-runs",
+  "GET /repos/{owner}/{repo}/code-scanning/alerts",
+  "GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}/instances",
+  "GET /repos/{owner}/{repo}/code-scanning/analyses",
+  "GET /repos/{owner}/{repo}/codespaces",
+  "GET /repos/{owner}/{repo}/codespaces/devcontainers",
+  "GET /repos/{owner}/{repo}/codespaces/secrets",
+  "GET /repos/{owner}/{repo}/collaborators",
+  "GET /repos/{owner}/{repo}/comments",
+  "GET /repos/{owner}/{repo}/comments/{comment_id}/reactions",
+  "GET /repos/{owner}/{repo}/commits",
+  "GET /repos/{owner}/{repo}/commits/{commit_sha}/comments",
+  "GET /repos/{owner}/{repo}/commits/{commit_sha}/pulls",
+  "GET /repos/{owner}/{repo}/commits/{ref}/check-runs",
+  "GET /repos/{owner}/{repo}/commits/{ref}/check-suites",
+  "GET /repos/{owner}/{repo}/commits/{ref}/status",
+  "GET /repos/{owner}/{repo}/commits/{ref}/statuses",
+  "GET /repos/{owner}/{repo}/contributors",
+  "GET /repos/{owner}/{repo}/dependabot/alerts",
+  "GET /repos/{owner}/{repo}/dependabot/secrets",
+  "GET /repos/{owner}/{repo}/deployments",
+  "GET /repos/{owner}/{repo}/deployments/{deployment_id}/statuses",
+  "GET /repos/{owner}/{repo}/environments",
+  "GET /repos/{owner}/{repo}/environments/{environment_name}/deployment-branch-policies",
+  "GET /repos/{owner}/{repo}/environments/{environment_name}/deployment_protection_rules/apps",
+  "GET /repos/{owner}/{repo}/environments/{environment_name}/secrets",
+  "GET /repos/{owner}/{repo}/environments/{environment_name}/variables",
+  "GET /repos/{owner}/{repo}/events",
+  "GET /repos/{owner}/{repo}/forks",
+  "GET /repos/{owner}/{repo}/hooks",
+  "GET /repos/{owner}/{repo}/hooks/{hook_id}/deliveries",
+  "GET /repos/{owner}/{repo}/invitations",
+  "GET /repos/{owner}/{repo}/issues",
+  "GET /repos/{owner}/{repo}/issues/comments",
+  "GET /repos/{owner}/{repo}/issues/comments/{comment_id}/reactions",
+  "GET /repos/{owner}/{repo}/issues/events",
+  "GET /repos/{owner}/{repo}/issues/{issue_number}/comments",
+  "GET /repos/{owner}/{repo}/issues/{issue_number}/events",
+  "GET /repos/{owner}/{repo}/issues/{issue_number}/labels",
+  "GET /repos/{owner}/{repo}/issues/{issue_number}/reactions",
+  "GET /repos/{owner}/{repo}/issues/{issue_number}/timeline",
+  "GET /repos/{owner}/{repo}/keys",
+  "GET /repos/{owner}/{repo}/labels",
+  "GET /repos/{owner}/{repo}/milestones",
+  "GET /repos/{owner}/{repo}/milestones/{milestone_number}/labels",
+  "GET /repos/{owner}/{repo}/notifications",
+  "GET /repos/{owner}/{repo}/pages/builds",
+  "GET /repos/{owner}/{repo}/projects",
+  "GET /repos/{owner}/{repo}/pulls",
+  "GET /repos/{owner}/{repo}/pulls/comments",
+  "GET /repos/{owner}/{repo}/pulls/comments/{comment_id}/reactions",
+  "GET /repos/{owner}/{repo}/pulls/{pull_number}/comments",
+  "GET /repos/{owner}/{repo}/pulls/{pull_number}/commits",
+  "GET /repos/{owner}/{repo}/pulls/{pull_number}/files",
+  "GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews",
+  "GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}/comments",
+  "GET /repos/{owner}/{repo}/releases",
+  "GET /repos/{owner}/{repo}/releases/{release_id}/assets",
+  "GET /repos/{owner}/{repo}/releases/{release_id}/reactions",
+  "GET /repos/{owner}/{repo}/rules/branches/{branch}",
+  "GET /repos/{owner}/{repo}/rulesets",
+  "GET /repos/{owner}/{repo}/rulesets/rule-suites",
+  "GET /repos/{owner}/{repo}/secret-scanning/alerts",
+  "GET /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}/locations",
+  "GET /repos/{owner}/{repo}/security-advisories",
+  "GET /repos/{owner}/{repo}/stargazers",
+  "GET /repos/{owner}/{repo}/subscribers",
+  "GET /repos/{owner}/{repo}/tags",
+  "GET /repos/{owner}/{repo}/teams",
+  "GET /repos/{owner}/{repo}/topics",
+  "GET /repositories",
+  "GET /search/code",
+  "GET /search/commits",
+  "GET /search/issues",
+  "GET /search/labels",
+  "GET /search/repositories",
+  "GET /search/topics",
+  "GET /search/users",
+  "GET /teams/{team_id}/discussions",
+  "GET /teams/{team_id}/discussions/{discussion_number}/comments",
+  "GET /teams/{team_id}/discussions/{discussion_number}/comments/{comment_number}/reactions",
+  "GET /teams/{team_id}/discussions/{discussion_number}/reactions",
+  "GET /teams/{team_id}/invitations",
+  "GET /teams/{team_id}/members",
+  "GET /teams/{team_id}/projects",
+  "GET /teams/{team_id}/repos",
+  "GET /teams/{team_id}/teams",
+  "GET /user/blocks",
+  "GET /user/codespaces",
+  "GET /user/codespaces/secrets",
+  "GET /user/emails",
+  "GET /user/followers",
+  "GET /user/following",
+  "GET /user/gpg_keys",
+  "GET /user/installations",
+  "GET /user/installations/{installation_id}/repositories",
+  "GET /user/issues",
+  "GET /user/keys",
+  "GET /user/marketplace_purchases",
+  "GET /user/marketplace_purchases/stubbed",
+  "GET /user/memberships/orgs",
+  "GET /user/migrations",
+  "GET /user/migrations/{migration_id}/repositories",
+  "GET /user/orgs",
+  "GET /user/packages",
+  "GET /user/packages/{package_type}/{package_name}/versions",
+  "GET /user/public_emails",
+  "GET /user/repos",
+  "GET /user/repository_invitations",
+  "GET /user/social_accounts",
+  "GET /user/ssh_signing_keys",
+  "GET /user/starred",
+  "GET /user/subscriptions",
+  "GET /user/teams",
+  "GET /users",
+  "GET /users/{username}/events",
+  "GET /users/{username}/events/orgs/{org}",
+  "GET /users/{username}/events/public",
+  "GET /users/{username}/followers",
+  "GET /users/{username}/following",
+  "GET /users/{username}/gists",
+  "GET /users/{username}/gpg_keys",
+  "GET /users/{username}/keys",
+  "GET /users/{username}/orgs",
+  "GET /users/{username}/packages",
+  "GET /users/{username}/projects",
+  "GET /users/{username}/received_events",
+  "GET /users/{username}/received_events/public",
+  "GET /users/{username}/repos",
+  "GET /users/{username}/social_accounts",
+  "GET /users/{username}/ssh_signing_keys",
+  "GET /users/{username}/starred",
+  "GET /users/{username}/subscriptions"
+];
+
+// pkg/dist-src/paginating-endpoints.js
+function isPaginatingEndpoint(arg) {
+  if (typeof arg === "string") {
+    return paginatingEndpoints.includes(arg);
+  } else {
+    return false;
+  }
+}
+
+// pkg/dist-src/index.js
+function paginateRest(octokit) {
+  return {
+    paginate: Object.assign(paginate.bind(null, octokit), {
+      iterator: iterator.bind(null, octokit)
+    })
+  };
+}
+paginateRest.VERSION = VERSION;
+// Annotate the CommonJS export names for ESM import in node:
+0 && (0);
+
+
+/***/ }),
+
+/***/ 4923:
+/***/ ((module) => {
+
+"use strict";
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// pkg/dist-src/index.js
+var dist_src_exports = {};
+__export(dist_src_exports, {
+  legacyRestEndpointMethods: () => legacyRestEndpointMethods,
+  restEndpointMethods: () => restEndpointMethods
+});
+module.exports = __toCommonJS(dist_src_exports);
+
+// pkg/dist-src/version.js
+var VERSION = "13.2.2";
+
+// pkg/dist-src/generated/endpoints.js
+var Endpoints = {
+  actions: {
+    addCustomLabelsToSelfHostedRunnerForOrg: [
+      "POST /orgs/{org}/actions/runners/{runner_id}/labels"
+    ],
+    addCustomLabelsToSelfHostedRunnerForRepo: [
+      "POST /repos/{owner}/{repo}/actions/runners/{runner_id}/labels"
+    ],
+    addSelectedRepoToOrgSecret: [
+      "PUT /orgs/{org}/actions/secrets/{secret_name}/repositories/{repository_id}"
+    ],
+    addSelectedRepoToOrgVariable: [
+      "PUT /orgs/{org}/actions/variables/{name}/repositories/{repository_id}"
+    ],
+    approveWorkflowRun: [
+      "POST /repos/{owner}/{repo}/actions/runs/{run_id}/approve"
+    ],
+    cancelWorkflowRun: [
+      "POST /repos/{owner}/{repo}/actions/runs/{run_id}/cancel"
+    ],
+    createEnvironmentVariable: [
+      "POST /repos/{owner}/{repo}/environments/{environment_name}/variables"
+    ],
+    createOrUpdateEnvironmentSecret: [
+      "PUT /repos/{owner}/{repo}/environments/{environment_name}/secrets/{secret_name}"
+    ],
+    createOrUpdateOrgSecret: ["PUT /orgs/{org}/actions/secrets/{secret_name}"],
+    createOrUpdateRepoSecret: [
+      "PUT /repos/{owner}/{repo}/actions/secrets/{secret_name}"
+    ],
+    createOrgVariable: ["POST /orgs/{org}/actions/variables"],
+    createRegistrationTokenForOrg: [
+      "POST /orgs/{org}/actions/runners/registration-token"
+    ],
+    createRegistrationTokenForRepo: [
+      "POST /repos/{owner}/{repo}/actions/runners/registration-token"
+    ],
+    createRemoveTokenForOrg: ["POST /orgs/{org}/actions/runners/remove-token"],
+    createRemoveTokenForRepo: [
+      "POST /repos/{owner}/{repo}/actions/runners/remove-token"
+    ],
+    createRepoVariable: ["POST /repos/{owner}/{repo}/actions/variables"],
+    createWorkflowDispatch: [
+      "POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches"
+    ],
+    deleteActionsCacheById: [
+      "DELETE /repos/{owner}/{repo}/actions/caches/{cache_id}"
+    ],
+    deleteActionsCacheByKey: [
+      "DELETE /repos/{owner}/{repo}/actions/caches{?key,ref}"
+    ],
+    deleteArtifact: [
+      "DELETE /repos/{owner}/{repo}/actions/artifacts/{artifact_id}"
+    ],
+    deleteEnvironmentSecret: [
+      "DELETE /repos/{owner}/{repo}/environments/{environment_name}/secrets/{secret_name}"
+    ],
+    deleteEnvironmentVariable: [
+      "DELETE /repos/{owner}/{repo}/environments/{environment_name}/variables/{name}"
+    ],
+    deleteOrgSecret: ["DELETE /orgs/{org}/actions/secrets/{secret_name}"],
+    deleteOrgVariable: ["DELETE /orgs/{org}/actions/variables/{name}"],
+    deleteRepoSecret: [
+      "DELETE /repos/{owner}/{repo}/actions/secrets/{secret_name}"
+    ],
+    deleteRepoVariable: [
+      "DELETE /repos/{owner}/{repo}/actions/variables/{name}"
+    ],
+    deleteSelfHostedRunnerFromOrg: [
+      "DELETE /orgs/{org}/actions/runners/{runner_id}"
+    ],
+    deleteSelfHostedRunnerFromRepo: [
+      "DELETE /repos/{owner}/{repo}/actions/runners/{runner_id}"
+    ],
+    deleteWorkflowRun: ["DELETE /repos/{owner}/{repo}/actions/runs/{run_id}"],
+    deleteWorkflowRunLogs: [
+      "DELETE /repos/{owner}/{repo}/actions/runs/{run_id}/logs"
+    ],
+    disableSelectedRepositoryGithubActionsOrganization: [
+      "DELETE /orgs/{org}/actions/permissions/repositories/{repository_id}"
+    ],
+    disableWorkflow: [
+      "PUT /repos/{owner}/{repo}/actions/workflows/{workflow_id}/disable"
+    ],
+    downloadArtifact: [
+      "GET /repos/{owner}/{repo}/actions/artifacts/{artifact_id}/{archive_format}"
+    ],
+    downloadJobLogsForWorkflowRun: [
+      "GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs"
+    ],
+    downloadWorkflowRunAttemptLogs: [
+      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}/logs"
+    ],
+    downloadWorkflowRunLogs: [
+      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/logs"
+    ],
+    enableSelectedRepositoryGithubActionsOrganization: [
+      "PUT /orgs/{org}/actions/permissions/repositories/{repository_id}"
+    ],
+    enableWorkflow: [
+      "PUT /repos/{owner}/{repo}/actions/workflows/{workflow_id}/enable"
+    ],
+    forceCancelWorkflowRun: [
+      "POST /repos/{owner}/{repo}/actions/runs/{run_id}/force-cancel"
+    ],
+    generateRunnerJitconfigForOrg: [
+      "POST /orgs/{org}/actions/runners/generate-jitconfig"
+    ],
+    generateRunnerJitconfigForRepo: [
+      "POST /repos/{owner}/{repo}/actions/runners/generate-jitconfig"
+    ],
+    getActionsCacheList: ["GET /repos/{owner}/{repo}/actions/caches"],
+    getActionsCacheUsage: ["GET /repos/{owner}/{repo}/actions/cache/usage"],
+    getActionsCacheUsageByRepoForOrg: [
+      "GET /orgs/{org}/actions/cache/usage-by-repository"
+    ],
+    getActionsCacheUsageForOrg: ["GET /orgs/{org}/actions/cache/usage"],
+    getAllowedActionsOrganization: [
+      "GET /orgs/{org}/actions/permissions/selected-actions"
+    ],
+    getAllowedActionsRepository: [
+      "GET /repos/{owner}/{repo}/actions/permissions/selected-actions"
+    ],
+    getArtifact: ["GET /repos/{owner}/{repo}/actions/artifacts/{artifact_id}"],
+    getCustomOidcSubClaimForRepo: [
+      "GET /repos/{owner}/{repo}/actions/oidc/customization/sub"
+    ],
+    getEnvironmentPublicKey: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}/secrets/public-key"
+    ],
+    getEnvironmentSecret: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}/secrets/{secret_name}"
+    ],
+    getEnvironmentVariable: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}/variables/{name}"
+    ],
+    getGithubActionsDefaultWorkflowPermissionsOrganization: [
+      "GET /orgs/{org}/actions/permissions/workflow"
+    ],
+    getGithubActionsDefaultWorkflowPermissionsRepository: [
+      "GET /repos/{owner}/{repo}/actions/permissions/workflow"
+    ],
+    getGithubActionsPermissionsOrganization: [
+      "GET /orgs/{org}/actions/permissions"
+    ],
+    getGithubActionsPermissionsRepository: [
+      "GET /repos/{owner}/{repo}/actions/permissions"
+    ],
+    getJobForWorkflowRun: ["GET /repos/{owner}/{repo}/actions/jobs/{job_id}"],
+    getOrgPublicKey: ["GET /orgs/{org}/actions/secrets/public-key"],
+    getOrgSecret: ["GET /orgs/{org}/actions/secrets/{secret_name}"],
+    getOrgVariable: ["GET /orgs/{org}/actions/variables/{name}"],
+    getPendingDeploymentsForRun: [
+      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/pending_deployments"
+    ],
+    getRepoPermissions: [
+      "GET /repos/{owner}/{repo}/actions/permissions",
+      {},
+      { renamed: ["actions", "getGithubActionsPermissionsRepository"] }
+    ],
+    getRepoPublicKey: ["GET /repos/{owner}/{repo}/actions/secrets/public-key"],
+    getRepoSecret: ["GET /repos/{owner}/{repo}/actions/secrets/{secret_name}"],
+    getRepoVariable: ["GET /repos/{owner}/{repo}/actions/variables/{name}"],
+    getReviewsForRun: [
+      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/approvals"
+    ],
+    getSelfHostedRunnerForOrg: ["GET /orgs/{org}/actions/runners/{runner_id}"],
+    getSelfHostedRunnerForRepo: [
+      "GET /repos/{owner}/{repo}/actions/runners/{runner_id}"
+    ],
+    getWorkflow: ["GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}"],
+    getWorkflowAccessToRepository: [
+      "GET /repos/{owner}/{repo}/actions/permissions/access"
+    ],
+    getWorkflowRun: ["GET /repos/{owner}/{repo}/actions/runs/{run_id}"],
+    getWorkflowRunAttempt: [
+      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}"
+    ],
+    getWorkflowRunUsage: [
+      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/timing"
+    ],
+    getWorkflowUsage: [
+      "GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/timing"
+    ],
+    listArtifactsForRepo: ["GET /repos/{owner}/{repo}/actions/artifacts"],
+    listEnvironmentSecrets: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}/secrets"
+    ],
+    listEnvironmentVariables: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}/variables"
+    ],
+    listJobsForWorkflowRun: [
+      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs"
+    ],
+    listJobsForWorkflowRunAttempt: [
+      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}/jobs"
+    ],
+    listLabelsForSelfHostedRunnerForOrg: [
+      "GET /orgs/{org}/actions/runners/{runner_id}/labels"
+    ],
+    listLabelsForSelfHostedRunnerForRepo: [
+      "GET /repos/{owner}/{repo}/actions/runners/{runner_id}/labels"
+    ],
+    listOrgSecrets: ["GET /orgs/{org}/actions/secrets"],
+    listOrgVariables: ["GET /orgs/{org}/actions/variables"],
+    listRepoOrganizationSecrets: [
+      "GET /repos/{owner}/{repo}/actions/organization-secrets"
+    ],
+    listRepoOrganizationVariables: [
+      "GET /repos/{owner}/{repo}/actions/organization-variables"
+    ],
+    listRepoSecrets: ["GET /repos/{owner}/{repo}/actions/secrets"],
+    listRepoVariables: ["GET /repos/{owner}/{repo}/actions/variables"],
+    listRepoWorkflows: ["GET /repos/{owner}/{repo}/actions/workflows"],
+    listRunnerApplicationsForOrg: ["GET /orgs/{org}/actions/runners/downloads"],
+    listRunnerApplicationsForRepo: [
+      "GET /repos/{owner}/{repo}/actions/runners/downloads"
+    ],
+    listSelectedReposForOrgSecret: [
+      "GET /orgs/{org}/actions/secrets/{secret_name}/repositories"
+    ],
+    listSelectedReposForOrgVariable: [
+      "GET /orgs/{org}/actions/variables/{name}/repositories"
+    ],
+    listSelectedRepositoriesEnabledGithubActionsOrganization: [
+      "GET /orgs/{org}/actions/permissions/repositories"
+    ],
+    listSelfHostedRunnersForOrg: ["GET /orgs/{org}/actions/runners"],
+    listSelfHostedRunnersForRepo: ["GET /repos/{owner}/{repo}/actions/runners"],
+    listWorkflowRunArtifacts: [
+      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/artifacts"
+    ],
+    listWorkflowRuns: [
+      "GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs"
+    ],
+    listWorkflowRunsForRepo: ["GET /repos/{owner}/{repo}/actions/runs"],
+    reRunJobForWorkflowRun: [
+      "POST /repos/{owner}/{repo}/actions/jobs/{job_id}/rerun"
+    ],
+    reRunWorkflow: ["POST /repos/{owner}/{repo}/actions/runs/{run_id}/rerun"],
+    reRunWorkflowFailedJobs: [
+      "POST /repos/{owner}/{repo}/actions/runs/{run_id}/rerun-failed-jobs"
+    ],
+    removeAllCustomLabelsFromSelfHostedRunnerForOrg: [
+      "DELETE /orgs/{org}/actions/runners/{runner_id}/labels"
+    ],
+    removeAllCustomLabelsFromSelfHostedRunnerForRepo: [
+      "DELETE /repos/{owner}/{repo}/actions/runners/{runner_id}/labels"
+    ],
+    removeCustomLabelFromSelfHostedRunnerForOrg: [
+      "DELETE /orgs/{org}/actions/runners/{runner_id}/labels/{name}"
+    ],
+    removeCustomLabelFromSelfHostedRunnerForRepo: [
+      "DELETE /repos/{owner}/{repo}/actions/runners/{runner_id}/labels/{name}"
+    ],
+    removeSelectedRepoFromOrgSecret: [
+      "DELETE /orgs/{org}/actions/secrets/{secret_name}/repositories/{repository_id}"
+    ],
+    removeSelectedRepoFromOrgVariable: [
+      "DELETE /orgs/{org}/actions/variables/{name}/repositories/{repository_id}"
+    ],
+    reviewCustomGatesForRun: [
+      "POST /repos/{owner}/{repo}/actions/runs/{run_id}/deployment_protection_rule"
+    ],
+    reviewPendingDeploymentsForRun: [
+      "POST /repos/{owner}/{repo}/actions/runs/{run_id}/pending_deployments"
+    ],
+    setAllowedActionsOrganization: [
+      "PUT /orgs/{org}/actions/permissions/selected-actions"
+    ],
+    setAllowedActionsRepository: [
+      "PUT /repos/{owner}/{repo}/actions/permissions/selected-actions"
+    ],
+    setCustomLabelsForSelfHostedRunnerForOrg: [
+      "PUT /orgs/{org}/actions/runners/{runner_id}/labels"
+    ],
+    setCustomLabelsForSelfHostedRunnerForRepo: [
+      "PUT /repos/{owner}/{repo}/actions/runners/{runner_id}/labels"
+    ],
+    setCustomOidcSubClaimForRepo: [
+      "PUT /repos/{owner}/{repo}/actions/oidc/customization/sub"
+    ],
+    setGithubActionsDefaultWorkflowPermissionsOrganization: [
+      "PUT /orgs/{org}/actions/permissions/workflow"
+    ],
+    setGithubActionsDefaultWorkflowPermissionsRepository: [
+      "PUT /repos/{owner}/{repo}/actions/permissions/workflow"
+    ],
+    setGithubActionsPermissionsOrganization: [
+      "PUT /orgs/{org}/actions/permissions"
+    ],
+    setGithubActionsPermissionsRepository: [
+      "PUT /repos/{owner}/{repo}/actions/permissions"
+    ],
+    setSelectedReposForOrgSecret: [
+      "PUT /orgs/{org}/actions/secrets/{secret_name}/repositories"
+    ],
+    setSelectedReposForOrgVariable: [
+      "PUT /orgs/{org}/actions/variables/{name}/repositories"
+    ],
+    setSelectedRepositoriesEnabledGithubActionsOrganization: [
+      "PUT /orgs/{org}/actions/permissions/repositories"
+    ],
+    setWorkflowAccessToRepository: [
+      "PUT /repos/{owner}/{repo}/actions/permissions/access"
+    ],
+    updateEnvironmentVariable: [
+      "PATCH /repos/{owner}/{repo}/environments/{environment_name}/variables/{name}"
+    ],
+    updateOrgVariable: ["PATCH /orgs/{org}/actions/variables/{name}"],
+    updateRepoVariable: [
+      "PATCH /repos/{owner}/{repo}/actions/variables/{name}"
+    ]
+  },
+  activity: {
+    checkRepoIsStarredByAuthenticatedUser: ["GET /user/starred/{owner}/{repo}"],
+    deleteRepoSubscription: ["DELETE /repos/{owner}/{repo}/subscription"],
+    deleteThreadSubscription: [
+      "DELETE /notifications/threads/{thread_id}/subscription"
+    ],
+    getFeeds: ["GET /feeds"],
+    getRepoSubscription: ["GET /repos/{owner}/{repo}/subscription"],
+    getThread: ["GET /notifications/threads/{thread_id}"],
+    getThreadSubscriptionForAuthenticatedUser: [
+      "GET /notifications/threads/{thread_id}/subscription"
+    ],
+    listEventsForAuthenticatedUser: ["GET /users/{username}/events"],
+    listNotificationsForAuthenticatedUser: ["GET /notifications"],
+    listOrgEventsForAuthenticatedUser: [
+      "GET /users/{username}/events/orgs/{org}"
+    ],
+    listPublicEvents: ["GET /events"],
+    listPublicEventsForRepoNetwork: ["GET /networks/{owner}/{repo}/events"],
+    listPublicEventsForUser: ["GET /users/{username}/events/public"],
+    listPublicOrgEvents: ["GET /orgs/{org}/events"],
+    listReceivedEventsForUser: ["GET /users/{username}/received_events"],
+    listReceivedPublicEventsForUser: [
+      "GET /users/{username}/received_events/public"
+    ],
+    listRepoEvents: ["GET /repos/{owner}/{repo}/events"],
+    listRepoNotificationsForAuthenticatedUser: [
+      "GET /repos/{owner}/{repo}/notifications"
+    ],
+    listReposStarredByAuthenticatedUser: ["GET /user/starred"],
+    listReposStarredByUser: ["GET /users/{username}/starred"],
+    listReposWatchedByUser: ["GET /users/{username}/subscriptions"],
+    listStargazersForRepo: ["GET /repos/{owner}/{repo}/stargazers"],
+    listWatchedReposForAuthenticatedUser: ["GET /user/subscriptions"],
+    listWatchersForRepo: ["GET /repos/{owner}/{repo}/subscribers"],
+    markNotificationsAsRead: ["PUT /notifications"],
+    markRepoNotificationsAsRead: ["PUT /repos/{owner}/{repo}/notifications"],
+    markThreadAsDone: ["DELETE /notifications/threads/{thread_id}"],
+    markThreadAsRead: ["PATCH /notifications/threads/{thread_id}"],
+    setRepoSubscription: ["PUT /repos/{owner}/{repo}/subscription"],
+    setThreadSubscription: [
+      "PUT /notifications/threads/{thread_id}/subscription"
+    ],
+    starRepoForAuthenticatedUser: ["PUT /user/starred/{owner}/{repo}"],
+    unstarRepoForAuthenticatedUser: ["DELETE /user/starred/{owner}/{repo}"]
+  },
+  apps: {
+    addRepoToInstallation: [
+      "PUT /user/installations/{installation_id}/repositories/{repository_id}",
+      {},
+      { renamed: ["apps", "addRepoToInstallationForAuthenticatedUser"] }
+    ],
+    addRepoToInstallationForAuthenticatedUser: [
+      "PUT /user/installations/{installation_id}/repositories/{repository_id}"
+    ],
+    checkToken: ["POST /applications/{client_id}/token"],
+    createFromManifest: ["POST /app-manifests/{code}/conversions"],
+    createInstallationAccessToken: [
+      "POST /app/installations/{installation_id}/access_tokens"
+    ],
+    deleteAuthorization: ["DELETE /applications/{client_id}/grant"],
+    deleteInstallation: ["DELETE /app/installations/{installation_id}"],
+    deleteToken: ["DELETE /applications/{client_id}/token"],
+    getAuthenticated: ["GET /app"],
+    getBySlug: ["GET /apps/{app_slug}"],
+    getInstallation: ["GET /app/installations/{installation_id}"],
+    getOrgInstallation: ["GET /orgs/{org}/installation"],
+    getRepoInstallation: ["GET /repos/{owner}/{repo}/installation"],
+    getSubscriptionPlanForAccount: [
+      "GET /marketplace_listing/accounts/{account_id}"
+    ],
+    getSubscriptionPlanForAccountStubbed: [
+      "GET /marketplace_listing/stubbed/accounts/{account_id}"
+    ],
+    getUserInstallation: ["GET /users/{username}/installation"],
+    getWebhookConfigForApp: ["GET /app/hook/config"],
+    getWebhookDelivery: ["GET /app/hook/deliveries/{delivery_id}"],
+    listAccountsForPlan: ["GET /marketplace_listing/plans/{plan_id}/accounts"],
+    listAccountsForPlanStubbed: [
+      "GET /marketplace_listing/stubbed/plans/{plan_id}/accounts"
+    ],
+    listInstallationReposForAuthenticatedUser: [
+      "GET /user/installations/{installation_id}/repositories"
+    ],
+    listInstallationRequestsForAuthenticatedApp: [
+      "GET /app/installation-requests"
+    ],
+    listInstallations: ["GET /app/installations"],
+    listInstallationsForAuthenticatedUser: ["GET /user/installations"],
+    listPlans: ["GET /marketplace_listing/plans"],
+    listPlansStubbed: ["GET /marketplace_listing/stubbed/plans"],
+    listReposAccessibleToInstallation: ["GET /installation/repositories"],
+    listSubscriptionsForAuthenticatedUser: ["GET /user/marketplace_purchases"],
+    listSubscriptionsForAuthenticatedUserStubbed: [
+      "GET /user/marketplace_purchases/stubbed"
+    ],
+    listWebhookDeliveries: ["GET /app/hook/deliveries"],
+    redeliverWebhookDelivery: [
+      "POST /app/hook/deliveries/{delivery_id}/attempts"
+    ],
+    removeRepoFromInstallation: [
+      "DELETE /user/installations/{installation_id}/repositories/{repository_id}",
+      {},
+      { renamed: ["apps", "removeRepoFromInstallationForAuthenticatedUser"] }
+    ],
+    removeRepoFromInstallationForAuthenticatedUser: [
+      "DELETE /user/installations/{installation_id}/repositories/{repository_id}"
+    ],
+    resetToken: ["PATCH /applications/{client_id}/token"],
+    revokeInstallationAccessToken: ["DELETE /installation/token"],
+    scopeToken: ["POST /applications/{client_id}/token/scoped"],
+    suspendInstallation: ["PUT /app/installations/{installation_id}/suspended"],
+    unsuspendInstallation: [
+      "DELETE /app/installations/{installation_id}/suspended"
+    ],
+    updateWebhookConfigForApp: ["PATCH /app/hook/config"]
+  },
+  billing: {
+    getGithubActionsBillingOrg: ["GET /orgs/{org}/settings/billing/actions"],
+    getGithubActionsBillingUser: [
+      "GET /users/{username}/settings/billing/actions"
+    ],
+    getGithubPackagesBillingOrg: ["GET /orgs/{org}/settings/billing/packages"],
+    getGithubPackagesBillingUser: [
+      "GET /users/{username}/settings/billing/packages"
+    ],
+    getSharedStorageBillingOrg: [
+      "GET /orgs/{org}/settings/billing/shared-storage"
+    ],
+    getSharedStorageBillingUser: [
+      "GET /users/{username}/settings/billing/shared-storage"
+    ]
+  },
+  checks: {
+    create: ["POST /repos/{owner}/{repo}/check-runs"],
+    createSuite: ["POST /repos/{owner}/{repo}/check-suites"],
+    get: ["GET /repos/{owner}/{repo}/check-runs/{check_run_id}"],
+    getSuite: ["GET /repos/{owner}/{repo}/check-suites/{check_suite_id}"],
+    listAnnotations: [
+      "GET /repos/{owner}/{repo}/check-runs/{check_run_id}/annotations"
+    ],
+    listForRef: ["GET /repos/{owner}/{repo}/commits/{ref}/check-runs"],
+    listForSuite: [
+      "GET /repos/{owner}/{repo}/check-suites/{check_suite_id}/check-runs"
+    ],
+    listSuitesForRef: ["GET /repos/{owner}/{repo}/commits/{ref}/check-suites"],
+    rerequestRun: [
+      "POST /repos/{owner}/{repo}/check-runs/{check_run_id}/rerequest"
+    ],
+    rerequestSuite: [
+      "POST /repos/{owner}/{repo}/check-suites/{check_suite_id}/rerequest"
+    ],
+    setSuitesPreferences: [
+      "PATCH /repos/{owner}/{repo}/check-suites/preferences"
+    ],
+    update: ["PATCH /repos/{owner}/{repo}/check-runs/{check_run_id}"]
+  },
+  codeScanning: {
+    deleteAnalysis: [
+      "DELETE /repos/{owner}/{repo}/code-scanning/analyses/{analysis_id}{?confirm_delete}"
+    ],
+    getAlert: [
+      "GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}",
+      {},
+      { renamedParameters: { alert_id: "alert_number" } }
+    ],
+    getAnalysis: [
+      "GET /repos/{owner}/{repo}/code-scanning/analyses/{analysis_id}"
+    ],
+    getCodeqlDatabase: [
+      "GET /repos/{owner}/{repo}/code-scanning/codeql/databases/{language}"
+    ],
+    getDefaultSetup: ["GET /repos/{owner}/{repo}/code-scanning/default-setup"],
+    getSarif: ["GET /repos/{owner}/{repo}/code-scanning/sarifs/{sarif_id}"],
+    listAlertInstances: [
+      "GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}/instances"
+    ],
+    listAlertsForOrg: ["GET /orgs/{org}/code-scanning/alerts"],
+    listAlertsForRepo: ["GET /repos/{owner}/{repo}/code-scanning/alerts"],
+    listAlertsInstances: [
+      "GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}/instances",
+      {},
+      { renamed: ["codeScanning", "listAlertInstances"] }
+    ],
+    listCodeqlDatabases: [
+      "GET /repos/{owner}/{repo}/code-scanning/codeql/databases"
+    ],
+    listRecentAnalyses: ["GET /repos/{owner}/{repo}/code-scanning/analyses"],
+    updateAlert: [
+      "PATCH /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}"
+    ],
+    updateDefaultSetup: [
+      "PATCH /repos/{owner}/{repo}/code-scanning/default-setup"
+    ],
+    uploadSarif: ["POST /repos/{owner}/{repo}/code-scanning/sarifs"]
+  },
+  codesOfConduct: {
+    getAllCodesOfConduct: ["GET /codes_of_conduct"],
+    getConductCode: ["GET /codes_of_conduct/{key}"]
+  },
+  codespaces: {
+    addRepositoryForSecretForAuthenticatedUser: [
+      "PUT /user/codespaces/secrets/{secret_name}/repositories/{repository_id}"
+    ],
+    addSelectedRepoToOrgSecret: [
+      "PUT /orgs/{org}/codespaces/secrets/{secret_name}/repositories/{repository_id}"
+    ],
+    checkPermissionsForDevcontainer: [
+      "GET /repos/{owner}/{repo}/codespaces/permissions_check"
+    ],
+    codespaceMachinesForAuthenticatedUser: [
+      "GET /user/codespaces/{codespace_name}/machines"
+    ],
+    createForAuthenticatedUser: ["POST /user/codespaces"],
+    createOrUpdateOrgSecret: [
+      "PUT /orgs/{org}/codespaces/secrets/{secret_name}"
+    ],
+    createOrUpdateRepoSecret: [
+      "PUT /repos/{owner}/{repo}/codespaces/secrets/{secret_name}"
+    ],
+    createOrUpdateSecretForAuthenticatedUser: [
+      "PUT /user/codespaces/secrets/{secret_name}"
+    ],
+    createWithPrForAuthenticatedUser: [
+      "POST /repos/{owner}/{repo}/pulls/{pull_number}/codespaces"
+    ],
+    createWithRepoForAuthenticatedUser: [
+      "POST /repos/{owner}/{repo}/codespaces"
+    ],
+    deleteForAuthenticatedUser: ["DELETE /user/codespaces/{codespace_name}"],
+    deleteFromOrganization: [
+      "DELETE /orgs/{org}/members/{username}/codespaces/{codespace_name}"
+    ],
+    deleteOrgSecret: ["DELETE /orgs/{org}/codespaces/secrets/{secret_name}"],
+    deleteRepoSecret: [
+      "DELETE /repos/{owner}/{repo}/codespaces/secrets/{secret_name}"
+    ],
+    deleteSecretForAuthenticatedUser: [
+      "DELETE /user/codespaces/secrets/{secret_name}"
+    ],
+    exportForAuthenticatedUser: [
+      "POST /user/codespaces/{codespace_name}/exports"
+    ],
+    getCodespacesForUserInOrg: [
+      "GET /orgs/{org}/members/{username}/codespaces"
+    ],
+    getExportDetailsForAuthenticatedUser: [
+      "GET /user/codespaces/{codespace_name}/exports/{export_id}"
+    ],
+    getForAuthenticatedUser: ["GET /user/codespaces/{codespace_name}"],
+    getOrgPublicKey: ["GET /orgs/{org}/codespaces/secrets/public-key"],
+    getOrgSecret: ["GET /orgs/{org}/codespaces/secrets/{secret_name}"],
+    getPublicKeyForAuthenticatedUser: [
+      "GET /user/codespaces/secrets/public-key"
+    ],
+    getRepoPublicKey: [
+      "GET /repos/{owner}/{repo}/codespaces/secrets/public-key"
+    ],
+    getRepoSecret: [
+      "GET /repos/{owner}/{repo}/codespaces/secrets/{secret_name}"
+    ],
+    getSecretForAuthenticatedUser: [
+      "GET /user/codespaces/secrets/{secret_name}"
+    ],
+    listDevcontainersInRepositoryForAuthenticatedUser: [
+      "GET /repos/{owner}/{repo}/codespaces/devcontainers"
+    ],
+    listForAuthenticatedUser: ["GET /user/codespaces"],
+    listInOrganization: [
+      "GET /orgs/{org}/codespaces",
+      {},
+      { renamedParameters: { org_id: "org" } }
+    ],
+    listInRepositoryForAuthenticatedUser: [
+      "GET /repos/{owner}/{repo}/codespaces"
+    ],
+    listOrgSecrets: ["GET /orgs/{org}/codespaces/secrets"],
+    listRepoSecrets: ["GET /repos/{owner}/{repo}/codespaces/secrets"],
+    listRepositoriesForSecretForAuthenticatedUser: [
+      "GET /user/codespaces/secrets/{secret_name}/repositories"
+    ],
+    listSecretsForAuthenticatedUser: ["GET /user/codespaces/secrets"],
+    listSelectedReposForOrgSecret: [
+      "GET /orgs/{org}/codespaces/secrets/{secret_name}/repositories"
+    ],
+    preFlightWithRepoForAuthenticatedUser: [
+      "GET /repos/{owner}/{repo}/codespaces/new"
+    ],
+    publishForAuthenticatedUser: [
+      "POST /user/codespaces/{codespace_name}/publish"
+    ],
+    removeRepositoryForSecretForAuthenticatedUser: [
+      "DELETE /user/codespaces/secrets/{secret_name}/repositories/{repository_id}"
+    ],
+    removeSelectedRepoFromOrgSecret: [
+      "DELETE /orgs/{org}/codespaces/secrets/{secret_name}/repositories/{repository_id}"
+    ],
+    repoMachinesForAuthenticatedUser: [
+      "GET /repos/{owner}/{repo}/codespaces/machines"
+    ],
+    setRepositoriesForSecretForAuthenticatedUser: [
+      "PUT /user/codespaces/secrets/{secret_name}/repositories"
+    ],
+    setSelectedReposForOrgSecret: [
+      "PUT /orgs/{org}/codespaces/secrets/{secret_name}/repositories"
+    ],
+    startForAuthenticatedUser: ["POST /user/codespaces/{codespace_name}/start"],
+    stopForAuthenticatedUser: ["POST /user/codespaces/{codespace_name}/stop"],
+    stopInOrganization: [
+      "POST /orgs/{org}/members/{username}/codespaces/{codespace_name}/stop"
+    ],
+    updateForAuthenticatedUser: ["PATCH /user/codespaces/{codespace_name}"]
+  },
+  copilot: {
+    addCopilotSeatsForTeams: [
+      "POST /orgs/{org}/copilot/billing/selected_teams"
+    ],
+    addCopilotSeatsForUsers: [
+      "POST /orgs/{org}/copilot/billing/selected_users"
+    ],
+    cancelCopilotSeatAssignmentForTeams: [
+      "DELETE /orgs/{org}/copilot/billing/selected_teams"
+    ],
+    cancelCopilotSeatAssignmentForUsers: [
+      "DELETE /orgs/{org}/copilot/billing/selected_users"
+    ],
+    getCopilotOrganizationDetails: ["GET /orgs/{org}/copilot/billing"],
+    getCopilotSeatDetailsForUser: [
+      "GET /orgs/{org}/members/{username}/copilot"
+    ],
+    listCopilotSeats: ["GET /orgs/{org}/copilot/billing/seats"],
+    usageMetricsForEnterprise: ["GET /enterprises/{enterprise}/copilot/usage"],
+    usageMetricsForOrg: ["GET /orgs/{org}/copilot/usage"],
+    usageMetricsForTeam: ["GET /orgs/{org}/team/{team_slug}/copilot/usage"]
+  },
+  dependabot: {
+    addSelectedRepoToOrgSecret: [
+      "PUT /orgs/{org}/dependabot/secrets/{secret_name}/repositories/{repository_id}"
+    ],
+    createOrUpdateOrgSecret: [
+      "PUT /orgs/{org}/dependabot/secrets/{secret_name}"
+    ],
+    createOrUpdateRepoSecret: [
+      "PUT /repos/{owner}/{repo}/dependabot/secrets/{secret_name}"
+    ],
+    deleteOrgSecret: ["DELETE /orgs/{org}/dependabot/secrets/{secret_name}"],
+    deleteRepoSecret: [
+      "DELETE /repos/{owner}/{repo}/dependabot/secrets/{secret_name}"
+    ],
+    getAlert: ["GET /repos/{owner}/{repo}/dependabot/alerts/{alert_number}"],
+    getOrgPublicKey: ["GET /orgs/{org}/dependabot/secrets/public-key"],
+    getOrgSecret: ["GET /orgs/{org}/dependabot/secrets/{secret_name}"],
+    getRepoPublicKey: [
+      "GET /repos/{owner}/{repo}/dependabot/secrets/public-key"
+    ],
+    getRepoSecret: [
+      "GET /repos/{owner}/{repo}/dependabot/secrets/{secret_name}"
+    ],
+    listAlertsForEnterprise: [
+      "GET /enterprises/{enterprise}/dependabot/alerts"
+    ],
+    listAlertsForOrg: ["GET /orgs/{org}/dependabot/alerts"],
+    listAlertsForRepo: ["GET /repos/{owner}/{repo}/dependabot/alerts"],
+    listOrgSecrets: ["GET /orgs/{org}/dependabot/secrets"],
+    listRepoSecrets: ["GET /repos/{owner}/{repo}/dependabot/secrets"],
+    listSelectedReposForOrgSecret: [
+      "GET /orgs/{org}/dependabot/secrets/{secret_name}/repositories"
+    ],
+    removeSelectedRepoFromOrgSecret: [
+      "DELETE /orgs/{org}/dependabot/secrets/{secret_name}/repositories/{repository_id}"
+    ],
+    setSelectedReposForOrgSecret: [
+      "PUT /orgs/{org}/dependabot/secrets/{secret_name}/repositories"
+    ],
+    updateAlert: [
+      "PATCH /repos/{owner}/{repo}/dependabot/alerts/{alert_number}"
+    ]
+  },
+  dependencyGraph: {
+    createRepositorySnapshot: [
+      "POST /repos/{owner}/{repo}/dependency-graph/snapshots"
+    ],
+    diffRange: [
+      "GET /repos/{owner}/{repo}/dependency-graph/compare/{basehead}"
+    ],
+    exportSbom: ["GET /repos/{owner}/{repo}/dependency-graph/sbom"]
+  },
+  emojis: { get: ["GET /emojis"] },
+  gists: {
+    checkIsStarred: ["GET /gists/{gist_id}/star"],
+    create: ["POST /gists"],
+    createComment: ["POST /gists/{gist_id}/comments"],
+    delete: ["DELETE /gists/{gist_id}"],
+    deleteComment: ["DELETE /gists/{gist_id}/comments/{comment_id}"],
+    fork: ["POST /gists/{gist_id}/forks"],
+    get: ["GET /gists/{gist_id}"],
+    getComment: ["GET /gists/{gist_id}/comments/{comment_id}"],
+    getRevision: ["GET /gists/{gist_id}/{sha}"],
+    list: ["GET /gists"],
+    listComments: ["GET /gists/{gist_id}/comments"],
+    listCommits: ["GET /gists/{gist_id}/commits"],
+    listForUser: ["GET /users/{username}/gists"],
+    listForks: ["GET /gists/{gist_id}/forks"],
+    listPublic: ["GET /gists/public"],
+    listStarred: ["GET /gists/starred"],
+    star: ["PUT /gists/{gist_id}/star"],
+    unstar: ["DELETE /gists/{gist_id}/star"],
+    update: ["PATCH /gists/{gist_id}"],
+    updateComment: ["PATCH /gists/{gist_id}/comments/{comment_id}"]
+  },
+  git: {
+    createBlob: ["POST /repos/{owner}/{repo}/git/blobs"],
+    createCommit: ["POST /repos/{owner}/{repo}/git/commits"],
+    createRef: ["POST /repos/{owner}/{repo}/git/refs"],
+    createTag: ["POST /repos/{owner}/{repo}/git/tags"],
+    createTree: ["POST /repos/{owner}/{repo}/git/trees"],
+    deleteRef: ["DELETE /repos/{owner}/{repo}/git/refs/{ref}"],
+    getBlob: ["GET /repos/{owner}/{repo}/git/blobs/{file_sha}"],
+    getCommit: ["GET /repos/{owner}/{repo}/git/commits/{commit_sha}"],
+    getRef: ["GET /repos/{owner}/{repo}/git/ref/{ref}"],
+    getTag: ["GET /repos/{owner}/{repo}/git/tags/{tag_sha}"],
+    getTree: ["GET /repos/{owner}/{repo}/git/trees/{tree_sha}"],
+    listMatchingRefs: ["GET /repos/{owner}/{repo}/git/matching-refs/{ref}"],
+    updateRef: ["PATCH /repos/{owner}/{repo}/git/refs/{ref}"]
+  },
+  gitignore: {
+    getAllTemplates: ["GET /gitignore/templates"],
+    getTemplate: ["GET /gitignore/templates/{name}"]
+  },
+  interactions: {
+    getRestrictionsForAuthenticatedUser: ["GET /user/interaction-limits"],
+    getRestrictionsForOrg: ["GET /orgs/{org}/interaction-limits"],
+    getRestrictionsForRepo: ["GET /repos/{owner}/{repo}/interaction-limits"],
+    getRestrictionsForYourPublicRepos: [
+      "GET /user/interaction-limits",
+      {},
+      { renamed: ["interactions", "getRestrictionsForAuthenticatedUser"] }
+    ],
+    removeRestrictionsForAuthenticatedUser: ["DELETE /user/interaction-limits"],
+    removeRestrictionsForOrg: ["DELETE /orgs/{org}/interaction-limits"],
+    removeRestrictionsForRepo: [
+      "DELETE /repos/{owner}/{repo}/interaction-limits"
+    ],
+    removeRestrictionsForYourPublicRepos: [
+      "DELETE /user/interaction-limits",
+      {},
+      { renamed: ["interactions", "removeRestrictionsForAuthenticatedUser"] }
+    ],
+    setRestrictionsForAuthenticatedUser: ["PUT /user/interaction-limits"],
+    setRestrictionsForOrg: ["PUT /orgs/{org}/interaction-limits"],
+    setRestrictionsForRepo: ["PUT /repos/{owner}/{repo}/interaction-limits"],
+    setRestrictionsForYourPublicRepos: [
+      "PUT /user/interaction-limits",
+      {},
+      { renamed: ["interactions", "setRestrictionsForAuthenticatedUser"] }
+    ]
+  },
+  issues: {
+    addAssignees: [
+      "POST /repos/{owner}/{repo}/issues/{issue_number}/assignees"
+    ],
+    addLabels: ["POST /repos/{owner}/{repo}/issues/{issue_number}/labels"],
+    checkUserCanBeAssigned: ["GET /repos/{owner}/{repo}/assignees/{assignee}"],
+    checkUserCanBeAssignedToIssue: [
+      "GET /repos/{owner}/{repo}/issues/{issue_number}/assignees/{assignee}"
+    ],
+    create: ["POST /repos/{owner}/{repo}/issues"],
+    createComment: [
+      "POST /repos/{owner}/{repo}/issues/{issue_number}/comments"
+    ],
+    createLabel: ["POST /repos/{owner}/{repo}/labels"],
+    createMilestone: ["POST /repos/{owner}/{repo}/milestones"],
+    deleteComment: [
+      "DELETE /repos/{owner}/{repo}/issues/comments/{comment_id}"
+    ],
+    deleteLabel: ["DELETE /repos/{owner}/{repo}/labels/{name}"],
+    deleteMilestone: [
+      "DELETE /repos/{owner}/{repo}/milestones/{milestone_number}"
+    ],
+    get: ["GET /repos/{owner}/{repo}/issues/{issue_number}"],
+    getComment: ["GET /repos/{owner}/{repo}/issues/comments/{comment_id}"],
+    getEvent: ["GET /repos/{owner}/{repo}/issues/events/{event_id}"],
+    getLabel: ["GET /repos/{owner}/{repo}/labels/{name}"],
+    getMilestone: ["GET /repos/{owner}/{repo}/milestones/{milestone_number}"],
+    list: ["GET /issues"],
+    listAssignees: ["GET /repos/{owner}/{repo}/assignees"],
+    listComments: ["GET /repos/{owner}/{repo}/issues/{issue_number}/comments"],
+    listCommentsForRepo: ["GET /repos/{owner}/{repo}/issues/comments"],
+    listEvents: ["GET /repos/{owner}/{repo}/issues/{issue_number}/events"],
+    listEventsForRepo: ["GET /repos/{owner}/{repo}/issues/events"],
+    listEventsForTimeline: [
+      "GET /repos/{owner}/{repo}/issues/{issue_number}/timeline"
+    ],
+    listForAuthenticatedUser: ["GET /user/issues"],
+    listForOrg: ["GET /orgs/{org}/issues"],
+    listForRepo: ["GET /repos/{owner}/{repo}/issues"],
+    listLabelsForMilestone: [
+      "GET /repos/{owner}/{repo}/milestones/{milestone_number}/labels"
+    ],
+    listLabelsForRepo: ["GET /repos/{owner}/{repo}/labels"],
+    listLabelsOnIssue: [
+      "GET /repos/{owner}/{repo}/issues/{issue_number}/labels"
+    ],
+    listMilestones: ["GET /repos/{owner}/{repo}/milestones"],
+    lock: ["PUT /repos/{owner}/{repo}/issues/{issue_number}/lock"],
+    removeAllLabels: [
+      "DELETE /repos/{owner}/{repo}/issues/{issue_number}/labels"
+    ],
+    removeAssignees: [
+      "DELETE /repos/{owner}/{repo}/issues/{issue_number}/assignees"
+    ],
+    removeLabel: [
+      "DELETE /repos/{owner}/{repo}/issues/{issue_number}/labels/{name}"
+    ],
+    setLabels: ["PUT /repos/{owner}/{repo}/issues/{issue_number}/labels"],
+    unlock: ["DELETE /repos/{owner}/{repo}/issues/{issue_number}/lock"],
+    update: ["PATCH /repos/{owner}/{repo}/issues/{issue_number}"],
+    updateComment: ["PATCH /repos/{owner}/{repo}/issues/comments/{comment_id}"],
+    updateLabel: ["PATCH /repos/{owner}/{repo}/labels/{name}"],
+    updateMilestone: [
+      "PATCH /repos/{owner}/{repo}/milestones/{milestone_number}"
+    ]
+  },
+  licenses: {
+    get: ["GET /licenses/{license}"],
+    getAllCommonlyUsed: ["GET /licenses"],
+    getForRepo: ["GET /repos/{owner}/{repo}/license"]
+  },
+  markdown: {
+    render: ["POST /markdown"],
+    renderRaw: [
+      "POST /markdown/raw",
+      { headers: { "content-type": "text/plain; charset=utf-8" } }
+    ]
+  },
+  meta: {
+    get: ["GET /meta"],
+    getAllVersions: ["GET /versions"],
+    getOctocat: ["GET /octocat"],
+    getZen: ["GET /zen"],
+    root: ["GET /"]
+  },
+  migrations: {
+    deleteArchiveForAuthenticatedUser: [
+      "DELETE /user/migrations/{migration_id}/archive"
+    ],
+    deleteArchiveForOrg: [
+      "DELETE /orgs/{org}/migrations/{migration_id}/archive"
+    ],
+    downloadArchiveForOrg: [
+      "GET /orgs/{org}/migrations/{migration_id}/archive"
+    ],
+    getArchiveForAuthenticatedUser: [
+      "GET /user/migrations/{migration_id}/archive"
+    ],
+    getStatusForAuthenticatedUser: ["GET /user/migrations/{migration_id}"],
+    getStatusForOrg: ["GET /orgs/{org}/migrations/{migration_id}"],
+    listForAuthenticatedUser: ["GET /user/migrations"],
+    listForOrg: ["GET /orgs/{org}/migrations"],
+    listReposForAuthenticatedUser: [
+      "GET /user/migrations/{migration_id}/repositories"
+    ],
+    listReposForOrg: ["GET /orgs/{org}/migrations/{migration_id}/repositories"],
+    listReposForUser: [
+      "GET /user/migrations/{migration_id}/repositories",
+      {},
+      { renamed: ["migrations", "listReposForAuthenticatedUser"] }
+    ],
+    startForAuthenticatedUser: ["POST /user/migrations"],
+    startForOrg: ["POST /orgs/{org}/migrations"],
+    unlockRepoForAuthenticatedUser: [
+      "DELETE /user/migrations/{migration_id}/repos/{repo_name}/lock"
+    ],
+    unlockRepoForOrg: [
+      "DELETE /orgs/{org}/migrations/{migration_id}/repos/{repo_name}/lock"
+    ]
+  },
+  oidc: {
+    getOidcCustomSubTemplateForOrg: [
+      "GET /orgs/{org}/actions/oidc/customization/sub"
+    ],
+    updateOidcCustomSubTemplateForOrg: [
+      "PUT /orgs/{org}/actions/oidc/customization/sub"
+    ]
+  },
+  orgs: {
+    addSecurityManagerTeam: [
+      "PUT /orgs/{org}/security-managers/teams/{team_slug}"
+    ],
+    assignTeamToOrgRole: [
+      "PUT /orgs/{org}/organization-roles/teams/{team_slug}/{role_id}"
+    ],
+    assignUserToOrgRole: [
+      "PUT /orgs/{org}/organization-roles/users/{username}/{role_id}"
+    ],
+    blockUser: ["PUT /orgs/{org}/blocks/{username}"],
+    cancelInvitation: ["DELETE /orgs/{org}/invitations/{invitation_id}"],
+    checkBlockedUser: ["GET /orgs/{org}/blocks/{username}"],
+    checkMembershipForUser: ["GET /orgs/{org}/members/{username}"],
+    checkPublicMembershipForUser: ["GET /orgs/{org}/public_members/{username}"],
+    convertMemberToOutsideCollaborator: [
+      "PUT /orgs/{org}/outside_collaborators/{username}"
+    ],
+    createCustomOrganizationRole: ["POST /orgs/{org}/organization-roles"],
+    createInvitation: ["POST /orgs/{org}/invitations"],
+    createOrUpdateCustomProperties: ["PATCH /orgs/{org}/properties/schema"],
+    createOrUpdateCustomPropertiesValuesForRepos: [
+      "PATCH /orgs/{org}/properties/values"
+    ],
+    createOrUpdateCustomProperty: [
+      "PUT /orgs/{org}/properties/schema/{custom_property_name}"
+    ],
+    createWebhook: ["POST /orgs/{org}/hooks"],
+    delete: ["DELETE /orgs/{org}"],
+    deleteCustomOrganizationRole: [
+      "DELETE /orgs/{org}/organization-roles/{role_id}"
+    ],
+    deleteWebhook: ["DELETE /orgs/{org}/hooks/{hook_id}"],
+    enableOrDisableSecurityProductOnAllOrgRepos: [
+      "POST /orgs/{org}/{security_product}/{enablement}"
+    ],
+    get: ["GET /orgs/{org}"],
+    getAllCustomProperties: ["GET /orgs/{org}/properties/schema"],
+    getCustomProperty: [
+      "GET /orgs/{org}/properties/schema/{custom_property_name}"
+    ],
+    getMembershipForAuthenticatedUser: ["GET /user/memberships/orgs/{org}"],
+    getMembershipForUser: ["GET /orgs/{org}/memberships/{username}"],
+    getOrgRole: ["GET /orgs/{org}/organization-roles/{role_id}"],
+    getWebhook: ["GET /orgs/{org}/hooks/{hook_id}"],
+    getWebhookConfigForOrg: ["GET /orgs/{org}/hooks/{hook_id}/config"],
+    getWebhookDelivery: [
+      "GET /orgs/{org}/hooks/{hook_id}/deliveries/{delivery_id}"
+    ],
+    list: ["GET /organizations"],
+    listAppInstallations: ["GET /orgs/{org}/installations"],
+    listBlockedUsers: ["GET /orgs/{org}/blocks"],
+    listCustomPropertiesValuesForRepos: ["GET /orgs/{org}/properties/values"],
+    listFailedInvitations: ["GET /orgs/{org}/failed_invitations"],
+    listForAuthenticatedUser: ["GET /user/orgs"],
+    listForUser: ["GET /users/{username}/orgs"],
+    listInvitationTeams: ["GET /orgs/{org}/invitations/{invitation_id}/teams"],
+    listMembers: ["GET /orgs/{org}/members"],
+    listMembershipsForAuthenticatedUser: ["GET /user/memberships/orgs"],
+    listOrgRoleTeams: ["GET /orgs/{org}/organization-roles/{role_id}/teams"],
+    listOrgRoleUsers: ["GET /orgs/{org}/organization-roles/{role_id}/users"],
+    listOrgRoles: ["GET /orgs/{org}/organization-roles"],
+    listOrganizationFineGrainedPermissions: [
+      "GET /orgs/{org}/organization-fine-grained-permissions"
+    ],
+    listOutsideCollaborators: ["GET /orgs/{org}/outside_collaborators"],
+    listPatGrantRepositories: [
+      "GET /orgs/{org}/personal-access-tokens/{pat_id}/repositories"
+    ],
+    listPatGrantRequestRepositories: [
+      "GET /orgs/{org}/personal-access-token-requests/{pat_request_id}/repositories"
+    ],
+    listPatGrantRequests: ["GET /orgs/{org}/personal-access-token-requests"],
+    listPatGrants: ["GET /orgs/{org}/personal-access-tokens"],
+    listPendingInvitations: ["GET /orgs/{org}/invitations"],
+    listPublicMembers: ["GET /orgs/{org}/public_members"],
+    listSecurityManagerTeams: ["GET /orgs/{org}/security-managers"],
+    listWebhookDeliveries: ["GET /orgs/{org}/hooks/{hook_id}/deliveries"],
+    listWebhooks: ["GET /orgs/{org}/hooks"],
+    patchCustomOrganizationRole: [
+      "PATCH /orgs/{org}/organization-roles/{role_id}"
+    ],
+    pingWebhook: ["POST /orgs/{org}/hooks/{hook_id}/pings"],
+    redeliverWebhookDelivery: [
+      "POST /orgs/{org}/hooks/{hook_id}/deliveries/{delivery_id}/attempts"
+    ],
+    removeCustomProperty: [
+      "DELETE /orgs/{org}/properties/schema/{custom_property_name}"
+    ],
+    removeMember: ["DELETE /orgs/{org}/members/{username}"],
+    removeMembershipForUser: ["DELETE /orgs/{org}/memberships/{username}"],
+    removeOutsideCollaborator: [
+      "DELETE /orgs/{org}/outside_collaborators/{username}"
+    ],
+    removePublicMembershipForAuthenticatedUser: [
+      "DELETE /orgs/{org}/public_members/{username}"
+    ],
+    removeSecurityManagerTeam: [
+      "DELETE /orgs/{org}/security-managers/teams/{team_slug}"
+    ],
+    reviewPatGrantRequest: [
+      "POST /orgs/{org}/personal-access-token-requests/{pat_request_id}"
+    ],
+    reviewPatGrantRequestsInBulk: [
+      "POST /orgs/{org}/personal-access-token-requests"
+    ],
+    revokeAllOrgRolesTeam: [
+      "DELETE /orgs/{org}/organization-roles/teams/{team_slug}"
+    ],
+    revokeAllOrgRolesUser: [
+      "DELETE /orgs/{org}/organization-roles/users/{username}"
+    ],
+    revokeOrgRoleTeam: [
+      "DELETE /orgs/{org}/organization-roles/teams/{team_slug}/{role_id}"
+    ],
+    revokeOrgRoleUser: [
+      "DELETE /orgs/{org}/organization-roles/users/{username}/{role_id}"
+    ],
+    setMembershipForUser: ["PUT /orgs/{org}/memberships/{username}"],
+    setPublicMembershipForAuthenticatedUser: [
+      "PUT /orgs/{org}/public_members/{username}"
+    ],
+    unblockUser: ["DELETE /orgs/{org}/blocks/{username}"],
+    update: ["PATCH /orgs/{org}"],
+    updateMembershipForAuthenticatedUser: [
+      "PATCH /user/memberships/orgs/{org}"
+    ],
+    updatePatAccess: ["POST /orgs/{org}/personal-access-tokens/{pat_id}"],
+    updatePatAccesses: ["POST /orgs/{org}/personal-access-tokens"],
+    updateWebhook: ["PATCH /orgs/{org}/hooks/{hook_id}"],
+    updateWebhookConfigForOrg: ["PATCH /orgs/{org}/hooks/{hook_id}/config"]
+  },
+  packages: {
+    deletePackageForAuthenticatedUser: [
+      "DELETE /user/packages/{package_type}/{package_name}"
+    ],
+    deletePackageForOrg: [
+      "DELETE /orgs/{org}/packages/{package_type}/{package_name}"
+    ],
+    deletePackageForUser: [
+      "DELETE /users/{username}/packages/{package_type}/{package_name}"
+    ],
+    deletePackageVersionForAuthenticatedUser: [
+      "DELETE /user/packages/{package_type}/{package_name}/versions/{package_version_id}"
+    ],
+    deletePackageVersionForOrg: [
+      "DELETE /orgs/{org}/packages/{package_type}/{package_name}/versions/{package_version_id}"
+    ],
+    deletePackageVersionForUser: [
+      "DELETE /users/{username}/packages/{package_type}/{package_name}/versions/{package_version_id}"
+    ],
+    getAllPackageVersionsForAPackageOwnedByAnOrg: [
+      "GET /orgs/{org}/packages/{package_type}/{package_name}/versions",
+      {},
+      { renamed: ["packages", "getAllPackageVersionsForPackageOwnedByOrg"] }
+    ],
+    getAllPackageVersionsForAPackageOwnedByTheAuthenticatedUser: [
+      "GET /user/packages/{package_type}/{package_name}/versions",
+      {},
+      {
+        renamed: [
+          "packages",
+          "getAllPackageVersionsForPackageOwnedByAuthenticatedUser"
+        ]
+      }
+    ],
+    getAllPackageVersionsForPackageOwnedByAuthenticatedUser: [
+      "GET /user/packages/{package_type}/{package_name}/versions"
+    ],
+    getAllPackageVersionsForPackageOwnedByOrg: [
+      "GET /orgs/{org}/packages/{package_type}/{package_name}/versions"
+    ],
+    getAllPackageVersionsForPackageOwnedByUser: [
+      "GET /users/{username}/packages/{package_type}/{package_name}/versions"
+    ],
+    getPackageForAuthenticatedUser: [
+      "GET /user/packages/{package_type}/{package_name}"
+    ],
+    getPackageForOrganization: [
+      "GET /orgs/{org}/packages/{package_type}/{package_name}"
+    ],
+    getPackageForUser: [
+      "GET /users/{username}/packages/{package_type}/{package_name}"
+    ],
+    getPackageVersionForAuthenticatedUser: [
+      "GET /user/packages/{package_type}/{package_name}/versions/{package_version_id}"
+    ],
+    getPackageVersionForOrganization: [
+      "GET /orgs/{org}/packages/{package_type}/{package_name}/versions/{package_version_id}"
+    ],
+    getPackageVersionForUser: [
+      "GET /users/{username}/packages/{package_type}/{package_name}/versions/{package_version_id}"
+    ],
+    listDockerMigrationConflictingPackagesForAuthenticatedUser: [
+      "GET /user/docker/conflicts"
+    ],
+    listDockerMigrationConflictingPackagesForOrganization: [
+      "GET /orgs/{org}/docker/conflicts"
+    ],
+    listDockerMigrationConflictingPackagesForUser: [
+      "GET /users/{username}/docker/conflicts"
+    ],
+    listPackagesForAuthenticatedUser: ["GET /user/packages"],
+    listPackagesForOrganization: ["GET /orgs/{org}/packages"],
+    listPackagesForUser: ["GET /users/{username}/packages"],
+    restorePackageForAuthenticatedUser: [
+      "POST /user/packages/{package_type}/{package_name}/restore{?token}"
+    ],
+    restorePackageForOrg: [
+      "POST /orgs/{org}/packages/{package_type}/{package_name}/restore{?token}"
+    ],
+    restorePackageForUser: [
+      "POST /users/{username}/packages/{package_type}/{package_name}/restore{?token}"
+    ],
+    restorePackageVersionForAuthenticatedUser: [
+      "POST /user/packages/{package_type}/{package_name}/versions/{package_version_id}/restore"
+    ],
+    restorePackageVersionForOrg: [
+      "POST /orgs/{org}/packages/{package_type}/{package_name}/versions/{package_version_id}/restore"
+    ],
+    restorePackageVersionForUser: [
+      "POST /users/{username}/packages/{package_type}/{package_name}/versions/{package_version_id}/restore"
+    ]
+  },
+  projects: {
+    addCollaborator: ["PUT /projects/{project_id}/collaborators/{username}"],
+    createCard: ["POST /projects/columns/{column_id}/cards"],
+    createColumn: ["POST /projects/{project_id}/columns"],
+    createForAuthenticatedUser: ["POST /user/projects"],
+    createForOrg: ["POST /orgs/{org}/projects"],
+    createForRepo: ["POST /repos/{owner}/{repo}/projects"],
+    delete: ["DELETE /projects/{project_id}"],
+    deleteCard: ["DELETE /projects/columns/cards/{card_id}"],
+    deleteColumn: ["DELETE /projects/columns/{column_id}"],
+    get: ["GET /projects/{project_id}"],
+    getCard: ["GET /projects/columns/cards/{card_id}"],
+    getColumn: ["GET /projects/columns/{column_id}"],
+    getPermissionForUser: [
+      "GET /projects/{project_id}/collaborators/{username}/permission"
+    ],
+    listCards: ["GET /projects/columns/{column_id}/cards"],
+    listCollaborators: ["GET /projects/{project_id}/collaborators"],
+    listColumns: ["GET /projects/{project_id}/columns"],
+    listForOrg: ["GET /orgs/{org}/projects"],
+    listForRepo: ["GET /repos/{owner}/{repo}/projects"],
+    listForUser: ["GET /users/{username}/projects"],
+    moveCard: ["POST /projects/columns/cards/{card_id}/moves"],
+    moveColumn: ["POST /projects/columns/{column_id}/moves"],
+    removeCollaborator: [
+      "DELETE /projects/{project_id}/collaborators/{username}"
+    ],
+    update: ["PATCH /projects/{project_id}"],
+    updateCard: ["PATCH /projects/columns/cards/{card_id}"],
+    updateColumn: ["PATCH /projects/columns/{column_id}"]
+  },
+  pulls: {
+    checkIfMerged: ["GET /repos/{owner}/{repo}/pulls/{pull_number}/merge"],
+    create: ["POST /repos/{owner}/{repo}/pulls"],
+    createReplyForReviewComment: [
+      "POST /repos/{owner}/{repo}/pulls/{pull_number}/comments/{comment_id}/replies"
+    ],
+    createReview: ["POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews"],
+    createReviewComment: [
+      "POST /repos/{owner}/{repo}/pulls/{pull_number}/comments"
+    ],
+    deletePendingReview: [
+      "DELETE /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}"
+    ],
+    deleteReviewComment: [
+      "DELETE /repos/{owner}/{repo}/pulls/comments/{comment_id}"
+    ],
+    dismissReview: [
+      "PUT /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}/dismissals"
+    ],
+    get: ["GET /repos/{owner}/{repo}/pulls/{pull_number}"],
+    getReview: [
+      "GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}"
+    ],
+    getReviewComment: ["GET /repos/{owner}/{repo}/pulls/comments/{comment_id}"],
+    list: ["GET /repos/{owner}/{repo}/pulls"],
+    listCommentsForReview: [
+      "GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}/comments"
+    ],
+    listCommits: ["GET /repos/{owner}/{repo}/pulls/{pull_number}/commits"],
+    listFiles: ["GET /repos/{owner}/{repo}/pulls/{pull_number}/files"],
+    listRequestedReviewers: [
+      "GET /repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers"
+    ],
+    listReviewComments: [
+      "GET /repos/{owner}/{repo}/pulls/{pull_number}/comments"
+    ],
+    listReviewCommentsForRepo: ["GET /repos/{owner}/{repo}/pulls/comments"],
+    listReviews: ["GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews"],
+    merge: ["PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge"],
+    removeRequestedReviewers: [
+      "DELETE /repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers"
+    ],
+    requestReviewers: [
+      "POST /repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers"
+    ],
+    submitReview: [
+      "POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}/events"
+    ],
+    update: ["PATCH /repos/{owner}/{repo}/pulls/{pull_number}"],
+    updateBranch: [
+      "PUT /repos/{owner}/{repo}/pulls/{pull_number}/update-branch"
+    ],
+    updateReview: [
+      "PUT /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}"
+    ],
+    updateReviewComment: [
+      "PATCH /repos/{owner}/{repo}/pulls/comments/{comment_id}"
+    ]
+  },
+  rateLimit: { get: ["GET /rate_limit"] },
+  reactions: {
+    createForCommitComment: [
+      "POST /repos/{owner}/{repo}/comments/{comment_id}/reactions"
+    ],
+    createForIssue: [
+      "POST /repos/{owner}/{repo}/issues/{issue_number}/reactions"
+    ],
+    createForIssueComment: [
+      "POST /repos/{owner}/{repo}/issues/comments/{comment_id}/reactions"
+    ],
+    createForPullRequestReviewComment: [
+      "POST /repos/{owner}/{repo}/pulls/comments/{comment_id}/reactions"
+    ],
+    createForRelease: [
+      "POST /repos/{owner}/{repo}/releases/{release_id}/reactions"
+    ],
+    createForTeamDiscussionCommentInOrg: [
+      "POST /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}/reactions"
+    ],
+    createForTeamDiscussionInOrg: [
+      "POST /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/reactions"
+    ],
+    deleteForCommitComment: [
+      "DELETE /repos/{owner}/{repo}/comments/{comment_id}/reactions/{reaction_id}"
+    ],
+    deleteForIssue: [
+      "DELETE /repos/{owner}/{repo}/issues/{issue_number}/reactions/{reaction_id}"
+    ],
+    deleteForIssueComment: [
+      "DELETE /repos/{owner}/{repo}/issues/comments/{comment_id}/reactions/{reaction_id}"
+    ],
+    deleteForPullRequestComment: [
+      "DELETE /repos/{owner}/{repo}/pulls/comments/{comment_id}/reactions/{reaction_id}"
+    ],
+    deleteForRelease: [
+      "DELETE /repos/{owner}/{repo}/releases/{release_id}/reactions/{reaction_id}"
+    ],
+    deleteForTeamDiscussion: [
+      "DELETE /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/reactions/{reaction_id}"
+    ],
+    deleteForTeamDiscussionComment: [
+      "DELETE /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}/reactions/{reaction_id}"
+    ],
+    listForCommitComment: [
+      "GET /repos/{owner}/{repo}/comments/{comment_id}/reactions"
+    ],
+    listForIssue: ["GET /repos/{owner}/{repo}/issues/{issue_number}/reactions"],
+    listForIssueComment: [
+      "GET /repos/{owner}/{repo}/issues/comments/{comment_id}/reactions"
+    ],
+    listForPullRequestReviewComment: [
+      "GET /repos/{owner}/{repo}/pulls/comments/{comment_id}/reactions"
+    ],
+    listForRelease: [
+      "GET /repos/{owner}/{repo}/releases/{release_id}/reactions"
+    ],
+    listForTeamDiscussionCommentInOrg: [
+      "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}/reactions"
+    ],
+    listForTeamDiscussionInOrg: [
+      "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/reactions"
+    ]
+  },
+  repos: {
+    acceptInvitation: [
+      "PATCH /user/repository_invitations/{invitation_id}",
+      {},
+      { renamed: ["repos", "acceptInvitationForAuthenticatedUser"] }
+    ],
+    acceptInvitationForAuthenticatedUser: [
+      "PATCH /user/repository_invitations/{invitation_id}"
+    ],
+    addAppAccessRestrictions: [
+      "POST /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/apps",
+      {},
+      { mapToData: "apps" }
+    ],
+    addCollaborator: ["PUT /repos/{owner}/{repo}/collaborators/{username}"],
+    addStatusCheckContexts: [
+      "POST /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks/contexts",
+      {},
+      { mapToData: "contexts" }
+    ],
+    addTeamAccessRestrictions: [
+      "POST /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/teams",
+      {},
+      { mapToData: "teams" }
+    ],
+    addUserAccessRestrictions: [
+      "POST /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/users",
+      {},
+      { mapToData: "users" }
+    ],
+    cancelPagesDeployment: [
+      "POST /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}/cancel"
+    ],
+    checkAutomatedSecurityFixes: [
+      "GET /repos/{owner}/{repo}/automated-security-fixes"
+    ],
+    checkCollaborator: ["GET /repos/{owner}/{repo}/collaborators/{username}"],
+    checkPrivateVulnerabilityReporting: [
+      "GET /repos/{owner}/{repo}/private-vulnerability-reporting"
+    ],
+    checkVulnerabilityAlerts: [
+      "GET /repos/{owner}/{repo}/vulnerability-alerts"
+    ],
+    codeownersErrors: ["GET /repos/{owner}/{repo}/codeowners/errors"],
+    compareCommits: ["GET /repos/{owner}/{repo}/compare/{base}...{head}"],
+    compareCommitsWithBasehead: [
+      "GET /repos/{owner}/{repo}/compare/{basehead}"
+    ],
+    createAutolink: ["POST /repos/{owner}/{repo}/autolinks"],
+    createCommitComment: [
+      "POST /repos/{owner}/{repo}/commits/{commit_sha}/comments"
+    ],
+    createCommitSignatureProtection: [
+      "POST /repos/{owner}/{repo}/branches/{branch}/protection/required_signatures"
+    ],
+    createCommitStatus: ["POST /repos/{owner}/{repo}/statuses/{sha}"],
+    createDeployKey: ["POST /repos/{owner}/{repo}/keys"],
+    createDeployment: ["POST /repos/{owner}/{repo}/deployments"],
+    createDeploymentBranchPolicy: [
+      "POST /repos/{owner}/{repo}/environments/{environment_name}/deployment-branch-policies"
+    ],
+    createDeploymentProtectionRule: [
+      "POST /repos/{owner}/{repo}/environments/{environment_name}/deployment_protection_rules"
+    ],
+    createDeploymentStatus: [
+      "POST /repos/{owner}/{repo}/deployments/{deployment_id}/statuses"
+    ],
+    createDispatchEvent: ["POST /repos/{owner}/{repo}/dispatches"],
+    createForAuthenticatedUser: ["POST /user/repos"],
+    createFork: ["POST /repos/{owner}/{repo}/forks"],
+    createInOrg: ["POST /orgs/{org}/repos"],
+    createOrUpdateCustomPropertiesValues: [
+      "PATCH /repos/{owner}/{repo}/properties/values"
+    ],
+    createOrUpdateEnvironment: [
+      "PUT /repos/{owner}/{repo}/environments/{environment_name}"
+    ],
+    createOrUpdateFileContents: ["PUT /repos/{owner}/{repo}/contents/{path}"],
+    createOrgRuleset: ["POST /orgs/{org}/rulesets"],
+    createPagesDeployment: ["POST /repos/{owner}/{repo}/pages/deployments"],
+    createPagesSite: ["POST /repos/{owner}/{repo}/pages"],
+    createRelease: ["POST /repos/{owner}/{repo}/releases"],
+    createRepoRuleset: ["POST /repos/{owner}/{repo}/rulesets"],
+    createTagProtection: ["POST /repos/{owner}/{repo}/tags/protection"],
+    createUsingTemplate: [
+      "POST /repos/{template_owner}/{template_repo}/generate"
+    ],
+    createWebhook: ["POST /repos/{owner}/{repo}/hooks"],
+    declineInvitation: [
+      "DELETE /user/repository_invitations/{invitation_id}",
+      {},
+      { renamed: ["repos", "declineInvitationForAuthenticatedUser"] }
+    ],
+    declineInvitationForAuthenticatedUser: [
+      "DELETE /user/repository_invitations/{invitation_id}"
+    ],
+    delete: ["DELETE /repos/{owner}/{repo}"],
+    deleteAccessRestrictions: [
+      "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/restrictions"
+    ],
+    deleteAdminBranchProtection: [
+      "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/enforce_admins"
+    ],
+    deleteAnEnvironment: [
+      "DELETE /repos/{owner}/{repo}/environments/{environment_name}"
+    ],
+    deleteAutolink: ["DELETE /repos/{owner}/{repo}/autolinks/{autolink_id}"],
+    deleteBranchProtection: [
+      "DELETE /repos/{owner}/{repo}/branches/{branch}/protection"
+    ],
+    deleteCommitComment: ["DELETE /repos/{owner}/{repo}/comments/{comment_id}"],
+    deleteCommitSignatureProtection: [
+      "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/required_signatures"
+    ],
+    deleteDeployKey: ["DELETE /repos/{owner}/{repo}/keys/{key_id}"],
+    deleteDeployment: [
+      "DELETE /repos/{owner}/{repo}/deployments/{deployment_id}"
+    ],
+    deleteDeploymentBranchPolicy: [
+      "DELETE /repos/{owner}/{repo}/environments/{environment_name}/deployment-branch-policies/{branch_policy_id}"
+    ],
+    deleteFile: ["DELETE /repos/{owner}/{repo}/contents/{path}"],
+    deleteInvitation: [
+      "DELETE /repos/{owner}/{repo}/invitations/{invitation_id}"
+    ],
+    deleteOrgRuleset: ["DELETE /orgs/{org}/rulesets/{ruleset_id}"],
+    deletePagesSite: ["DELETE /repos/{owner}/{repo}/pages"],
+    deletePullRequestReviewProtection: [
+      "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/required_pull_request_reviews"
+    ],
+    deleteRelease: ["DELETE /repos/{owner}/{repo}/releases/{release_id}"],
+    deleteReleaseAsset: [
+      "DELETE /repos/{owner}/{repo}/releases/assets/{asset_id}"
+    ],
+    deleteRepoRuleset: ["DELETE /repos/{owner}/{repo}/rulesets/{ruleset_id}"],
+    deleteTagProtection: [
+      "DELETE /repos/{owner}/{repo}/tags/protection/{tag_protection_id}"
+    ],
+    deleteWebhook: ["DELETE /repos/{owner}/{repo}/hooks/{hook_id}"],
+    disableAutomatedSecurityFixes: [
+      "DELETE /repos/{owner}/{repo}/automated-security-fixes"
+    ],
+    disableDeploymentProtectionRule: [
+      "DELETE /repos/{owner}/{repo}/environments/{environment_name}/deployment_protection_rules/{protection_rule_id}"
+    ],
+    disablePrivateVulnerabilityReporting: [
+      "DELETE /repos/{owner}/{repo}/private-vulnerability-reporting"
+    ],
+    disableVulnerabilityAlerts: [
+      "DELETE /repos/{owner}/{repo}/vulnerability-alerts"
+    ],
+    downloadArchive: [
+      "GET /repos/{owner}/{repo}/zipball/{ref}",
+      {},
+      { renamed: ["repos", "downloadZipballArchive"] }
+    ],
+    downloadTarballArchive: ["GET /repos/{owner}/{repo}/tarball/{ref}"],
+    downloadZipballArchive: ["GET /repos/{owner}/{repo}/zipball/{ref}"],
+    enableAutomatedSecurityFixes: [
+      "PUT /repos/{owner}/{repo}/automated-security-fixes"
+    ],
+    enablePrivateVulnerabilityReporting: [
+      "PUT /repos/{owner}/{repo}/private-vulnerability-reporting"
+    ],
+    enableVulnerabilityAlerts: [
+      "PUT /repos/{owner}/{repo}/vulnerability-alerts"
+    ],
+    generateReleaseNotes: [
+      "POST /repos/{owner}/{repo}/releases/generate-notes"
+    ],
+    get: ["GET /repos/{owner}/{repo}"],
+    getAccessRestrictions: [
+      "GET /repos/{owner}/{repo}/branches/{branch}/protection/restrictions"
+    ],
+    getAdminBranchProtection: [
+      "GET /repos/{owner}/{repo}/branches/{branch}/protection/enforce_admins"
+    ],
+    getAllDeploymentProtectionRules: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}/deployment_protection_rules"
+    ],
+    getAllEnvironments: ["GET /repos/{owner}/{repo}/environments"],
+    getAllStatusCheckContexts: [
+      "GET /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks/contexts"
+    ],
+    getAllTopics: ["GET /repos/{owner}/{repo}/topics"],
+    getAppsWithAccessToProtectedBranch: [
+      "GET /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/apps"
+    ],
+    getAutolink: ["GET /repos/{owner}/{repo}/autolinks/{autolink_id}"],
+    getBranch: ["GET /repos/{owner}/{repo}/branches/{branch}"],
+    getBranchProtection: [
+      "GET /repos/{owner}/{repo}/branches/{branch}/protection"
+    ],
+    getBranchRules: ["GET /repos/{owner}/{repo}/rules/branches/{branch}"],
+    getClones: ["GET /repos/{owner}/{repo}/traffic/clones"],
+    getCodeFrequencyStats: ["GET /repos/{owner}/{repo}/stats/code_frequency"],
+    getCollaboratorPermissionLevel: [
+      "GET /repos/{owner}/{repo}/collaborators/{username}/permission"
+    ],
+    getCombinedStatusForRef: ["GET /repos/{owner}/{repo}/commits/{ref}/status"],
+    getCommit: ["GET /repos/{owner}/{repo}/commits/{ref}"],
+    getCommitActivityStats: ["GET /repos/{owner}/{repo}/stats/commit_activity"],
+    getCommitComment: ["GET /repos/{owner}/{repo}/comments/{comment_id}"],
+    getCommitSignatureProtection: [
+      "GET /repos/{owner}/{repo}/branches/{branch}/protection/required_signatures"
+    ],
+    getCommunityProfileMetrics: ["GET /repos/{owner}/{repo}/community/profile"],
+    getContent: ["GET /repos/{owner}/{repo}/contents/{path}"],
+    getContributorsStats: ["GET /repos/{owner}/{repo}/stats/contributors"],
+    getCustomDeploymentProtectionRule: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}/deployment_protection_rules/{protection_rule_id}"
+    ],
+    getCustomPropertiesValues: ["GET /repos/{owner}/{repo}/properties/values"],
+    getDeployKey: ["GET /repos/{owner}/{repo}/keys/{key_id}"],
+    getDeployment: ["GET /repos/{owner}/{repo}/deployments/{deployment_id}"],
+    getDeploymentBranchPolicy: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}/deployment-branch-policies/{branch_policy_id}"
+    ],
+    getDeploymentStatus: [
+      "GET /repos/{owner}/{repo}/deployments/{deployment_id}/statuses/{status_id}"
+    ],
+    getEnvironment: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}"
+    ],
+    getLatestPagesBuild: ["GET /repos/{owner}/{repo}/pages/builds/latest"],
+    getLatestRelease: ["GET /repos/{owner}/{repo}/releases/latest"],
+    getOrgRuleSuite: ["GET /orgs/{org}/rulesets/rule-suites/{rule_suite_id}"],
+    getOrgRuleSuites: ["GET /orgs/{org}/rulesets/rule-suites"],
+    getOrgRuleset: ["GET /orgs/{org}/rulesets/{ruleset_id}"],
+    getOrgRulesets: ["GET /orgs/{org}/rulesets"],
+    getPages: ["GET /repos/{owner}/{repo}/pages"],
+    getPagesBuild: ["GET /repos/{owner}/{repo}/pages/builds/{build_id}"],
+    getPagesDeployment: [
+      "GET /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}"
+    ],
+    getPagesHealthCheck: ["GET /repos/{owner}/{repo}/pages/health"],
+    getParticipationStats: ["GET /repos/{owner}/{repo}/stats/participation"],
+    getPullRequestReviewProtection: [
+      "GET /repos/{owner}/{repo}/branches/{branch}/protection/required_pull_request_reviews"
+    ],
+    getPunchCardStats: ["GET /repos/{owner}/{repo}/stats/punch_card"],
+    getReadme: ["GET /repos/{owner}/{repo}/readme"],
+    getReadmeInDirectory: ["GET /repos/{owner}/{repo}/readme/{dir}"],
+    getRelease: ["GET /repos/{owner}/{repo}/releases/{release_id}"],
+    getReleaseAsset: ["GET /repos/{owner}/{repo}/releases/assets/{asset_id}"],
+    getReleaseByTag: ["GET /repos/{owner}/{repo}/releases/tags/{tag}"],
+    getRepoRuleSuite: [
+      "GET /repos/{owner}/{repo}/rulesets/rule-suites/{rule_suite_id}"
+    ],
+    getRepoRuleSuites: ["GET /repos/{owner}/{repo}/rulesets/rule-suites"],
+    getRepoRuleset: ["GET /repos/{owner}/{repo}/rulesets/{ruleset_id}"],
+    getRepoRulesets: ["GET /repos/{owner}/{repo}/rulesets"],
+    getStatusChecksProtection: [
+      "GET /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks"
+    ],
+    getTeamsWithAccessToProtectedBranch: [
+      "GET /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/teams"
+    ],
+    getTopPaths: ["GET /repos/{owner}/{repo}/traffic/popular/paths"],
+    getTopReferrers: ["GET /repos/{owner}/{repo}/traffic/popular/referrers"],
+    getUsersWithAccessToProtectedBranch: [
+      "GET /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/users"
+    ],
+    getViews: ["GET /repos/{owner}/{repo}/traffic/views"],
+    getWebhook: ["GET /repos/{owner}/{repo}/hooks/{hook_id}"],
+    getWebhookConfigForRepo: [
+      "GET /repos/{owner}/{repo}/hooks/{hook_id}/config"
+    ],
+    getWebhookDelivery: [
+      "GET /repos/{owner}/{repo}/hooks/{hook_id}/deliveries/{delivery_id}"
+    ],
+    listActivities: ["GET /repos/{owner}/{repo}/activity"],
+    listAutolinks: ["GET /repos/{owner}/{repo}/autolinks"],
+    listBranches: ["GET /repos/{owner}/{repo}/branches"],
+    listBranchesForHeadCommit: [
+      "GET /repos/{owner}/{repo}/commits/{commit_sha}/branches-where-head"
+    ],
+    listCollaborators: ["GET /repos/{owner}/{repo}/collaborators"],
+    listCommentsForCommit: [
+      "GET /repos/{owner}/{repo}/commits/{commit_sha}/comments"
+    ],
+    listCommitCommentsForRepo: ["GET /repos/{owner}/{repo}/comments"],
+    listCommitStatusesForRef: [
+      "GET /repos/{owner}/{repo}/commits/{ref}/statuses"
+    ],
+    listCommits: ["GET /repos/{owner}/{repo}/commits"],
+    listContributors: ["GET /repos/{owner}/{repo}/contributors"],
+    listCustomDeploymentRuleIntegrations: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}/deployment_protection_rules/apps"
+    ],
+    listDeployKeys: ["GET /repos/{owner}/{repo}/keys"],
+    listDeploymentBranchPolicies: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}/deployment-branch-policies"
+    ],
+    listDeploymentStatuses: [
+      "GET /repos/{owner}/{repo}/deployments/{deployment_id}/statuses"
+    ],
+    listDeployments: ["GET /repos/{owner}/{repo}/deployments"],
+    listForAuthenticatedUser: ["GET /user/repos"],
+    listForOrg: ["GET /orgs/{org}/repos"],
+    listForUser: ["GET /users/{username}/repos"],
+    listForks: ["GET /repos/{owner}/{repo}/forks"],
+    listInvitations: ["GET /repos/{owner}/{repo}/invitations"],
+    listInvitationsForAuthenticatedUser: ["GET /user/repository_invitations"],
+    listLanguages: ["GET /repos/{owner}/{repo}/languages"],
+    listPagesBuilds: ["GET /repos/{owner}/{repo}/pages/builds"],
+    listPublic: ["GET /repositories"],
+    listPullRequestsAssociatedWithCommit: [
+      "GET /repos/{owner}/{repo}/commits/{commit_sha}/pulls"
+    ],
+    listReleaseAssets: [
+      "GET /repos/{owner}/{repo}/releases/{release_id}/assets"
+    ],
+    listReleases: ["GET /repos/{owner}/{repo}/releases"],
+    listTagProtection: ["GET /repos/{owner}/{repo}/tags/protection"],
+    listTags: ["GET /repos/{owner}/{repo}/tags"],
+    listTeams: ["GET /repos/{owner}/{repo}/teams"],
+    listWebhookDeliveries: [
+      "GET /repos/{owner}/{repo}/hooks/{hook_id}/deliveries"
+    ],
+    listWebhooks: ["GET /repos/{owner}/{repo}/hooks"],
+    merge: ["POST /repos/{owner}/{repo}/merges"],
+    mergeUpstream: ["POST /repos/{owner}/{repo}/merge-upstream"],
+    pingWebhook: ["POST /repos/{owner}/{repo}/hooks/{hook_id}/pings"],
+    redeliverWebhookDelivery: [
+      "POST /repos/{owner}/{repo}/hooks/{hook_id}/deliveries/{delivery_id}/attempts"
+    ],
+    removeAppAccessRestrictions: [
+      "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/apps",
+      {},
+      { mapToData: "apps" }
+    ],
+    removeCollaborator: [
+      "DELETE /repos/{owner}/{repo}/collaborators/{username}"
+    ],
+    removeStatusCheckContexts: [
+      "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks/contexts",
+      {},
+      { mapToData: "contexts" }
+    ],
+    removeStatusCheckProtection: [
+      "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks"
+    ],
+    removeTeamAccessRestrictions: [
+      "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/teams",
+      {},
+      { mapToData: "teams" }
+    ],
+    removeUserAccessRestrictions: [
+      "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/users",
+      {},
+      { mapToData: "users" }
+    ],
+    renameBranch: ["POST /repos/{owner}/{repo}/branches/{branch}/rename"],
+    replaceAllTopics: ["PUT /repos/{owner}/{repo}/topics"],
+    requestPagesBuild: ["POST /repos/{owner}/{repo}/pages/builds"],
+    setAdminBranchProtection: [
+      "POST /repos/{owner}/{repo}/branches/{branch}/protection/enforce_admins"
+    ],
+    setAppAccessRestrictions: [
+      "PUT /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/apps",
+      {},
+      { mapToData: "apps" }
+    ],
+    setStatusCheckContexts: [
+      "PUT /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks/contexts",
+      {},
+      { mapToData: "contexts" }
+    ],
+    setTeamAccessRestrictions: [
+      "PUT /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/teams",
+      {},
+      { mapToData: "teams" }
+    ],
+    setUserAccessRestrictions: [
+      "PUT /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/users",
+      {},
+      { mapToData: "users" }
+    ],
+    testPushWebhook: ["POST /repos/{owner}/{repo}/hooks/{hook_id}/tests"],
+    transfer: ["POST /repos/{owner}/{repo}/transfer"],
+    update: ["PATCH /repos/{owner}/{repo}"],
+    updateBranchProtection: [
+      "PUT /repos/{owner}/{repo}/branches/{branch}/protection"
+    ],
+    updateCommitComment: ["PATCH /repos/{owner}/{repo}/comments/{comment_id}"],
+    updateDeploymentBranchPolicy: [
+      "PUT /repos/{owner}/{repo}/environments/{environment_name}/deployment-branch-policies/{branch_policy_id}"
+    ],
+    updateInformationAboutPagesSite: ["PUT /repos/{owner}/{repo}/pages"],
+    updateInvitation: [
+      "PATCH /repos/{owner}/{repo}/invitations/{invitation_id}"
+    ],
+    updateOrgRuleset: ["PUT /orgs/{org}/rulesets/{ruleset_id}"],
+    updatePullRequestReviewProtection: [
+      "PATCH /repos/{owner}/{repo}/branches/{branch}/protection/required_pull_request_reviews"
+    ],
+    updateRelease: ["PATCH /repos/{owner}/{repo}/releases/{release_id}"],
+    updateReleaseAsset: [
+      "PATCH /repos/{owner}/{repo}/releases/assets/{asset_id}"
+    ],
+    updateRepoRuleset: ["PUT /repos/{owner}/{repo}/rulesets/{ruleset_id}"],
+    updateStatusCheckPotection: [
+      "PATCH /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks",
+      {},
+      { renamed: ["repos", "updateStatusCheckProtection"] }
+    ],
+    updateStatusCheckProtection: [
+      "PATCH /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks"
+    ],
+    updateWebhook: ["PATCH /repos/{owner}/{repo}/hooks/{hook_id}"],
+    updateWebhookConfigForRepo: [
+      "PATCH /repos/{owner}/{repo}/hooks/{hook_id}/config"
+    ],
+    uploadReleaseAsset: [
+      "POST /repos/{owner}/{repo}/releases/{release_id}/assets{?name,label}",
+      { baseUrl: "https://uploads.github.com" }
+    ]
+  },
+  search: {
+    code: ["GET /search/code"],
+    commits: ["GET /search/commits"],
+    issuesAndPullRequests: ["GET /search/issues"],
+    labels: ["GET /search/labels"],
+    repos: ["GET /search/repositories"],
+    topics: ["GET /search/topics"],
+    users: ["GET /search/users"]
+  },
+  secretScanning: {
+    getAlert: [
+      "GET /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}"
+    ],
+    listAlertsForEnterprise: [
+      "GET /enterprises/{enterprise}/secret-scanning/alerts"
+    ],
+    listAlertsForOrg: ["GET /orgs/{org}/secret-scanning/alerts"],
+    listAlertsForRepo: ["GET /repos/{owner}/{repo}/secret-scanning/alerts"],
+    listLocationsForAlert: [
+      "GET /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}/locations"
+    ],
+    updateAlert: [
+      "PATCH /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}"
+    ]
+  },
+  securityAdvisories: {
+    createFork: [
+      "POST /repos/{owner}/{repo}/security-advisories/{ghsa_id}/forks"
+    ],
+    createPrivateVulnerabilityReport: [
+      "POST /repos/{owner}/{repo}/security-advisories/reports"
+    ],
+    createRepositoryAdvisory: [
+      "POST /repos/{owner}/{repo}/security-advisories"
+    ],
+    createRepositoryAdvisoryCveRequest: [
+      "POST /repos/{owner}/{repo}/security-advisories/{ghsa_id}/cve"
+    ],
+    getGlobalAdvisory: ["GET /advisories/{ghsa_id}"],
+    getRepositoryAdvisory: [
+      "GET /repos/{owner}/{repo}/security-advisories/{ghsa_id}"
+    ],
+    listGlobalAdvisories: ["GET /advisories"],
+    listOrgRepositoryAdvisories: ["GET /orgs/{org}/security-advisories"],
+    listRepositoryAdvisories: ["GET /repos/{owner}/{repo}/security-advisories"],
+    updateRepositoryAdvisory: [
+      "PATCH /repos/{owner}/{repo}/security-advisories/{ghsa_id}"
+    ]
+  },
+  teams: {
+    addOrUpdateMembershipForUserInOrg: [
+      "PUT /orgs/{org}/teams/{team_slug}/memberships/{username}"
+    ],
+    addOrUpdateProjectPermissionsInOrg: [
+      "PUT /orgs/{org}/teams/{team_slug}/projects/{project_id}"
+    ],
+    addOrUpdateRepoPermissionsInOrg: [
+      "PUT /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
+    ],
+    checkPermissionsForProjectInOrg: [
+      "GET /orgs/{org}/teams/{team_slug}/projects/{project_id}"
+    ],
+    checkPermissionsForRepoInOrg: [
+      "GET /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
+    ],
+    create: ["POST /orgs/{org}/teams"],
+    createDiscussionCommentInOrg: [
+      "POST /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments"
+    ],
+    createDiscussionInOrg: ["POST /orgs/{org}/teams/{team_slug}/discussions"],
+    deleteDiscussionCommentInOrg: [
+      "DELETE /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}"
+    ],
+    deleteDiscussionInOrg: [
+      "DELETE /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}"
+    ],
+    deleteInOrg: ["DELETE /orgs/{org}/teams/{team_slug}"],
+    getByName: ["GET /orgs/{org}/teams/{team_slug}"],
+    getDiscussionCommentInOrg: [
+      "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}"
+    ],
+    getDiscussionInOrg: [
+      "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}"
+    ],
+    getMembershipForUserInOrg: [
+      "GET /orgs/{org}/teams/{team_slug}/memberships/{username}"
+    ],
+    list: ["GET /orgs/{org}/teams"],
+    listChildInOrg: ["GET /orgs/{org}/teams/{team_slug}/teams"],
+    listDiscussionCommentsInOrg: [
+      "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments"
+    ],
+    listDiscussionsInOrg: ["GET /orgs/{org}/teams/{team_slug}/discussions"],
+    listForAuthenticatedUser: ["GET /user/teams"],
+    listMembersInOrg: ["GET /orgs/{org}/teams/{team_slug}/members"],
+    listPendingInvitationsInOrg: [
+      "GET /orgs/{org}/teams/{team_slug}/invitations"
+    ],
+    listProjectsInOrg: ["GET /orgs/{org}/teams/{team_slug}/projects"],
+    listReposInOrg: ["GET /orgs/{org}/teams/{team_slug}/repos"],
+    removeMembershipForUserInOrg: [
+      "DELETE /orgs/{org}/teams/{team_slug}/memberships/{username}"
+    ],
+    removeProjectInOrg: [
+      "DELETE /orgs/{org}/teams/{team_slug}/projects/{project_id}"
+    ],
+    removeRepoInOrg: [
+      "DELETE /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
+    ],
+    updateDiscussionCommentInOrg: [
+      "PATCH /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}"
+    ],
+    updateDiscussionInOrg: [
+      "PATCH /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}"
+    ],
+    updateInOrg: ["PATCH /orgs/{org}/teams/{team_slug}"]
+  },
+  users: {
+    addEmailForAuthenticated: [
+      "POST /user/emails",
+      {},
+      { renamed: ["users", "addEmailForAuthenticatedUser"] }
+    ],
+    addEmailForAuthenticatedUser: ["POST /user/emails"],
+    addSocialAccountForAuthenticatedUser: ["POST /user/social_accounts"],
+    block: ["PUT /user/blocks/{username}"],
+    checkBlocked: ["GET /user/blocks/{username}"],
+    checkFollowingForUser: ["GET /users/{username}/following/{target_user}"],
+    checkPersonIsFollowedByAuthenticated: ["GET /user/following/{username}"],
+    createGpgKeyForAuthenticated: [
+      "POST /user/gpg_keys",
+      {},
+      { renamed: ["users", "createGpgKeyForAuthenticatedUser"] }
+    ],
+    createGpgKeyForAuthenticatedUser: ["POST /user/gpg_keys"],
+    createPublicSshKeyForAuthenticated: [
+      "POST /user/keys",
+      {},
+      { renamed: ["users", "createPublicSshKeyForAuthenticatedUser"] }
+    ],
+    createPublicSshKeyForAuthenticatedUser: ["POST /user/keys"],
+    createSshSigningKeyForAuthenticatedUser: ["POST /user/ssh_signing_keys"],
+    deleteEmailForAuthenticated: [
+      "DELETE /user/emails",
+      {},
+      { renamed: ["users", "deleteEmailForAuthenticatedUser"] }
+    ],
+    deleteEmailForAuthenticatedUser: ["DELETE /user/emails"],
+    deleteGpgKeyForAuthenticated: [
+      "DELETE /user/gpg_keys/{gpg_key_id}",
+      {},
+      { renamed: ["users", "deleteGpgKeyForAuthenticatedUser"] }
+    ],
+    deleteGpgKeyForAuthenticatedUser: ["DELETE /user/gpg_keys/{gpg_key_id}"],
+    deletePublicSshKeyForAuthenticated: [
+      "DELETE /user/keys/{key_id}",
+      {},
+      { renamed: ["users", "deletePublicSshKeyForAuthenticatedUser"] }
+    ],
+    deletePublicSshKeyForAuthenticatedUser: ["DELETE /user/keys/{key_id}"],
+    deleteSocialAccountForAuthenticatedUser: ["DELETE /user/social_accounts"],
+    deleteSshSigningKeyForAuthenticatedUser: [
+      "DELETE /user/ssh_signing_keys/{ssh_signing_key_id}"
+    ],
+    follow: ["PUT /user/following/{username}"],
+    getAuthenticated: ["GET /user"],
+    getByUsername: ["GET /users/{username}"],
+    getContextForUser: ["GET /users/{username}/hovercard"],
+    getGpgKeyForAuthenticated: [
+      "GET /user/gpg_keys/{gpg_key_id}",
+      {},
+      { renamed: ["users", "getGpgKeyForAuthenticatedUser"] }
+    ],
+    getGpgKeyForAuthenticatedUser: ["GET /user/gpg_keys/{gpg_key_id}"],
+    getPublicSshKeyForAuthenticated: [
+      "GET /user/keys/{key_id}",
+      {},
+      { renamed: ["users", "getPublicSshKeyForAuthenticatedUser"] }
+    ],
+    getPublicSshKeyForAuthenticatedUser: ["GET /user/keys/{key_id}"],
+    getSshSigningKeyForAuthenticatedUser: [
+      "GET /user/ssh_signing_keys/{ssh_signing_key_id}"
+    ],
+    list: ["GET /users"],
+    listBlockedByAuthenticated: [
+      "GET /user/blocks",
+      {},
+      { renamed: ["users", "listBlockedByAuthenticatedUser"] }
+    ],
+    listBlockedByAuthenticatedUser: ["GET /user/blocks"],
+    listEmailsForAuthenticated: [
+      "GET /user/emails",
+      {},
+      { renamed: ["users", "listEmailsForAuthenticatedUser"] }
+    ],
+    listEmailsForAuthenticatedUser: ["GET /user/emails"],
+    listFollowedByAuthenticated: [
+      "GET /user/following",
+      {},
+      { renamed: ["users", "listFollowedByAuthenticatedUser"] }
+    ],
+    listFollowedByAuthenticatedUser: ["GET /user/following"],
+    listFollowersForAuthenticatedUser: ["GET /user/followers"],
+    listFollowersForUser: ["GET /users/{username}/followers"],
+    listFollowingForUser: ["GET /users/{username}/following"],
+    listGpgKeysForAuthenticated: [
+      "GET /user/gpg_keys",
+      {},
+      { renamed: ["users", "listGpgKeysForAuthenticatedUser"] }
+    ],
+    listGpgKeysForAuthenticatedUser: ["GET /user/gpg_keys"],
+    listGpgKeysForUser: ["GET /users/{username}/gpg_keys"],
+    listPublicEmailsForAuthenticated: [
+      "GET /user/public_emails",
+      {},
+      { renamed: ["users", "listPublicEmailsForAuthenticatedUser"] }
+    ],
+    listPublicEmailsForAuthenticatedUser: ["GET /user/public_emails"],
+    listPublicKeysForUser: ["GET /users/{username}/keys"],
+    listPublicSshKeysForAuthenticated: [
+      "GET /user/keys",
+      {},
+      { renamed: ["users", "listPublicSshKeysForAuthenticatedUser"] }
+    ],
+    listPublicSshKeysForAuthenticatedUser: ["GET /user/keys"],
+    listSocialAccountsForAuthenticatedUser: ["GET /user/social_accounts"],
+    listSocialAccountsForUser: ["GET /users/{username}/social_accounts"],
+    listSshSigningKeysForAuthenticatedUser: ["GET /user/ssh_signing_keys"],
+    listSshSigningKeysForUser: ["GET /users/{username}/ssh_signing_keys"],
+    setPrimaryEmailVisibilityForAuthenticated: [
+      "PATCH /user/email/visibility",
+      {},
+      { renamed: ["users", "setPrimaryEmailVisibilityForAuthenticatedUser"] }
+    ],
+    setPrimaryEmailVisibilityForAuthenticatedUser: [
+      "PATCH /user/email/visibility"
+    ],
+    unblock: ["DELETE /user/blocks/{username}"],
+    unfollow: ["DELETE /user/following/{username}"],
+    updateAuthenticated: ["PATCH /user"]
+  }
+};
+var endpoints_default = Endpoints;
+
+// pkg/dist-src/endpoints-to-methods.js
+var endpointMethodsMap = /* @__PURE__ */ new Map();
+for (const [scope, endpoints] of Object.entries(endpoints_default)) {
+  for (const [methodName, endpoint] of Object.entries(endpoints)) {
+    const [route, defaults, decorations] = endpoint;
+    const [method, url] = route.split(/ /);
+    const endpointDefaults = Object.assign(
+      {
+        method,
+        url
+      },
+      defaults
+    );
+    if (!endpointMethodsMap.has(scope)) {
+      endpointMethodsMap.set(scope, /* @__PURE__ */ new Map());
+    }
+    endpointMethodsMap.get(scope).set(methodName, {
+      scope,
+      methodName,
+      endpointDefaults,
+      decorations
+    });
+  }
+}
+var handler = {
+  has({ scope }, methodName) {
+    return endpointMethodsMap.get(scope).has(methodName);
+  },
+  getOwnPropertyDescriptor(target, methodName) {
+    return {
+      value: this.get(target, methodName),
+      // ensures method is in the cache
+      configurable: true,
+      writable: true,
+      enumerable: true
+    };
+  },
+  defineProperty(target, methodName, descriptor) {
+    Object.defineProperty(target.cache, methodName, descriptor);
+    return true;
+  },
+  deleteProperty(target, methodName) {
+    delete target.cache[methodName];
+    return true;
+  },
+  ownKeys({ scope }) {
+    return [...endpointMethodsMap.get(scope).keys()];
+  },
+  set(target, methodName, value) {
+    return target.cache[methodName] = value;
+  },
+  get({ octokit, scope, cache }, methodName) {
+    if (cache[methodName]) {
+      return cache[methodName];
+    }
+    const method = endpointMethodsMap.get(scope).get(methodName);
+    if (!method) {
+      return void 0;
+    }
+    const { endpointDefaults, decorations } = method;
+    if (decorations) {
+      cache[methodName] = decorate(
+        octokit,
+        scope,
+        methodName,
+        endpointDefaults,
+        decorations
+      );
+    } else {
+      cache[methodName] = octokit.request.defaults(endpointDefaults);
+    }
+    return cache[methodName];
+  }
+};
+function endpointsToMethods(octokit) {
+  const newMethods = {};
+  for (const scope of endpointMethodsMap.keys()) {
+    newMethods[scope] = new Proxy({ octokit, scope, cache: {} }, handler);
+  }
+  return newMethods;
+}
+function decorate(octokit, scope, methodName, defaults, decorations) {
+  const requestWithDefaults = octokit.request.defaults(defaults);
+  function withDecorations(...args) {
+    let options = requestWithDefaults.endpoint.merge(...args);
+    if (decorations.mapToData) {
+      options = Object.assign({}, options, {
+        data: options[decorations.mapToData],
+        [decorations.mapToData]: void 0
+      });
+      return requestWithDefaults(options);
+    }
+    if (decorations.renamed) {
+      const [newScope, newMethodName] = decorations.renamed;
+      octokit.log.warn(
+        `octokit.${scope}.${methodName}() has been renamed to octokit.${newScope}.${newMethodName}()`
+      );
+    }
+    if (decorations.deprecated) {
+      octokit.log.warn(decorations.deprecated);
+    }
+    if (decorations.renamedParameters) {
+      const options2 = requestWithDefaults.endpoint.merge(...args);
+      for (const [name, alias] of Object.entries(
+        decorations.renamedParameters
+      )) {
+        if (name in options2) {
+          octokit.log.warn(
+            `"${name}" parameter is deprecated for "octokit.${scope}.${methodName}()". Use "${alias}" instead`
+          );
+          if (!(alias in options2)) {
+            options2[alias] = options2[name];
+          }
+          delete options2[name];
+        }
+      }
+      return requestWithDefaults(options2);
+    }
+    return requestWithDefaults(...args);
+  }
+  return Object.assign(withDecorations, requestWithDefaults);
+}
+
+// pkg/dist-src/index.js
+function restEndpointMethods(octokit) {
+  const api = endpointsToMethods(octokit);
+  return {
+    rest: api
+  };
+}
+restEndpointMethods.VERSION = VERSION;
+function legacyRestEndpointMethods(octokit) {
+  const api = endpointsToMethods(octokit);
+  return {
+    ...api,
+    rest: api
+  };
+}
+legacyRestEndpointMethods.VERSION = VERSION;
 // Annotate the CommonJS export names for ESM import in node:
 0 && (0);
 
@@ -10393,7 +13190,9 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Agent = void 0;
+const net = __importStar(__nccwpck_require__(1808));
 const http = __importStar(__nccwpck_require__(3685));
+const https_1 = __nccwpck_require__(5687);
 __exportStar(__nccwpck_require__(8348), exports);
 const INTERNAL = Symbol('AgentBaseInternalState');
 class Agent extends http.Agent {
@@ -10430,14 +13229,72 @@ class Agent extends http.Agent {
             .some((l) => l.indexOf('(https.js:') !== -1 ||
             l.indexOf('node:https:') !== -1);
     }
+    // In order to support async signatures in `connect()` and Node's native
+    // connection pooling in `http.Agent`, the array of sockets for each origin
+    // has to be updated synchronously. This is so the length of the array is
+    // accurate when `addRequest()` is next called. We achieve this by creating a
+    // fake socket and adding it to `sockets[origin]` and incrementing
+    // `totalSocketCount`.
+    incrementSockets(name) {
+        // If `maxSockets` and `maxTotalSockets` are both Infinity then there is no
+        // need to create a fake socket because Node.js native connection pooling
+        // will never be invoked.
+        if (this.maxSockets === Infinity && this.maxTotalSockets === Infinity) {
+            return null;
+        }
+        // All instances of `sockets` are expected TypeScript errors. The
+        // alternative is to add it as a private property of this class but that
+        // will break TypeScript subclassing.
+        if (!this.sockets[name]) {
+            // @ts-expect-error `sockets` is readonly in `@types/node`
+            this.sockets[name] = [];
+        }
+        const fakeSocket = new net.Socket({ writable: false });
+        this.sockets[name].push(fakeSocket);
+        // @ts-expect-error `totalSocketCount` isn't defined in `@types/node`
+        this.totalSocketCount++;
+        return fakeSocket;
+    }
+    decrementSockets(name, socket) {
+        if (!this.sockets[name] || socket === null) {
+            return;
+        }
+        const sockets = this.sockets[name];
+        const index = sockets.indexOf(socket);
+        if (index !== -1) {
+            sockets.splice(index, 1);
+            // @ts-expect-error  `totalSocketCount` isn't defined in `@types/node`
+            this.totalSocketCount--;
+            if (sockets.length === 0) {
+                // @ts-expect-error `sockets` is readonly in `@types/node`
+                delete this.sockets[name];
+            }
+        }
+    }
+    // In order to properly update the socket pool, we need to call `getName()` on
+    // the core `https.Agent` if it is a secureEndpoint.
+    getName(options) {
+        const secureEndpoint = typeof options.secureEndpoint === 'boolean'
+            ? options.secureEndpoint
+            : this.isSecureEndpoint(options);
+        if (secureEndpoint) {
+            // @ts-expect-error `getName()` isn't defined in `@types/node`
+            return https_1.Agent.prototype.getName.call(this, options);
+        }
+        // @ts-expect-error `getName()` isn't defined in `@types/node`
+        return super.getName(options);
+    }
     createSocket(req, options, cb) {
         const connectOpts = {
             ...options,
             secureEndpoint: this.isSecureEndpoint(options),
         };
+        const name = this.getName(connectOpts);
+        const fakeSocket = this.incrementSockets(name);
         Promise.resolve()
             .then(() => this.connect(req, connectOpts))
             .then((socket) => {
+            this.decrementSockets(name, fakeSocket);
             if (socket instanceof http.Agent) {
                 // @ts-expect-error `addRequest()` isn't defined in `@types/node`
                 return socket.addRequest(req, connectOpts);
@@ -10445,7 +13302,10 @@ class Agent extends http.Agent {
             this[INTERNAL].currentSocket = socket;
             // @ts-expect-error `createSocket()` isn't defined in `@types/node`
             super.createSocket(req, options, cb);
-        }, cb);
+        }, (err) => {
+            this.decrementSockets(name, fakeSocket);
+            cb(err);
+        });
     }
     createConnection() {
         const socket = this[INTERNAL].currentSocket;
@@ -11426,11 +14286,11 @@ function getDate() {
 }
 
 /**
- * Invokes `util.format()` with the specified arguments and writes to stderr.
+ * Invokes `util.formatWithOptions()` with the specified arguments and writes to stderr.
  */
 
 function log(...args) {
-	return process.stderr.write(util.format(...args) + '\n');
+	return process.stderr.write(util.formatWithOptions(exports.inspectOpts, ...args) + '\n');
 }
 
 /**
@@ -11916,6 +14776,20 @@ var Api = class extends HttpClient {
        * No description
        *
        * @tags admin
+       * @name AdminGetRunnerRegistrationToken
+       * @summary Get an global actions runner registration token
+       * @request GET:/admin/runners/registration-token
+       * @secure
+       */
+      adminGetRunnerRegistrationToken: (params = {}) => this.request(__spreadValues({
+        path: `/admin/runners/registration-token`,
+        method: "GET",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags admin
        * @name AdminUnadoptedList
        * @summary List unadopted repositories
        * @request GET:/admin/unadopted
@@ -12013,6 +14887,52 @@ var Api = class extends HttpClient {
       adminEditUser: (username, body, params = {}) => this.request(__spreadValues({
         path: `/admin/users/${username}`,
         method: "PATCH",
+        body,
+        secure: true,
+        type: "application/json" /* Json */
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags admin
+       * @name AdminListUserBadges
+       * @summary List a user's badges
+       * @request GET:/admin/users/{username}/badges
+       * @secure
+       */
+      adminListUserBadges: (username, params = {}) => this.request(__spreadValues({
+        path: `/admin/users/${username}/badges`,
+        method: "GET",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags admin
+       * @name AdminAddUserBadges
+       * @summary Add a badge to a user
+       * @request POST:/admin/users/{username}/badges
+       * @secure
+       */
+      adminAddUserBadges: (username, body, params = {}) => this.request(__spreadValues({
+        path: `/admin/users/${username}/badges`,
+        method: "POST",
+        body,
+        secure: true,
+        type: "application/json" /* Json */
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags admin
+       * @name AdminDeleteUserBadges
+       * @summary Remove a badge from a user
+       * @request DELETE:/admin/users/{username}/badges
+       * @secure
+       */
+      adminDeleteUserBadges: (username, body, params = {}) => this.request(__spreadValues({
+        path: `/admin/users/${username}/badges`,
+        method: "DELETE",
         body,
         secure: true,
         type: "application/json" /* Json */
@@ -12432,6 +15352,141 @@ var Api = class extends HttpClient {
        * No description
        *
        * @tags organization
+       * @name OrgGetRunnerRegistrationToken
+       * @summary Get an organization's actions runner registration token
+       * @request GET:/orgs/{org}/actions/runners/registration-token
+       * @secure
+       */
+      orgGetRunnerRegistrationToken: (org, params = {}) => this.request(__spreadValues({
+        path: `/orgs/${org}/actions/runners/registration-token`,
+        method: "GET",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags organization
+       * @name OrgListActionsSecrets
+       * @summary List an organization's actions secrets
+       * @request GET:/orgs/{org}/actions/secrets
+       * @secure
+       */
+      orgListActionsSecrets: (org, query, params = {}) => this.request(__spreadValues({
+        path: `/orgs/${org}/actions/secrets`,
+        method: "GET",
+        query,
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags organization
+       * @name UpdateOrgSecret
+       * @summary Create or Update a secret value in an organization
+       * @request PUT:/orgs/{org}/actions/secrets/{secretname}
+       * @secure
+       */
+      updateOrgSecret: (org, secretname, body, params = {}) => this.request(__spreadValues({
+        path: `/orgs/${org}/actions/secrets/${secretname}`,
+        method: "PUT",
+        body,
+        secure: true,
+        type: "application/json" /* Json */
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags organization
+       * @name DeleteOrgSecret
+       * @summary Delete a secret in an organization
+       * @request DELETE:/orgs/{org}/actions/secrets/{secretname}
+       * @secure
+       */
+      deleteOrgSecret: (org, secretname, params = {}) => this.request(__spreadValues({
+        path: `/orgs/${org}/actions/secrets/${secretname}`,
+        method: "DELETE",
+        secure: true,
+        type: "application/json" /* Json */
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags organization
+       * @name GetOrgVariablesList
+       * @summary Get an org-level variables list
+       * @request GET:/orgs/{org}/actions/variables
+       * @secure
+       */
+      getOrgVariablesList: (org, query, params = {}) => this.request(__spreadValues({
+        path: `/orgs/${org}/actions/variables`,
+        method: "GET",
+        query,
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags organization
+       * @name GetOrgVariable
+       * @summary Get an org-level variable
+       * @request GET:/orgs/{org}/actions/variables/{variablename}
+       * @secure
+       */
+      getOrgVariable: (org, variablename, params = {}) => this.request(__spreadValues({
+        path: `/orgs/${org}/actions/variables/${variablename}`,
+        method: "GET",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags organization
+       * @name UpdateOrgVariable
+       * @summary Update an org-level variable
+       * @request PUT:/orgs/{org}/actions/variables/{variablename}
+       * @secure
+       */
+      updateOrgVariable: (org, variablename, body, params = {}) => this.request(__spreadValues({
+        path: `/orgs/${org}/actions/variables/${variablename}`,
+        method: "PUT",
+        body,
+        secure: true,
+        type: "application/json" /* Json */
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags organization
+       * @name CreateOrgVariable
+       * @summary Create an org-level variable
+       * @request POST:/orgs/{org}/actions/variables/{variablename}
+       * @secure
+       */
+      createOrgVariable: (org, variablename, body, params = {}) => this.request(__spreadValues({
+        path: `/orgs/${org}/actions/variables/${variablename}`,
+        method: "POST",
+        body,
+        secure: true,
+        type: "application/json" /* Json */
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags organization
+       * @name DeleteOrgVariable
+       * @summary Delete an org-level variable
+       * @request DELETE:/orgs/{org}/actions/variables/{variablename}
+       * @secure
+       */
+      deleteOrgVariable: (org, variablename, params = {}) => this.request(__spreadValues({
+        path: `/orgs/${org}/actions/variables/${variablename}`,
+        method: "DELETE",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags organization
        * @name OrgListActivityFeeds
        * @summary List an organization's activity feeds
        * @request GET:/orgs/{org}/activities/feeds
@@ -12441,6 +15496,93 @@ var Api = class extends HttpClient {
         path: `/orgs/${org}/activities/feeds`,
         method: "GET",
         query,
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags organization
+       * @name OrgUpdateAvatar
+       * @summary Update Avatar
+       * @request POST:/orgs/{org}/avatar
+       * @secure
+       */
+      orgUpdateAvatar: (org, body, params = {}) => this.request(__spreadValues({
+        path: `/orgs/${org}/avatar`,
+        method: "POST",
+        body,
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags organization
+       * @name OrgDeleteAvatar
+       * @summary Delete Avatar
+       * @request DELETE:/orgs/{org}/avatar
+       * @secure
+       */
+      orgDeleteAvatar: (org, params = {}) => this.request(__spreadValues({
+        path: `/orgs/${org}/avatar`,
+        method: "DELETE",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags organization
+       * @name OrganizationListBlocks
+       * @summary List users blocked by the organization
+       * @request GET:/orgs/{org}/blocks
+       * @secure
+       */
+      organizationListBlocks: (org, query, params = {}) => this.request(__spreadValues({
+        path: `/orgs/${org}/blocks`,
+        method: "GET",
+        query,
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags organization
+       * @name OrganizationCheckUserBlock
+       * @summary Check if a user is blocked by the organization
+       * @request GET:/orgs/{org}/blocks/{username}
+       * @secure
+       */
+      organizationCheckUserBlock: (org, username, params = {}) => this.request(__spreadValues({
+        path: `/orgs/${org}/blocks/${username}`,
+        method: "GET",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags organization
+       * @name OrganizationBlockUser
+       * @summary Block a user
+       * @request PUT:/orgs/{org}/blocks/{username}
+       * @secure
+       */
+      organizationBlockUser: (org, username, query, params = {}) => this.request(__spreadValues({
+        path: `/orgs/${org}/blocks/${username}`,
+        method: "PUT",
+        query,
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags organization
+       * @name OrganizationUnblockUser
+       * @summary Unblock a user
+       * @request DELETE:/orgs/{org}/blocks/{username}
+       * @secure
+       */
+      organizationUnblockUser: (org, username, params = {}) => this.request(__spreadValues({
+        path: `/orgs/${org}/blocks/${username}`,
+        method: "DELETE",
         secure: true
       }, params)),
       /**
@@ -12926,6 +16068,127 @@ var Api = class extends HttpClient {
        * No description
        *
        * @tags repository
+       * @name RepoListActionsSecrets
+       * @summary List an repo's actions secrets
+       * @request GET:/repos/{owner}/{repo}/actions/secrets
+       * @secure
+       */
+      repoListActionsSecrets: (owner, repo, query, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/actions/secrets`,
+        method: "GET",
+        query,
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
+       * @name UpdateRepoSecret
+       * @summary Create or Update a secret value in a repository
+       * @request PUT:/repos/{owner}/{repo}/actions/secrets/{secretname}
+       * @secure
+       */
+      updateRepoSecret: (owner, repo, secretname, body, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/actions/secrets/${secretname}`,
+        method: "PUT",
+        body,
+        secure: true,
+        type: "application/json" /* Json */
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
+       * @name DeleteRepoSecret
+       * @summary Delete a secret in a repository
+       * @request DELETE:/repos/{owner}/{repo}/actions/secrets/{secretname}
+       * @secure
+       */
+      deleteRepoSecret: (owner, repo, secretname, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/actions/secrets/${secretname}`,
+        method: "DELETE",
+        secure: true,
+        type: "application/json" /* Json */
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
+       * @name GetRepoVariablesList
+       * @summary Get repo-level variables list
+       * @request GET:/repos/{owner}/{repo}/actions/variables
+       * @secure
+       */
+      getRepoVariablesList: (owner, repo, query, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/actions/variables`,
+        method: "GET",
+        query,
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
+       * @name GetRepoVariable
+       * @summary Get a repo-level variable
+       * @request GET:/repos/{owner}/{repo}/actions/variables/{variablename}
+       * @secure
+       */
+      getRepoVariable: (owner, repo, variablename, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/actions/variables/${variablename}`,
+        method: "GET",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
+       * @name UpdateRepoVariable
+       * @summary Update a repo-level variable
+       * @request PUT:/repos/{owner}/{repo}/actions/variables/{variablename}
+       * @secure
+       */
+      updateRepoVariable: (owner, repo, variablename, body, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/actions/variables/${variablename}`,
+        method: "PUT",
+        body,
+        secure: true,
+        type: "application/json" /* Json */
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
+       * @name CreateRepoVariable
+       * @summary Create a repo-level variable
+       * @request POST:/repos/{owner}/{repo}/actions/variables/{variablename}
+       * @secure
+       */
+      createRepoVariable: (owner, repo, variablename, body, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/actions/variables/${variablename}`,
+        method: "POST",
+        body,
+        secure: true,
+        type: "application/json" /* Json */
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
+       * @name DeleteRepoVariable
+       * @summary Delete a repo-level variable
+       * @request DELETE:/repos/{owner}/{repo}/actions/variables/{variablename}
+       * @secure
+       */
+      deleteRepoVariable: (owner, repo, variablename, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/actions/variables/${variablename}`,
+        method: "DELETE",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
        * @name RepoListActivityFeeds
        * @summary List a repository's activity feeds
        * @request GET:/repos/{owner}/{repo}/activities/feeds
@@ -12963,6 +16226,36 @@ var Api = class extends HttpClient {
       repoGetAssignees: (owner, repo, params = {}) => this.request(__spreadValues({
         path: `/repos/${owner}/${repo}/assignees`,
         method: "GET",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
+       * @name RepoUpdateAvatar
+       * @summary Update avatar
+       * @request POST:/repos/{owner}/{repo}/avatar
+       * @secure
+       */
+      repoUpdateAvatar: (owner, repo, body, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/avatar`,
+        method: "POST",
+        body,
+        secure: true,
+        type: "application/json" /* Json */
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
+       * @name RepoDeleteAvatar
+       * @summary Delete avatar
+       * @request DELETE:/repos/{owner}/{repo}/avatar
+       * @secure
+       */
+      repoDeleteAvatar: (owner, repo, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/avatar`,
+        method: "DELETE",
         secure: true
       }, params)),
       /**
@@ -13220,6 +16513,34 @@ var Api = class extends HttpClient {
        * No description
        *
        * @tags repository
+       * @name RepoGetCommitPullRequest
+       * @summary Get the pull request of the commit
+       * @request GET:/repos/{owner}/{repo}/commits/{sha}/pull
+       * @secure
+       */
+      repoGetCommitPullRequest: (owner, repo, sha, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/commits/${sha}/pull`,
+        method: "GET",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
+       * @name RepoCompareDiff
+       * @summary Get commit comparison information
+       * @request GET:/repos/{owner}/{repo}/compare/{basehead}
+       * @secure
+       */
+      repoCompareDiff: (owner, repo, basehead, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/compare/${basehead}`,
+        method: "GET",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
        * @name RepoGetContentsList
        * @summary Gets the metadata of all the entries of the root dir
        * @request GET:/repos/{owner}/{repo}/contents
@@ -13424,9 +16745,10 @@ var Api = class extends HttpClient {
        * @request GET:/repos/{owner}/{repo}/git/notes/{sha}
        * @secure
        */
-      repoGetNote: (owner, repo, sha, params = {}) => this.request(__spreadValues({
+      repoGetNote: (owner, repo, sha, query, params = {}) => this.request(__spreadValues({
         path: `/repos/${owner}/${repo}/git/notes/${sha}`,
         method: "GET",
+        query,
         secure: true
       }, params)),
       /**
@@ -14884,6 +18206,20 @@ var Api = class extends HttpClient {
        * No description
        *
        * @tags repository
+       * @name RepoGetPullRequestByBaseHead
+       * @summary Get a pull request by base and head
+       * @request GET:/repos/{owner}/{repo}/pulls/{base}/{head}
+       * @secure
+       */
+      repoGetPullRequestByBaseHead: (owner, repo, base, head, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/pulls/${base}/${head}`,
+        method: "GET",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
        * @name RepoGetPullRequest
        * @summary Get a pull request
        * @request GET:/repos/{owner}/{repo}/pulls/{index}
@@ -15454,6 +18790,20 @@ var Api = class extends HttpClient {
        */
       repoGetReviewers: (owner, repo, params = {}) => this.request(__spreadValues({
         path: `/repos/${owner}/${repo}/reviewers`,
+        method: "GET",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
+       * @name RepoGetRunnerRegistrationToken
+       * @summary Get a repository's actions runner registration token
+       * @request GET:/repos/{owner}/{repo}/runners/registration-token
+       * @secure
+       */
+      repoGetRunnerRegistrationToken: (owner, repo, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/runners/registration-token`,
         method: "GET",
         secure: true
       }, params)),
@@ -16230,6 +19580,126 @@ var Api = class extends HttpClient {
        * No description
        *
        * @tags user
+       * @name UserGetRunnerRegistrationToken
+       * @summary Get an user's actions runner registration token
+       * @request GET:/user/actions/runners/registration-token
+       * @secure
+       */
+      userGetRunnerRegistrationToken: (params = {}) => this.request(__spreadValues({
+        path: `/user/actions/runners/registration-token`,
+        method: "GET",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags user
+       * @name UpdateUserSecret
+       * @summary Create or Update a secret value in a user scope
+       * @request PUT:/user/actions/secrets/{secretname}
+       * @secure
+       */
+      updateUserSecret: (secretname, body, params = {}) => this.request(__spreadValues({
+        path: `/user/actions/secrets/${secretname}`,
+        method: "PUT",
+        body,
+        secure: true,
+        type: "application/json" /* Json */
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags user
+       * @name DeleteUserSecret
+       * @summary Delete a secret in a user scope
+       * @request DELETE:/user/actions/secrets/{secretname}
+       * @secure
+       */
+      deleteUserSecret: (secretname, params = {}) => this.request(__spreadValues({
+        path: `/user/actions/secrets/${secretname}`,
+        method: "DELETE",
+        secure: true,
+        type: "application/json" /* Json */
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags user
+       * @name GetUserVariablesList
+       * @summary Get the user-level list of variables which is created by current doer
+       * @request GET:/user/actions/variables
+       * @secure
+       */
+      getUserVariablesList: (query, params = {}) => this.request(__spreadValues({
+        path: `/user/actions/variables`,
+        method: "GET",
+        query,
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags user
+       * @name GetUserVariable
+       * @summary Get a user-level variable which is created by current doer
+       * @request GET:/user/actions/variables/{variablename}
+       * @secure
+       */
+      getUserVariable: (variablename, params = {}) => this.request(__spreadValues({
+        path: `/user/actions/variables/${variablename}`,
+        method: "GET",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags user
+       * @name UpdateUserVariable
+       * @summary Update a user-level variable which is created by current doer
+       * @request PUT:/user/actions/variables/{variablename}
+       * @secure
+       */
+      updateUserVariable: (variablename, body, params = {}) => this.request(__spreadValues({
+        path: `/user/actions/variables/${variablename}`,
+        method: "PUT",
+        body,
+        secure: true,
+        type: "application/json" /* Json */
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags user
+       * @name CreateUserVariable
+       * @summary Create a user-level variable
+       * @request POST:/user/actions/variables/{variablename}
+       * @secure
+       */
+      createUserVariable: (variablename, body, params = {}) => this.request(__spreadValues({
+        path: `/user/actions/variables/${variablename}`,
+        method: "POST",
+        body,
+        secure: true,
+        type: "application/json" /* Json */
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags user
+       * @name DeleteUserVariable
+       * @summary Delete a user-level variable which is created by current doer
+       * @request DELETE:/user/actions/variables/{variablename}
+       * @secure
+       */
+      deleteUserVariable: (variablename, params = {}) => this.request(__spreadValues({
+        path: `/user/actions/variables/${variablename}`,
+        method: "DELETE",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags user
        * @name UserGetOauth2Application
        * @summary List the authenticated user's oauth2 applications
        * @request GET:/user/applications/oauth2
@@ -16297,6 +19767,93 @@ var Api = class extends HttpClient {
         path: `/user/applications/oauth2/${id}`,
         method: "PATCH",
         body,
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags user
+       * @name UserUpdateAvatar
+       * @summary Update Avatar
+       * @request POST:/user/avatar
+       * @secure
+       */
+      userUpdateAvatar: (body, params = {}) => this.request(__spreadValues({
+        path: `/user/avatar`,
+        method: "POST",
+        body,
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags user
+       * @name UserDeleteAvatar
+       * @summary Delete Avatar
+       * @request DELETE:/user/avatar
+       * @secure
+       */
+      userDeleteAvatar: (params = {}) => this.request(__spreadValues({
+        path: `/user/avatar`,
+        method: "DELETE",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags user
+       * @name UserListBlocks
+       * @summary List users blocked by the authenticated user
+       * @request GET:/user/blocks
+       * @secure
+       */
+      userListBlocks: (query, params = {}) => this.request(__spreadValues({
+        path: `/user/blocks`,
+        method: "GET",
+        query,
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags user
+       * @name UserCheckUserBlock
+       * @summary Check if a user is blocked by the authenticated user
+       * @request GET:/user/blocks/{username}
+       * @secure
+       */
+      userCheckUserBlock: (username, params = {}) => this.request(__spreadValues({
+        path: `/user/blocks/${username}`,
+        method: "GET",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags user
+       * @name UserBlockUser
+       * @summary Block a user
+       * @request PUT:/user/blocks/{username}
+       * @secure
+       */
+      userBlockUser: (username, query, params = {}) => this.request(__spreadValues({
+        path: `/user/blocks/${username}`,
+        method: "PUT",
+        query,
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags user
+       * @name UserUnblockUser
+       * @summary Unblock a user
+       * @request DELETE:/user/blocks/{username}
+       * @secure
+       */
+      userUnblockUser: (username, params = {}) => this.request(__spreadValues({
+        path: `/user/blocks/${username}`,
+        method: "DELETE",
         secure: true
       }, params)),
       /**
@@ -17121,7 +20678,7 @@ function giteaApi(baseUrl, options) {
       return {
         secure: true,
         headers: {
-          Authorization: `token ${options.token}`
+          Authorization: `Bearer ${options.token}`
         }
       };
     }
@@ -17130,8 +20687,8 @@ function giteaApi(baseUrl, options) {
 // Annotate the CommonJS export names for ESM import in node:
 0 && (0);
 /**
- * @title Gitea API.
- * @version 1.20.1
+ * @title Gitea API
+ * @version 1.22.0
  * @license MIT (http://opensource.org/licenses/MIT)
  * @baseUrl /api/v1
  *
@@ -17195,6 +20752,7 @@ const tls = __importStar(__nccwpck_require__(4404));
 const assert_1 = __importDefault(__nccwpck_require__(9491));
 const debug_1 = __importDefault(__nccwpck_require__(8237));
 const agent_base_1 = __nccwpck_require__(694);
+const url_1 = __nccwpck_require__(7310);
 const parse_proxy_response_1 = __nccwpck_require__(595);
 const debug = (0, debug_1.default)('https-proxy-agent');
 /**
@@ -17213,7 +20771,7 @@ class HttpsProxyAgent extends agent_base_1.Agent {
     constructor(proxy, opts) {
         super(opts);
         this.options = { path: undefined };
-        this.proxy = typeof proxy === 'string' ? new URL(proxy) : proxy;
+        this.proxy = typeof proxy === 'string' ? new url_1.URL(proxy) : proxy;
         this.proxyHeaders = opts?.headers ?? {};
         debug('Creating new HttpsProxyAgent instance: %o', this.proxy.href);
         // Trim off the brackets from IPv6 addresses
@@ -17247,7 +20805,7 @@ class HttpsProxyAgent extends agent_base_1.Agent {
             const servername = this.connectOpts.servername || this.connectOpts.host;
             socket = tls.connect({
                 ...this.connectOpts,
-                servername: servername && net.isIP(servername) ? undefined : servername
+                servername,
             });
         }
         else {
@@ -17288,7 +20846,7 @@ class HttpsProxyAgent extends agent_base_1.Agent {
                 return tls.connect({
                     ...omit(opts, 'host', 'path', 'port'),
                     socket,
-                    servername: net.isIP(servername) ? undefined : servername,
+                    servername,
                 });
             }
             return socket;
@@ -23510,6 +27068,8 @@ const Range = __nccwpck_require__(9828)
 /***/ 9828:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+const SPACE_CHARACTERS = /\s+/g
+
 // hoisted class for cyclic dependency
 class Range {
   constructor (range, options) {
@@ -23530,7 +27090,7 @@ class Range {
       // just put it in the set and return
       this.raw = range.value
       this.set = [[range]]
-      this.format()
+      this.formatted = undefined
       return this
     }
 
@@ -23541,10 +27101,7 @@ class Range {
     // First reduce all whitespace as much as possible so we do not have to rely
     // on potentially slow regexes like \s*. This is then stored and used for
     // future error messages as well.
-    this.raw = range
-      .trim()
-      .split(/\s+/)
-      .join(' ')
+    this.raw = range.trim().replace(SPACE_CHARACTERS, ' ')
 
     // First, split on ||
     this.set = this.raw
@@ -23578,14 +27135,29 @@ class Range {
       }
     }
 
-    this.format()
+    this.formatted = undefined
+  }
+
+  get range () {
+    if (this.formatted === undefined) {
+      this.formatted = ''
+      for (let i = 0; i < this.set.length; i++) {
+        if (i > 0) {
+          this.formatted += '||'
+        }
+        const comps = this.set[i]
+        for (let k = 0; k < comps.length; k++) {
+          if (k > 0) {
+            this.formatted += ' '
+          }
+          this.formatted += comps[k].toString().trim()
+        }
+      }
+    }
+    return this.formatted
   }
 
   format () {
-    this.range = this.set
-      .map((comps) => comps.join(' ').trim())
-      .join('||')
-      .trim()
     return this.range
   }
 
@@ -23710,8 +27282,8 @@ class Range {
 
 module.exports = Range
 
-const LRU = __nccwpck_require__(1196)
-const cache = new LRU({ max: 1000 })
+const LRU = __nccwpck_require__(5339)
+const cache = new LRU()
 
 const parseOptions = __nccwpck_require__(785)
 const Comparator = __nccwpck_require__(1532)
@@ -23982,9 +27554,10 @@ const replaceGTE0 = (comp, options) => {
 // 1.2 - 3.4.5 => >=1.2.0 <=3.4.5
 // 1.2.3 - 3.4 => >=1.2.0 <3.5.0-0 Any 3.4.x will do
 // 1.2 - 3.4 => >=1.2.0 <3.5.0-0
+// TODO build?
 const hyphenReplace = incPr => ($0,
   from, fM, fm, fp, fpr, fb,
-  to, tM, tm, tp, tpr, tb) => {
+  to, tM, tm, tp, tpr) => {
   if (isX(fM)) {
     from = ''
   } else if (isX(fm)) {
@@ -24216,7 +27789,7 @@ class SemVer {
     do {
       const a = this.build[i]
       const b = other.build[i]
-      debug('prerelease compare', i, a, b)
+      debug('build compare', i, a, b)
       if (a === undefined && b === undefined) {
         return 0
       } else if (b === undefined) {
@@ -25005,6 +28578,53 @@ module.exports = {
 
 /***/ }),
 
+/***/ 5339:
+/***/ ((module) => {
+
+class LRUCache {
+  constructor () {
+    this.max = 1000
+    this.map = new Map()
+  }
+
+  get (key) {
+    const value = this.map.get(key)
+    if (value === undefined) {
+      return undefined
+    } else {
+      // Remove the key from the map and add it to the end
+      this.map.delete(key)
+      this.map.set(key, value)
+      return value
+    }
+  }
+
+  delete (key) {
+    return this.map.delete(key)
+  }
+
+  set (key, value) {
+    const deleted = this.delete(key)
+
+    if (!deleted && value !== undefined) {
+      // If cache is full, delete the least recently used item
+      if (this.map.size >= this.max) {
+        const firstKey = this.map.keys().next().value
+        this.delete(firstKey)
+      }
+
+      this.map.set(key, value)
+    }
+
+    return this
+  }
+}
+
+module.exports = LRUCache
+
+
+/***/ }),
+
 /***/ 785:
 /***/ ((module) => {
 
@@ -25247,798 +28867,6 @@ createToken('STAR', '(<|>)?=?\\s*\\*')
 // >=0.0.0 is like a star
 createToken('GTE0', '^\\s*>=\\s*0\\.0\\.0\\s*$')
 createToken('GTE0PRE', '^\\s*>=\\s*0\\.0\\.0-0\\s*$')
-
-
-/***/ }),
-
-/***/ 1196:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-// A linked list to keep track of recently-used-ness
-const Yallist = __nccwpck_require__(220)
-
-const MAX = Symbol('max')
-const LENGTH = Symbol('length')
-const LENGTH_CALCULATOR = Symbol('lengthCalculator')
-const ALLOW_STALE = Symbol('allowStale')
-const MAX_AGE = Symbol('maxAge')
-const DISPOSE = Symbol('dispose')
-const NO_DISPOSE_ON_SET = Symbol('noDisposeOnSet')
-const LRU_LIST = Symbol('lruList')
-const CACHE = Symbol('cache')
-const UPDATE_AGE_ON_GET = Symbol('updateAgeOnGet')
-
-const naiveLength = () => 1
-
-// lruList is a yallist where the head is the youngest
-// item, and the tail is the oldest.  the list contains the Hit
-// objects as the entries.
-// Each Hit object has a reference to its Yallist.Node.  This
-// never changes.
-//
-// cache is a Map (or PseudoMap) that matches the keys to
-// the Yallist.Node object.
-class LRUCache {
-  constructor (options) {
-    if (typeof options === 'number')
-      options = { max: options }
-
-    if (!options)
-      options = {}
-
-    if (options.max && (typeof options.max !== 'number' || options.max < 0))
-      throw new TypeError('max must be a non-negative number')
-    // Kind of weird to have a default max of Infinity, but oh well.
-    const max = this[MAX] = options.max || Infinity
-
-    const lc = options.length || naiveLength
-    this[LENGTH_CALCULATOR] = (typeof lc !== 'function') ? naiveLength : lc
-    this[ALLOW_STALE] = options.stale || false
-    if (options.maxAge && typeof options.maxAge !== 'number')
-      throw new TypeError('maxAge must be a number')
-    this[MAX_AGE] = options.maxAge || 0
-    this[DISPOSE] = options.dispose
-    this[NO_DISPOSE_ON_SET] = options.noDisposeOnSet || false
-    this[UPDATE_AGE_ON_GET] = options.updateAgeOnGet || false
-    this.reset()
-  }
-
-  // resize the cache when the max changes.
-  set max (mL) {
-    if (typeof mL !== 'number' || mL < 0)
-      throw new TypeError('max must be a non-negative number')
-
-    this[MAX] = mL || Infinity
-    trim(this)
-  }
-  get max () {
-    return this[MAX]
-  }
-
-  set allowStale (allowStale) {
-    this[ALLOW_STALE] = !!allowStale
-  }
-  get allowStale () {
-    return this[ALLOW_STALE]
-  }
-
-  set maxAge (mA) {
-    if (typeof mA !== 'number')
-      throw new TypeError('maxAge must be a non-negative number')
-
-    this[MAX_AGE] = mA
-    trim(this)
-  }
-  get maxAge () {
-    return this[MAX_AGE]
-  }
-
-  // resize the cache when the lengthCalculator changes.
-  set lengthCalculator (lC) {
-    if (typeof lC !== 'function')
-      lC = naiveLength
-
-    if (lC !== this[LENGTH_CALCULATOR]) {
-      this[LENGTH_CALCULATOR] = lC
-      this[LENGTH] = 0
-      this[LRU_LIST].forEach(hit => {
-        hit.length = this[LENGTH_CALCULATOR](hit.value, hit.key)
-        this[LENGTH] += hit.length
-      })
-    }
-    trim(this)
-  }
-  get lengthCalculator () { return this[LENGTH_CALCULATOR] }
-
-  get length () { return this[LENGTH] }
-  get itemCount () { return this[LRU_LIST].length }
-
-  rforEach (fn, thisp) {
-    thisp = thisp || this
-    for (let walker = this[LRU_LIST].tail; walker !== null;) {
-      const prev = walker.prev
-      forEachStep(this, fn, walker, thisp)
-      walker = prev
-    }
-  }
-
-  forEach (fn, thisp) {
-    thisp = thisp || this
-    for (let walker = this[LRU_LIST].head; walker !== null;) {
-      const next = walker.next
-      forEachStep(this, fn, walker, thisp)
-      walker = next
-    }
-  }
-
-  keys () {
-    return this[LRU_LIST].toArray().map(k => k.key)
-  }
-
-  values () {
-    return this[LRU_LIST].toArray().map(k => k.value)
-  }
-
-  reset () {
-    if (this[DISPOSE] &&
-        this[LRU_LIST] &&
-        this[LRU_LIST].length) {
-      this[LRU_LIST].forEach(hit => this[DISPOSE](hit.key, hit.value))
-    }
-
-    this[CACHE] = new Map() // hash of items by key
-    this[LRU_LIST] = new Yallist() // list of items in order of use recency
-    this[LENGTH] = 0 // length of items in the list
-  }
-
-  dump () {
-    return this[LRU_LIST].map(hit =>
-      isStale(this, hit) ? false : {
-        k: hit.key,
-        v: hit.value,
-        e: hit.now + (hit.maxAge || 0)
-      }).toArray().filter(h => h)
-  }
-
-  dumpLru () {
-    return this[LRU_LIST]
-  }
-
-  set (key, value, maxAge) {
-    maxAge = maxAge || this[MAX_AGE]
-
-    if (maxAge && typeof maxAge !== 'number')
-      throw new TypeError('maxAge must be a number')
-
-    const now = maxAge ? Date.now() : 0
-    const len = this[LENGTH_CALCULATOR](value, key)
-
-    if (this[CACHE].has(key)) {
-      if (len > this[MAX]) {
-        del(this, this[CACHE].get(key))
-        return false
-      }
-
-      const node = this[CACHE].get(key)
-      const item = node.value
-
-      // dispose of the old one before overwriting
-      // split out into 2 ifs for better coverage tracking
-      if (this[DISPOSE]) {
-        if (!this[NO_DISPOSE_ON_SET])
-          this[DISPOSE](key, item.value)
-      }
-
-      item.now = now
-      item.maxAge = maxAge
-      item.value = value
-      this[LENGTH] += len - item.length
-      item.length = len
-      this.get(key)
-      trim(this)
-      return true
-    }
-
-    const hit = new Entry(key, value, len, now, maxAge)
-
-    // oversized objects fall out of cache automatically.
-    if (hit.length > this[MAX]) {
-      if (this[DISPOSE])
-        this[DISPOSE](key, value)
-
-      return false
-    }
-
-    this[LENGTH] += hit.length
-    this[LRU_LIST].unshift(hit)
-    this[CACHE].set(key, this[LRU_LIST].head)
-    trim(this)
-    return true
-  }
-
-  has (key) {
-    if (!this[CACHE].has(key)) return false
-    const hit = this[CACHE].get(key).value
-    return !isStale(this, hit)
-  }
-
-  get (key) {
-    return get(this, key, true)
-  }
-
-  peek (key) {
-    return get(this, key, false)
-  }
-
-  pop () {
-    const node = this[LRU_LIST].tail
-    if (!node)
-      return null
-
-    del(this, node)
-    return node.value
-  }
-
-  del (key) {
-    del(this, this[CACHE].get(key))
-  }
-
-  load (arr) {
-    // reset the cache
-    this.reset()
-
-    const now = Date.now()
-    // A previous serialized cache has the most recent items first
-    for (let l = arr.length - 1; l >= 0; l--) {
-      const hit = arr[l]
-      const expiresAt = hit.e || 0
-      if (expiresAt === 0)
-        // the item was created without expiration in a non aged cache
-        this.set(hit.k, hit.v)
-      else {
-        const maxAge = expiresAt - now
-        // dont add already expired items
-        if (maxAge > 0) {
-          this.set(hit.k, hit.v, maxAge)
-        }
-      }
-    }
-  }
-
-  prune () {
-    this[CACHE].forEach((value, key) => get(this, key, false))
-  }
-}
-
-const get = (self, key, doUse) => {
-  const node = self[CACHE].get(key)
-  if (node) {
-    const hit = node.value
-    if (isStale(self, hit)) {
-      del(self, node)
-      if (!self[ALLOW_STALE])
-        return undefined
-    } else {
-      if (doUse) {
-        if (self[UPDATE_AGE_ON_GET])
-          node.value.now = Date.now()
-        self[LRU_LIST].unshiftNode(node)
-      }
-    }
-    return hit.value
-  }
-}
-
-const isStale = (self, hit) => {
-  if (!hit || (!hit.maxAge && !self[MAX_AGE]))
-    return false
-
-  const diff = Date.now() - hit.now
-  return hit.maxAge ? diff > hit.maxAge
-    : self[MAX_AGE] && (diff > self[MAX_AGE])
-}
-
-const trim = self => {
-  if (self[LENGTH] > self[MAX]) {
-    for (let walker = self[LRU_LIST].tail;
-      self[LENGTH] > self[MAX] && walker !== null;) {
-      // We know that we're about to delete this one, and also
-      // what the next least recently used key will be, so just
-      // go ahead and set it now.
-      const prev = walker.prev
-      del(self, walker)
-      walker = prev
-    }
-  }
-}
-
-const del = (self, node) => {
-  if (node) {
-    const hit = node.value
-    if (self[DISPOSE])
-      self[DISPOSE](hit.key, hit.value)
-
-    self[LENGTH] -= hit.length
-    self[CACHE].delete(hit.key)
-    self[LRU_LIST].removeNode(node)
-  }
-}
-
-class Entry {
-  constructor (key, value, length, now, maxAge) {
-    this.key = key
-    this.value = value
-    this.length = length
-    this.now = now
-    this.maxAge = maxAge || 0
-  }
-}
-
-const forEachStep = (self, fn, node, thisp) => {
-  let hit = node.value
-  if (isStale(self, hit)) {
-    del(self, node)
-    if (!self[ALLOW_STALE])
-      hit = undefined
-  }
-  if (hit)
-    fn.call(thisp, hit.value, hit.key, self)
-}
-
-module.exports = LRUCache
-
-
-/***/ }),
-
-/***/ 5327:
-/***/ ((module) => {
-
-"use strict";
-
-module.exports = function (Yallist) {
-  Yallist.prototype[Symbol.iterator] = function* () {
-    for (let walker = this.head; walker; walker = walker.next) {
-      yield walker.value
-    }
-  }
-}
-
-
-/***/ }),
-
-/***/ 220:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-module.exports = Yallist
-
-Yallist.Node = Node
-Yallist.create = Yallist
-
-function Yallist (list) {
-  var self = this
-  if (!(self instanceof Yallist)) {
-    self = new Yallist()
-  }
-
-  self.tail = null
-  self.head = null
-  self.length = 0
-
-  if (list && typeof list.forEach === 'function') {
-    list.forEach(function (item) {
-      self.push(item)
-    })
-  } else if (arguments.length > 0) {
-    for (var i = 0, l = arguments.length; i < l; i++) {
-      self.push(arguments[i])
-    }
-  }
-
-  return self
-}
-
-Yallist.prototype.removeNode = function (node) {
-  if (node.list !== this) {
-    throw new Error('removing node which does not belong to this list')
-  }
-
-  var next = node.next
-  var prev = node.prev
-
-  if (next) {
-    next.prev = prev
-  }
-
-  if (prev) {
-    prev.next = next
-  }
-
-  if (node === this.head) {
-    this.head = next
-  }
-  if (node === this.tail) {
-    this.tail = prev
-  }
-
-  node.list.length--
-  node.next = null
-  node.prev = null
-  node.list = null
-
-  return next
-}
-
-Yallist.prototype.unshiftNode = function (node) {
-  if (node === this.head) {
-    return
-  }
-
-  if (node.list) {
-    node.list.removeNode(node)
-  }
-
-  var head = this.head
-  node.list = this
-  node.next = head
-  if (head) {
-    head.prev = node
-  }
-
-  this.head = node
-  if (!this.tail) {
-    this.tail = node
-  }
-  this.length++
-}
-
-Yallist.prototype.pushNode = function (node) {
-  if (node === this.tail) {
-    return
-  }
-
-  if (node.list) {
-    node.list.removeNode(node)
-  }
-
-  var tail = this.tail
-  node.list = this
-  node.prev = tail
-  if (tail) {
-    tail.next = node
-  }
-
-  this.tail = node
-  if (!this.head) {
-    this.head = node
-  }
-  this.length++
-}
-
-Yallist.prototype.push = function () {
-  for (var i = 0, l = arguments.length; i < l; i++) {
-    push(this, arguments[i])
-  }
-  return this.length
-}
-
-Yallist.prototype.unshift = function () {
-  for (var i = 0, l = arguments.length; i < l; i++) {
-    unshift(this, arguments[i])
-  }
-  return this.length
-}
-
-Yallist.prototype.pop = function () {
-  if (!this.tail) {
-    return undefined
-  }
-
-  var res = this.tail.value
-  this.tail = this.tail.prev
-  if (this.tail) {
-    this.tail.next = null
-  } else {
-    this.head = null
-  }
-  this.length--
-  return res
-}
-
-Yallist.prototype.shift = function () {
-  if (!this.head) {
-    return undefined
-  }
-
-  var res = this.head.value
-  this.head = this.head.next
-  if (this.head) {
-    this.head.prev = null
-  } else {
-    this.tail = null
-  }
-  this.length--
-  return res
-}
-
-Yallist.prototype.forEach = function (fn, thisp) {
-  thisp = thisp || this
-  for (var walker = this.head, i = 0; walker !== null; i++) {
-    fn.call(thisp, walker.value, i, this)
-    walker = walker.next
-  }
-}
-
-Yallist.prototype.forEachReverse = function (fn, thisp) {
-  thisp = thisp || this
-  for (var walker = this.tail, i = this.length - 1; walker !== null; i--) {
-    fn.call(thisp, walker.value, i, this)
-    walker = walker.prev
-  }
-}
-
-Yallist.prototype.get = function (n) {
-  for (var i = 0, walker = this.head; walker !== null && i < n; i++) {
-    // abort out of the list early if we hit a cycle
-    walker = walker.next
-  }
-  if (i === n && walker !== null) {
-    return walker.value
-  }
-}
-
-Yallist.prototype.getReverse = function (n) {
-  for (var i = 0, walker = this.tail; walker !== null && i < n; i++) {
-    // abort out of the list early if we hit a cycle
-    walker = walker.prev
-  }
-  if (i === n && walker !== null) {
-    return walker.value
-  }
-}
-
-Yallist.prototype.map = function (fn, thisp) {
-  thisp = thisp || this
-  var res = new Yallist()
-  for (var walker = this.head; walker !== null;) {
-    res.push(fn.call(thisp, walker.value, this))
-    walker = walker.next
-  }
-  return res
-}
-
-Yallist.prototype.mapReverse = function (fn, thisp) {
-  thisp = thisp || this
-  var res = new Yallist()
-  for (var walker = this.tail; walker !== null;) {
-    res.push(fn.call(thisp, walker.value, this))
-    walker = walker.prev
-  }
-  return res
-}
-
-Yallist.prototype.reduce = function (fn, initial) {
-  var acc
-  var walker = this.head
-  if (arguments.length > 1) {
-    acc = initial
-  } else if (this.head) {
-    walker = this.head.next
-    acc = this.head.value
-  } else {
-    throw new TypeError('Reduce of empty list with no initial value')
-  }
-
-  for (var i = 0; walker !== null; i++) {
-    acc = fn(acc, walker.value, i)
-    walker = walker.next
-  }
-
-  return acc
-}
-
-Yallist.prototype.reduceReverse = function (fn, initial) {
-  var acc
-  var walker = this.tail
-  if (arguments.length > 1) {
-    acc = initial
-  } else if (this.tail) {
-    walker = this.tail.prev
-    acc = this.tail.value
-  } else {
-    throw new TypeError('Reduce of empty list with no initial value')
-  }
-
-  for (var i = this.length - 1; walker !== null; i--) {
-    acc = fn(acc, walker.value, i)
-    walker = walker.prev
-  }
-
-  return acc
-}
-
-Yallist.prototype.toArray = function () {
-  var arr = new Array(this.length)
-  for (var i = 0, walker = this.head; walker !== null; i++) {
-    arr[i] = walker.value
-    walker = walker.next
-  }
-  return arr
-}
-
-Yallist.prototype.toArrayReverse = function () {
-  var arr = new Array(this.length)
-  for (var i = 0, walker = this.tail; walker !== null; i++) {
-    arr[i] = walker.value
-    walker = walker.prev
-  }
-  return arr
-}
-
-Yallist.prototype.slice = function (from, to) {
-  to = to || this.length
-  if (to < 0) {
-    to += this.length
-  }
-  from = from || 0
-  if (from < 0) {
-    from += this.length
-  }
-  var ret = new Yallist()
-  if (to < from || to < 0) {
-    return ret
-  }
-  if (from < 0) {
-    from = 0
-  }
-  if (to > this.length) {
-    to = this.length
-  }
-  for (var i = 0, walker = this.head; walker !== null && i < from; i++) {
-    walker = walker.next
-  }
-  for (; walker !== null && i < to; i++, walker = walker.next) {
-    ret.push(walker.value)
-  }
-  return ret
-}
-
-Yallist.prototype.sliceReverse = function (from, to) {
-  to = to || this.length
-  if (to < 0) {
-    to += this.length
-  }
-  from = from || 0
-  if (from < 0) {
-    from += this.length
-  }
-  var ret = new Yallist()
-  if (to < from || to < 0) {
-    return ret
-  }
-  if (from < 0) {
-    from = 0
-  }
-  if (to > this.length) {
-    to = this.length
-  }
-  for (var i = this.length, walker = this.tail; walker !== null && i > to; i--) {
-    walker = walker.prev
-  }
-  for (; walker !== null && i > from; i--, walker = walker.prev) {
-    ret.push(walker.value)
-  }
-  return ret
-}
-
-Yallist.prototype.splice = function (start, deleteCount, ...nodes) {
-  if (start > this.length) {
-    start = this.length - 1
-  }
-  if (start < 0) {
-    start = this.length + start;
-  }
-
-  for (var i = 0, walker = this.head; walker !== null && i < start; i++) {
-    walker = walker.next
-  }
-
-  var ret = []
-  for (var i = 0; walker && i < deleteCount; i++) {
-    ret.push(walker.value)
-    walker = this.removeNode(walker)
-  }
-  if (walker === null) {
-    walker = this.tail
-  }
-
-  if (walker !== this.head && walker !== this.tail) {
-    walker = walker.prev
-  }
-
-  for (var i = 0; i < nodes.length; i++) {
-    walker = insert(this, walker, nodes[i])
-  }
-  return ret;
-}
-
-Yallist.prototype.reverse = function () {
-  var head = this.head
-  var tail = this.tail
-  for (var walker = head; walker !== null; walker = walker.prev) {
-    var p = walker.prev
-    walker.prev = walker.next
-    walker.next = p
-  }
-  this.head = tail
-  this.tail = head
-  return this
-}
-
-function insert (self, node, value) {
-  var inserted = node === self.head ?
-    new Node(value, null, node, self) :
-    new Node(value, node, node.next, self)
-
-  if (inserted.next === null) {
-    self.tail = inserted
-  }
-  if (inserted.prev === null) {
-    self.head = inserted
-  }
-
-  self.length++
-
-  return inserted
-}
-
-function push (self, item) {
-  self.tail = new Node(item, self.tail, null, self)
-  if (!self.head) {
-    self.head = self.tail
-  }
-  self.length++
-}
-
-function unshift (self, item) {
-  self.head = new Node(item, null, self.head, self)
-  if (!self.tail) {
-    self.tail = self.head
-  }
-  self.length++
-}
-
-function Node (value, prev, next, list) {
-  if (!(this instanceof Node)) {
-    return new Node(value, prev, next, list)
-  }
-
-  this.list = list
-  this.value = value
-
-  if (prev) {
-    prev.next = this
-    this.prev = prev
-  } else {
-    this.prev = null
-  }
-
-  if (next) {
-    next.prev = this
-    this.next = next
-  } else {
-    this.next = null
-  }
-}
-
-try {
-  // add if support for Symbol.iterator is present
-  __nccwpck_require__(5327)(Yallist)
-} catch (er) {}
 
 
 /***/ }),
@@ -33395,6 +36223,132 @@ module.exports = buildConnector
 
 /***/ }),
 
+/***/ 4462:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {Record<string, string | undefined>} */
+const headerNameLowerCasedRecord = {}
+
+// https://developer.mozilla.org/docs/Web/HTTP/Headers
+const wellknownHeaderNames = [
+  'Accept',
+  'Accept-Encoding',
+  'Accept-Language',
+  'Accept-Ranges',
+  'Access-Control-Allow-Credentials',
+  'Access-Control-Allow-Headers',
+  'Access-Control-Allow-Methods',
+  'Access-Control-Allow-Origin',
+  'Access-Control-Expose-Headers',
+  'Access-Control-Max-Age',
+  'Access-Control-Request-Headers',
+  'Access-Control-Request-Method',
+  'Age',
+  'Allow',
+  'Alt-Svc',
+  'Alt-Used',
+  'Authorization',
+  'Cache-Control',
+  'Clear-Site-Data',
+  'Connection',
+  'Content-Disposition',
+  'Content-Encoding',
+  'Content-Language',
+  'Content-Length',
+  'Content-Location',
+  'Content-Range',
+  'Content-Security-Policy',
+  'Content-Security-Policy-Report-Only',
+  'Content-Type',
+  'Cookie',
+  'Cross-Origin-Embedder-Policy',
+  'Cross-Origin-Opener-Policy',
+  'Cross-Origin-Resource-Policy',
+  'Date',
+  'Device-Memory',
+  'Downlink',
+  'ECT',
+  'ETag',
+  'Expect',
+  'Expect-CT',
+  'Expires',
+  'Forwarded',
+  'From',
+  'Host',
+  'If-Match',
+  'If-Modified-Since',
+  'If-None-Match',
+  'If-Range',
+  'If-Unmodified-Since',
+  'Keep-Alive',
+  'Last-Modified',
+  'Link',
+  'Location',
+  'Max-Forwards',
+  'Origin',
+  'Permissions-Policy',
+  'Pragma',
+  'Proxy-Authenticate',
+  'Proxy-Authorization',
+  'RTT',
+  'Range',
+  'Referer',
+  'Referrer-Policy',
+  'Refresh',
+  'Retry-After',
+  'Sec-WebSocket-Accept',
+  'Sec-WebSocket-Extensions',
+  'Sec-WebSocket-Key',
+  'Sec-WebSocket-Protocol',
+  'Sec-WebSocket-Version',
+  'Server',
+  'Server-Timing',
+  'Service-Worker-Allowed',
+  'Service-Worker-Navigation-Preload',
+  'Set-Cookie',
+  'SourceMap',
+  'Strict-Transport-Security',
+  'Supports-Loading-Mode',
+  'TE',
+  'Timing-Allow-Origin',
+  'Trailer',
+  'Transfer-Encoding',
+  'Upgrade',
+  'Upgrade-Insecure-Requests',
+  'User-Agent',
+  'Vary',
+  'Via',
+  'WWW-Authenticate',
+  'X-Content-Type-Options',
+  'X-DNS-Prefetch-Control',
+  'X-Frame-Options',
+  'X-Permitted-Cross-Domain-Policies',
+  'X-Powered-By',
+  'X-Requested-With',
+  'X-XSS-Protection'
+]
+
+for (let i = 0; i < wellknownHeaderNames.length; ++i) {
+  const key = wellknownHeaderNames[i]
+  const lowerCasedKey = key.toLowerCase()
+  headerNameLowerCasedRecord[key] = headerNameLowerCasedRecord[lowerCasedKey] =
+    lowerCasedKey
+}
+
+// Note: object prototypes should not be able to be referenced. e.g. `Object#hasOwnProperty`.
+Object.setPrototypeOf(headerNameLowerCasedRecord, null)
+
+module.exports = {
+  wellknownHeaderNames,
+  headerNameLowerCasedRecord
+}
+
+
+/***/ }),
+
 /***/ 8045:
 /***/ ((module) => {
 
@@ -34225,6 +37179,7 @@ const { InvalidArgumentError } = __nccwpck_require__(8045)
 const { Blob } = __nccwpck_require__(4300)
 const nodeUtil = __nccwpck_require__(3837)
 const { stringify } = __nccwpck_require__(3477)
+const { headerNameLowerCasedRecord } = __nccwpck_require__(4462)
 
 const [nodeMajor, nodeMinor] = process.versions.node.split('.').map(v => Number(v))
 
@@ -34432,6 +37387,15 @@ const KEEPALIVE_TIMEOUT_EXPR = /timeout=(\d+)/
 function parseKeepAliveTimeout (val) {
   const m = val.toString().match(KEEPALIVE_TIMEOUT_EXPR)
   return m ? parseInt(m[1], 10) * 1000 : null
+}
+
+/**
+ * Retrieves a header name and returns its lowercase value.
+ * @param {string | Buffer} value Header name
+ * @returns {string}
+ */
+function headerNameToString (value) {
+  return headerNameLowerCasedRecord[value] || value.toLowerCase()
 }
 
 function parseHeaders (headers, obj = {}) {
@@ -34705,6 +37669,7 @@ module.exports = {
   isIterable,
   isAsyncIterable,
   isDestroyed,
+  headerNameToString,
   parseRawHeaders,
   parseHeaders,
   parseKeepAliveTimeout,
@@ -41352,14 +44317,18 @@ const { isBlobLike, toUSVString, ReadableStreamFrom } = __nccwpck_require__(3983
 const assert = __nccwpck_require__(9491)
 const { isUint8Array } = __nccwpck_require__(9830)
 
+let supportedHashes = []
+
 // https://nodejs.org/api/crypto.html#determining-if-crypto-support-is-unavailable
 /** @type {import('crypto')|undefined} */
 let crypto
 
 try {
   crypto = __nccwpck_require__(6113)
+  const possibleRelevantHashes = ['sha256', 'sha384', 'sha512']
+  supportedHashes = crypto.getHashes().filter((hash) => possibleRelevantHashes.includes(hash))
+/* c8 ignore next 3 */
 } catch {
-
 }
 
 function responseURL (response) {
@@ -41887,66 +44856,56 @@ function bytesMatch (bytes, metadataList) {
     return true
   }
 
-  // 3. If parsedMetadata is the empty set, return true.
+  // 3. If response is not eligible for integrity validation, return false.
+  // TODO
+
+  // 4. If parsedMetadata is the empty set, return true.
   if (parsedMetadata.length === 0) {
     return true
   }
 
-  // 4. Let metadata be the result of getting the strongest
+  // 5. Let metadata be the result of getting the strongest
   //    metadata from parsedMetadata.
-  const list = parsedMetadata.sort((c, d) => d.algo.localeCompare(c.algo))
-  // get the strongest algorithm
-  const strongest = list[0].algo
-  // get all entries that use the strongest algorithm; ignore weaker
-  const metadata = list.filter((item) => item.algo === strongest)
+  const strongest = getStrongestMetadata(parsedMetadata)
+  const metadata = filterMetadataListByAlgorithm(parsedMetadata, strongest)
 
-  // 5. For each item in metadata:
+  // 6. For each item in metadata:
   for (const item of metadata) {
     // 1. Let algorithm be the alg component of item.
     const algorithm = item.algo
 
     // 2. Let expectedValue be the val component of item.
-    let expectedValue = item.hash
+    const expectedValue = item.hash
 
     // See https://github.com/web-platform-tests/wpt/commit/e4c5cc7a5e48093220528dfdd1c4012dc3837a0e
     // "be liberal with padding". This is annoying, and it's not even in the spec.
 
-    if (expectedValue.endsWith('==')) {
-      expectedValue = expectedValue.slice(0, -2)
-    }
-
     // 3. Let actualValue be the result of applying algorithm to bytes.
     let actualValue = crypto.createHash(algorithm).update(bytes).digest('base64')
 
-    if (actualValue.endsWith('==')) {
-      actualValue = actualValue.slice(0, -2)
+    if (actualValue[actualValue.length - 1] === '=') {
+      if (actualValue[actualValue.length - 2] === '=') {
+        actualValue = actualValue.slice(0, -2)
+      } else {
+        actualValue = actualValue.slice(0, -1)
+      }
     }
 
     // 4. If actualValue is a case-sensitive match for expectedValue,
     //    return true.
-    if (actualValue === expectedValue) {
-      return true
-    }
-
-    let actualBase64URL = crypto.createHash(algorithm).update(bytes).digest('base64url')
-
-    if (actualBase64URL.endsWith('==')) {
-      actualBase64URL = actualBase64URL.slice(0, -2)
-    }
-
-    if (actualBase64URL === expectedValue) {
+    if (compareBase64Mixed(actualValue, expectedValue)) {
       return true
     }
   }
 
-  // 6. Return false.
+  // 7. Return false.
   return false
 }
 
 // https://w3c.github.io/webappsec-subresource-integrity/#grammardef-hash-with-options
 // https://www.w3.org/TR/CSP2/#source-list-syntax
 // https://www.rfc-editor.org/rfc/rfc5234#appendix-B.1
-const parseHashWithOptions = /((?<algo>sha256|sha384|sha512)-(?<hash>[A-z0-9+/]{1}.*={0,2}))( +[\x21-\x7e]?)?/i
+const parseHashWithOptions = /(?<algo>sha256|sha384|sha512)-((?<hash>[A-Za-z0-9+/]+|[A-Za-z0-9_-]+)={0,2}(?:\s|$)( +[!-~]*)?)?/i
 
 /**
  * @see https://w3c.github.io/webappsec-subresource-integrity/#parse-metadata
@@ -41960,8 +44919,6 @@ function parseMetadata (metadata) {
   // 2. Let empty be equal to true.
   let empty = true
 
-  const supportedHashes = crypto.getHashes()
-
   // 3. For each token returned by splitting metadata on spaces:
   for (const token of metadata.split(' ')) {
     // 1. Set empty to false.
@@ -41971,7 +44928,11 @@ function parseMetadata (metadata) {
     const parsedToken = parseHashWithOptions.exec(token)
 
     // 3. If token does not parse, continue to the next token.
-    if (parsedToken === null || parsedToken.groups === undefined) {
+    if (
+      parsedToken === null ||
+      parsedToken.groups === undefined ||
+      parsedToken.groups.algo === undefined
+    ) {
       // Note: Chromium blocks the request at this point, but Firefox
       // gives a warning that an invalid integrity was given. The
       // correct behavior is to ignore these, and subsequently not
@@ -41980,11 +44941,11 @@ function parseMetadata (metadata) {
     }
 
     // 4. Let algorithm be the hash-algo component of token.
-    const algorithm = parsedToken.groups.algo
+    const algorithm = parsedToken.groups.algo.toLowerCase()
 
     // 5. If algorithm is a hash function recognized by the user
     //    agent, add the parsed token to result.
-    if (supportedHashes.includes(algorithm.toLowerCase())) {
+    if (supportedHashes.includes(algorithm)) {
       result.push(parsedToken.groups)
     }
   }
@@ -41995,6 +44956,82 @@ function parseMetadata (metadata) {
   }
 
   return result
+}
+
+/**
+ * @param {{ algo: 'sha256' | 'sha384' | 'sha512' }[]} metadataList
+ */
+function getStrongestMetadata (metadataList) {
+  // Let algorithm be the algo component of the first item in metadataList.
+  // Can be sha256
+  let algorithm = metadataList[0].algo
+  // If the algorithm is sha512, then it is the strongest
+  // and we can return immediately
+  if (algorithm[3] === '5') {
+    return algorithm
+  }
+
+  for (let i = 1; i < metadataList.length; ++i) {
+    const metadata = metadataList[i]
+    // If the algorithm is sha512, then it is the strongest
+    // and we can break the loop immediately
+    if (metadata.algo[3] === '5') {
+      algorithm = 'sha512'
+      break
+    // If the algorithm is sha384, then a potential sha256 or sha384 is ignored
+    } else if (algorithm[3] === '3') {
+      continue
+    // algorithm is sha256, check if algorithm is sha384 and if so, set it as
+    // the strongest
+    } else if (metadata.algo[3] === '3') {
+      algorithm = 'sha384'
+    }
+  }
+  return algorithm
+}
+
+function filterMetadataListByAlgorithm (metadataList, algorithm) {
+  if (metadataList.length === 1) {
+    return metadataList
+  }
+
+  let pos = 0
+  for (let i = 0; i < metadataList.length; ++i) {
+    if (metadataList[i].algo === algorithm) {
+      metadataList[pos++] = metadataList[i]
+    }
+  }
+
+  metadataList.length = pos
+
+  return metadataList
+}
+
+/**
+ * Compares two base64 strings, allowing for base64url
+ * in the second string.
+ *
+* @param {string} actualValue always base64
+ * @param {string} expectedValue base64 or base64url
+ * @returns {boolean}
+ */
+function compareBase64Mixed (actualValue, expectedValue) {
+  if (actualValue.length !== expectedValue.length) {
+    return false
+  }
+  for (let i = 0; i < actualValue.length; ++i) {
+    if (actualValue[i] !== expectedValue[i]) {
+      if (
+        (actualValue[i] === '+' && expectedValue[i] === '-') ||
+        (actualValue[i] === '/' && expectedValue[i] === '_')
+      ) {
+        continue
+      }
+      return false
+    }
+  }
+
+  return true
 }
 
 // https://w3c.github.io/webappsec-upgrade-insecure-requests/#upgrade-request
@@ -42412,7 +45449,8 @@ module.exports = {
   urlHasHttpsScheme,
   urlIsHttpHttpsScheme,
   readAllBytes,
-  normalizeMethodRecord
+  normalizeMethodRecord,
+  parseMetadata
 }
 
 
@@ -44499,12 +47537,17 @@ function parseLocation (statusCode, headers) {
 
 // https://tools.ietf.org/html/rfc7231#section-6.4.4
 function shouldRemoveHeader (header, removeContent, unknownOrigin) {
-  return (
-    (header.length === 4 && header.toString().toLowerCase() === 'host') ||
-    (removeContent && header.toString().toLowerCase().indexOf('content-') === 0) ||
-    (unknownOrigin && header.length === 13 && header.toString().toLowerCase() === 'authorization') ||
-    (unknownOrigin && header.length === 6 && header.toString().toLowerCase() === 'cookie')
-  )
+  if (header.length === 4) {
+    return util.headerNameToString(header) === 'host'
+  }
+  if (removeContent && util.headerNameToString(header).startsWith('content-')) {
+    return true
+  }
+  if (unknownOrigin && (header.length === 13 || header.length === 6 || header.length === 19)) {
+    const name = util.headerNameToString(header)
+    return name === 'authorization' || name === 'cookie' || name === 'proxy-authorization'
+  }
+  return false
 }
 
 // https://tools.ietf.org/html/rfc7231#section-6.4
@@ -50058,7 +53101,7 @@ Dicer.prototype._write = function (data, encoding, cb) {
   if (this._headerFirst && this._isPreamble) {
     if (!this._part) {
       this._part = new PartStream(this._partOpts)
-      if (this._events.preamble) { this.emit('preamble', this._part) } else { this._ignore() }
+      if (this.listenerCount('preamble') !== 0) { this.emit('preamble', this._part) } else { this._ignore() }
     }
     const r = this._hparser.push(data)
     if (!this._inHeader && r !== undefined && r < data.length) { data = data.slice(r) } else { return cb() }
@@ -50115,7 +53158,7 @@ Dicer.prototype._oninfo = function (isMatch, data, start, end) {
       }
     }
     if (this._dashes === 2) {
-      if ((start + i) < end && this._events.trailer) { this.emit('trailer', data.slice(start + i, end)) }
+      if ((start + i) < end && this.listenerCount('trailer') !== 0) { this.emit('trailer', data.slice(start + i, end)) }
       this.reset()
       this._finished = true
       // no more parts will be added
@@ -50133,7 +53176,13 @@ Dicer.prototype._oninfo = function (isMatch, data, start, end) {
     this._part._read = function (n) {
       self._unpause()
     }
-    if (this._isPreamble && this._events.preamble) { this.emit('preamble', this._part) } else if (this._isPreamble !== true && this._events.part) { this.emit('part', this._part) } else { this._ignore() }
+    if (this._isPreamble && this.listenerCount('preamble') !== 0) {
+      this.emit('preamble', this._part)
+    } else if (this._isPreamble !== true && this.listenerCount('part') !== 0) {
+      this.emit('part', this._part)
+    } else {
+      this._ignore()
+    }
     if (!this._isPreamble) { this._inHeader = true }
   }
   if (data && start < end && !this._ignoreData) {
@@ -50816,7 +53865,7 @@ function Multipart (boy, cfg) {
 
         ++nfiles
 
-        if (!boy._events.file) {
+        if (boy.listenerCount('file') === 0) {
           self.parser._ignore()
           return
         }
@@ -51345,7 +54394,7 @@ const decoders = {
     if (textDecoders.has(this.toString())) {
       try {
         return textDecoders.get(this).decode(data)
-      } catch (e) { }
+      } catch {}
     }
     return typeof data === 'string'
       ? data

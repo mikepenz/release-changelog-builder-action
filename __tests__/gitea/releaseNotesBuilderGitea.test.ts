@@ -1,8 +1,10 @@
 import {mergeConfiguration, resolveConfiguration} from '../../src/utils'
 import {ReleaseNotesBuilder} from '../../src/releaseNotesBuilder'
 import {GiteaRepository} from '../../src/repositories/GiteaRepository'
+import {clear} from '../../src/transform'
 
 jest.setTimeout(180000)
+clear()
 
 /**
  * Before starting testing, you should manually clone the repository
@@ -36,7 +38,7 @@ it('[Gitea] Verify reviewers who approved are fetched and also release informati
     true, // enable to fetch reviewers
     true, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false, // enable commitMode
+    'PR', // mode
     false, // enable exportCache
     false, // enable exportOnly
     null, // path to the cache
@@ -76,7 +78,7 @@ it('[Gitea] Should match generated changelog (unspecified fromTag)', async () =>
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false, // enable commitMode
+    'PR', // mode
     false, // enable exportCache
     false, // enable exportOnly
     null, // path to the cache
@@ -113,7 +115,7 @@ it('[Gitea] Should match generated changelog (unspecified tags)', async () => {
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false, // enable commitMode
+    'PR', // mode
     false, // enable exportCache
     false, // enable exportOnly
     null, // path to the cache
@@ -149,7 +151,7 @@ it('[Gitea] Should use empty placeholder', async () => {
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false, // enable commitMode
+    'PR', // mode
     false, // enable exportCache
     false, // enable exportOnly
     null, // path to the cache
@@ -200,7 +202,7 @@ it('[Gitea] Should fill empty placeholders', async () => {
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false, // enable commitMode
+    'PR', // mode
     false, // enable exportCache
     false, // enable exportOnly
     null, // path to the cache
@@ -308,7 +310,7 @@ it('[Gitea] Should fill `template` placeholders', async () => {
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false, // enable commitMode
+    'PR', // mode
     false, // enable exportCache
     false, // enable exportOnly
     null, // path to the cache
@@ -417,7 +419,7 @@ it('[Gitea] Should fill `template` placeholders, ignore', async () => {
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false, // enable commitMode
+    'PR', // mode
     false, // enable exportCache
     false, // enable exportOnly
     null, // path to the cache
@@ -482,7 +484,7 @@ it('[Gitea] Uncategorized category', async () => {
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false, // enable commitMode
+    'PR', // mode
     false, // enable exportCache
     false, // enable exportOnly
     null, // path to the cache
@@ -556,7 +558,7 @@ it('[Gitea] Verify commit based changelog', async () => {
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    true, // enable commitMode
+    'COMMIT', // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
     null, // path to the cache
@@ -633,7 +635,7 @@ it('[Gitea] Verify commit based changelog', async () => {
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    true, // enable commitMode
+    'COMMIT', // enable commitMode
     false, // enable exportCache
     false, // enable exportOnly
     null, // path to the cache
@@ -671,7 +673,7 @@ it('[Gitea] Verify default inclusion of open PRs', async () => {
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false, // enable commitMode
+    'PR', // mode
     false, // enable exportCache
     false, // enable exportOnly
     null, // path to the cache
@@ -712,7 +714,7 @@ it('[Gitea] Verify custom categorisation of open PRs', async () => {
     false, // enable to fetch reviewers
     false, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false, // enable commitMode
+    'PR', // mode
     false, // enable exportCache
     false, // enable exportOnly
     null, // path to the cache
@@ -744,7 +746,7 @@ it('[Gitea] Fetch release information', async () => {
     false, // enable to fetch reviewers
     true, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false, // enable commitMode
+    'PR', // mode
     false, // enable exportCache
     false, // enable exportOnly
     null, // path to the cache
@@ -778,7 +780,7 @@ it('[Gitea] Fetch release information for non existing tag / release', async () 
     false, // enable to fetch reviewers
     true, // enable to fetch tag release information
     false, // enable to fetch reviews
-    false, // enable commitMode
+    'PR', // mode
     false, // enable exportCache
     false, // enable exportOnly
     null, // path to the cache

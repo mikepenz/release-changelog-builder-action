@@ -36,28 +36,25 @@ export interface Sort {
 export interface TagResolver {
   method: string // semver, sort
   filter?: Regex // the regex to filter the tags, prior to sorting
-  transformer?: Transformer | Transformer[] // transforms the tag name using the regex, run after the filter
+  transformer?: Regex | Regex[] // transforms the tag name using the regex, run after the filter
 }
 
 export interface Regex {
   pattern: string // the regex pattern to match
   flags?: string // the regex flag to use for RegExp
-}
-
-export interface Transformer extends Regex {
   target?: string // the target string to transform the source string using the regex to
+  method?: 'replace' | 'replaceAll' | 'match' | 'regexr' | undefined // the method to use to extract the value, `match` will not use the `target` property
+  on_empty?: string | undefined // in case the regex results in an empty string, this value is gonna be used instead (only for label_extractor currently)
 }
 
-export interface Extractor extends Transformer {
+export interface Extractor extends Regex {
   on_property?: Property[] | Property | undefined // retrieve the property to extract the value from
-  method?: 'replace' | 'match' | undefined // the method to use to extract the value, `match` will not use the `target` property
-  on_empty?: string | undefined // in case the regex results in an empty string, this value is gonna be used instead (only for label_extractor currently)
 }
 
 export interface RegexTransformer {
   pattern: RegExp | null
   target: string
   onProperty?: Property[]
-  method?: 'replace' | 'match'
+  method?: 'replace' | 'replaceAll' | 'match' | 'regexr'
   onEmpty?: string
 }

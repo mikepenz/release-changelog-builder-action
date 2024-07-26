@@ -1,7 +1,10 @@
-import { validateTransformer } from '../src/pr-collector/regexUtils'
+import {TagResolver} from '../src/configuration'
+import {validateRegex} from '../src/pr-collector/regexUtils'
 import {filterTags, prepareAndSortTags, TagInfo, transformTags} from '../src/pr-collector/tags'
+import {clear} from '../src/transform'
 
 jest.setTimeout(180000)
+clear()
 
 it('Should order tags correctly using semver', async () => {
   const tags: TagInfo[] = [
@@ -100,14 +103,16 @@ it('Should filter tags correctly using the regex', async () => {
     {name: '20.0.2', commit: ''}
   ]
 
-  const tagResolver = {
+  const tagResolver: TagResolver = {
     method: 'non-existing-method',
     filter: {
       pattern: 'api-(.+)',
+      method: 'match',
       flags: 'gu'
     }
   }
-  const filtered = filterTags(tags, tagResolver)
+  const filter = validateRegex(tagResolver.filter)
+  const filtered = filterTags(tags, filter)
     .map(function (tag) {
       return tag.name
     })
@@ -131,14 +136,16 @@ it('Should filter tags correctly using the regex (inverse)', async () => {
     {name: '20.0.2', commit: ''}
   ]
 
-  const tagResolver = {
+  const tagResolver: TagResolver = {
     method: 'non-existing-method',
     filter: {
       pattern: '^(?!\\w+-)(.+)',
+      method: 'match',
       flags: 'gu'
     }
   }
-  const filtered = filterTags(tags, tagResolver)
+  const filter = validateRegex(tagResolver.filter)
+  const filtered = filterTags(tags, filter)
     .map(function (tag) {
       return tag.name
     })
@@ -146,7 +153,6 @@ it('Should filter tags correctly using the regex (inverse)', async () => {
 
   expect(filtered).toStrictEqual(`0.1.0-b01,1.0.0,1.0.0-a01,2.0.0,10.1.0,20.0.2`)
 })
-
 
 it('Should transform tags correctly using the regex', async () => {
   const tags: TagInfo[] = [
@@ -160,16 +166,16 @@ it('Should transform tags correctly using the regex', async () => {
     {name: '20.0.2', commit: ''}
   ]
 
-  const tagResolver = {
+  const tagResolver: TagResolver = {
     method: 'non-existing-method',
     transformer: {
-      pattern: '(api\-)?(.+)',
-      target: "$2"
+      pattern: '(api-)?(.+)',
+      target: '$2'
     }
   }
 
-  const transformer = validateTransformer(tagResolver.transformer)
-  if(transformer != null) {
+  const transformer = validateRegex(tagResolver.transformer)
+  if (transformer != null) {
     const transformed = transformTags(tags, transformer)
       .map(function (tag) {
         return tag.name

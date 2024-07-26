@@ -205,7 +205,7 @@ export class PullRequests {
         if (reviews && (reviews?.length || 0) > 0) {
           core.info(`ℹ️ Retrieved ${reviews.length || 0} review(s) for PR ${owner}/${repo}/#${pr.number}`)
 
-          // backwards compatiblity
+          // backwards compatibility
           pr.approvedReviewers = reviews.filter(r => r.state === 'APPROVED').map(r => r.author)
         } else {
           core.debug(`No reviewer(s) for PR ${owner}/${repo}/#${pr.number}`)

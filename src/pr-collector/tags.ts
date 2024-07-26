@@ -2,10 +2,10 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import * as semver from 'semver'
 import {SemVer} from 'semver'
-import {RegexTransformer, TagResolver, Transformer} from './types'
+import {Regex, RegexTransformer, TagResolver} from './types'
 import {createCommandManager} from './gitHelper'
 import moment from 'moment'
-import {validateTransformer} from './regexUtils'
+import {transformStringToOptionalValue, transformStringToValue, validateRegex} from './regexUtils'
 import {BaseRepository} from '../repositories/BaseRepository'
 
 export interface TagResult {
@@ -88,15 +88,17 @@ export class Tags {
     let tags: TagInfo[] = []
 
     if (!toTag || !fromTag) {
+      const filterRegex = validateRegex(tagResolver.filter)
+
       // filter out tags not matching the specified filter
       const filteredTags = filterTags(
         // retrieve the tags from the API
         await this.getTags(owner, repo, maxTagsToFetch),
-        tagResolver
+        filterRegex
       )
 
       // check if a transformer, legacy handling, transform single value input to array
-      let tagTransfomers: Transformer[] | undefined = undefined
+      let tagTransfomers: Regex[] | undefined = undefined
       if (tagResolver.transformer !== undefined) {
         if (!Array.isArray(tagResolver.transformer)) {
           tagTransfomers = [tagResolver.transformer]
@@ -109,7 +111,7 @@ export class Tags {
       let transformedTags: TagInfo[] = filteredTags
       if (tagTransfomers !== undefined && tagTransfomers.length > 0) {
         for (const transformer of tagTransfomers) {
-          const tagTransformer = validateTransformer(transformer)
+          const tagTransformer = validateRegex(transformer)
           if (tagTransformer != null) {
             core.debug(`ℹ️ Using configured tagTransformer (${transformer.pattern})`)
             transformedTags = transformTags(transformedTags, tagTransformer)
@@ -196,11 +198,9 @@ export class Tags {
  * Uses the provided filter (if available) to filter out any tags not currently relevant.
  * https://github.com/mikepenz/release-changelog-builder-action/issues/566
  */
-export function filterTags(tags: TagInfo[], tagResolver: TagResolver): TagInfo[] {
-  const filter = tagResolver.filter
-  if (filter !== undefined) {
-    const regex = new RegExp(filter.pattern.replace('\\\\', '\\'), filter.flags ?? 'gu')
-    const filteredTags = tags.filter(tag => tag.name.match(regex) !== null)
+export function filterTags(tags: TagInfo[], filterRegex: RegexTransformer | null): TagInfo[] {
+  if (filterRegex !== null) {
+    const filteredTags = tags.filter(tag => transformStringToOptionalValue(tag.name, filterRegex) !== null)
     core.debug(`ℹ️ Filtered tags count: ${filteredTags.length}, original count: ${tags.length}`)
     return filteredTags
   } else {
@@ -214,7 +214,7 @@ export function filterTags(tags: TagInfo[], tagResolver: TagResolver): TagInfo[]
 export function transformTags(tags: TagInfo[], transformer: RegexTransformer): TagInfo[] {
   return tags.map(function (tag) {
     if (transformer.pattern) {
-      const transformedName = tag.name.replace(transformer.pattern, transformer.target)
+      const transformedName = transformStringToValue(tag.name, transformer)
       core.debug(`ℹ️ Transformed ${tag.name} to ${transformedName}`)
       return {
         tmp: tag.name, // remember the original name

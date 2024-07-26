@@ -1,13 +1,13 @@
 import * as core from '@actions/core'
 import {RegexTransformer, Rule} from './pr-collector/types'
 import {PullRequestInfo, retrieveProperty} from './pr-collector/pullRequests'
-import {validateTransformer} from './pr-collector/regexUtils'
+import {validateRegex} from './pr-collector/regexUtils'
 
 /**
  * Checks if any of the rules match the given PR
  */
 export function matchesRules(rules: Rule[], pr: PullRequestInfo, exhaustive: Boolean): boolean {
-  const transformers: RegexTransformer[] = rules.map(rule => validateTransformer(rule)).filter(t => t !== null) as RegexTransformer[]
+  const transformers: RegexTransformer[] = rules.map(rule => validateRegex(rule)).filter(t => t !== null) as RegexTransformer[]
   if (exhaustive) {
     return transformers.every(transformer => {
       return matches(pr, transformer, 'rule')

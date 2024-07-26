@@ -19,7 +19,7 @@ export interface ReleaseNotesOptions {
   fetchReviewers: boolean // defines if the action should fetch the reviewers for PRs - approved reviewers are not included in the default PR listing
   fetchReleaseInformation: boolean // defines if the action should fetch the release information for the from and to tag - e.g. the creation date for the associated release
   fetchReviews: boolean // defines if the action should fetch the reviews for the PR.
-  commitMode: boolean // defines if we use the alternative commit based mode. note: this is only partially supported
+  mode: 'PR' | 'COMMIT' | 'HYBRID' // defines the mode used. note: the commit or hybrid modes are not fully supported
   configuration: Configuration // the configuration as defined in `configuration.ts`
   repositoryUtils: BaseRepository // the repository implementation used to generate the changelog
 }
@@ -46,7 +46,7 @@ export class ReleaseNotesBuilder {
     private fetchReviewers = false,
     private fetchReleaseInformation = false,
     private fetchReviews = false,
-    private commitMode = false,
+    private mode: 'PR' | 'COMMIT' | 'HYBRID' = 'PR',
     private exportCache = false,
     private exportOnly = false,
     private cache: string | null = null,
@@ -92,7 +92,7 @@ export class ReleaseNotesBuilder {
         this.fetchReviewers,
         this.fetchReleaseInformation,
         this.fetchReviews,
-        this.commitMode,
+        this.mode,
         this.configuration
       ).build()
 
@@ -110,7 +110,7 @@ export class ReleaseNotesBuilder {
         fetchReviewers: this.fetchReviewers,
         fetchReleaseInformation: this.fetchReleaseInformation,
         fetchReviews: this.fetchReviews,
-        commitMode: this.commitMode,
+        mode: this.mode,
         configuration: this.configuration,
         repositoryUtils: this.repositoryUtils
       }
@@ -164,7 +164,7 @@ export class ReleaseNotesBuilder {
         fetchReviewers: this.fetchReviewers || orgOptions.fetchReviewers,
         fetchReleaseInformation: this.fetchReleaseInformation || orgOptions.fetchReleaseInformation,
         fetchReviews: this.fetchReviews || orgOptions.fetchReviews,
-        commitMode: this.commitMode || orgOptions.commitMode,
+        mode: this.mode || orgOptions.mode,
         configuration: this.configuration || orgOptions.configuration,
         repositoryUtils: this.repositoryUtils || orgOptions.repositoryUtils
       }

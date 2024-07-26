@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import {mergeConfiguration, parseConfiguration, resolveConfiguration, retrieveRepositoryPath, writeOutput} from './utils'
+import {mergeConfiguration, parseConfiguration, resolveConfiguration, resolveMode, retrieveRepositoryPath, writeOutput} from './utils'
 import {ReleaseNotesBuilder} from './releaseNotesBuilder'
 import {Configuration} from './configuration'
 import {GithubRepository} from './repositories/GithubRepository'
@@ -37,22 +37,26 @@ async function run(): Promise<void> {
     if (configurationJson) {
       configJson = parseConfiguration(configurationJson)
       if (configJson) {
-        core.info(`ℹ️ Retreived configuration via 'configurationJson'.`)
+        core.info(`ℹ️ Retrieved configuration via 'configurationJson'.`)
       }
     }
     // read in the configuration from the file if possible
     const configurationFile: string = core.getInput('configuration')
     const configFile = resolveConfiguration(repositoryPath, configurationFile)
     if (configFile) {
-      core.info(`ℹ️ Retreived configuration via 'configuration' (via file).`)
+      core.info(`ℹ️ Retrieved configuration via 'configuration' (via file).`)
     }
 
     if (!configJson && !configFile) {
       core.info(`ℹ️ No configuration provided. Using Defaults.`)
     }
 
+    // mode of the action (PR, COMMIT, HYBRID)
+    const mode = resolveMode(core.getInput('mode'), core.getInput('commitMode') === 'true')
+    core.info(`ℹ️ Running in ${mode} mode.`)
+
     // merge configs, use default values from DefaultConfig on missing definition
-    const configuration = mergeConfiguration(configJson, configFile)
+    const configuration = mergeConfiguration(configJson, configFile, mode)
 
     // read in repository inputs
     const baseUrl = core.getInput('baseUrl')
@@ -70,7 +74,6 @@ async function run(): Promise<void> {
     const fetchReviewers = core.getInput('fetchReviewers') === 'true'
     const fetchReleaseInformation = core.getInput('fetchReleaseInformation') === 'true'
     const fetchReviews = core.getInput('fetchReviews') === 'true'
-    const commitMode = core.getInput('commitMode') === 'true'
     const exportCache = core.getInput('exportCache') === 'true'
     const exportOnly = core.getInput('exportOnly') === 'true'
     const cache = core.getInput('cache')
@@ -91,7 +94,7 @@ async function run(): Promise<void> {
       fetchReviewers,
       fetchReleaseInformation,
       fetchReviews,
-      commitMode,
+      mode,
       exportCache,
       exportOnly,
       cache,
@@ -108,6 +111,7 @@ async function run(): Promise<void> {
     }
   } catch (error: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
     core.setFailed(error.message)
+    core.error(`🔥 Failed to generate changelog due to ${JSON.stringify(error)}`)
   }
 }
 

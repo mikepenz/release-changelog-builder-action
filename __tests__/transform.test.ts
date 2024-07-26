@@ -4,8 +4,11 @@ import {Configuration, DefaultConfiguration} from '../src/configuration'
 import {PullRequestInfo} from '../src/pr-collector/pullRequests'
 import {DefaultDiffInfo} from '../src/pr-collector/commits'
 import {GithubRepository} from '../src/repositories/GithubRepository'
+import {clear} from '../src/transform'
+import {buildChangelogTest} from './utils'
 
 jest.setTimeout(180000)
+clear()
 
 const configuration = Object.assign({}, DefaultConfiguration)
 configuration.categories = [
@@ -150,7 +153,7 @@ it('Extract label from title, combined regex', async () => {
       on_property: 'title'
     }
   ]
-  expect(buildChangelogTest(configuration, mergedPullRequests)).toStrictEqual(
+  expect(buildChangelogTest(configuration, mergedPullRequests, repositoryUtils)).toStrictEqual(
     `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n\n`
   )
 })
@@ -166,7 +169,7 @@ it('Extract label from title and body, combined regex', async () => {
 
   let prs = Array.from(mergedPullRequests)
   prs.push(pullRequestWithLabelInBody)
-  expect(buildChangelogTest(configuration, prs)).toStrictEqual(
+  expect(buildChangelogTest(configuration, prs, repositoryUtils)).toStrictEqual(
     `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n- label in body\n   - PR: #5\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n\n`
   )
 })
@@ -184,7 +187,7 @@ it('Extract label from title, split regex', async () => {
       on_property: 'title'
     }
   ]
-  expect(buildChangelogTest(configuration, mergedPullRequests)).toStrictEqual(
+  expect(buildChangelogTest(configuration, mergedPullRequests, repositoryUtils)).toStrictEqual(
     `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
@@ -202,7 +205,7 @@ it('Extract label from title, match', async () => {
       method: 'match'
     }
   ]
-  expect(buildChangelogTest(configuration, mergedPullRequests)).toStrictEqual(
+  expect(buildChangelogTest(configuration, mergedPullRequests, repositoryUtils)).toStrictEqual(
     `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
@@ -215,7 +218,7 @@ it('Extract label from title, match multiple', async () => {
       method: 'match'
     }
   ]
-  expect(buildChangelogTest(configuration, mergedPullRequests)).toStrictEqual(
+  expect(buildChangelogTest(configuration, mergedPullRequests, repositoryUtils)).toStrictEqual(
     `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
@@ -229,7 +232,7 @@ it('Extract label from title, match multiple, custon non matching label', async 
       on_empty: '[Other]'
     }
   ]
-  expect(buildChangelogTest(configuration, mergedPullRequests)).toStrictEqual(
+  expect(buildChangelogTest(configuration, mergedPullRequests, repositoryUtils)).toStrictEqual(
     `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🧪 Others\n\n- [AB-404] - not found label\n   - PR: #4\n\n`
   )
 })
@@ -370,7 +373,7 @@ it('Match multiple labels exhaustive for category', async () => {
       exhaustive: true
     }
   ]
-  expect(buildChangelogTest(customConfig, pullRequestsWithLabels)).toStrictEqual(
+  expect(buildChangelogTest(customConfig, pullRequestsWithLabels, repositoryUtils)).toStrictEqual(
     `## 🚀 Features and 🐛 Issues\n\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
@@ -383,7 +386,7 @@ it('Deduplicate duplicated PRs', async () => {
     on_property: 'title',
     method: 'match'
   }
-  expect(buildChangelogTest(customConfig, pullRequestsWithLabels)).toStrictEqual(
+  expect(buildChangelogTest(customConfig, pullRequestsWithLabels, repositoryUtils)).toStrictEqual(
     `## 🚀 Features\n\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [ABC-4321] - this is a PR 2 title message\n   - PR: #2\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
@@ -397,7 +400,7 @@ it('Deduplicate duplicated PRs DESC', async () => {
     on_property: 'title',
     method: 'match'
   }
-  expect(buildChangelogTest(customConfig, pullRequestsWithLabels)).toStrictEqual(
+  expect(buildChangelogTest(customConfig, pullRequestsWithLabels, repositoryUtils)).toStrictEqual(
     `## 🚀 Features\n\n- [ABC-1234] - this is a PR 1 title message\n   - PR: #1\n\n## 🐛 Fixes\n\n- [ABC-4321] - this is a PR 2 title message\n   - PR: #2\n\n`
   )
 })
@@ -417,7 +420,7 @@ it('Reference PRs', async () => {
     method: 'replace',
     target: '$1'
   }
-  expect(buildChangelogTest(customConfig, pullRequestsWithLabels)).toStrictEqual(`1 -- 2\n4 -- \n3 -- \n\n`)
+  expect(buildChangelogTest(customConfig, pullRequestsWithLabels, repositoryUtils)).toStrictEqual(`1 -- 2\n4 -- \n3 -- \n\n`)
 })
 
 it('Use empty_content for empty category', async () => {
@@ -433,7 +436,7 @@ it('Use empty_content for empty category', async () => {
       labels: ['Feature']
     }
   ]
-  expect(buildChangelogTest(customConfig, pullRequestsWithLabels)).toStrictEqual(
+  expect(buildChangelogTest(customConfig, pullRequestsWithLabels, repositoryUtils)).toStrictEqual(
     `## 🚀 Features and 🐛 Issues\n\n- No PRs in this category\n\n## 🚀 Features\n\n- [ABC-1234] - this is a PR 1 title message\n   - PR: #1\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
@@ -454,7 +457,7 @@ it('Commit SHA-1 in commitMode', async () => {
     fetchReviewers: false,
     fetchReleaseInformation: false,
     fetchReviews: false,
-    commitMode: true,
+    mode: 'COMMIT',
     configuration: customConfig,
     repositoryUtils: repositoryUtils
   })
@@ -476,7 +479,7 @@ it('Release Diff', async () => {
     fetchReviewers: false,
     fetchReleaseInformation: true,
     fetchReviews: false,
-    commitMode: true,
+    mode: 'COMMIT',
     configuration: customConfig,
     repositoryUtils: repositoryUtils
   })
@@ -504,7 +507,7 @@ it('Use exclude labels to not include a PR within a category.', async () => {
       exclude_labels: ['Fix']
     }
   ]
-  expect(buildChangelogTest(customConfig, pullRequestsWithLabels)).toStrictEqual(
+  expect(buildChangelogTest(customConfig, pullRequestsWithLabels, repositoryUtils)).toStrictEqual(
     `## 🚀 Features and 🐛 Issues\n\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n## 🚀 Features and/or 🐛 Issues But No 🐛 Fixes\n\n- [ABC-1234] - this is a PR 1 title message\n   - PR: #1\n\n`
   )
 })
@@ -549,7 +552,7 @@ it('Extract custom placeholder from PR body and replace in global template', asy
     '#{{CHANGELOG}}\n\n#{{C_PLACEHOLER_2[2]}}\n\n#{{C_PLACEHOLER_2[*]}}#{{C_PLACEHOLDER_1[7]}}#{{C_PLACEHOLER_2[1493]}}#{{C_PLACEHOLER_4[*]}}#{{C_PLACEHOLER_4[0]}}#{{C_PLACEHOLER_3[1]}}'
   customConfig.pr_template = '#{{BODY}} ---->  #{{C_PLACEHOLDER_1}}#{{C_PLACEHOLER_3}}'
 
-  expect(buildChangelogTest(customConfig, mergedPullRequests)).toStrictEqual(
+  expect(buildChangelogTest(customConfig, mergedPullRequests, repositoryUtils)).toStrictEqual(
     `## 🚀 Features\n\nno magic body1 for this matter ---->  - body1body1\nno magic body3 for this matter ---->  - body3\n\n## 🐛 Fixes\n\nno magic body2 for this matter ---->  - body2\nno magic body3 for this matter ---->  - body3\n\n## 🧪 Others\n\nno magic body4 for this matter ---->  - body4\n\n\n\n\n- ody3\n\n\n- ody1\n- ody2\n- ody3\n- ody4`
   )
 })
@@ -574,7 +577,7 @@ it('Use Rules to include a PR within a Category.', async () => {
       exhaustive: true
     }
   ]
-  expect(buildChangelogTest(customConfig, pullRequestsWithLabels)).toStrictEqual(
+  expect(buildChangelogTest(customConfig, pullRequestsWithLabels, repositoryUtils)).toStrictEqual(
     `## 🚀 Features But No 🐛 Fixes and only merged with a title containing \`[ABC-1234]\`\n\n- [ABC-1234] - this is a PR 1 title message\n   - PR: #1\n\n`
   )
 })
@@ -595,7 +598,9 @@ it('Use Rules to get all open PRs in a Category.', async () => {
       ]
     }
   ]
-  expect(buildChangelogTest(customConfig, prs)).toStrictEqual(`## Open PRs only\n\n- Still pending open pull request\n   - PR: #6\n\n`)
+  expect(buildChangelogTest(customConfig, prs, repositoryUtils)).toStrictEqual(
+    `## Open PRs only\n\n- Still pending open pull request\n   - PR: #6\n\n`
+  )
 })
 
 it('Use Rules to get current open PR and merged categorised.', async () => {
@@ -633,7 +638,7 @@ it('Use Rules to get current open PR and merged categorised.', async () => {
     }
   ]
 
-  expect(buildChangelogTest(customConfig, prs)).toStrictEqual(
+  expect(buildChangelogTest(customConfig, prs, repositoryUtils)).toStrictEqual(
     `## 🚀 Features\n\n- [ABC-1234] - this is a PR 1 title message\n   - PR: #1\n- Still pending open pull request (Current)\n   - PR: #6\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Issues\n\n- [ABC-4321] - this is a PR 2 title message\n   - PR: #2\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
@@ -665,24 +670,7 @@ it('Use Rules to get all open PRs in one Category and merged categorised.', asyn
       exhaustive: true
     }
   ]
-  expect(buildChangelogTest(customConfig, prs)).toStrictEqual(
+  expect(buildChangelogTest(customConfig, prs, repositoryUtils)).toStrictEqual(
     `## Open PRs only\n\n- Still pending open pull request\n   - PR: #6\n\n## 🚀 Features and 🐛 Issues\n\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
-
-function buildChangelogTest(config: Configuration, prs: PullRequestInfo[]): string {
-  return buildChangelog(DefaultDiffInfo, prs, {
-    owner: 'mikepenz',
-    repo: 'test-repo',
-    fromTag: {name: '1.0.0'},
-    toTag: {name: '2.0.0'},
-    includeOpen: false,
-    failOnError: false,
-    fetchReviewers: false,
-    fetchReleaseInformation: false,
-    fetchReviews: false,
-    commitMode: false,
-    configuration: config,
-    repositoryUtils: repositoryUtils
-  })
-}

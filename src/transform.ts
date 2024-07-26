@@ -10,12 +10,17 @@ import {
   sortPullRequests
 } from './pr-collector/pullRequests'
 import {DiffInfo} from './pr-collector/commits'
-import {validateTransformer} from './pr-collector/regexUtils'
-import {RegexTransformer, Transformer} from './pr-collector/types'
+import {transformStringToOptionalValue, transformStringToValues, validateRegex} from './pr-collector/regexUtils'
+import {Regex, RegexTransformer} from './pr-collector/types'
 import {ReleaseNotesOptions} from './releaseNotesBuilder'
 import {matchesRules} from './regexUtils'
 
 const EMPTY_MAP = new Map<string, string>()
+let CLEAR = false
+
+export function clear(): void {
+  CLEAR = true
+}
 
 export interface PullRequestData extends PullRequestInfo {
   childPrs?: PullRequestInfo[]
@@ -40,7 +45,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
 
   // establish parent child PR relations
   if (config.reference !== undefined) {
-    const reference = validateTransformer(config.reference)
+    const reference = validateRegex(config.reference)
     if (reference !== null) {
       core.info(`ℹ️ Identifying PR references using \`reference\``)
 
@@ -77,14 +82,14 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
 
   // drop duplicate pull requests
   if (config.duplicate_filter !== undefined) {
-    const extractor = validateTransformer(config.duplicate_filter)
+    const extractor = validateRegex(config.duplicate_filter)
     if (extractor !== null) {
       core.info(`ℹ️ Remove duplicated pull requests using \`duplicate_filter\``)
 
       const deduplicatedMap = new Map<string, PullRequestInfo>()
       const unmatched: PullRequestInfo[] = []
       for (const pr of prs) {
-        const extracted = extractValues(pr, extractor, 'dupliate_filter')
+        const extracted = extractValues(pr, extractor, 'duplicate_filter')
         if (extracted !== null && extracted.length > 0) {
           deduplicatedMap.set(extracted[0], pr)
         } else {
@@ -111,7 +116,6 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
         for (const label of extracted) {
           pr.labels.push(label)
         }
-
         if (core.isDebug()) {
           core.debug(`    Extracted the following labels (${JSON.stringify(extracted)}) for PR ${pr.number}`)
         }
@@ -136,21 +140,24 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
   core.info(`✒️ Wrote messages for ${prs.length} pull requests`)
 
   // bring PRs into the order of categories
-  const categorized = new Map<Category, string[]>()
   const categories = config.categories
   const ignoredLabels = config.ignore_labels
 
-  for (const category of categories) {
-    categorized.set(category, [])
-  }
-
+  const flatCategories = flatten(config.categories)
   const categorizedPrs: string[] = []
   const ignoredPrs: string[] = []
   const openPrs: string[] = []
   const uncategorizedPrs: string[] = []
 
+  // set-up the category object
+  for (const category of flatCategories) {
+    if (CLEAR || !category.entries) {
+      category.entries = []
+    }
+  }
+
   // bring elements in order
-  for (const [pr, body] of transformedMap) {
+  prLoop: for (const [pr, body] of transformedMap) {
     if (
       haveCommonElementsArr(
         ignoredLabels.map(lbl => lbl.toLocaleLowerCase('en')),
@@ -166,67 +173,18 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
     }
 
     let matchedOnce = false // in case we matched once at least, the PR can't be uncategorized
-    for (const [category, pullRequests] of categorized) {
-      let matched = false // check if we matched within the given category
-      // check if any exclude label matches
-      if (category.exclude_labels !== undefined) {
-        if (
-          haveCommonElementsArr(
-            category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')),
-            pr.labels
-          )
-        ) {
-          if (core.isDebug()) {
-            const excludeLabels = JSON.stringify(category.exclude_labels)
-            core.debug(`    PR ${pr.number} with labels: ${pr.labels} excluded from category via exclude label: ${excludeLabels}`)
-          }
-          continue // one of the exclude labels matched, skip the PR for this category
-        }
-      }
-
-      // in case we have exhaustive matching enabled, and have labels and/or rules
-      // validate for an exhaustive match (e.g. every provided rule applies)
-      if (category.exhaustive === true && (category.labels !== undefined || category.rules !== undefined)) {
-        if (category.labels !== undefined) {
-          matched = haveEveryElementsArr(
-            category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
-            pr.labels
-          )
-        }
-        let exhaustive_rules = true
-        if (category.exhaustive_rules !== undefined) {
-          exhaustive_rules = category.exhaustive_rules
-        }
-        if ((matched || category.labels === undefined) && category.rules !== undefined) {
-          matched = matchesRules(category.rules, pr, exhaustive_rules)
-        }
-      } else {
-        // if not exhaustive, do individual matches
-        if (category.labels !== undefined) {
-          // check if either any of the labels applies
-          matched = haveCommonElementsArr(
-            category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
-            pr.labels
-          )
-        }
-        let exhaustive_rules = false
-        if (category.exhaustive_rules !== undefined) {
-          exhaustive_rules = category.exhaustive_rules
-        }
-        if (!matched && category.rules !== undefined) {
-          // if no label did apply, check if any rule applies
-          matched = matchesRules(category.rules, pr, exhaustive_rules)
-        }
-      }
-      if (matched) {
-        pullRequests.push(body) // if matched add the PR to the list
+    for (const category of categories) {
+      const [matched, consumed] = recursiveCategorizePr(category, pr, body)
+      if (consumed) {
+        continue prLoop
       }
       matchedOnce = matchedOnce || matched
     }
 
     if (!matchedOnce) {
       // we allow to have pull requests included in an "uncategorized" category
-      for (const [category, pullRequests] of categorized) {
+      for (const category of flatCategories) {
+        const pullRequests = category.entries || []
         if ((category.labels === undefined || category.labels.length === 0) && category.rules === undefined) {
           // check if any exclude label matches for the "uncategorized" category
           if (category.exclude_labels !== undefined) {
@@ -260,30 +218,17 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
   core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`)
 
   // serialize and provide the categorized content as json
-  const transformedCategorized = Array.from(categorized).reduce(
-    (obj, [key, value]) => Object.assign(obj, {[key.key || key.title]: value}),
-    {}
-  )
+  const transformedCategorized = {}
+  for (const category of flatCategories) {
+    Object.assign(transformedCategorized, {[category.key || category.title]: category.entries})
+  }
   core.setOutput('categorized', JSON.stringify(transformedCategorized))
 
   // construct final changelog
   let changelog = ''
-  for (const [category, pullRequests] of categorized) {
-    if (pullRequests.length > 0) {
-      if (category.title) {
-        changelog = `${changelog + category.title}\n\n`
-      }
-
-      for (const pr of pullRequests) {
-        changelog = `${changelog + pr}\n`
-      }
-      changelog = `${changelog}\n` // add space between sections
-    } else if (category.empty_content !== undefined) {
-      if (category.title) {
-        changelog = `${changelog + category.title}\n\n`
-      }
-      changelog = `${changelog + category.empty_content}\n\n`
-    }
+  for (const category of flatCategories) {
+    const pullRequests = category.entries || []
+    changelog = attachCategoryChangelog(changelog, category, pullRequests)
   }
   core.info(`✒️ Wrote ${categorizedPrs.length} categorized pull requests down`)
   if (core.isDebug()) {
@@ -330,12 +275,25 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
   }
   core.info(`✒️ Wrote ${ignoredPrs.length} ignored pull requests down`)
 
+  // collect all contributors
+  const contributorsSet: Set<String> = new Set()
+  for (const pr of prs) {
+    contributorsSet.add(`@${pr.author}`)
+  }
+  const contributorsArray = Array.from(contributorsSet)
+  const contributorsString = contributorsArray.join(', ')
+  const externalContributorString = contributorsArray.filter(value => value !== options.owner).join(', ')
+  core.setOutput('contributors', JSON.stringify(contributorsSet))
+
   // fill template
   const placeholderMap = new Map<string, string>()
   placeholderMap.set('CHANGELOG', changelog)
   placeholderMap.set('UNCATEGORIZED', changelogUncategorized)
   placeholderMap.set('OPEN', changelogOpen)
   placeholderMap.set('IGNORED', changelogIgnored)
+  // fill special collected contributors
+  placeholderMap.set('CONTRIBUTORS', contributorsString)
+  placeholderMap.set('EXTERNAL_CONTRIBUTORS', externalContributorString)
   // fill other placeholders
   placeholderMap.set('CATEGORIZED_COUNT', categorizedPrs.length.toString())
   placeholderMap.set('UNCATEGORIZED_COUNT', uncategorizedPrs.length.toString())
@@ -357,6 +315,109 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
   core.info(`ℹ️ Filled template`)
   core.endGroup()
   return transformedChangelog
+}
+
+function recursiveCategorizePr(category: Category, pr: PullRequestInfo, body: string): boolean[] {
+  let matched = false
+  let consumed = false
+
+  const matchesParent = categorizePr(category, pr)
+
+  // only do children if parent also matches
+  if (category.categories && matchesParent) {
+    for (const childCategory of category.categories) {
+      const [childMatched, childConsumed] = recursiveCategorizePr(childCategory, pr, body)
+      matched = matched || childMatched // at least one time it matched
+      consumed = childConsumed
+    }
+  }
+
+  // if consumed we don't handle it anymore, as it was matched in a child, don't handle anymore
+  if (!consumed && !matched) {
+    const pullRequests = category.entries || []
+    matched = matchesParent
+    if (matched) {
+      pullRequests.push(body) // if matched add the PR to the list
+    }
+  }
+  if (matched && category.consume) {
+    consumed = true
+  }
+  return [matched, consumed]
+}
+
+function categorizePr(category: Category, pr: PullRequestInfo): boolean {
+  let matched = false // check if we matched within the given category
+  // check if any exclude label matches
+  if (category.exclude_labels !== undefined) {
+    if (
+      haveCommonElementsArr(
+        category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')),
+        pr.labels
+      )
+    ) {
+      if (core.isDebug()) {
+        const excludeLabels = JSON.stringify(category.exclude_labels)
+        core.debug(`    PR ${pr.number} with labels: ${pr.labels} excluded from category via exclude label: ${excludeLabels}`)
+      }
+      return false // one of the exclude labels matched, skip the PR for this category
+    }
+  }
+
+  // in case we have exhaustive matching enabled, and have labels and/or rules
+  // validate for an exhaustive match (e.g. every provided rule applies)
+  if (category.exhaustive === true && (category.labels !== undefined || category.rules !== undefined)) {
+    if (category.labels !== undefined) {
+      matched = haveEveryElementsArr(
+        category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
+        pr.labels
+      )
+    }
+    let exhaustive_rules = true
+    if (category.exhaustive_rules !== undefined) {
+      exhaustive_rules = category.exhaustive_rules
+    }
+    if ((matched || category.labels === undefined) && category.rules !== undefined) {
+      matched = matchesRules(category.rules, pr, exhaustive_rules)
+    }
+  } else {
+    // if not exhaustive, do individual matches
+    if (category.labels !== undefined) {
+      // check if either any of the labels applies
+      matched = haveCommonElementsArr(
+        category.labels.map(lbl => lbl.toLocaleLowerCase('en')),
+        pr.labels
+      )
+    }
+    let exhaustive_rules = false
+    if (category.exhaustive_rules !== undefined) {
+      exhaustive_rules = category.exhaustive_rules
+    }
+    if (!matched && category.rules !== undefined) {
+      // if no label did apply, check if any rule applies
+      matched = matchesRules(category.rules, pr, exhaustive_rules)
+    }
+  }
+  return matched
+}
+
+function attachCategoryChangelog(changelog: string, category: Category, pullRequests: string[]): string {
+  if (pullRequests.length > 0 || hasChildWithEntries(category)) {
+    if (category.title) {
+      changelog = `${changelog + category.title}\n\n`
+    }
+
+    for (const pr of pullRequests) {
+      changelog = `${changelog + pr}\n`
+    }
+    changelog = `${changelog}\n` // add space between sections
+  } else if (category.empty_content !== undefined) {
+    if (category.title) {
+      changelog = `${changelog + category.title}\n\n`
+    }
+    changelog = `${changelog + category.empty_content}\n\n`
+  }
+  return changelog
 }
 
 export function replaceEmptyTemplate(template: string, options: ReleaseNotesOptions): string {
@@ -461,11 +522,12 @@ function handlePlaceholder(
   const phs = placeholders.get(key)
   if (phs) {
     for (const placeholder of phs) {
-      const transformer = validateTransformer(placeholder.transformer)
+      const transformer = validateRegex(placeholder.transformer)
       if (transformer?.pattern) {
-        const extractedValue = value.replace(transformer.pattern, transformer.target)
+        const extractedValue = transformStringToOptionalValue(value, transformer)
         // note: `.replace` will return the full string again if there was no match
-        if (extractedValue && (extractedValue !== value || (extractedValue === value && value.match(transformer.pattern)))) {
+        // note: This is mostly backwards compatibility
+        if (extractedValue && ((transformer.method && transformer.method !== 'replace') || extractedValue !== value)) {
           if (placeholderPrMap) {
             createOrSet(placeholderPrMap, placeholder.name, extractedValue)
           }
@@ -475,7 +537,7 @@ function handlePlaceholder(
           )
 
           if (core.isDebug()) {
-            core.debug(`    Custom Placeholder successfully matched data - ${extractValues} (${placeholder.name})`)
+            core.debug(`    Custom Placeholder successfully matched data - ${extractedValue} (${placeholder.name})`)
           }
         } else if (core.isDebug() && extractedValue === value) {
           core.debug(`    Custom Placeholder did result in the full original value returned. Skipping. (${placeholder.name})`)
@@ -580,11 +642,11 @@ function transform(filled: string, transformers: RegexTransformer[]): string {
   return transformed
 }
 
-function validateTransformers(specifiedTransformers: Transformer[]): RegexTransformer[] {
+function validateTransformers(specifiedTransformers: Regex[]): RegexTransformer[] {
   const transformers = specifiedTransformers
   return transformers
     .map(transformer => {
-      return validateTransformer(transformer)
+      return validateRegex(transformer)
     })
     .filter(transformer => transformer?.pattern != null)
     .map(transformer => {
@@ -619,20 +681,31 @@ function extractValuesFromString(value: string, extractor: RegexTransformer): st
   if (extractor.pattern == null) {
     return null
   }
-
-  if (extractor.method === 'match') {
-    const lables = value.match(extractor.pattern)
-    if (lables !== null && lables.length > 0) {
-      return lables.map(label => label?.toLocaleLowerCase('en') || '')
-    }
+  const transformed = transformStringToValues(value, extractor)
+  if (transformed) {
+    return transformed.map(val => val?.toLocaleLowerCase('en') || '')
   } else {
-    const label = value.replace(extractor.pattern, extractor.target)
-    if (label !== '') {
-      return [label.toLocaleLowerCase('en')]
-    }
+    return null
   }
-  if (extractor.onEmpty !== undefined) {
-    return [extractor.onEmpty.toLocaleLowerCase('en')]
+}
+
+function flatten(categories?: Category[]): Category[] {
+  if (!categories) {
+    return []
   }
-  return null
+  return categories.reduce(function (r: Category[], i) {
+    return r.concat([i]).concat(flatten(i.categories))
+  }, [])
+}
+
+function hasChildWithEntries(category: Category): boolean {
+  const categories = category.categories
+  if (!categories || categories.length === 0) {
+    return (category.entries?.length || 0) > 0
+  }
+  let hasEntries = false
+  for (const cat of categories) {
+    hasEntries = hasEntries || hasChildWithEntries(cat)
+  }
+  return hasEntries
 }

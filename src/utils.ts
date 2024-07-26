@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import * as fs from 'fs'
 import * as path from 'path'
-import {Configuration, DefaultConfiguration} from './configuration'
+import {Configuration, DefaultCommitConfiguration, DefaultConfiguration} from './configuration'
 import moment from 'moment'
 import {DiffInfo} from './pr-collector/commits'
 import {PullRequestInfo} from './pr-collector/pullRequests'
@@ -117,6 +117,24 @@ export function checkExportedData(exportCache: boolean, cacheInput: string | nul
   }
 }
 
+export function resolveMode(mode: string | undefined, commitMode: boolean): 'PR' | 'COMMIT' | 'HYBRID' {
+  if (commitMode === false || mode === undefined) {
+    if (commitMode === true) {
+      return 'COMMIT'
+    } else {
+      return 'PR'
+    }
+  } else {
+    const upperCaseMode = mode.toUpperCase()
+    if (upperCaseMode === 'COMMIT') {
+      return 'COMMIT'
+    } else if (upperCaseMode === 'HYBRID') {
+      return 'HYBRID'
+    }
+  }
+  return 'PR'
+}
+
 /**
  * Retrieves the configuration given the file path, if not found it will fallback to the `DefaultConfiguration`
  */
@@ -161,7 +179,7 @@ function readConfiguration(filename: string): Configuration | undefined {
  */
 export function parseConfiguration(config: string): Configuration | undefined {
   try {
-    // for compatiblity with the `yml` file we require to use `#{{}}` instead of `${{}}` - replace it here.
+    // for compatibility with the `yml` file we require to use `#{{}}` instead of `${{}}` - replace it here.
     const configurationJSON: Configuration = JSON.parse(config.replace(/\${{/g, '#{{'))
     return configurationJSON
   } catch (error) {
@@ -173,25 +191,32 @@ export function parseConfiguration(config: string): Configuration | undefined {
 /**
  * Merges the configurations, will fallback to the DefaultConfiguration value
  */
-export function mergeConfiguration(jc?: Configuration, fc?: Configuration): Configuration {
+export function mergeConfiguration(jc?: Configuration, fc?: Configuration, mode?: 'PR' | 'COMMIT' | 'HYBRID'): Configuration {
+  let def: Configuration
+  if (mode === 'COMMIT') {
+    def = DefaultCommitConfiguration
+  } else {
+    def = DefaultConfiguration
+  }
+
   return {
-    max_tags_to_fetch: jc?.max_tags_to_fetch || fc?.max_tags_to_fetch || DefaultConfiguration.max_tags_to_fetch,
-    max_pull_requests: jc?.max_pull_requests || fc?.max_pull_requests || DefaultConfiguration.max_pull_requests,
-    max_back_track_time_days: jc?.max_back_track_time_days || fc?.max_back_track_time_days || DefaultConfiguration.max_back_track_time_days,
-    exclude_merge_branches: jc?.exclude_merge_branches || fc?.exclude_merge_branches || DefaultConfiguration.exclude_merge_branches,
-    sort: jc?.sort || fc?.sort || DefaultConfiguration.sort,
-    template: jc?.template || fc?.template || DefaultConfiguration.template,
-    pr_template: jc?.pr_template || fc?.pr_template || DefaultConfiguration.pr_template,
-    empty_template: jc?.empty_template || fc?.empty_template || DefaultConfiguration.empty_template,
-    categories: jc?.categories || fc?.categories || DefaultConfiguration.categories,
-    ignore_labels: jc?.ignore_labels || fc?.ignore_labels || DefaultConfiguration.ignore_labels,
-    label_extractor: jc?.label_extractor || fc?.label_extractor || DefaultConfiguration.label_extractor,
-    duplicate_filter: jc?.duplicate_filter || fc?.duplicate_filter || DefaultConfiguration.duplicate_filter,
-    transformers: jc?.transformers || fc?.transformers || DefaultConfiguration.transformers,
-    tag_resolver: jc?.tag_resolver || fc?.tag_resolver || DefaultConfiguration.tag_resolver,
-    base_branches: jc?.base_branches || fc?.base_branches || DefaultConfiguration.base_branches,
-    custom_placeholders: jc?.custom_placeholders || fc?.custom_placeholders || DefaultConfiguration.custom_placeholders,
-    trim_values: jc?.trim_values || fc?.trim_values || DefaultConfiguration.trim_values
+    max_tags_to_fetch: jc?.max_tags_to_fetch || fc?.max_tags_to_fetch || def.max_tags_to_fetch,
+    max_pull_requests: jc?.max_pull_requests || fc?.max_pull_requests || def.max_pull_requests,
+    max_back_track_time_days: jc?.max_back_track_time_days || fc?.max_back_track_time_days || def.max_back_track_time_days,
+    exclude_merge_branches: jc?.exclude_merge_branches || fc?.exclude_merge_branches || def.exclude_merge_branches,
+    sort: jc?.sort || fc?.sort || def.sort,
+    template: jc?.template || fc?.template || def.template,
+    pr_template: jc?.pr_template || fc?.pr_template || def.pr_template,
+    empty_template: jc?.empty_template || fc?.empty_template || def.empty_template,
+    categories: jc?.categories || fc?.categories || def.categories,
+    ignore_labels: jc?.ignore_labels || fc?.ignore_labels || def.ignore_labels,
+    label_extractor: jc?.label_extractor || fc?.label_extractor || def.label_extractor,
+    duplicate_filter: jc?.duplicate_filter || fc?.duplicate_filter || def.duplicate_filter,
+    transformers: jc?.transformers || fc?.transformers || def.transformers,
+    tag_resolver: jc?.tag_resolver || fc?.tag_resolver || def.tag_resolver,
+    base_branches: jc?.base_branches || fc?.base_branches || def.base_branches,
+    custom_placeholders: jc?.custom_placeholders || fc?.custom_placeholders || def.custom_placeholders,
+    trim_values: jc?.trim_values || fc?.trim_values || def.trim_values
   }
 }
 
