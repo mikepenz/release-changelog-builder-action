@@ -74,7 +74,7 @@ export class GiteaRepository extends BaseRepository {
       mergeCommitSha: pr.merge_commit_sha || '',
       author: pr.user?.login || '',
       repoName: pr.base?.repo?.full_name || '',
-      labels: pr.labels?.map(label => label.name) as string[],
+      labels: pr.labels?.map(label => label.name?.toLowerCase()) as string[],
       milestone: pr.milestone?.title || '',
       body: pr.body || '',
       assignees: pr.assignees?.map(user => user.full_name) as string[],
