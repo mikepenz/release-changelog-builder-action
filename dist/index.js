@@ -1946,7 +1946,7 @@ class GiteaRepository extends BaseRepository_1.BaseRepository {
             mergeCommitSha: pr.merge_commit_sha || '',
             author: ((_c = pr.user) === null || _c === void 0 ? void 0 : _c.login) || '',
             repoName: ((_e = (_d = pr.base) === null || _d === void 0 ? void 0 : _d.repo) === null || _e === void 0 ? void 0 : _e.full_name) || '',
-            labels: (_f = pr.labels) === null || _f === void 0 ? void 0 : _f.map(label => label.name),
+            labels: (_f = pr.labels) === null || _f === void 0 ? void 0 : _f.map(label => { var _a; return (_a = label.name) === null || _a === void 0 ? void 0 : _a.toLowerCase(); }),
             milestone: ((_g = pr.milestone) === null || _g === void 0 ? void 0 : _g.title) || '',
             body: pr.body || '',
             assignees: (_h = pr.assignees) === null || _h === void 0 ? void 0 : _h.map(user => user.full_name),
