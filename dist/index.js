@@ -3296,15 +3296,10 @@ function checkExportedData(exportCache, cacheInput) {
     }
 }
 function resolveMode(mode, commitMode) {
-    if (commitMode === false || mode === undefined) {
-        if (commitMode === true) {
-            return 'COMMIT';
-        }
-        else {
-            return 'PR';
-        }
+    if (commitMode === true) {
+        return 'COMMIT';
     }
-    else {
+    if (mode !== undefined) {
         const upperCaseMode = mode.toUpperCase();
         if (upperCaseMode === 'COMMIT') {
             return 'COMMIT';
