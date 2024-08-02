@@ -6,7 +6,7 @@
 </h1>
 
 <p align="center">
-    ... a GitHub action that builds your release notes / changelog fast, easy and exactly the way you want.
+    ... a GitHub action that builds your release notes / changelog fast simple and exactly the way you want.
 </p>
 
 <div align="center">
@@ -67,10 +67,10 @@ Specify the action as part of your GitHub actions workflow:
 Below is a complete example showcasing how to define a build, which is executed when tagging the project. It consists of:
 - Prepare tag, via the GITHUB_REF environment variable
 - Build changelog, given the tag
-- Create release on GitHub - specifying body with constructed changelog
+- Create a release on GitHub - specifying body with a constructed changelog
 
 > [!NOTE]  
-> Pre v4 PRs will only show up in the changelog if assigned one of the default label categories "feature", "fix" or "test". Starting with v4 these PRs will be in the `Uncategorized` section. 
+> Pre v4 PRs will only show up in the changelog if assigned one of the default label categories "feature", "fix" or "test". Starting with v4 these PRs will be in the `Uncategorized` section.
 
 <details><summary><b>Example</b></summary>
 <p>
@@ -89,7 +89,7 @@ jobs:
     steps:
       - name: Build Changelog
         id: github_release
-        uses: mikepenz/release-changelog-builder-action@v4
+        uses: mikepenz/release-changelog-builder-action@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -112,7 +112,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Build Changelog
-        uses: mikepenz/release-changelog-builder-action@v4
+        uses: mikepenz/release-changelog-builder-action@v5
         with:
           configurationJson: |
             {
@@ -146,7 +146,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Build Changelog
-        uses: mikepenz/release-changelog-builder-action@v4
+        uses: mikepenz/release-changelog-builder-action@v5
         with:
           commitMode: true
           configurationJson: |
@@ -186,7 +186,7 @@ This example defines a regex to extract the label from the commit message. Handl
 
 ### Action inputs
 
-Depending on the usecase additional settings can be provided to the action
+Depending on the use-case additional settings can be provided to the action
 
 ```yml
 - name: "Complex Configuration"
@@ -221,13 +221,13 @@ Depending on the usecase additional settings can be provided to the action
 | `includeOpen`             | Enables to also fetch currently open PRs. Default: false                                                                                                                    |
 | `ignorePreReleases`       | Allows to ignore pre-releases for changelog generation (E.g. for 1.0.1... 1.0.0-rc02 <- ignore, 1.0.0 <- pick). Only used if `fromTag` was not specified. Default: false    |
 | `failOnError`             | Defines if the action will result in a build failure if problems occurred. Default: false                                                                                   |
-| `fetchViaCommits`          | Enables PRs to get fetched via the commits identified between from->to tag. This will do 1 API request per commit -> Best for scenarios with squash merges | Or shorter from->to diffs (< 10 commits) | Also effective for shorters diffs for very old PRs. Default: false                                                                                                |
+| `fetchViaCommits`         | Enables PRs to get fetched via the commits identified between from->to tag. This will do 1 API request per commit -> Best for scenarios with squash merges                  | Or shorter from->to diffs (< 10 commits) | Also effective for shorters diffs for very old PRs. Default: false                                                                                                |
 | `fetchReviewers`          | Will enable fetching the users/reviewers who approved the PR. Default: false                                                                                                |
 | `fetchReleaseInformation` | Will enable fetching additional release information from tags. Default: false                                                                                               |
 | `fetchReviews`            | Will enable fetching the reviews on of the PR. Default: false                                                                                                               |
 | `commitMode`              | Special configuration for projects which work without PRs. Uses commit messages as changelog. This mode looses access to information only available for PRs. Default: false |
 | `exportCache`             | Will enable exporting the fetched PR information to a cache, which can be re-used by later runs. Default: false                                                             |
-| `exportOnly`              | When enabled, will result in only exporting the cache, without genearting a changelog. Default: false (Requires `exportCache` to be enabled)                                |
+| `exportOnly`              | When enabled, will result in only exporting the cache, without generating a changelog. Default: false (Requires `exportCache` to be enabled)                                |
 | `cache`                   | The file path to write/read the cache to/from.                                                                                                                              |
 
 > [!WARNING]  
@@ -274,9 +274,9 @@ A full set list of possible output values for this action.
 > When running this action for non tags trigger the `toTag` will be automatically resolved using the latest tag as retrieved by the git API.
 
 > [!NOTE]  
-> The first release tag is a special case since there is no previous release the action can reference to. For this case, there are 2 options:
+> The first release tag is a special case since there is no previous release the action can reference to. For this case, there are two options:
 > 1. When checking out the source via `git` (E.g.: `actions/checkout`), the action will use the first commit.
-> 2. Create a initial tag on the commit you want to begin a changelog from (for example `v0.0.1`).
+> 2. Create an initial tag on the commit you want to begin a changelog from (for example `v0.0.1`).
 
 > [!NOTE]  
 > By default not specifying `fromTag` or `toTag` will resolve `toTag` from either the `ref` or alternatively fallback to the latest tag from the git API. `fromTag` is resolved by sorting tags using [semver](https://semver.org/). Check the [configuration](#configuration-specification) for alternatives.
@@ -286,17 +286,14 @@ A full set list of possible output values for this action.
 
 ### Configuration
 
-The action supports flexible and extensive configuration options, to finetune it for the specific projects needs. To do so provide the configuration either directly to the step via `configurationJson` or as file via the `configuration`. 
-
-</p>
-</details>
+The action supports flexible and extensive configuration options to fine-tune it for the specific projects needs. To do so provide the configuration either directly to the step via `configurationJson` or as file via the `configuration`.
 
 <details><summary><b>Configuration in .yml</b></summary>
 <p>
 
 ```yml
 - name: Build Changelog
-  uses: mikepenz/release-changelog-builder-action@v4
+  uses: mikepenz/release-changelog-builder-action@v5
   with:
     configurationJson: |
       {
@@ -309,10 +306,6 @@ The action supports flexible and extensive configuration options, to finetune it
         ]
       }
 ```
-
-</p>
-</details>
-
 
 </p>
 </details>
@@ -337,9 +330,9 @@ The action supports flexible and extensive configuration options, to finetune it
 > Defaults for the configuration can be found in the [configuration.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts)
 
 > [!NOTE]  
-> It is possible to provide the configuration as file and as json via the yml file. The order of config values used: `configurationJson` > `configuration` > `DefaultConfiguration`. 
+> It is possible to provide the configuration as file and as json via the yml file. The order of config values used: `configurationJson` > `configuration` > `DefaultConfiguration`.
 
-The configuration is a `JSON` in the following format. (The below showcases *example* configurations for all possible options. In most scenarios most of the settings will not be needed, and the defaults will be appropiate.)
+The configuration is a `JSON` in the following format. (The below showcases *example* configurations for all possible options. In most scenarios most of the settings will not be needed, and the defaults will be appropriate.)
 
 ```json
 {
@@ -491,7 +484,7 @@ Table of supported placeholders allowed to be used in the `pr_template` configur
 | `#{{APPROVERS}}`  | GitHub Login names of users who approved the PR, joined by `,`.                                    |
 
 > [!IMPORTANT]  
-> `v4` updates the default placeholders format to `#{{}}`. The old format `${{}}` will be supported until v5 for backwards compatiblity.
+> `v4` updates the default placeholders format to `#{{}}`. The old format `${{}}` will be supported until v5 for backwards compatibility.
 
 <details><summary><b>Array Placeholders</b></summary>
 <p>
@@ -517,10 +510,10 @@ For example: `REVIEWS[*].author` or `REVIEWS[*].body`
 | `#{{REVIEWS[*].author}}`      | GitHub Login names of specified reviewers. |
 | `#{{REVIEWS[*].body}}`        | The body of the review.                    |
 | `#{{REVIEWS[*].htmlURL}}`     | The URL to the given review.               |
-| `#{{REVIEWS[*].submittedAt}}` | The date whent he review was submitted.    |
+| `#{{REVIEWS[*].submittedAt}}` | The date went he review was submitted.     |
 | `#{{REVIEWS[*].state}}`       | The state of the given review.             |
 
-Similar to `REVIEWS`, `REFERENCED` PRs also offer special placeholders. 
+Similar to `REVIEWS`, `REFERENCED` PRs also offer special placeholders.
 
 | **Placeholder**               | **Description**                                                           |
 |-------------------------------|---------------------------------------------------------------------------|
@@ -535,58 +528,55 @@ Similar to `REVIEWS`, `REFERENCED` PRs also offer special placeholders.
 
 Table of descriptions for the `configuration.json` options to configure the resulting release notes / changelog.
 
-| **Input**                   | **Description**                                                                                                                                                                                                                    |
-|-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| categories                  | An array of `category` specifications, offering a flexible way to group changes into categories.                                                                                                                                   |
-| category.key                | Optional key used for the `categorized` json output.                                                                                                                                                                               |
-| category.title              | The display name of a category in the changelog.                                                                                                                                                                                   |
-| category.labels             | An array of labels, to match pull request labels against. If any PR label matches any category label, the pull request will show up under this category. (See `exhaustive` to change this)                                         |
-| category.exclude_labels     | Similar to `labels`, an array of labels to match PRs against, but if a match occurs the PR is excluded from this category.                                                                                                         |
-| category.exhaustive         | Will require all labels defined within this category to be present on the matching PR.                                                                                                                                             |
-| category.exhaustive_rules   | Will require all rules defined within this category to be valid on the matching PR. If not defined, defaults to the value of `exhaustive`                                                                                          |
-| category.empty_content      | If the category has no matching PRs, this content will be used. When not set, the category will be skipped in the changelog.                                                                                                       |
-| category.rules              | An array of `rules` used to match PRs against. Any match will include the PR. (See `exhaustive` to change this)                                                                                                                    |
-| category.rules.pattern      | A `regex` pattern to match the property value towards. Uses `RegExp.test("val")`                                                                                                                                                   |
-| category.rules.flags        | Defines the regex flags specified for the pattern. Default: `gu`.                                                                                                                                                                  |
-| category.rules.on_property  | The PR property to match against. [Possible values](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts#L33-L43).                                                                       |
-| ignore_labels               | An array of labels, to match pull request labels against. If any PR label overlaps, the pull request will be ignored from the changelog. This takes precedence over category labels                                                |
-| sort                        | A `sort` specification, offering the ability to define sort order and property.                                                                                                                                                    |
-| sort.order                  | The sort order. Allowed values: `ASC`, `DESC`                                                                                                                                                                                      |
-| sort.on_property            | The property to sort on. Allowed values: `mergedAt`, `title`                                                                                                                                                                       |
-| template                    | Specifies the global template to pick for creating the changelog. See [Template placeholders](#template-placeholders) for possible values                                                                                          |
-| pr_template                 | Defines the per pull request template. See [PR Template placeholders](#pr-template-placeholders) for possible values                                                                                                               |
-| empty_template              | Template to pick if no changes are detected. See [Template placeholders](#template-placeholders) for possible values                                                                                                               |
-| label_extractor             | An array of `Extractor` specifications, offering a flexible API to extract additinal labels from a PR (Default: `body`, Default in commit mode: `commit message`).                                                                 |
-| label_extractor.<REGEX>     | Please see the documentation related to `Regex Configuration` for more details.                                                                                                                                                    |
-| label_extractor.on_property | The property to retrieve the text from. This is optional. Defaults to: `body`. Alternative values: `title`, `author`, `milestone`.                                                                                                 |
-| duplicate_filter            | Defines the `Extractor` to use for retrieving the identifier for a PR. In case of duplicates will keep the last matching pull request (depends on `sort`). See `label_extractor` for details on `Extractor` properties.            |
-| reference                   | Defines the `Extractor` to use for resolving the "PR-number" for a parent PR. In case of a match, the child PR will not be included in the release notes. See `label_extractor` for details on `Extractor` properties.             |
-| transformers                | An array of `transform` specifications, offering a flexible API to modify the text per pull request. This is applied on the change text created with `pr_template`. `transformers` are executed per change, in the order specified |
-| transformer.pattern         | A `regex` pattern, extracting values of the change message.                                                                                                                                                                        |
-| transformer.target          | The result pattern, the regex groups will be filled into. Allows for full transformation of a pull request message. Including potentially specified texts                                                                          |
-| max_tags_to_fetch           | The maximum amount of tags to load from the API to find the previous tag. Loaded paginated with 100 per page                                                                                                                       |
-| max_pull_requests           | The maximum amount of pull requests to load from the API. Loaded paginated with 30 per page                                                                                                                                        |
-| max_back_track_time_days    | Defines the max amount of days to go back in time per changelog                                                                                                                                                                    |
-| exclude_merge_branches      | An array of branches to be ignored from processing as merge commits                                                                                                                                                                |
-| tag_resolver                | Section to provide configuration for the tag resolving logic. Used if no `fromTag` is provided                                                                                                                                     |
-| tag_resolver.method         | Defines the method to use. Current options are: `semver`, `sort`. Default: `semver`                                                                                                                                                |
-| tag_resolver.filter         | Defines a regex in JavaScript format (e.g. double backslash to escape a dot `\\.`) to include all matching tags and exclude the rest. Use negative lookahead to exclude tags. For example, `api.*` will only *include* tags starting with "api", `^(?!alpha).*` will *exclude* all tags starting with "alpha".|
-| tag_resolver.transformer    | Defines a regex transformer used to optionally transform the tag after the filter was applied. Allows to adjust the format to e.g. semver.                                                                                         |
-| base_branches               | The target branches for the merged PR, ingnores PRs with different target branch. Values can be a `regex`. Default: allow all base branches                                                                                        |
-| trim_values                 | Defines if all values inserted in templates are `trimmed`. Default: false                                                                                                                                                          |
+| **Input**                            | **Description**                                                                                                                                                                                                                                                                                                                       |
+|--------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| categories                           | An array of `category` specifications, offering a flexible way to group changes into categories.                                                                                                                                                                                                                                      |
+| category.key                         | Optional key used for the `categorized` json output.                                                                                                                                                                                                                                                                                  |
+| category.title                       | The display name of a category in the changelog.                                                                                                                                                                                                                                                                                      |
+| category.labels                      | An array of labels, to match pull request labels against. If any PR label matches any category label, the pull request will show up under this category. (See `exhaustive` to change this)                                                                                                                                            |
+| category.exclude_labels              | Similar to `labels`, an array of labels to match PRs against, but if a match occurs the PR is excluded from this category.                                                                                                                                                                                                            |
+| category.exhaustive                  | Will require all labels defined within this category to be present on the matching PR.                                                                                                                                                                                                                                                |
+| category.exhaustive_rules            | Will require all rules defined within this category to be valid on the matching PR. If not defined, defaults to the value of `exhaustive`                                                                                                                                                                                             |
+| category.empty_content               | If the category has no matching PRs, this content will be used. When not set, the category will be skipped in the changelog.                                                                                                                                                                                                          |
+| category.rules                       | An array of `rules` used to match PRs against. Any match will include the PR. (See `exhaustive` to change this)                                                                                                                                                                                                                       |
+| category.rules.pattern               | A `regex` pattern to match the property value towards. Uses `RegExp.test("val")`                                                                                                                                                                                                                                                      |
+| category.rules.flags                 | Defines the regex flags specified for the pattern. Default: `gu`.                                                                                                                                                                                                                                                                     |
+| category.rules.on_property           | The PR property to match against. [Possible values](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts#L33-L43).                                                                                                                                                                          |
+| ignore_labels                        | An array of labels, to match pull request labels against. If any PR label overlaps, the pull request will be ignored from the changelog. This takes precedence over category labels                                                                                                                                                   |
+| sort                                 | A `sort` specification, offering the ability to define sort order and property.                                                                                                                                                                                                                                                       |
+| sort.order                           | The sort order. Allowed values: `ASC`, `DESC`                                                                                                                                                                                                                                                                                         |
+| sort.on_property                     | The property to sort on. Allowed values: `mergedAt`, `title`                                                                                                                                                                                                                                                                          |
+| template                             | Specifies the global template to pick for creating the changelog. See [Template placeholders](#template-placeholders) for possible values                                                                                                                                                                                             |
+| pr_template                          | Defines the per pull request template. See [PR Template placeholders](#pr-template-placeholders) for possible values                                                                                                                                                                                                                  |
+| empty_template                       | Template to pick if no changes are detected. See [Template placeholders](#template-placeholders) for possible values                                                                                                                                                                                                                  |
+| label_extractor.\[{\<EXTRACTOR\>}\]  | An array of `Extractor` specifications, offering a flexible API to extract additional labels from a PR. Please see the documentation related to [Regex Configuration](#regex-configuration) for more details.                                                                                                                         |
+| duplicate_filter.{\<EXTRACTOR\>}     | Defines the `Extractor` to use for retrieving the identifier for a PR. In case of duplicates will keep the last matching pull request (depends on `sort`). Please see the documentation related to [Regex Configuration](#regex-configuration) for more details.                                                                      |
+| reference.{\<EXTRACTOR\>}            | Defines the `Extractor` to use for resolving the "PR-number" for a parent PR. In case of a match, the child PR will not be included in the release notes. Please see the documentation related to [Regex Configuration](#regex-configuration) for more details.                                                                       |
+| transformers.\[{\<REGEX\>}\]         | An array of `Regex` specifications, offering a flexible API to modify the text per pull request. This is applied on the change text created with `pr_template`. `transformers` are executed per change, in the order specified. Please see the documentation related to [Regex Configuration](#regex-configuration) for more details. |
+| max_tags_to_fetch                    | The maximum amount of tags to load from the API to find the previous tag. Loaded paginated with 100 per page                                                                                                                                                                                                                          |
+| max_pull_requests                    | The maximum amount of pull requests to load from the API. Loaded paginated with 30 per page                                                                                                                                                                                                                                           |
+| max_back_track_time_days             | Defines the max amount of days to go back in time per changelog                                                                                                                                                                                                                                                                       |
+| exclude_merge_branches               | An array of branches to be ignored from processing as merge commits                                                                                                                                                                                                                                                                   |
+| tag_resolver                         | Section to provide configuration for the tag resolving logic. Used if no `fromTag` is provided                                                                                                                                                                                                                                        |
+| tag_resolver.method                  | Defines the method to use. Current options are: `semver`, `sort`. Default: `semver`                                                                                                                                                                                                                                                   |
+| tag_resolver.filter                  | Defines a regex object which is used to filter out tags not matching.                                                                                                                                                                                                                                                                 |
+| tag_resolver.transformer.{\<REGEX\>} | Defines a regex transformer used to optionally transform the tag after the filter was applied. Allows to adjust the format to e.g. semver. Please see the documentation related to [Regex Configuration](#regex-configuration) for more details.                                                                                      |
+| base_branches                        | The target branches for the merged PR, ignores PRs with different target branch. Values can be a `regex`. Default: allow all base branches                                                                                                                                                                                            |
+| trim_values                          | Defines if all values inserted in templates are `trimmed`. Default: false                                                                                                                                                                                                                                                             |
 
 ### Regex Configuration
 
-Since v5.x or newer, the regex configuration was unified to allow the same functionalities to be used for the various usecases.
-This applies to all configurations outlined in `Configuration Specification` and `Custom placeholders` that allow a regex object. 
+Since v5.x or newer, the regex configuration was unified to allow the same functionalities to be used for the various use-cases.
+This applies to all configurations outlined in `Configuration Specification` and `Custom placeholders` that allow a regex object.
 
-| **Input**         | **Description**                                                                                                                                                                                                                                              |
-|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| <parent>.pattern  | The `regex` pattern to use                                                                                                                                                                                                                                   |
-| <parent>.target   | The result pattern. The result text will be used as label. If empty, no label is created. (Usage depends on the `method` used for the regex)                                                                                                                 |
-| <parent>.method   | The extraction method used. Defaults to: `replace`. Alternative values: `replaceAll`, `match`. These methods specified references the JavaScript String method. And a special method  `regexr`, that functions similar to the `list` within the regexr tool. |
-| <parent>.flags    | Defines the regex flags specified for the pattern. Default: `gu`.                                                                                                                                                                                            |
-| <parent>.on_empty | Defines the placeholder to be filled in, if the regex does not lead to a result.                                                                                                                                                                             |
+| **Input**            | **Description**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+|----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <parent>.pattern     | The `regex` pattern to use                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| <parent>.target      | The result pattern. The result text will be used as label. If empty, no label is created. (Usage depends on the `method` used for the regex).<br/><br/>Javascript methods (`replace`, `replaceAll`, `match`) define the regex in JavaScript format (e.g. double backslash to escape a dot \\.). For example to include all matching tags and exclude the rest, use negative lookahead to exclude tags. For example, api.* will only include tags starting with "api", ^(?!alpha).* will exclude all tags starting with "alpha". |
+| <parent>.method      | The extraction method used. Defaults to: `replace`. Alternative values: `replaceAll`, `match`. These methods specified references the JavaScript String method. And a special method  `regexr`, that functions similar to the `list` within the regexr tool.                                                                                                                                                                                                                                                                    |
+| <parent>.flags       | Defines the regex flags specified for the pattern. Default: `gu`.                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| <parent>.on_empty    | Defines the placeholder to be filled in, if the regex does not lead to a result.                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| <parent>.on_property | This is available for `Extractor` type regex objects. With the property describing a field available in PRs. (e.g.: title, body, ...)                                                                                                                                                                                                                                                                                                                                                                                           |
 
 <details><summary><b>Example regex configuration block</b></summary>
 <p>
@@ -613,7 +603,7 @@ Regex replace pattern
 ```
 
 Regexr style pattern (Use [regexr.com](https://regexr.com/) to test).
-To test on regexr inverse the escaping of `\\` to `\`
+To test on Regexr inverse the escaping of `\\` to `\`
 
 ```
 {
@@ -635,7 +625,7 @@ To test on regexr inverse the escaping of `\\` to `\`
 
 ### Custom placeholders
 
-Starting with v3.2.0 the action provides a feature of defining `CUSTOM_PLACEHOLDERS`. 
+Starting with v3.2.0 the action provides a feature of defining `CUSTOM_PLACEHOLDERS`.
 
 Custom placeholders allow to extract values from any existing placeholder and insert them into the target template.
 
@@ -661,19 +651,19 @@ Custom placeholders can be defined via the `configuration.json` as `custom_place
 }
 ```
 
-This example will look for JIRA tickets in the EPIC project, and extract all of these tickets. The exciting part for that case is, that the ticket is PR bound, but can be used in the global TEMPLATE, but equally also in the PR template. This is unique for CUSTOM PLACEHOLDERS as standard palceholders do not offer this functionality. 
+This example will look for JIRA tickets in the EPIC project, and extract all of these tickets. The exciting part for that case is, that the ticket is PR-bound but can be used in the global TEMPLATE, but equally also in the PR template. This is unique for CUSTOM PLACEHOLDERS as standard placeholders do not offer this functionality.
 
-| **Input**                               | **Description**                                                                                                              |
-|-----------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
-| custom_placeholders                     | An array of `Placeholder` specifications, offering a flexible API to extract custom placeholders from existing placeholders. |
-| custom_placeholders.name                | The name of the custom placeholder. Will be used within the template.                                                        |
-| custom_placeholders.source              | The source PLACEHOLDER, requires to be one of the existing Template or PR Template placeholders.                             |
-| custom_placeholders.transformer.<REGEX> | The transformer specification used to extract the value from the original source PLACEHOLDER.                                |
+| **Input**                                   | **Description**                                                                                                                                                                                     |
+|---------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| custom_placeholders                         | An array of `Placeholder` specifications, offering a flexible API to extract custom placeholders from existing placeholders.                                                                        |
+| custom_placeholders.name                    | The name of the custom placeholder. Will be used within the template.                                                                                                                               |
+| custom_placeholders.source                  | The source PLACEHOLDER, requires to be one of the existing Template or PR Template placeholders.                                                                                                    |
+| custom_placeholders.transformer.{\<REGEX\>} | The transformer specification used to extract the value from the original source PLACEHOLDER. Please see the documentation related to [Regex Configuration](#regex-configuration) for more details. |
 
-A placeholder with the name as `CUSTOM_PLACEHOLDER` can be used as `#{{CUSTOM_PLACEHOLDER}}` in the target template. 
-By default the same restriction applies as for PR vs template placeholder. E.g. a global placeholder can only be used in the global template (and not in the PR template).
+A placeholder with the name as `CUSTOM_PLACEHOLDER` can be used as `#{{CUSTOM_PLACEHOLDER}}` in the target template.
+By default the same restriction applies as for PR vs. template placeholder. E.g. a global placeholder can only be used in the global template (and not in the PR template).
 
-Custom placeholders offer one new feature though. PR related placeholders can be used in the global template via the following syntax:
+Custom placeholders offer one new feature, though. PR-related placeholders can be used in the global template via the following syntax:
 
 - `CUSTOM_PLACEHOLDER[*]` - Will join all found values and insert them at the given location in the global template
 - `CUSTOM_PLACEHOLDER[0]` / `CUSTOM_PLACEHOLDER[index]` - Will insert the first found value (item at index) into the global template
@@ -692,9 +682,9 @@ The API for gitea is equal to the one from GitHub, however it requires the `plat
 
 ```yml
 - name: Build Changelog
-  uses: https://github.com/mikepenz/release-changelog-builder-action@v4.1.0
+  uses: https://github.com/mikepenz/release-changelog-builder-action@v5
   with:
-    platform: "gitea" # gitea or github, default is github
+    platform: "gitea" # gitea or GitHub, default is GitHub
     configuration: "configuration.json"
   env:
     token: ${{ secrets.GITEA_TOKEN }}
@@ -722,7 +712,7 @@ It's suggested to export the token to your path before running the tests so that
 export GITHUB_TOKEN=your_personal_github_pat
 ```
 
-## Local Testing 🧪 
+## Local Testing 🧪
 
 This GitHub action is fully developed in Typescript and can be run locally via `npm` or right from the browser using `GitHub Codespace`.
 
@@ -730,9 +720,9 @@ This GitHub action is fully developed in Typescript and can be run locally via `
 
 Doing so is a great way to test the action and/or your custom configurations locally, without the need to push and re-run GitHub actions over and over again.
 
-To run locally, or to access private repositories (GitHub Codespaces has automatic access to public repos with the default token), you will require to provide a valid `GITHUB_TOKEN` with read only permissions to access the repositories you want to run this action towards. (See more details in [Token Permission](#Token-Permission))
+To run locally, or to access private repositories (GitHub Codespaces has automatic access to public repos with the default token), you will require to provide a valid `GITHUB_TOKEN` with read-only permissions to access the repositories you want to run this action towards. (See more details in [Token Permission](#Token-Permission))
 
-To test your own configuration and usecase, the project contains a [\_\_tests\_\_/demo/demo.test.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/__tests__/demo/demo.test.ts) file, modify this one to your needs. (e.g. change repo, change token, change settings, ...), and then run it via:
+To test your own configuration and use-case, the project contains a [\_\_tests\_\_/demo/demo.test.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/__tests__/demo/demo.test.ts) file, modify this one to your needs. (e.g., change repo, change token, change settings, ...), and then run it via:
 
 ```bash
 npm test -- demo.test.ts
@@ -741,7 +731,7 @@ npm test -- demo.test.ts
 <details><summary><b>Debugging with Breakpoints</b></summary>
 <p>
 
-One major benefit of setting up a custom test is that it will allow you to use javascripts full debugging support, including the option of breakpoints via (for example) Visual Code. 
+One major benefit of setting up a custom test is that it will allow you to use JavaScripts full debugging support, including the option of breakpoints via (for example) Visual Code.
 
 From GitHub codespaces, open the terminal panel -> Click the small arrow down beside `+` and pick `JavaScript Debug Terminal` (make sure to export the token again). Now execute the test with this terminal. (This is very similar to local Visual Code environments).
 
@@ -751,7 +741,7 @@ From GitHub codespaces, open the terminal panel -> Click the small arrow down be
 <details><summary><b>Run common tests</b></summary>
 <p>
 
-To run the common tests of the action, you require to export a valid github token.
+To run the common tests of the action, you require to export a valid GitHub token.
 
 ```
 # Export the token in the CLI you use to execute.
@@ -769,7 +759,7 @@ npm test -- main.test.ts # modify the file name to run other testcases
 
 ## Token Permission
 
-Permissions depend on the specific usecase, however this action only requires `read-only` permissions as it will not make modifications to the repository.
+Permissions depend on the specific use-case, however this action only requires `read-only` permissions as it will not make modifications to the repository.
 
 ### GitHub actions
 
@@ -789,22 +779,22 @@ For `Fine-grained personal access tokens` this means:
 
 - `read` for [Pull requests](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/pr-collector/src/pullRequests.ts#L124)
   - Covered by the `pull-requests` scope
-- `read` for [Commits](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/pr-collector/src/commits.ts#L54) 
+- `read` for [Commits](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/pr-collector/src/commits.ts#L54)
   - Covered by the `contents` scope
 - `read` for [Tags](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/pr-collector/src/tags.ts#L32) (if not available the `from` and `to` refs have to be provided)
   - Covered by the `contents` scope
 - `read` to [list reviews](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/pr-collector/src/pullRequests.ts#L186)
   - Covered by the `contents` scope
- 
- ### Classic tokens
- 
- For Classic tokens you only have to create the token without special permissions.
+
+### Classic tokens
+
+For Classic tokens you only have to create the token without special permissions.
 
 ## Developed By
 
 * Mike Penz
- * [mikepenz.com](http://mikepenz.com) - <mikepenz@gmail.com>
- * [paypal.me/mikepenz](http://paypal.me/mikepenz)
+* [mikepenz.com](http://mikepenz.com) - <mikepenz@gmail.com>
+* [paypal.me/mikepenz](http://paypal.me/mikepenz)
 
 ## Credits
 
