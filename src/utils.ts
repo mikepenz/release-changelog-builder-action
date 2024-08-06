@@ -118,20 +118,19 @@ export function checkExportedData(exportCache: boolean, cacheInput: string | nul
 }
 
 export function resolveMode(mode: string | undefined, commitMode: boolean): 'PR' | 'COMMIT' | 'HYBRID' {
-  if (commitMode === false || mode === undefined) {
-    if (commitMode === true) {
-      return 'COMMIT'
-    } else {
-      return 'PR'
-    }
-  } else {
-    const upperCaseMode = mode.toUpperCase()
+  if (commitMode === true) {
+    return 'COMMIT'
+  }
+
+  if (mode !== undefined) {
+    const upperCaseMode = mode.toUpperCase();
     if (upperCaseMode === 'COMMIT') {
       return 'COMMIT'
     } else if (upperCaseMode === 'HYBRID') {
       return 'HYBRID'
     }
   }
+
   return 'PR'
 }
 
