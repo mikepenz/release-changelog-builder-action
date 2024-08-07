@@ -60,8 +60,10 @@ export class GithubRepository extends BaseRepository {
           summary: commit.commit.message.split('\n')[0],
           message: commit.commit.message,
           author: commit.author?.login || commit.commit.author?.name || '',
+          authorName: commit.commit.author?.name || '',
           authorDate: moment(commit.commit.author?.date),
           committer: commit.committer?.login || '',
+          committerName: commit.committer?.name || '',
           commitDate: moment(commit.commit.committer?.date),
           prNumber: undefined
         }))
@@ -269,6 +271,7 @@ export class GithubRepository extends BaseRepository {
     mergedAt: pr.merged_at ? moment(pr.merged_at) : undefined,
     mergeCommitSha: pr.merge_commit_sha || '',
     author: pr.user?.login || '',
+    authorName: pr.user?.name || '',
     repoName: pr.base.repo.full_name,
     labels: this.attachSpecialLabels(status, pr.labels?.map(lbl => lbl.name?.toLocaleLowerCase('en') || '') || []),
     milestone: pr.milestone?.title || '',

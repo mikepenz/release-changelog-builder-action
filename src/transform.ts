@@ -472,6 +472,7 @@ function fillPrTemplate(
   placeholderMap.set('MERGED_AT', pr.mergedAt?.toISOString() || '')
   placeholderMap.set('MERGE_SHA', pr.mergeCommitSha)
   placeholderMap.set('AUTHOR', pr.author)
+  placeholderMap.set('AUTHOR_NAME', pr.authorName)
   placeholderMap.set('LABELS', [...pr.labels]?.filter(l => !l.startsWith('--rcba-'))?.join(', ') || '')
   placeholderMap.set('MILESTONE', pr.milestone || '')
   placeholderMap.set('BODY', pr.body)

@@ -73,6 +73,7 @@ export class GiteaRepository extends BaseRepository {
       mergedAt: pr.merged_at ? moment(pr.merged_at) : undefined,
       mergeCommitSha: pr.merge_commit_sha || '',
       author: pr.user?.login || '',
+      authorName: pr.user?.full_name || '',
       repoName: pr.base?.repo?.full_name || '',
       labels: pr.labels?.map(label => label.name?.toLowerCase()) as string[],
       milestone: pr.milestone?.title || '',
@@ -134,8 +135,10 @@ export class GiteaRepository extends BaseRepository {
         summary: subject,
         message: '', // This would require another git command to get the full message if needed
         author: authorName,
+        authorName,
         authorDate: moment(authorDate, 'ddd MMM DD HH:mm:ss YYYY ZZ', false),
         committer: committerName,
+        committerName,
         commitDate: moment(committerDate, 'ddd MMM DD HH:mm:ss YYYY ZZ', false),
         prNumber: undefined // This is not available directly from git, would require additional logic to associate commits with PRs
       }

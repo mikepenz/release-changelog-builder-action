@@ -16,6 +16,7 @@ export interface PullRequestInfo {
   mergedAt: moment.Moment | undefined
   mergeCommitSha: string
   author: string
+  authorName: string
   repoName: string
   labels: string[]
   milestone: string
@@ -45,6 +46,7 @@ export const EMPTY_PULL_REQUEST_INFO: PullRequestInfo = {
   createdAt: moment(),
   mergeCommitSha: '',
   author: '',
+  authorName: '',
   repoName: '',
   labels: [],
   milestone: '',

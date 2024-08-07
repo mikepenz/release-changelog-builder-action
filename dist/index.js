@@ -264,9 +264,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Commits = exports.DefaultDiffInfo = void 0;
-exports.convertCommitsToPrs = convertCommitsToPrs;
-exports.filterCommits = filterCommits;
+exports.filterCommits = exports.convertCommitsToPrs = exports.Commits = exports.DefaultDiffInfo = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const utils_1 = __nccwpck_require__(9613);
 exports.DefaultDiffInfo = {
@@ -360,6 +358,7 @@ function convertCommitsToPrs(options, diffInfo) {
             mergedAt: commit.commitDate,
             mergeCommitSha: commit.sha,
             author: commit.author || '',
+            authorName: commit.authorName || '',
             repoName: '',
             labels: [],
             milestone: '',
@@ -372,6 +371,7 @@ function convertCommitsToPrs(options, diffInfo) {
     });
     return [diffInfo, prs];
 }
+exports.convertCommitsToPrs = convertCommitsToPrs;
 /**
  * Filters out all commits which match the exclude pattern
  */
@@ -394,6 +394,7 @@ function filterCommits(commits, excludeMergeBranches) {
     }
     return filteredCommits;
 }
+exports.filterCommits = filterCommits;
 
 
 /***/ }),
@@ -436,7 +437,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createCommandManager = createCommandManager;
+exports.createCommandManager = void 0;
 const exec = __importStar(__nccwpck_require__(1514));
 const io = __importStar(__nccwpck_require__(7436));
 const utils_1 = __nccwpck_require__(9613);
@@ -445,6 +446,7 @@ function createCommandManager(workingDirectory) {
         return yield GitCommandManager.createCommandManager(workingDirectory);
     });
 }
+exports.createCommandManager = createCommandManager;
 class GitCommandManager {
     // Private constructor; use createCommandManager()
     constructor() {
@@ -555,8 +557,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.PullRequestCollector = void 0;
-exports.pullData = pullData;
+exports.pullData = exports.PullRequestCollector = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const tags_1 = __nccwpck_require__(6906);
 const utils_1 = __nccwpck_require__(9613);
@@ -664,6 +665,7 @@ function pullData(repositoryUtils, options) {
         };
     });
 }
+exports.pullData = pullData;
 
 
 /***/ }),
@@ -709,10 +711,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.PullRequests = exports.EMPTY_COMMENT_INFO = exports.EMPTY_PULL_REQUEST_INFO = void 0;
-exports.sortPullRequests = sortPullRequests;
-exports.compare = compare;
-exports.retrieveProperty = retrieveProperty;
+exports.retrieveProperty = exports.compare = exports.sortPullRequests = exports.PullRequests = exports.EMPTY_COMMENT_INFO = exports.EMPTY_PULL_REQUEST_INFO = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const moment_1 = __importDefault(__nccwpck_require__(9623));
 const commits_1 = __nccwpck_require__(234);
@@ -725,6 +724,7 @@ exports.EMPTY_PULL_REQUEST_INFO = {
     createdAt: (0, moment_1.default)(),
     mergeCommitSha: '',
     author: '',
+    authorName: '',
     repoName: '',
     labels: [],
     milestone: '',
@@ -904,6 +904,7 @@ function sortPullRequests(pullRequests, sort) {
     }
     return pullRequests;
 }
+exports.sortPullRequests = sortPullRequests;
 function compare(a, b, sort) {
     if (sort.on_property === 'mergedAt') {
         const aa = a.mergedAt || a.createdAt;
@@ -921,6 +922,7 @@ function compare(a, b, sort) {
         return a.title.localeCompare(b.title);
     }
 }
+exports.compare = compare;
 /**
  * Helper function to retrieve a property from the PullRequestInfo
  */
@@ -941,6 +943,7 @@ function retrieveProperty(pr, property, useCase) {
     }
     return value;
 }
+exports.retrieveProperty = retrieveProperty;
 
 
 /***/ }),
@@ -974,11 +977,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.validateRegex = validateRegex;
-exports.buildRegex = buildRegex;
-exports.transformStringToValues = transformStringToValues;
-exports.transformStringToOptionalValue = transformStringToOptionalValue;
-exports.transformStringToValue = transformStringToValue;
+exports.transformStringToValue = exports.transformStringToOptionalValue = exports.transformStringToValues = exports.buildRegex = exports.validateRegex = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 function validateRegex(regex) {
     if (regex === undefined) {
@@ -1005,6 +1004,7 @@ function validateRegex(regex) {
         return null;
     }
 }
+exports.validateRegex = validateRegex;
 /**
  * Constructs the RegExp, providing the configured Regex and additional values
  */
@@ -1024,6 +1024,7 @@ function buildRegex(regex, target, onProperty, method, onEmpty) {
         return null;
     }
 }
+exports.buildRegex = buildRegex;
 function transformStringToValues(value, extractor) {
     if (extractor.pattern == null) {
         return null;
@@ -1057,6 +1058,7 @@ function transformStringToValues(value, extractor) {
     }
     return null;
 }
+exports.transformStringToValues = transformStringToValues;
 function transformStringToOptionalValue(value, extractor) {
     const result = transformStringToValues(value, extractor);
     if (result != null && result.length > 0) {
@@ -1066,9 +1068,11 @@ function transformStringToOptionalValue(value, extractor) {
         return null;
     }
 }
+exports.transformStringToOptionalValue = transformStringToOptionalValue;
 function transformStringToValue(value, extractor) {
     return transformStringToOptionalValue(value, extractor) || '';
 }
+exports.transformStringToValue = transformStringToValue;
 function transformRegexr(regex, source, target) {
     /**
      * Util function extracted from regexr and is licensed under:
@@ -1143,10 +1147,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Tags = void 0;
-exports.filterTags = filterTags;
-exports.transformTags = transformTags;
-exports.prepareAndSortTags = prepareAndSortTags;
+exports.prepareAndSortTags = exports.transformTags = exports.filterTags = exports.Tags = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const semver = __importStar(__nccwpck_require__(1383));
@@ -1323,6 +1324,7 @@ function filterTags(tags, filterRegex) {
         return tags;
     }
 }
+exports.filterTags = filterTags;
 /**
  * Helper function to transform the tag name given the transformer
  */
@@ -1342,6 +1344,7 @@ function transformTags(tags, transformer) {
         }
     });
 }
+exports.transformTags = transformTags;
 /*
   Sorts an array of tags as shown below:
   
@@ -1365,6 +1368,7 @@ function prepareAndSortTags(tags, tagResolver) {
         return semVerTags(tags);
     }
 }
+exports.prepareAndSortTags = prepareAndSortTags;
 function semVerTags(tags) {
     // filter out tags which do not follow semver
     const validatedTags = tags.filter(tag => {
@@ -1448,8 +1452,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.failOrError = failOrError;
-exports.directoryExistsSync = directoryExistsSync;
+exports.directoryExistsSync = exports.failOrError = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
 /**
@@ -1465,6 +1468,7 @@ function failOrError(message, failOnError) {
         core.error(message);
     }
 }
+exports.failOrError = failOrError;
 /**
  * Checks if a given directory exists
  */
@@ -1493,6 +1497,7 @@ function directoryExistsSync(inputPath, required) {
     }
     throw new Error(`Directory '${inputPath}' does not exist`);
 }
+exports.directoryExistsSync = directoryExistsSync;
 
 
 /***/ }),
@@ -1526,7 +1531,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.matchesRules = matchesRules;
+exports.matchesRules = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const pullRequests_1 = __nccwpck_require__(4012);
 const regexUtils_1 = __nccwpck_require__(5351);
@@ -1546,6 +1551,7 @@ function matchesRules(rules, pr, exhaustive) {
         });
     }
 }
+exports.matchesRules = matchesRules;
 /**
  * Checks if the configured property results in a positive `test` with the regex.
  */
@@ -1931,7 +1937,7 @@ class GiteaRepository extends BaseRepository_1.BaseRepository {
         });
     }
     mapPullRequest(pr, status = 'open') {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
         return {
             number: pr.number || 0,
             title: pr.title || '',
@@ -1941,12 +1947,13 @@ class GiteaRepository extends BaseRepository_1.BaseRepository {
             mergedAt: pr.merged_at ? (0, moment_1.default)(pr.merged_at) : undefined,
             mergeCommitSha: pr.merge_commit_sha || '',
             author: ((_c = pr.user) === null || _c === void 0 ? void 0 : _c.login) || '',
-            repoName: ((_e = (_d = pr.base) === null || _d === void 0 ? void 0 : _d.repo) === null || _e === void 0 ? void 0 : _e.full_name) || '',
-            labels: (_f = pr.labels) === null || _f === void 0 ? void 0 : _f.map(label => { var _a; return (_a = label.name) === null || _a === void 0 ? void 0 : _a.toLowerCase(); }),
-            milestone: ((_g = pr.milestone) === null || _g === void 0 ? void 0 : _g.title) || '',
+            authorName: ((_d = pr.user) === null || _d === void 0 ? void 0 : _d.full_name) || '',
+            repoName: ((_f = (_e = pr.base) === null || _e === void 0 ? void 0 : _e.repo) === null || _f === void 0 ? void 0 : _f.full_name) || '',
+            labels: (_g = pr.labels) === null || _g === void 0 ? void 0 : _g.map(label => { var _a; return (_a = label.name) === null || _a === void 0 ? void 0 : _a.toLowerCase(); }),
+            milestone: ((_h = pr.milestone) === null || _h === void 0 ? void 0 : _h.title) || '',
             body: pr.body || '',
-            assignees: (_h = pr.assignees) === null || _h === void 0 ? void 0 : _h.map(user => user.full_name),
-            requestedReviewers: (_j = pr.requested_reviewers) === null || _j === void 0 ? void 0 : _j.map(user => user.full_name),
+            assignees: (_j = pr.assignees) === null || _j === void 0 ? void 0 : _j.map(user => user.full_name),
+            requestedReviewers: (_k = pr.requested_reviewers) === null || _k === void 0 ? void 0 : _k.map(user => user.full_name),
             approvedReviewers: [],
             createdAt: (0, moment_1.default)(pr.created_at),
             status,
@@ -1995,8 +2002,10 @@ class GiteaRepository extends BaseRepository_1.BaseRepository {
                     summary: subject,
                     message: '', // This would require another git command to get the full message if needed
                     author: authorName,
+                    authorName,
                     authorDate: (0, moment_1.default)(authorDate, 'ddd MMM DD HH:mm:ss YYYY ZZ', false),
                     committer: committerName,
+                    committerName,
                     commitDate: (0, moment_1.default)(committerDate, 'ddd MMM DD HH:mm:ss YYYY ZZ', false),
                     prNumber: undefined // This is not available directly from git, would require additional logic to associate commits with PRs
                 };
@@ -2210,15 +2219,17 @@ class GithubRepository extends BaseRepository_1.BaseRepository {
                 commitInfo: commits
                     .filter(commit => commit.sha)
                     .map(commit => {
-                    var _a, _b, _c, _d, _e;
+                    var _a, _b, _c, _d, _e, _f, _g;
                     return ({
                         sha: commit.sha || '',
                         summary: commit.commit.message.split('\n')[0],
                         message: commit.commit.message,
                         author: ((_a = commit.author) === null || _a === void 0 ? void 0 : _a.login) || ((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.name) || '',
-                        authorDate: (0, moment_1.default)((_c = commit.commit.author) === null || _c === void 0 ? void 0 : _c.date),
-                        committer: ((_d = commit.committer) === null || _d === void 0 ? void 0 : _d.login) || '',
-                        commitDate: (0, moment_1.default)((_e = commit.commit.committer) === null || _e === void 0 ? void 0 : _e.date),
+                        authorName: ((_c = commit.commit.author) === null || _c === void 0 ? void 0 : _c.name) || '',
+                        authorDate: (0, moment_1.default)((_d = commit.commit.author) === null || _d === void 0 ? void 0 : _d.date),
+                        committer: ((_e = commit.committer) === null || _e === void 0 ? void 0 : _e.login) || '',
+                        committerName: ((_f = commit.committer) === null || _f === void 0 ? void 0 : _f.name) || '',
+                        commitDate: (0, moment_1.default)((_g = commit.commit.committer) === null || _g === void 0 ? void 0 : _g.date),
                         prNumber: undefined
                     });
                 })
@@ -2385,7 +2396,7 @@ class GithubRepository extends BaseRepository_1.BaseRepository {
     constructor(token, url, repositoryPath) {
         super(token, url, repositoryPath);
         this.mapPullRequest = (pr, status = 'open') => {
-            var _a, _b, _c, _d, _e;
+            var _a, _b, _c, _d, _e, _f;
             return ({
                 number: pr.number,
                 title: pr.title,
@@ -2396,12 +2407,13 @@ class GithubRepository extends BaseRepository_1.BaseRepository {
                 mergedAt: pr.merged_at ? (0, moment_1.default)(pr.merged_at) : undefined,
                 mergeCommitSha: pr.merge_commit_sha || '',
                 author: ((_a = pr.user) === null || _a === void 0 ? void 0 : _a.login) || '',
+                authorName: ((_b = pr.user) === null || _b === void 0 ? void 0 : _b.name) || '',
                 repoName: pr.base.repo.full_name,
-                labels: this.attachSpecialLabels(status, ((_b = pr.labels) === null || _b === void 0 ? void 0 : _b.map(lbl => { var _a; return ((_a = lbl.name) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase('en')) || ''; })) || []),
-                milestone: ((_c = pr.milestone) === null || _c === void 0 ? void 0 : _c.title) || '',
+                labels: this.attachSpecialLabels(status, ((_c = pr.labels) === null || _c === void 0 ? void 0 : _c.map(lbl => { var _a; return ((_a = lbl.name) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase('en')) || ''; })) || []),
+                milestone: ((_d = pr.milestone) === null || _d === void 0 ? void 0 : _d.title) || '',
                 body: pr.body || '',
-                assignees: ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.map(assignee => (assignee === null || assignee === void 0 ? void 0 : assignee.login) || '')) || [],
-                requestedReviewers: ((_e = pr.requested_reviewers) === null || _e === void 0 ? void 0 : _e.map(reviewer => (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '')) || [],
+                assignees: ((_e = pr.assignees) === null || _e === void 0 ? void 0 : _e.map(assignee => (assignee === null || assignee === void 0 ? void 0 : assignee.login) || '')) || [],
+                requestedReviewers: ((_f = pr.requested_reviewers) === null || _f === void 0 ? void 0 : _f.map(reviewer => (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '')) || [],
                 approvedReviewers: [],
                 reviews: undefined,
                 status
@@ -2549,9 +2561,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.clear = clear;
-exports.buildChangelog = buildChangelog;
-exports.replaceEmptyTemplate = replaceEmptyTemplate;
+exports.replaceEmptyTemplate = exports.buildChangelog = exports.clear = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const utils_1 = __nccwpck_require__(918);
 const pullRequests_1 = __nccwpck_require__(4012);
@@ -2562,6 +2572,7 @@ let CLEAR = false;
 function clear() {
     CLEAR = true;
 }
+exports.clear = clear;
 function buildChangelog(diffInfo, origPrs, options) {
     core.startGroup('📦 Build changelog');
     let prs = origPrs;
@@ -2822,6 +2833,7 @@ function buildChangelog(diffInfo, origPrs, options) {
     core.endGroup();
     return transformedChangelog;
 }
+exports.buildChangelog = buildChangelog;
 function recursiveCategorizePr(category, pr, body) {
     let matched = false;
     let consumed = false;
@@ -2917,6 +2929,7 @@ function replaceEmptyTemplate(template, options) {
     fillAdditionalPlaceholders(options, placeholderMap);
     return replacePlaceholders(template, EMPTY_MAP, placeholderMap, placeholders, undefined, options.configuration);
 }
+exports.replaceEmptyTemplate = replaceEmptyTemplate;
 function fillAdditionalPlaceholders(options, placeholderMap /* placeholderKey and original value */) {
     var _a, _b;
     placeholderMap.set('OWNER', options.owner);
@@ -2949,6 +2962,7 @@ function fillPrTemplate(pr, template, placeholders /* placeholders to apply */, 
     placeholderMap.set('MERGED_AT', ((_a = pr.mergedAt) === null || _a === void 0 ? void 0 : _a.toISOString()) || '');
     placeholderMap.set('MERGE_SHA', pr.mergeCommitSha);
     placeholderMap.set('AUTHOR', pr.author);
+    placeholderMap.set('AUTHOR_NAME', pr.authorName);
     placeholderMap.set('LABELS', ((_c = (_b = [...pr.labels]) === null || _b === void 0 ? void 0 : _b.filter(l => !l.startsWith('--rcba-'))) === null || _c === void 0 ? void 0 : _c.join(', ')) || '');
     placeholderMap.set('MILESTONE', pr.milestone || '');
     placeholderMap.set('BODY', pr.body);
@@ -3173,19 +3187,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.retrieveRepositoryPath = retrieveRepositoryPath;
-exports.writeCacheData = writeCacheData;
-exports.checkExportedData = checkExportedData;
-exports.resolveMode = resolveMode;
-exports.resolveConfiguration = resolveConfiguration;
-exports.parseConfiguration = parseConfiguration;
-exports.mergeConfiguration = mergeConfiguration;
-exports.writeOutput = writeOutput;
-exports.createOrSet = createOrSet;
-exports.haveCommonElements = haveCommonElements;
-exports.haveCommonElementsArr = haveCommonElementsArr;
-exports.haveEveryElements = haveEveryElements;
-exports.haveEveryElementsArr = haveEveryElementsArr;
+exports.haveEveryElementsArr = exports.haveEveryElements = exports.haveCommonElementsArr = exports.haveCommonElements = exports.createOrSet = exports.writeOutput = exports.mergeConfiguration = exports.parseConfiguration = exports.resolveConfiguration = exports.resolveMode = exports.checkExportedData = exports.writeCacheData = exports.retrieveRepositoryPath = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
@@ -3207,6 +3209,7 @@ function retrieveRepositoryPath(providedPath) {
     core.debug(`repositoryPath = '${repositoryPath}'`);
     return repositoryPath;
 }
+exports.retrieveRepositoryPath = retrieveRepositoryPath;
 function writeCacheData(data, cacheOutput) {
     let cacheFile;
     if (cacheOutput && !cacheOutput.startsWith('{')) {
@@ -3230,6 +3233,7 @@ function writeCacheData(data, cacheOutput) {
         core.warning(`Failed to write cache file. (${error})`);
     }
 }
+exports.writeCacheData = writeCacheData;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function replacer(key, value) {
     if (key === 'repositoryUtils')
@@ -3295,6 +3299,7 @@ function checkExportedData(exportCache, cacheInput) {
         return null;
     }
 }
+exports.checkExportedData = checkExportedData;
 function resolveMode(mode, commitMode) {
     if (commitMode === true) {
         return 'COMMIT';
@@ -3310,6 +3315,7 @@ function resolveMode(mode, commitMode) {
     }
     return 'PR';
 }
+exports.resolveMode = resolveMode;
 /**
  * Retrieves the configuration given the file path, if not found it will fallback to the `DefaultConfiguration`
  */
@@ -3335,6 +3341,7 @@ function resolveConfiguration(githubWorkspacePath, configurationFile) {
     }
     return undefined;
 }
+exports.resolveConfiguration = resolveConfiguration;
 /**
  * Reads in the configuration from the JSON file
  */
@@ -3365,6 +3372,7 @@ function parseConfiguration(config) {
         return undefined;
     }
 }
+exports.parseConfiguration = parseConfiguration;
 /**
  * Merges the configurations, will fallback to the DefaultConfiguration value
  */
@@ -3396,6 +3404,7 @@ function mergeConfiguration(jc, fc, mode) {
         trim_values: (jc === null || jc === void 0 ? void 0 : jc.trim_values) || (fc === null || fc === void 0 ? void 0 : fc.trim_values) || def.trim_values
     };
 }
+exports.mergeConfiguration = mergeConfiguration;
 /**
  * Writes the changelog to the given the file
  */
@@ -3411,6 +3420,7 @@ function writeOutput(githubWorkspacePath, outputFile, changelog) {
         }
     }
 }
+exports.writeOutput = writeOutput;
 function createOrSet(map, key, value) {
     const entry = map.get(key);
     if (!entry) {
@@ -3420,18 +3430,23 @@ function createOrSet(map, key, value) {
         entry.push(value);
     }
 }
+exports.createOrSet = createOrSet;
 function haveCommonElements(arr1, arr2) {
     return arr1.some(item => arr2.has(item));
 }
+exports.haveCommonElements = haveCommonElements;
 function haveCommonElementsArr(arr1, arr2) {
     return haveCommonElements(arr1, new Set(arr2));
 }
+exports.haveCommonElementsArr = haveCommonElementsArr;
 function haveEveryElements(arr1, arr2) {
     return arr1.every(item => arr2.has(item));
 }
+exports.haveEveryElements = haveEveryElements;
 function haveEveryElementsArr(arr1, arr2) {
     return haveEveryElements(arr1, new Set(arr2));
 }
+exports.haveEveryElementsArr = haveEveryElementsArr;
 
 
 /***/ }),
@@ -13645,8 +13660,6 @@ function useColors() {
 		return false;
 	}
 
-	let m;
-
 	// Is webkit? http://stackoverflow.com/a/16459606/376773
 	// document is undefined in react-native: https://github.com/facebook/react-native/pull/1632
 	return (typeof document !== 'undefined' && document.documentElement && document.documentElement.style && document.documentElement.style.WebkitAppearance) ||
@@ -13654,7 +13667,7 @@ function useColors() {
 		(typeof window !== 'undefined' && window.console && (window.console.firebug || (window.console.exception && window.console.table))) ||
 		// Is firefox >= v31?
 		// https://developer.mozilla.org/en-US/docs/Tools/Web_Console#Styling_messages
-		(typeof navigator !== 'undefined' && navigator.userAgent && (m = navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/)) && parseInt(m[1], 10) >= 31) ||
+		(typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31) ||
 		// Double check webkit in userAgent just in case we are in a worker
 		(typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/applewebkit\/(\d+)/));
 }
@@ -20802,7 +20815,7 @@ class HttpsProxyAgent extends agent_base_1.Agent {
             const servername = this.connectOpts.servername || this.connectOpts.host;
             socket = tls.connect({
                 ...this.connectOpts,
-                servername,
+                servername: servername && net.isIP(servername) ? undefined : servername,
             });
         }
         else {
@@ -20843,7 +20856,7 @@ class HttpsProxyAgent extends agent_base_1.Agent {
                 return tls.connect({
                     ...omit(opts, 'host', 'path', 'port'),
                     socket,
-                    servername,
+                    servername: net.isIP(servername) ? undefined : servername,
                 });
             }
             return socket;
@@ -27065,8 +27078,6 @@ const Range = __nccwpck_require__(9828)
 /***/ 9828:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const SPACE_CHARACTERS = /\s+/g
-
 // hoisted class for cyclic dependency
 class Range {
   constructor (range, options) {
@@ -27087,7 +27098,7 @@ class Range {
       // just put it in the set and return
       this.raw = range.value
       this.set = [[range]]
-      this.formatted = undefined
+      this.format()
       return this
     }
 
@@ -27098,7 +27109,10 @@ class Range {
     // First reduce all whitespace as much as possible so we do not have to rely
     // on potentially slow regexes like \s*. This is then stored and used for
     // future error messages as well.
-    this.raw = range.trim().replace(SPACE_CHARACTERS, ' ')
+    this.raw = range
+      .trim()
+      .split(/\s+/)
+      .join(' ')
 
     // First, split on ||
     this.set = this.raw
@@ -27132,29 +27146,14 @@ class Range {
       }
     }
 
-    this.formatted = undefined
-  }
-
-  get range () {
-    if (this.formatted === undefined) {
-      this.formatted = ''
-      for (let i = 0; i < this.set.length; i++) {
-        if (i > 0) {
-          this.formatted += '||'
-        }
-        const comps = this.set[i]
-        for (let k = 0; k < comps.length; k++) {
-          if (k > 0) {
-            this.formatted += ' '
-          }
-          this.formatted += comps[k].toString().trim()
-        }
-      }
-    }
-    return this.formatted
+    this.format()
   }
 
   format () {
+    this.range = this.set
+      .map((comps) => comps.join(' ').trim())
+      .join('||')
+      .trim()
     return this.range
   }
 
