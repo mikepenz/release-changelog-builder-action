@@ -2957,7 +2957,7 @@ function fillPrTemplate(pr, template, placeholders /* placeholders to apply */, 
     placeholderMap.set('MERGED_AT', ((_a = pr.mergedAt) === null || _a === void 0 ? void 0 : _a.toISOString()) || '');
     placeholderMap.set('MERGE_SHA', pr.mergeCommitSha);
     placeholderMap.set('AUTHOR', pr.author);
-    placeholderMap.set('AUTHOR_NAME', pr.authorName);
+    placeholderMap.set('AUTHOR_NAME', pr.authorName || '');
     placeholderMap.set('LABELS', ((_c = (_b = [...pr.labels]) === null || _b === void 0 ? void 0 : _b.filter(l => !l.startsWith('--rcba-'))) === null || _c === void 0 ? void 0 : _c.join(', ')) || '');
     placeholderMap.set('MILESTONE', pr.milestone || '');
     placeholderMap.set('BODY', pr.body);
