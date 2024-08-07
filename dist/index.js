@@ -264,7 +264,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.filterCommits = exports.convertCommitsToPrs = exports.Commits = exports.DefaultDiffInfo = void 0;
+exports.Commits = exports.DefaultDiffInfo = void 0;
+exports.convertCommitsToPrs = convertCommitsToPrs;
+exports.filterCommits = filterCommits;
 const core = __importStar(__nccwpck_require__(2186));
 const utils_1 = __nccwpck_require__(9613);
 exports.DefaultDiffInfo = {
@@ -371,7 +373,6 @@ function convertCommitsToPrs(options, diffInfo) {
     });
     return [diffInfo, prs];
 }
-exports.convertCommitsToPrs = convertCommitsToPrs;
 /**
  * Filters out all commits which match the exclude pattern
  */
@@ -394,7 +395,6 @@ function filterCommits(commits, excludeMergeBranches) {
     }
     return filteredCommits;
 }
-exports.filterCommits = filterCommits;
 
 
 /***/ }),
@@ -437,7 +437,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createCommandManager = void 0;
+exports.createCommandManager = createCommandManager;
 const exec = __importStar(__nccwpck_require__(1514));
 const io = __importStar(__nccwpck_require__(7436));
 const utils_1 = __nccwpck_require__(9613);
@@ -446,7 +446,6 @@ function createCommandManager(workingDirectory) {
         return yield GitCommandManager.createCommandManager(workingDirectory);
     });
 }
-exports.createCommandManager = createCommandManager;
 class GitCommandManager {
     // Private constructor; use createCommandManager()
     constructor() {
@@ -557,7 +556,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pullData = exports.PullRequestCollector = void 0;
+exports.PullRequestCollector = void 0;
+exports.pullData = pullData;
 const core = __importStar(__nccwpck_require__(2186));
 const tags_1 = __nccwpck_require__(6906);
 const utils_1 = __nccwpck_require__(9613);
@@ -665,7 +665,6 @@ function pullData(repositoryUtils, options) {
         };
     });
 }
-exports.pullData = pullData;
 
 
 /***/ }),
@@ -711,7 +710,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.retrieveProperty = exports.compare = exports.sortPullRequests = exports.PullRequests = exports.EMPTY_COMMENT_INFO = exports.EMPTY_PULL_REQUEST_INFO = void 0;
+exports.PullRequests = exports.EMPTY_COMMENT_INFO = exports.EMPTY_PULL_REQUEST_INFO = void 0;
+exports.sortPullRequests = sortPullRequests;
+exports.compare = compare;
+exports.retrieveProperty = retrieveProperty;
 const core = __importStar(__nccwpck_require__(2186));
 const moment_1 = __importDefault(__nccwpck_require__(9623));
 const commits_1 = __nccwpck_require__(234);
@@ -904,7 +906,6 @@ function sortPullRequests(pullRequests, sort) {
     }
     return pullRequests;
 }
-exports.sortPullRequests = sortPullRequests;
 function compare(a, b, sort) {
     if (sort.on_property === 'mergedAt') {
         const aa = a.mergedAt || a.createdAt;
@@ -922,7 +923,6 @@ function compare(a, b, sort) {
         return a.title.localeCompare(b.title);
     }
 }
-exports.compare = compare;
 /**
  * Helper function to retrieve a property from the PullRequestInfo
  */
@@ -943,7 +943,6 @@ function retrieveProperty(pr, property, useCase) {
     }
     return value;
 }
-exports.retrieveProperty = retrieveProperty;
 
 
 /***/ }),
@@ -977,7 +976,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.transformStringToValue = exports.transformStringToOptionalValue = exports.transformStringToValues = exports.buildRegex = exports.validateRegex = void 0;
+exports.validateRegex = validateRegex;
+exports.buildRegex = buildRegex;
+exports.transformStringToValues = transformStringToValues;
+exports.transformStringToOptionalValue = transformStringToOptionalValue;
+exports.transformStringToValue = transformStringToValue;
 const core = __importStar(__nccwpck_require__(2186));
 function validateRegex(regex) {
     if (regex === undefined) {
@@ -1004,7 +1007,6 @@ function validateRegex(regex) {
         return null;
     }
 }
-exports.validateRegex = validateRegex;
 /**
  * Constructs the RegExp, providing the configured Regex and additional values
  */
@@ -1024,7 +1026,6 @@ function buildRegex(regex, target, onProperty, method, onEmpty) {
         return null;
     }
 }
-exports.buildRegex = buildRegex;
 function transformStringToValues(value, extractor) {
     if (extractor.pattern == null) {
         return null;
@@ -1058,7 +1059,6 @@ function transformStringToValues(value, extractor) {
     }
     return null;
 }
-exports.transformStringToValues = transformStringToValues;
 function transformStringToOptionalValue(value, extractor) {
     const result = transformStringToValues(value, extractor);
     if (result != null && result.length > 0) {
@@ -1068,11 +1068,9 @@ function transformStringToOptionalValue(value, extractor) {
         return null;
     }
 }
-exports.transformStringToOptionalValue = transformStringToOptionalValue;
 function transformStringToValue(value, extractor) {
     return transformStringToOptionalValue(value, extractor) || '';
 }
-exports.transformStringToValue = transformStringToValue;
 function transformRegexr(regex, source, target) {
     /**
      * Util function extracted from regexr and is licensed under:
@@ -1147,7 +1145,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.prepareAndSortTags = exports.transformTags = exports.filterTags = exports.Tags = void 0;
+exports.Tags = void 0;
+exports.filterTags = filterTags;
+exports.transformTags = transformTags;
+exports.prepareAndSortTags = prepareAndSortTags;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const semver = __importStar(__nccwpck_require__(1383));
@@ -1324,7 +1325,6 @@ function filterTags(tags, filterRegex) {
         return tags;
     }
 }
-exports.filterTags = filterTags;
 /**
  * Helper function to transform the tag name given the transformer
  */
@@ -1344,7 +1344,6 @@ function transformTags(tags, transformer) {
         }
     });
 }
-exports.transformTags = transformTags;
 /*
   Sorts an array of tags as shown below:
   
@@ -1368,7 +1367,6 @@ function prepareAndSortTags(tags, tagResolver) {
         return semVerTags(tags);
     }
 }
-exports.prepareAndSortTags = prepareAndSortTags;
 function semVerTags(tags) {
     // filter out tags which do not follow semver
     const validatedTags = tags.filter(tag => {
@@ -1452,7 +1450,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.directoryExistsSync = exports.failOrError = void 0;
+exports.failOrError = failOrError;
+exports.directoryExistsSync = directoryExistsSync;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
 /**
@@ -1468,7 +1467,6 @@ function failOrError(message, failOnError) {
         core.error(message);
     }
 }
-exports.failOrError = failOrError;
 /**
  * Checks if a given directory exists
  */
@@ -1497,7 +1495,6 @@ function directoryExistsSync(inputPath, required) {
     }
     throw new Error(`Directory '${inputPath}' does not exist`);
 }
-exports.directoryExistsSync = directoryExistsSync;
 
 
 /***/ }),
@@ -1531,7 +1528,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.matchesRules = void 0;
+exports.matchesRules = matchesRules;
 const core = __importStar(__nccwpck_require__(2186));
 const pullRequests_1 = __nccwpck_require__(4012);
 const regexUtils_1 = __nccwpck_require__(5351);
@@ -1551,7 +1548,6 @@ function matchesRules(rules, pr, exhaustive) {
         });
     }
 }
-exports.matchesRules = matchesRules;
 /**
  * Checks if the configured property results in a positive `test` with the regex.
  */
@@ -2561,7 +2557,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.replaceEmptyTemplate = exports.buildChangelog = exports.clear = void 0;
+exports.clear = clear;
+exports.buildChangelog = buildChangelog;
+exports.replaceEmptyTemplate = replaceEmptyTemplate;
 const core = __importStar(__nccwpck_require__(2186));
 const utils_1 = __nccwpck_require__(918);
 const pullRequests_1 = __nccwpck_require__(4012);
@@ -2572,7 +2570,6 @@ let CLEAR = false;
 function clear() {
     CLEAR = true;
 }
-exports.clear = clear;
 function buildChangelog(diffInfo, origPrs, options) {
     core.startGroup('📦 Build changelog');
     let prs = origPrs;
@@ -2833,7 +2830,6 @@ function buildChangelog(diffInfo, origPrs, options) {
     core.endGroup();
     return transformedChangelog;
 }
-exports.buildChangelog = buildChangelog;
 function recursiveCategorizePr(category, pr, body) {
     let matched = false;
     let consumed = false;
@@ -2929,7 +2925,6 @@ function replaceEmptyTemplate(template, options) {
     fillAdditionalPlaceholders(options, placeholderMap);
     return replacePlaceholders(template, EMPTY_MAP, placeholderMap, placeholders, undefined, options.configuration);
 }
-exports.replaceEmptyTemplate = replaceEmptyTemplate;
 function fillAdditionalPlaceholders(options, placeholderMap /* placeholderKey and original value */) {
     var _a, _b;
     placeholderMap.set('OWNER', options.owner);
@@ -3187,7 +3182,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.haveEveryElementsArr = exports.haveEveryElements = exports.haveCommonElementsArr = exports.haveCommonElements = exports.createOrSet = exports.writeOutput = exports.mergeConfiguration = exports.parseConfiguration = exports.resolveConfiguration = exports.resolveMode = exports.checkExportedData = exports.writeCacheData = exports.retrieveRepositoryPath = void 0;
+exports.retrieveRepositoryPath = retrieveRepositoryPath;
+exports.writeCacheData = writeCacheData;
+exports.checkExportedData = checkExportedData;
+exports.resolveMode = resolveMode;
+exports.resolveConfiguration = resolveConfiguration;
+exports.parseConfiguration = parseConfiguration;
+exports.mergeConfiguration = mergeConfiguration;
+exports.writeOutput = writeOutput;
+exports.createOrSet = createOrSet;
+exports.haveCommonElements = haveCommonElements;
+exports.haveCommonElementsArr = haveCommonElementsArr;
+exports.haveEveryElements = haveEveryElements;
+exports.haveEveryElementsArr = haveEveryElementsArr;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
@@ -3209,7 +3216,6 @@ function retrieveRepositoryPath(providedPath) {
     core.debug(`repositoryPath = '${repositoryPath}'`);
     return repositoryPath;
 }
-exports.retrieveRepositoryPath = retrieveRepositoryPath;
 function writeCacheData(data, cacheOutput) {
     let cacheFile;
     if (cacheOutput && !cacheOutput.startsWith('{')) {
@@ -3233,7 +3239,6 @@ function writeCacheData(data, cacheOutput) {
         core.warning(`Failed to write cache file. (${error})`);
     }
 }
-exports.writeCacheData = writeCacheData;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function replacer(key, value) {
     if (key === 'repositoryUtils')
@@ -3299,7 +3304,6 @@ function checkExportedData(exportCache, cacheInput) {
         return null;
     }
 }
-exports.checkExportedData = checkExportedData;
 function resolveMode(mode, commitMode) {
     if (commitMode === true) {
         return 'COMMIT';
@@ -3315,7 +3319,6 @@ function resolveMode(mode, commitMode) {
     }
     return 'PR';
 }
-exports.resolveMode = resolveMode;
 /**
  * Retrieves the configuration given the file path, if not found it will fallback to the `DefaultConfiguration`
  */
@@ -3341,7 +3344,6 @@ function resolveConfiguration(githubWorkspacePath, configurationFile) {
     }
     return undefined;
 }
-exports.resolveConfiguration = resolveConfiguration;
 /**
  * Reads in the configuration from the JSON file
  */
@@ -3372,7 +3374,6 @@ function parseConfiguration(config) {
         return undefined;
     }
 }
-exports.parseConfiguration = parseConfiguration;
 /**
  * Merges the configurations, will fallback to the DefaultConfiguration value
  */
@@ -3404,7 +3405,6 @@ function mergeConfiguration(jc, fc, mode) {
         trim_values: (jc === null || jc === void 0 ? void 0 : jc.trim_values) || (fc === null || fc === void 0 ? void 0 : fc.trim_values) || def.trim_values
     };
 }
-exports.mergeConfiguration = mergeConfiguration;
 /**
  * Writes the changelog to the given the file
  */
@@ -3420,7 +3420,6 @@ function writeOutput(githubWorkspacePath, outputFile, changelog) {
         }
     }
 }
-exports.writeOutput = writeOutput;
 function createOrSet(map, key, value) {
     const entry = map.get(key);
     if (!entry) {
@@ -3430,23 +3429,18 @@ function createOrSet(map, key, value) {
         entry.push(value);
     }
 }
-exports.createOrSet = createOrSet;
 function haveCommonElements(arr1, arr2) {
     return arr1.some(item => arr2.has(item));
 }
-exports.haveCommonElements = haveCommonElements;
 function haveCommonElementsArr(arr1, arr2) {
     return haveCommonElements(arr1, new Set(arr2));
 }
-exports.haveCommonElementsArr = haveCommonElementsArr;
 function haveEveryElements(arr1, arr2) {
     return arr1.every(item => arr2.has(item));
 }
-exports.haveEveryElements = haveEveryElements;
 function haveEveryElementsArr(arr1, arr2) {
     return haveEveryElements(arr1, new Set(arr2));
 }
-exports.haveEveryElementsArr = haveEveryElementsArr;
 
 
 /***/ }),
@@ -13660,6 +13654,8 @@ function useColors() {
 		return false;
 	}
 
+	let m;
+
 	// Is webkit? http://stackoverflow.com/a/16459606/376773
 	// document is undefined in react-native: https://github.com/facebook/react-native/pull/1632
 	return (typeof document !== 'undefined' && document.documentElement && document.documentElement.style && document.documentElement.style.WebkitAppearance) ||
@@ -13667,7 +13663,7 @@ function useColors() {
 		(typeof window !== 'undefined' && window.console && (window.console.firebug || (window.console.exception && window.console.table))) ||
 		// Is firefox >= v31?
 		// https://developer.mozilla.org/en-US/docs/Tools/Web_Console#Styling_messages
-		(typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31) ||
+		(typeof navigator !== 'undefined' && navigator.userAgent && (m = navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/)) && parseInt(m[1], 10) >= 31) ||
 		// Double check webkit in userAgent just in case we are in a worker
 		(typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/applewebkit\/(\d+)/));
 }
@@ -20815,7 +20811,7 @@ class HttpsProxyAgent extends agent_base_1.Agent {
             const servername = this.connectOpts.servername || this.connectOpts.host;
             socket = tls.connect({
                 ...this.connectOpts,
-                servername: servername && net.isIP(servername) ? undefined : servername,
+                servername,
             });
         }
         else {
@@ -20856,7 +20852,7 @@ class HttpsProxyAgent extends agent_base_1.Agent {
                 return tls.connect({
                     ...omit(opts, 'host', 'path', 'port'),
                     socket,
-                    servername: net.isIP(servername) ? undefined : servername,
+                    servername,
                 });
             }
             return socket;
@@ -27078,6 +27074,8 @@ const Range = __nccwpck_require__(9828)
 /***/ 9828:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+const SPACE_CHARACTERS = /\s+/g
+
 // hoisted class for cyclic dependency
 class Range {
   constructor (range, options) {
@@ -27098,7 +27096,7 @@ class Range {
       // just put it in the set and return
       this.raw = range.value
       this.set = [[range]]
-      this.format()
+      this.formatted = undefined
       return this
     }
 
@@ -27109,10 +27107,7 @@ class Range {
     // First reduce all whitespace as much as possible so we do not have to rely
     // on potentially slow regexes like \s*. This is then stored and used for
     // future error messages as well.
-    this.raw = range
-      .trim()
-      .split(/\s+/)
-      .join(' ')
+    this.raw = range.trim().replace(SPACE_CHARACTERS, ' ')
 
     // First, split on ||
     this.set = this.raw
@@ -27146,14 +27141,29 @@ class Range {
       }
     }
 
-    this.format()
+    this.formatted = undefined
+  }
+
+  get range () {
+    if (this.formatted === undefined) {
+      this.formatted = ''
+      for (let i = 0; i < this.set.length; i++) {
+        if (i > 0) {
+          this.formatted += '||'
+        }
+        const comps = this.set[i]
+        for (let k = 0; k < comps.length; k++) {
+          if (k > 0) {
+            this.formatted += ' '
+          }
+          this.formatted += comps[k].toString().trim()
+        }
+      }
+    }
+    return this.formatted
   }
 
   format () {
-    this.range = this.set
-      .map((comps) => comps.join(' ').trim())
-      .join('||')
-      .trim()
     return this.range
   }
 
