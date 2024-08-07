@@ -32,6 +32,7 @@ export const buildPullRequeset = (number: number, title: string, labels: string[
     mergedAt: moment(),
     mergeCommitSha: 'sha',
     author: 'Author',
+    authorName: 'Author',
     repoName: 'test-repo',
     labels,
     milestone: '',
