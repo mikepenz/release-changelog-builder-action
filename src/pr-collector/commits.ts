@@ -28,8 +28,10 @@ export interface CommitInfo {
   summary: string
   message: string
   author: string
+  authorName: string
   authorDate: moment.Moment
   committer: string
+  committerName: string
   commitDate: moment.Moment
 }
 
@@ -117,6 +119,7 @@ export function convertCommitsToPrs(options: Options, diffInfo: DiffInfo): [Diff
       mergedAt: commit.commitDate,
       mergeCommitSha: commit.sha,
       author: commit.author || '',
+      authorName: commit.authorName || '',
       repoName: '',
       labels: [],
       milestone: '',

@@ -360,6 +360,7 @@ function convertCommitsToPrs(options, diffInfo) {
             mergedAt: commit.commitDate,
             mergeCommitSha: commit.sha,
             author: commit.author || '',
+            authorName: commit.authorName || '',
             repoName: '',
             labels: [],
             milestone: '',
@@ -725,6 +726,7 @@ exports.EMPTY_PULL_REQUEST_INFO = {
     createdAt: (0, moment_1.default)(),
     mergeCommitSha: '',
     author: '',
+    authorName: '',
     repoName: '',
     labels: [],
     milestone: '',
@@ -1931,7 +1933,7 @@ class GiteaRepository extends BaseRepository_1.BaseRepository {
         });
     }
     mapPullRequest(pr, status = 'open') {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
         return {
             number: pr.number || 0,
             title: pr.title || '',
@@ -1941,12 +1943,13 @@ class GiteaRepository extends BaseRepository_1.BaseRepository {
             mergedAt: pr.merged_at ? (0, moment_1.default)(pr.merged_at) : undefined,
             mergeCommitSha: pr.merge_commit_sha || '',
             author: ((_c = pr.user) === null || _c === void 0 ? void 0 : _c.login) || '',
-            repoName: ((_e = (_d = pr.base) === null || _d === void 0 ? void 0 : _d.repo) === null || _e === void 0 ? void 0 : _e.full_name) || '',
-            labels: (_f = pr.labels) === null || _f === void 0 ? void 0 : _f.map(label => { var _a; return (_a = label.name) === null || _a === void 0 ? void 0 : _a.toLowerCase(); }),
-            milestone: ((_g = pr.milestone) === null || _g === void 0 ? void 0 : _g.title) || '',
+            authorName: ((_d = pr.user) === null || _d === void 0 ? void 0 : _d.full_name) || '',
+            repoName: ((_f = (_e = pr.base) === null || _e === void 0 ? void 0 : _e.repo) === null || _f === void 0 ? void 0 : _f.full_name) || '',
+            labels: (_g = pr.labels) === null || _g === void 0 ? void 0 : _g.map(label => { var _a; return (_a = label.name) === null || _a === void 0 ? void 0 : _a.toLowerCase(); }),
+            milestone: ((_h = pr.milestone) === null || _h === void 0 ? void 0 : _h.title) || '',
             body: pr.body || '',
-            assignees: (_h = pr.assignees) === null || _h === void 0 ? void 0 : _h.map(user => user.full_name),
-            requestedReviewers: (_j = pr.requested_reviewers) === null || _j === void 0 ? void 0 : _j.map(user => user.full_name),
+            assignees: (_j = pr.assignees) === null || _j === void 0 ? void 0 : _j.map(user => user.full_name),
+            requestedReviewers: (_k = pr.requested_reviewers) === null || _k === void 0 ? void 0 : _k.map(user => user.full_name),
             approvedReviewers: [],
             createdAt: (0, moment_1.default)(pr.created_at),
             status,
@@ -1995,8 +1998,10 @@ class GiteaRepository extends BaseRepository_1.BaseRepository {
                     summary: subject,
                     message: '', // This would require another git command to get the full message if needed
                     author: authorName,
+                    authorName,
                     authorDate: (0, moment_1.default)(authorDate, 'ddd MMM DD HH:mm:ss YYYY ZZ', false),
                     committer: committerName,
+                    committerName,
                     commitDate: (0, moment_1.default)(committerDate, 'ddd MMM DD HH:mm:ss YYYY ZZ', false),
                     prNumber: undefined // This is not available directly from git, would require additional logic to associate commits with PRs
                 };
@@ -2210,15 +2215,17 @@ class GithubRepository extends BaseRepository_1.BaseRepository {
                 commitInfo: commits
                     .filter(commit => commit.sha)
                     .map(commit => {
-                    var _a, _b, _c, _d, _e;
+                    var _a, _b, _c, _d, _e, _f, _g;
                     return ({
                         sha: commit.sha || '',
                         summary: commit.commit.message.split('\n')[0],
                         message: commit.commit.message,
                         author: ((_a = commit.author) === null || _a === void 0 ? void 0 : _a.login) || ((_b = commit.commit.author) === null || _b === void 0 ? void 0 : _b.name) || '',
-                        authorDate: (0, moment_1.default)((_c = commit.commit.author) === null || _c === void 0 ? void 0 : _c.date),
-                        committer: ((_d = commit.committer) === null || _d === void 0 ? void 0 : _d.login) || '',
-                        commitDate: (0, moment_1.default)((_e = commit.commit.committer) === null || _e === void 0 ? void 0 : _e.date),
+                        authorName: ((_c = commit.commit.author) === null || _c === void 0 ? void 0 : _c.name) || '',
+                        authorDate: (0, moment_1.default)((_d = commit.commit.author) === null || _d === void 0 ? void 0 : _d.date),
+                        committer: ((_e = commit.committer) === null || _e === void 0 ? void 0 : _e.login) || '',
+                        committerName: ((_f = commit.committer) === null || _f === void 0 ? void 0 : _f.name) || '',
+                        commitDate: (0, moment_1.default)((_g = commit.commit.committer) === null || _g === void 0 ? void 0 : _g.date),
                         prNumber: undefined
                     });
                 })
@@ -2385,7 +2392,7 @@ class GithubRepository extends BaseRepository_1.BaseRepository {
     constructor(token, url, repositoryPath) {
         super(token, url, repositoryPath);
         this.mapPullRequest = (pr, status = 'open') => {
-            var _a, _b, _c, _d, _e;
+            var _a, _b, _c, _d, _e, _f;
             return ({
                 number: pr.number,
                 title: pr.title,
@@ -2396,12 +2403,13 @@ class GithubRepository extends BaseRepository_1.BaseRepository {
                 mergedAt: pr.merged_at ? (0, moment_1.default)(pr.merged_at) : undefined,
                 mergeCommitSha: pr.merge_commit_sha || '',
                 author: ((_a = pr.user) === null || _a === void 0 ? void 0 : _a.login) || '',
+                authorName: ((_b = pr.user) === null || _b === void 0 ? void 0 : _b.name) || '',
                 repoName: pr.base.repo.full_name,
-                labels: this.attachSpecialLabels(status, ((_b = pr.labels) === null || _b === void 0 ? void 0 : _b.map(lbl => { var _a; return ((_a = lbl.name) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase('en')) || ''; })) || []),
-                milestone: ((_c = pr.milestone) === null || _c === void 0 ? void 0 : _c.title) || '',
+                labels: this.attachSpecialLabels(status, ((_c = pr.labels) === null || _c === void 0 ? void 0 : _c.map(lbl => { var _a; return ((_a = lbl.name) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase('en')) || ''; })) || []),
+                milestone: ((_d = pr.milestone) === null || _d === void 0 ? void 0 : _d.title) || '',
                 body: pr.body || '',
-                assignees: ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.map(assignee => (assignee === null || assignee === void 0 ? void 0 : assignee.login) || '')) || [],
-                requestedReviewers: ((_e = pr.requested_reviewers) === null || _e === void 0 ? void 0 : _e.map(reviewer => (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '')) || [],
+                assignees: ((_e = pr.assignees) === null || _e === void 0 ? void 0 : _e.map(assignee => (assignee === null || assignee === void 0 ? void 0 : assignee.login) || '')) || [],
+                requestedReviewers: ((_f = pr.requested_reviewers) === null || _f === void 0 ? void 0 : _f.map(reviewer => (reviewer === null || reviewer === void 0 ? void 0 : reviewer.login) || '')) || [],
                 approvedReviewers: [],
                 reviews: undefined,
                 status
@@ -2949,6 +2957,7 @@ function fillPrTemplate(pr, template, placeholders /* placeholders to apply */, 
     placeholderMap.set('MERGED_AT', ((_a = pr.mergedAt) === null || _a === void 0 ? void 0 : _a.toISOString()) || '');
     placeholderMap.set('MERGE_SHA', pr.mergeCommitSha);
     placeholderMap.set('AUTHOR', pr.author);
+    placeholderMap.set('AUTHOR_NAME', pr.authorName || '');
     placeholderMap.set('LABELS', ((_c = (_b = [...pr.labels]) === null || _b === void 0 ? void 0 : _b.filter(l => !l.startsWith('--rcba-'))) === null || _c === void 0 ? void 0 : _c.join(', ')) || '');
     placeholderMap.set('MILESTONE', pr.milestone || '');
     placeholderMap.set('BODY', pr.body);
