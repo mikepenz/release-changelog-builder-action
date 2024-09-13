@@ -40,6 +40,7 @@ export const buildPullRequeset = (number: number, title: string, labels: string[
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged'
+    status: 'merged',
+    isConvertedFromCommit: false
   }
 }

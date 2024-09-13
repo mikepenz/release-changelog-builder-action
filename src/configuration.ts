@@ -20,7 +20,8 @@ export interface Category {
   key?: string // a key for this category. This is currently only used for the json output
   title: string // the title of this category
   labels?: string[] // labels to associate PRs to this category
-  commit_labels?: string[] // labels to associated commits to this category (COMMIT and HYBRID mode only)
+  // TODO: implement this
+  //commit_labels?: string[] // labels to associated commits to this category (COMMIT and HYBRID mode only)
   exclude_labels?: string[] // if an exclude label is detected, the PR will be excluded from this category
   rules?: Rule[] // rules to associate PRs to this category
   exhaustive?: boolean // requires all labels to be present in the PR

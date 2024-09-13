@@ -50,7 +50,8 @@ mergedPullRequests.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged'
+    status: 'merged',
+    isConvertedFromCommit: false
   },
   {
     number: 2,
@@ -69,7 +70,8 @@ mergedPullRequests.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged'
+    status: 'merged',
+    isConvertedFromCommit: false
   },
   {
     number: 3,
@@ -88,7 +90,8 @@ mergedPullRequests.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged'
+    status: 'merged',
+    isConvertedFromCommit: false
   },
   {
     number: 4,
@@ -107,7 +110,8 @@ mergedPullRequests.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged'
+    status: 'merged',
+    isConvertedFromCommit: false
   }
 )
 
@@ -128,7 +132,8 @@ const pullRequestWithLabelInBody: PullRequestInfo = {
   assignees: [],
   requestedReviewers: [],
   approvedReviewers: [],
-  status: 'merged'
+  status: 'merged',
+  isConvertedFromCommit: false
 }
 
 const openPullRequest: PullRequestInfo = {
@@ -148,7 +153,8 @@ const openPullRequest: PullRequestInfo = {
   assignees: [],
   requestedReviewers: [],
   approvedReviewers: [],
-  status: 'open'
+  status: 'open',
+  isConvertedFromCommit: false
 }
 
 it('Extract label from title, combined regex', async () => {
@@ -193,6 +199,7 @@ it('Extract label from title, split regex', async () => {
       on_property: 'title'
     }
   ]
+
   expect(buildChangelogTest(configuration, mergedPullRequests, repositoryUtils)).toStrictEqual(
     `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
@@ -263,7 +270,8 @@ pullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged'
+    status: 'merged',
+    isConvertedFromCommit: false
   },
   {
     number: 2,
@@ -282,7 +290,8 @@ pullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged'
+    status: 'merged',
+    isConvertedFromCommit: false
   },
   {
     number: 3,
@@ -301,7 +310,8 @@ pullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged'
+    status: 'merged',
+    isConvertedFromCommit: false
   },
   {
     number: 4,
@@ -320,7 +330,8 @@ pullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged'
+    status: 'merged',
+    isConvertedFromCommit: false
   }
 )
 
@@ -343,7 +354,8 @@ openPullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'open'
+    status: 'open',
+    isConvertedFromCommit: false
   },
   {
     number: 7,
@@ -362,7 +374,8 @@ openPullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'open'
+    status: 'open',
+    isConvertedFromCommit: false
   }
 )
 

@@ -26,10 +26,13 @@ export interface PullRequestInfo {
   approvedReviewers: string[]
   reviews?: CommentInfo[]
   status: 'open' | 'merged'
-  // TODO create a CommitInfo" type with only relevant properties
+  // TODO create a "CommitInfo" type with only relevant properties
+  // And maybe a common "ChangelogItemInfo" type
   isConvertedFromCommit: boolean
 }
-
+export interface PullRequestData extends PullRequestInfo {
+  childPrs?: PullRequestInfo[]
+}
 export interface CommentInfo {
   id: number
   htmlURL: string
@@ -82,7 +85,7 @@ export class PullRequests {
   ) {}
 
   async getForCommitHash(owner: string, repo: string, commit_sha: string, maxPullRequests: number): Promise<PullRequestInfo[]> {
-    return sortPrs(await this.repositoryUtils.getForCommitHash(owner, repo, commit_sha, maxPullRequests))
+    return sortPrsByMergedAt(await this.repositoryUtils.getForCommitHash(owner, repo, commit_sha, maxPullRequests))
   }
 
   async getBetweenDates(
@@ -92,11 +95,11 @@ export class PullRequests {
     toDate: moment.Moment,
     maxPullRequests: number
   ): Promise<PullRequestInfo[]> {
-    return sortPrs(await this.repositoryUtils.getBetweenDates(owner, repo, fromDate, toDate, maxPullRequests))
+    return sortPrsByMergedAt(await this.repositoryUtils.getBetweenDates(owner, repo, fromDate, toDate, maxPullRequests))
   }
 
   async getOpen(owner: string, repo: string, maxPullRequests: number): Promise<PullRequestInfo[]> {
-    return sortPrs(await this.repositoryUtils.getOpen(owner, repo, maxPullRequests))
+    return sortPrsByMergedAt(await this.repositoryUtils.getOpen(owner, repo, maxPullRequests))
   }
 
   async getReviews(owner: string, repo: string, pr: PullRequestInfo): Promise<void> {
@@ -224,7 +227,7 @@ export class PullRequests {
   }
 }
 
-function sortPrs(pullRequests: PullRequestInfo[]): PullRequestInfo[] {
+function sortPrsByMergedAt(pullRequests: PullRequestInfo[]): PullRequestInfo[] {
   return sortPullRequests(pullRequests, {
     order: 'ASC',
     on_property: 'mergedAt'

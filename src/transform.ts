@@ -5,13 +5,14 @@ import {
   CommentInfo,
   EMPTY_COMMENT_INFO,
   EMPTY_PULL_REQUEST_INFO,
+  PullRequestData,
   PullRequestInfo,
   retrieveProperty,
   sortPullRequests
 } from './pr-collector/pullRequests'
 import {DiffInfo} from './pr-collector/commits'
 import {transformStringToOptionalValue, transformStringToValues, validateRegex} from './pr-collector/regexUtils'
-import {GroupedTemplateContext, Regex, RegexTransformer, TemplateContext} from './pr-collector/types'
+import {ChangelogStrings, GroupedTemplateContext, PrStrings, Regex, RegexTransformer, TemplateContext} from './pr-collector/types'
 import {ReleaseNotesOptions} from './releaseNotesBuilder'
 import {matchesRules} from './regexUtils'
 
@@ -19,10 +20,6 @@ let CLEAR = false
 
 export function clear(): void {
   CLEAR = true
-}
-
-export interface PullRequestData extends PullRequestInfo {
-  childPrs?: PullRequestInfo[]
 }
 
 export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], options: ReleaseNotesOptions): string {
@@ -127,75 +124,48 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
   const customPlaceholdersTemplateContext = new GroupedTemplateContext()
 
   const validatedTransformers = validateTransformers(config.transformers)
-  const prInfoMap = new Map<PullRequestInfo, string>()
-  const commitInfoMap = new Map<PullRequestInfo, string>()
 
-  let renderedPrTemplate = config.pr_template
-  let renderedCommitTemplate = config.commit_template
-
-  // convert PRs to their text representation
-  const realPrs = prs.filter(x => !x.isConvertedFromCommit)
-  const commitPrs = prs.filter(x => x.isConvertedFromCommit)
-
-  for (const pr of realPrs) {
-    const [prTemplateContext, prArrayTemplateContext] = buildPrTemplateContext(pr)
-
-    renderedPrTemplate = renderTemplateAndCollectPlaceholderContext(
-      renderedPrTemplate,
-      prArrayTemplateContext,
-      groupedPlaceholders,
-      customPlaceholdersTemplateContext,
-      config
-    )
-
-    renderedPrTemplate = renderTemplateAndCollectPlaceholderContext(
-      renderedPrTemplate,
-      prTemplateContext,
-      groupedPlaceholders,
-      customPlaceholdersTemplateContext,
-      config
-    )
-
-    prInfoMap.set(pr, transform(renderedPrTemplate, validatedTransformers))
-  }
-  for (const pr of commitPrs) {
-    const [prTemplateContext, prArrayTemplateContext] = buildPrTemplateContext(pr)
-
-    renderedCommitTemplate = renderTemplateAndCollectPlaceholderContext(
-      renderedCommitTemplate,
-      prArrayTemplateContext,
-      groupedPlaceholders,
-      customPlaceholdersTemplateContext,
-      config
-    )
-    renderedCommitTemplate = renderTemplateAndCollectPlaceholderContext(
-      renderedCommitTemplate,
-      prTemplateContext,
-      groupedPlaceholders,
-      customPlaceholdersTemplateContext,
-      config
-    )
-
-    commitInfoMap.set(pr, transform(renderedCommitTemplate, validatedTransformers))
-  }
   core.info(`ℹ️ Used ${validatedTransformers.length} transformers to adjust message`)
 
-  if (options.mode === 'PR' || options.mode === 'HYBRID') {
+  const includePrs = options.mode === 'PR' || options.mode === 'HYBRID'
+  const includeCommits = options.mode === 'COMMIT' || options.mode === 'HYBRID'
+
+  // convert PRs to their text representation
+  const realPrs = includePrs ? prs.filter(x => !x.isConvertedFromCommit) : []
+  const commitPrs = includeCommits ? prs.filter(x => x.isConvertedFromCommit) : []
+
+  if (includePrs) {
     core.info(`✒️ Wrote messages for ${prs.length} pull requests`)
   }
-  if (options.mode === 'COMMIT' || options.mode === 'HYBRID') {
+
+  if (includeCommits) {
     core.info(`✒️ Wrote messages for ${commitPrs.length} commits`)
   }
 
+  const prInfoMap = buildInfoMapAndCollectPlaceholderContext(
+    realPrs,
+    config.pr_template,
+    groupedPlaceholders,
+    customPlaceholdersTemplateContext,
+    config,
+    validatedTransformers
+  )
+
+  const commitInfoMap = buildInfoMapAndCollectPlaceholderContext(
+    commitPrs,
+    config.commit_template,
+    groupedPlaceholders,
+    customPlaceholdersTemplateContext,
+    config,
+    validatedTransformers
+  )
+
+  // If the mode is not HYBRID, the map will contain only one or the other map
+  const combinedInfoMap = {...prInfoMap, ...commitInfoMap}
+
   // bring PRs into the order of categories
   const categories = config.categories
-  const ignoredLabels = config.ignore_labels
-
   const flatCategories = flatten(config.categories)
-  const categorizedPrs: string[] = []
-  const ignoredPrs: string[] = []
-  const openPrs: string[] = []
-  const uncategorizedPrs: string[] = []
 
   // set-up the category object
   for (const category of flatCategories) {
@@ -204,7 +174,108 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
     }
   }
 
-  // TODO: figure this out
+  const prStrings = buildPrStringsAndFillCategoryEntires(combinedInfoMap, config.ignore_labels, categories, flatCategories)
+  core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`)
+
+  // serialize and provide the categorized content as json
+  const transformedCategorized = buildCategorizedOutput(flatCategories, config)
+  core.setOutput('categorized', JSON.stringify(transformedCategorized))
+
+  // construct final changelog
+  const changelogStrings = buildChangelogStrings(flatCategories, prStrings)
+
+  core.info(`✒️ Wrote ${changelogStrings.categorized.length} categorized pull requests down`)
+  core.info(`✒️ Wrote ${changelogStrings.uncategorized.length} non categorized pull requests down`)
+  core.info(`✒️ Wrote ${changelogStrings.open.length} open pull requests down`)
+  core.info(`✒️ Wrote ${changelogStrings.ignored.length} ignored pull requests down`)
+
+  core.setOutput('categorized_prs', changelogStrings.categorized.length)
+  core.setOutput('uncategorized_prs', changelogStrings.uncategorized.length)
+  core.setOutput('open_prs', changelogStrings.open.length)
+  core.setOutput('ignored_prs', changelogStrings.ignored.length)
+
+  // collect all contributors
+  const contributorsSet: Set<string> = new Set(prs.map(pr => `@${pr.author}`))
+  const contributorsArray = Array.from(contributorsSet)
+  const contributorsString = contributorsArray.join(', ')
+  const externalContributorString = contributorsArray.filter(value => value !== options.owner).join(', ')
+  core.setOutput('contributors', JSON.stringify(contributorsSet))
+
+  const releaseNotesTemplateContext = buildReleaseNotesTemplateContext(
+    changelogStrings,
+    contributorsString,
+    externalContributorString,
+    prStrings,
+    diffInfo,
+    options
+  )
+
+  let renderedReleaseNotesTemplate = renderTemplateAndCollectPlaceholderContext(
+    config.template,
+    releaseNotesTemplateContext,
+    groupedPlaceholders,
+    customPlaceholdersTemplateContext,
+    config
+  )
+
+  renderedReleaseNotesTemplate = renderTemplateWithContext(renderedReleaseNotesTemplate, customPlaceholdersTemplateContext, config)
+  renderedReleaseNotesTemplate = cleanupPrPlaceholders(renderedReleaseNotesTemplate, groupedPlaceholders)
+  renderedReleaseNotesTemplate = cleanupPlaceholders(renderedReleaseNotesTemplate)
+
+  core.info(`ℹ️ Filled template`)
+  core.endGroup()
+
+  return renderedReleaseNotesTemplate
+}
+
+function buildInfoMapAndCollectPlaceholderContext(
+  prData: PullRequestData[],
+  template: string,
+  groupedPlaceholders: Map<string, Placeholder[]>,
+  customPlaceholdersTemplateContext: GroupedTemplateContext,
+  config: Configuration,
+  validatedTransformers: RegexTransformer[]
+): Map<PullRequestInfo, string> {
+  const infoMap = new Map<PullRequestInfo, string>()
+
+  for (const pr of prData) {
+    const [prTemplateContext, prArrayTemplateContext] = buildPrTemplateContext(pr)
+
+    let renderedPrTemplate = template
+
+    renderedPrTemplate = renderTemplateAndCollectPlaceholderContext(
+      renderedPrTemplate,
+      prArrayTemplateContext,
+      groupedPlaceholders,
+      customPlaceholdersTemplateContext,
+      config
+    )
+
+    renderedPrTemplate = renderTemplateAndCollectPlaceholderContext(
+      renderedPrTemplate,
+      prTemplateContext,
+      groupedPlaceholders,
+      customPlaceholdersTemplateContext,
+      config
+    )
+
+    infoMap.set(pr, transform(renderedPrTemplate, validatedTransformers))
+  }
+
+  return infoMap
+}
+
+function buildPrStringsAndFillCategoryEntires(
+  prInfoMap: Map<PullRequestInfo, string>,
+  ignoredLabels: string[],
+  categories: Category[],
+  flatCategories: Category[]
+): PrStrings {
+  const categorizedPrs: string[] = []
+  const ignoredPrs: string[] = []
+  const openPrs: string[] = []
+  const uncategorizedPrs: string[] = []
+
   // bring elements in order
   prLoop: for (const [pr, body] of prInfoMap) {
     if (
@@ -233,7 +304,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
     if (!matchedOnce) {
       // we allow to have pull requests included in an "uncategorized" category
       for (const category of flatCategories) {
-        const pullRequests = category.entries || []
+        category.entries = category.entries || []
         if ((category.labels === undefined || category.labels.length === 0) && category.rules === undefined) {
           // check if any exclude label matches for the "uncategorized" category
           if (category.exclude_labels !== undefined) {
@@ -243,7 +314,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
                 pr.labels
               )
             ) {
-              pullRequests.push(body)
+              category.entries.push(body)
             } else if (core.isDebug()) {
               const excludeLabels = JSON.stringify(category.exclude_labels)
               core.debug(
@@ -251,7 +322,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
               )
             }
           } else {
-            pullRequests.push(body)
+            category.entries.push(body)
           }
 
           break
@@ -264,10 +335,121 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
       categorizedPrs.push(body)
     }
   }
-  core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`)
 
-  // serialize and provide the categorized content as json
+  const prStrings: PrStrings = {
+    categorizedList: categorizedPrs,
+    uncategorizedList: uncategorizedPrs,
+    openList: openPrs,
+    ignoredList: ignoredPrs
+  }
+
+  return prStrings
+}
+
+function buildChangelogStrings(flatCategories: Category[], prStrings: PrStrings): ChangelogStrings {
+  const {categorizedList, uncategorizedList, openList, ignoredList} = prStrings
+
+  let changelogCategorized = ''
+  for (const category of flatCategories) {
+    const pullRequests = category.entries || []
+    changelogCategorized += buildCategorizedChangelogString(category, pullRequests)
+  }
+  if (core.isDebug()) {
+    for (const pr of categorizedList) {
+      core.debug(`    ${pr}`)
+    }
+  }
+
+  let changelogUncategorized = ''
+  for (const pr of uncategorizedList) {
+    changelogUncategorized = `${changelogUncategorized + pr}\n`
+  }
+  if (core.isDebug()) {
+    for (const pr of uncategorizedList) {
+      core.debug(`    ${pr}`)
+    }
+  }
+
+  let changelogOpen = ''
+  if (openList.length > 0) {
+    for (const pr of openList) {
+      changelogOpen = `${changelogOpen + pr}\n`
+    }
+    if (core.isDebug()) {
+      for (const pr of openList) {
+        core.debug(`    ${pr}`)
+      }
+    }
+  }
+
+  let changelogIgnored = ''
+  for (const pr of ignoredList) {
+    changelogIgnored = `${changelogIgnored + pr}\n`
+  }
+  if (core.isDebug()) {
+    for (const pr of ignoredList) {
+      core.debug(`    ${pr}`)
+    }
+  }
+
+  const changelogStrings: ChangelogStrings = {
+    categorized: changelogCategorized,
+    uncategorized: changelogUncategorized,
+    open: changelogOpen,
+    ignored: changelogIgnored
+  }
+
+  return changelogStrings
+}
+
+function buildReleaseNotesTemplateContext(
+  changelogStrings: ChangelogStrings,
+  contributorsString: string,
+  externalContributorString: string,
+  prStrings: PrStrings,
+  diffInfo: DiffInfo,
+  options: ReleaseNotesOptions
+): TemplateContext {
+  const {
+    categorized: changelogCategorized,
+    uncategorized: changelogUncategorized,
+    open: changelogOpen,
+    ignored: changelogIgnored
+  } = changelogStrings
+
+  const {categorizedList, uncategorizedList, openList, ignoredList} = prStrings
+
+  let releaseNotesTemplateContext = new TemplateContext()
+
+  releaseNotesTemplateContext.set('CHANGELOG', changelogCategorized)
+  releaseNotesTemplateContext.set('UNCATEGORIZED', changelogUncategorized)
+  releaseNotesTemplateContext.set('OPEN', changelogOpen)
+  releaseNotesTemplateContext.set('IGNORED', changelogIgnored)
+  // fill special collected contributors
+  releaseNotesTemplateContext.set('CONTRIBUTORS', contributorsString)
+  releaseNotesTemplateContext.set('EXTERNAL_CONTRIBUTORS', externalContributorString)
+  // fill other placeholders
+  releaseNotesTemplateContext.set('CATEGORIZED_COUNT', categorizedList.length.toString())
+  releaseNotesTemplateContext.set('UNCATEGORIZED_COUNT', uncategorizedList.length.toString())
+  releaseNotesTemplateContext.set('OPEN_COUNT', openList.length.toString())
+  releaseNotesTemplateContext.set('IGNORED_COUNT', ignoredList.length.toString())
+  // code change placeholders
+  releaseNotesTemplateContext.set('CHANGED_FILES', diffInfo.changedFiles.toString())
+  releaseNotesTemplateContext.set('ADDITIONS', diffInfo.additions.toString())
+  releaseNotesTemplateContext.set('DELETIONS', diffInfo.deletions.toString())
+  releaseNotesTemplateContext.set('CHANGES', diffInfo.changes.toString())
+  releaseNotesTemplateContext.set('COMMITS', diffInfo.commits.toString())
+
+  const coreReleasesNotesContext = buildCoreReleaseNotesTemplateContext(options)
+
+  releaseNotesTemplateContext = mergeMaps(releaseNotesTemplateContext, coreReleasesNotesContext)
+
+  return releaseNotesTemplateContext
+}
+
+function buildCategorizedOutput(flatCategories: Category[], config: Configuration): Record<string, string[]> {
   const transformedCategorized = {}
+
   for (const category of flatCategories) {
     let entries = category.entries
 
@@ -281,108 +463,8 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
 
     Object.assign(transformedCategorized, {[category.key || category.title]: category.entries})
   }
-  core.setOutput('categorized', JSON.stringify(transformedCategorized))
 
-  // construct final changelog
-  let changelogCategorized = ''
-  for (const category of flatCategories) {
-    const pullRequests = category.entries || []
-    changelogCategorized = buildCategorizedChangelog(changelogCategorized, category, pullRequests)
-  }
-  core.info(`✒️ Wrote ${categorizedPrs.length} categorized pull requests down`)
-  if (core.isDebug()) {
-    for (const pr of categorizedPrs) {
-      core.debug(`    ${pr}`)
-    }
-  }
-  core.setOutput('categorized_prs', categorizedPrs.length)
-
-  let changelogUncategorized = ''
-  for (const pr of uncategorizedPrs) {
-    changelogUncategorized = `${changelogUncategorized + pr}\n`
-  }
-  core.info(`✒️ Wrote ${uncategorizedPrs.length} non categorized pull requests down`)
-  if (core.isDebug()) {
-    for (const pr of uncategorizedPrs) {
-      core.debug(`    ${pr}`)
-    }
-  }
-  core.setOutput('uncategorized_prs', uncategorizedPrs.length)
-
-  let changelogOpen = ''
-  if (openPrs.length > 0) {
-    for (const pr of openPrs) {
-      changelogOpen = `${changelogOpen + pr}\n`
-    }
-    core.info(`✒️ Wrote ${openPrs.length} open pull requests down`)
-    if (core.isDebug()) {
-      for (const pr of openPrs) {
-        core.debug(`    ${pr}`)
-      }
-    }
-    core.setOutput('open_prs', openPrs.length)
-  }
-
-  let changelogIgnored = ''
-  for (const pr of ignoredPrs) {
-    changelogIgnored = `${changelogIgnored + pr}\n`
-  }
-  if (core.isDebug()) {
-    for (const pr of ignoredPrs) {
-      core.debug(`    ${pr}`)
-    }
-  }
-  core.info(`✒️ Wrote ${ignoredPrs.length} ignored pull requests down`)
-
-  // collect all contributors
-  const contributorsSet: Set<string> = new Set()
-  for (const pr of prs) {
-    contributorsSet.add(`@${pr.author}`)
-  }
-  const contributorsArray = Array.from(contributorsSet)
-  const contributorsString = contributorsArray.join(', ')
-  const externalContributorString = contributorsArray.filter(value => value !== options.owner).join(', ')
-  core.setOutput('contributors', JSON.stringify(contributorsSet))
-
-  // fill template
-  let releaseNotesTemplateContext = new TemplateContext()
-  releaseNotesTemplateContext.set('CHANGELOG', changelogCategorized)
-  releaseNotesTemplateContext.set('UNCATEGORIZED', changelogUncategorized)
-  releaseNotesTemplateContext.set('OPEN', changelogOpen)
-  releaseNotesTemplateContext.set('IGNORED', changelogIgnored)
-  // fill special collected contributors
-  releaseNotesTemplateContext.set('CONTRIBUTORS', contributorsString)
-  releaseNotesTemplateContext.set('EXTERNAL_CONTRIBUTORS', externalContributorString)
-  // fill other placeholders
-  releaseNotesTemplateContext.set('CATEGORIZED_COUNT', categorizedPrs.length.toString())
-  releaseNotesTemplateContext.set('UNCATEGORIZED_COUNT', uncategorizedPrs.length.toString())
-  releaseNotesTemplateContext.set('OPEN_COUNT', openPrs.length.toString())
-  releaseNotesTemplateContext.set('IGNORED_COUNT', ignoredPrs.length.toString())
-  // code change placeholders
-  releaseNotesTemplateContext.set('CHANGED_FILES', diffInfo.changedFiles.toString())
-  releaseNotesTemplateContext.set('ADDITIONS', diffInfo.additions.toString())
-  releaseNotesTemplateContext.set('DELETIONS', diffInfo.deletions.toString())
-  releaseNotesTemplateContext.set('CHANGES', diffInfo.changes.toString())
-  releaseNotesTemplateContext.set('COMMITS', diffInfo.commits.toString())
-
-  const coreReleasesNotesContext = buildCoreReleaseNotesTemplateContext(options)
-
-  releaseNotesTemplateContext = mergeMaps(releaseNotesTemplateContext, coreReleasesNotesContext)
-
-  let renderedReleaseNotesTemplate = renderTemplateAndCollectPlaceholderContext(
-    config.template,
-    releaseNotesTemplateContext,
-    groupedPlaceholders,
-    customPlaceholdersTemplateContext,
-    config
-  )
-
-  renderedReleaseNotesTemplate = renderTemplateWithContext(renderedReleaseNotesTemplate, customPlaceholdersTemplateContext, config)
-  renderedReleaseNotesTemplate = cleanupPrPlaceholders(renderedReleaseNotesTemplate, groupedPlaceholders)
-  renderedReleaseNotesTemplate = cleanupPlaceholders(renderedReleaseNotesTemplate)
-  core.info(`ℹ️ Filled template`)
-  core.endGroup()
-  return renderedReleaseNotesTemplate
+  return transformedCategorized
 }
 
 function recursiveCategorizePr(category: Category, pr: PullRequestInfo, body: string): boolean[] {
@@ -402,10 +484,11 @@ function recursiveCategorizePr(category: Category, pr: PullRequestInfo, body: st
 
   // if consumed we don't handle it anymore, as it was matched in a child, don't handle anymore
   if (!consumed && !matched) {
-    const pullRequests = category.entries || []
+    category.entries = category.entries || []
+
     matched = matchesParent
     if (matched) {
-      pullRequests.push(body) // if matched add the PR to the list
+      category.entries.push(body) // if matched add the PR to the list
     }
   }
   if (matched && category.consume) {
@@ -469,23 +552,25 @@ function categorizePr(category: Category, pr: PullRequestInfo): boolean {
   return matched
 }
 
-function buildCategorizedChangelog(changelog: string, category: Category, pullRequests: string[]): string {
+function buildCategorizedChangelogString(category: Category, pullRequests: string[]): string {
+  let categorizedString = ''
+
   if (pullRequests.length > 0 || hasChildWithEntries(category)) {
     if (category.title) {
-      changelog = `${changelog + category.title}\n\n`
+      categorizedString = `${categorizedString + category.title}\n\n`
     }
 
     for (const pr of pullRequests) {
-      changelog = `${changelog + pr}\n`
+      categorizedString = `${categorizedString + pr}\n`
     }
-    changelog = `${changelog}\n` // add space between sections
+    categorizedString = `${categorizedString}\n` // add space between sections
   } else if (category.empty_content !== undefined) {
     if (category.title) {
-      changelog = `${changelog + category.title}\n\n`
+      categorizedString = `${categorizedString + category.title}\n\n`
     }
-    changelog = `${changelog + category.empty_content}\n\n`
+    categorizedString = `${categorizedString + category.empty_content}\n\n`
   }
-  return changelog
+  return categorizedString
 }
 
 export function renderEmptyChangelogTemplate(template: string, options: ReleaseNotesOptions): string {

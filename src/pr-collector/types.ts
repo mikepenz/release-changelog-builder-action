@@ -61,3 +61,17 @@ export interface RegexTransformer {
 
 export class GroupedTemplateContext extends Map<string, string[]> {}
 export class TemplateContext extends Map<string, string> {}
+
+export type ChangelogStrings = {
+  categorized: string
+  uncategorized: string
+  open: string
+  ignored: string
+}
+
+export type PrStrings = {
+  categorizedList: string[]
+  uncategorizedList: string[]
+  openList: string[]
+  ignoredList: string[]
+}
