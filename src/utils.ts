@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import * as fs from 'fs'
 import * as path from 'path'
-import {Configuration, DefaultCommitConfiguration, DefaultConfiguration} from './configuration'
+import {Configuration, DefaultCommitConfiguration, DefaultConfiguration, Placeholder} from './configuration'
 import moment from 'moment'
 import {DiffInfo} from './pr-collector/commits'
 import {PullRequestInfo} from './pr-collector/pullRequests'
@@ -123,7 +123,7 @@ export function resolveMode(mode: string | undefined, commitMode: boolean): 'PR'
   }
 
   if (mode !== undefined) {
-    const upperCaseMode = mode.toUpperCase();
+    const upperCaseMode = mode.toUpperCase()
     if (upperCaseMode === 'COMMIT') {
       return 'COMMIT'
     } else if (upperCaseMode === 'HYBRID') {
@@ -243,6 +243,27 @@ export function createOrSet<T>(map: Map<string, T[]>, key: string, value: T): vo
   }
 }
 
+/**
+ * Groups an array of Placeholder objects by their source attribute.
+ *
+ * @param {Placeholder[]} placeholders - An array of Placeholder objects to be grouped.
+ * @returns {Map<string, Placeholder[]>} A map where the key is the source attribute of the Placeholder objects,
+ * and the value is an array of Placeholder objects that share the same source attribute.
+ */
+export function groupPlaceholders(placeholders: Placeholder[]): Map<string, Placeholder[]> {
+  const map = new Map<string, Placeholder[]>()
+  for (const ph of placeholders) {
+    const key = ph.source
+    const entry = map.get(key)
+    if (entry === undefined) {
+      map.set(key, [ph])
+    } else {
+      entry.push(ph)
+    }
+  }
+  return map
+}
+
 export function haveCommonElements(arr1: string[], arr2: Set<string>): boolean {
   return arr1.some(item => arr2.has(item))
 }
@@ -257,4 +278,8 @@ export function haveEveryElements(arr1: string[], arr2: Set<string>): boolean {
 
 export function haveEveryElementsArr(arr1: string[], arr2: string[]): boolean {
   return haveEveryElements(arr1, new Set(arr2))
+}
+
+export function mergeMaps<T, U>(map1: Map<T, U>, map2: Map<T, U>): Map<T, U> {
+  return new Map<T, U>([...map1, ...map2])
 }
