@@ -26,6 +26,8 @@ export interface PullRequestInfo {
   approvedReviewers: string[]
   reviews?: CommentInfo[]
   status: 'open' | 'merged'
+  // TODO create a CommitInfo" type with only relevant properties
+  isConvertedFromCommit: boolean
 }
 
 export interface CommentInfo {
@@ -54,7 +56,8 @@ export const EMPTY_PULL_REQUEST_INFO: PullRequestInfo = {
   assignees: [],
   requestedReviewers: [],
   approvedReviewers: [],
-  status: 'open'
+  status: 'open',
+  isConvertedFromCommit: false
 }
 
 export const EMPTY_COMMENT_INFO: CommentInfo = {

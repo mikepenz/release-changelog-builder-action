@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import * as fs from 'fs'
 import * as path from 'path'
-import {Configuration, DefaultCommitConfiguration, DefaultConfiguration} from './configuration'
+import {Configuration, DefaultCommitConfiguration, DefaultConfiguration, Placeholder} from './configuration'
 import moment from 'moment'
 import {DiffInfo} from './pr-collector/commits'
 import {PullRequestInfo} from './pr-collector/pullRequests'
@@ -123,7 +123,7 @@ export function resolveMode(mode: string | undefined, commitMode: boolean): 'PR'
   }
 
   if (mode !== undefined) {
-    const upperCaseMode = mode.toUpperCase();
+    const upperCaseMode = mode.toUpperCase()
     if (upperCaseMode === 'COMMIT') {
       return 'COMMIT'
     } else if (upperCaseMode === 'HYBRID') {
@@ -206,6 +206,7 @@ export function mergeConfiguration(jc?: Configuration, fc?: Configuration, mode?
     sort: jc?.sort || fc?.sort || def.sort,
     template: jc?.template || fc?.template || def.template,
     pr_template: jc?.pr_template || fc?.pr_template || def.pr_template,
+    commit_template: jc?.commit_template || fc?.commit_template || def.commit_template,
     empty_template: jc?.empty_template || fc?.empty_template || def.empty_template,
     categories: jc?.categories || fc?.categories || def.categories,
     ignore_labels: jc?.ignore_labels || fc?.ignore_labels || def.ignore_labels,
@@ -215,7 +216,9 @@ export function mergeConfiguration(jc?: Configuration, fc?: Configuration, mode?
     tag_resolver: jc?.tag_resolver || fc?.tag_resolver || def.tag_resolver,
     base_branches: jc?.base_branches || fc?.base_branches || def.base_branches,
     custom_placeholders: jc?.custom_placeholders || fc?.custom_placeholders || def.custom_placeholders,
-    trim_values: jc?.trim_values || fc?.trim_values || def.trim_values
+    trim_values: jc?.trim_values || fc?.trim_values || def.trim_values,
+    categorized_include_empty_content:
+      jc?.categorized_include_empty_content || fc?.categorized_include_empty_content || def.categorized_include_empty_content
   }
 }
 
@@ -243,6 +246,27 @@ export function createOrSet<T>(map: Map<string, T[]>, key: string, value: T): vo
   }
 }
 
+/**
+ * Groups an array of Placeholder objects by their source attribute.
+ *
+ * @param {Placeholder[]} placeholders - An array of Placeholder objects to be grouped.
+ * @returns {Map<string, Placeholder[]>} A map where the key is the source attribute of the Placeholder objects,
+ * and the value is an array of Placeholder objects that share the same source attribute.
+ */
+export function groupPlaceholders(placeholders: Placeholder[]): Map<string, Placeholder[]> {
+  const map = new Map<string, Placeholder[]>()
+  for (const ph of placeholders) {
+    const key = ph.source
+    const entry = map.get(key)
+    if (entry === undefined) {
+      map.set(key, [ph])
+    } else {
+      entry.push(ph)
+    }
+  }
+  return map
+}
+
 export function haveCommonElements(arr1: string[], arr2: Set<string>): boolean {
   return arr1.some(item => arr2.has(item))
 }
@@ -257,4 +281,8 @@ export function haveEveryElements(arr1: string[], arr2: Set<string>): boolean {
 
 export function haveEveryElementsArr(arr1: string[], arr2: string[]): boolean {
   return haveEveryElements(arr1, new Set(arr2))
+}
+
+export function mergeMaps(map1: Map<string, string>, map2: Map<string, string>): Map<string, string> {
+  return new Map<string, string>([...map1, ...map2])
 }

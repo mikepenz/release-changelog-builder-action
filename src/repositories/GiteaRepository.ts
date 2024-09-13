@@ -83,7 +83,8 @@ export class GiteaRepository extends BaseRepository {
       approvedReviewers: [],
       createdAt: moment(pr.created_at),
       status,
-      reviews: undefined
+      reviews: undefined,
+      isConvertedFromCommit: false
     }
   }
 

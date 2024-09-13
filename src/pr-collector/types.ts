@@ -58,3 +58,6 @@ export interface RegexTransformer {
   method?: 'replace' | 'replaceAll' | 'match' | 'regexr'
   onEmpty?: string
 }
+
+export class GroupedTemplateContext extends Map<string, string[]> {}
+export class TemplateContext extends Map<string, string> {}

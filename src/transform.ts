@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
-import {Category, Configuration, Placeholder, Property} from './configuration'
-import {createOrSet, haveCommonElementsArr, haveEveryElementsArr} from './utils'
+import {Category, Configuration, Placeholder, PlaceholderGroup, Property} from './configuration'
+import {createOrSet, groupPlaceholders, haveCommonElementsArr, haveEveryElementsArr, mergeMaps} from './utils'
 import {
   CommentInfo,
   EMPTY_COMMENT_INFO,
@@ -11,11 +11,10 @@ import {
 } from './pr-collector/pullRequests'
 import {DiffInfo} from './pr-collector/commits'
 import {transformStringToOptionalValue, transformStringToValues, validateRegex} from './pr-collector/regexUtils'
-import {Regex, RegexTransformer} from './pr-collector/types'
+import {GroupedTemplateContext, Regex, RegexTransformer, TemplateContext} from './pr-collector/types'
 import {ReleaseNotesOptions} from './releaseNotesBuilder'
 import {matchesRules} from './regexUtils'
 
-const EMPTY_MAP = new Map<string, string>()
 let CLEAR = false
 
 export function clear(): void {
@@ -32,7 +31,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
   let prs: PullRequestData[] = origPrs
   if (prs.length === 0) {
     core.warning(`⚠️ No pull requests found`)
-    const result = replaceEmptyTemplate(options.configuration.empty_template, options)
+    const result = renderEmptyChangelogTemplate(options.configuration.empty_template, options)
     core.endGroup()
     return result
   }
@@ -123,21 +122,70 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
     }
   }
 
-  // keep reference for the placeholder values
-  const placeholders = new Map<string, Placeholder[]>()
-  for (const ph of config.custom_placeholders || []) {
-    createOrSet(placeholders, ph.source, ph)
-  }
-  const placeholderPrMap = new Map<string, string[]>()
+  const groupedPlaceholders = groupPlaceholders(config.custom_placeholders || [])
+
+  const customPlaceholdersTemplateContext = new GroupedTemplateContext()
 
   const validatedTransformers = validateTransformers(config.transformers)
-  const transformedMap = new Map<PullRequestInfo, string>()
+  const prInfoMap = new Map<PullRequestInfo, string>()
+  const commitInfoMap = new Map<PullRequestInfo, string>()
+
+  let renderedPrTemplate = config.pr_template
+  let renderedCommitTemplate = config.commit_template
+
   // convert PRs to their text representation
-  for (const pr of prs) {
-    transformedMap.set(pr, transform(fillPrTemplate(pr, config.pr_template, placeholders, placeholderPrMap, config), validatedTransformers))
+  const realPrs = prs.filter(x => !x.isConvertedFromCommit)
+  const commitPrs = prs.filter(x => x.isConvertedFromCommit)
+
+  for (const pr of realPrs) {
+    const [prTemplateContext, prArrayTemplateContext] = buildPrTemplateContext(pr)
+
+    renderedPrTemplate = renderTemplateAndCollectPlaceholderContext(
+      renderedPrTemplate,
+      prArrayTemplateContext,
+      groupedPlaceholders,
+      customPlaceholdersTemplateContext,
+      config
+    )
+
+    renderedPrTemplate = renderTemplateAndCollectPlaceholderContext(
+      renderedPrTemplate,
+      prTemplateContext,
+      groupedPlaceholders,
+      customPlaceholdersTemplateContext,
+      config
+    )
+
+    prInfoMap.set(pr, transform(renderedPrTemplate, validatedTransformers))
+  }
+  for (const pr of commitPrs) {
+    const [prTemplateContext, prArrayTemplateContext] = buildPrTemplateContext(pr)
+
+    renderedCommitTemplate = renderTemplateAndCollectPlaceholderContext(
+      renderedCommitTemplate,
+      prArrayTemplateContext,
+      groupedPlaceholders,
+      customPlaceholdersTemplateContext,
+      config
+    )
+    renderedCommitTemplate = renderTemplateAndCollectPlaceholderContext(
+      renderedCommitTemplate,
+      prTemplateContext,
+      groupedPlaceholders,
+      customPlaceholdersTemplateContext,
+      config
+    )
+
+    commitInfoMap.set(pr, transform(renderedCommitTemplate, validatedTransformers))
   }
   core.info(`ℹ️ Used ${validatedTransformers.length} transformers to adjust message`)
-  core.info(`✒️ Wrote messages for ${prs.length} pull requests`)
+
+  if (options.mode === 'PR' || options.mode === 'HYBRID') {
+    core.info(`✒️ Wrote messages for ${prs.length} pull requests`)
+  }
+  if (options.mode === 'COMMIT' || options.mode === 'HYBRID') {
+    core.info(`✒️ Wrote messages for ${commitPrs.length} commits`)
+  }
 
   // bring PRs into the order of categories
   const categories = config.categories
@@ -156,8 +204,9 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
     }
   }
 
+  // TODO: figure this out
   // bring elements in order
-  prLoop: for (const [pr, body] of transformedMap) {
+  prLoop: for (const [pr, body] of prInfoMap) {
     if (
       haveCommonElementsArr(
         ignoredLabels.map(lbl => lbl.toLocaleLowerCase('en')),
@@ -220,15 +269,25 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
   // serialize and provide the categorized content as json
   const transformedCategorized = {}
   for (const category of flatCategories) {
+    let entries = category.entries
+
+    if (entries?.length === 0) {
+      const includeEmptyContent = config.categorized_include_empty_content && category.empty_content?.trim() !== ''
+
+      if (includeEmptyContent) {
+        entries = [category.empty_content ?? '']
+      }
+    }
+
     Object.assign(transformedCategorized, {[category.key || category.title]: category.entries})
   }
   core.setOutput('categorized', JSON.stringify(transformedCategorized))
 
   // construct final changelog
-  let changelog = ''
+  let changelogCategorized = ''
   for (const category of flatCategories) {
     const pullRequests = category.entries || []
-    changelog = attachCategoryChangelog(changelog, category, pullRequests)
+    changelogCategorized = buildCategorizedChangelog(changelogCategorized, category, pullRequests)
   }
   core.info(`✒️ Wrote ${categorizedPrs.length} categorized pull requests down`)
   if (core.isDebug()) {
@@ -276,7 +335,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
   core.info(`✒️ Wrote ${ignoredPrs.length} ignored pull requests down`)
 
   // collect all contributors
-  const contributorsSet: Set<String> = new Set()
+  const contributorsSet: Set<string> = new Set()
   for (const pr of prs) {
     contributorsSet.add(`@${pr.author}`)
   }
@@ -286,35 +345,44 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
   core.setOutput('contributors', JSON.stringify(contributorsSet))
 
   // fill template
-  const placeholderMap = new Map<string, string>()
-  placeholderMap.set('CHANGELOG', changelog)
-  placeholderMap.set('UNCATEGORIZED', changelogUncategorized)
-  placeholderMap.set('OPEN', changelogOpen)
-  placeholderMap.set('IGNORED', changelogIgnored)
+  let releaseNotesTemplateContext = new TemplateContext()
+  releaseNotesTemplateContext.set('CHANGELOG', changelogCategorized)
+  releaseNotesTemplateContext.set('UNCATEGORIZED', changelogUncategorized)
+  releaseNotesTemplateContext.set('OPEN', changelogOpen)
+  releaseNotesTemplateContext.set('IGNORED', changelogIgnored)
   // fill special collected contributors
-  placeholderMap.set('CONTRIBUTORS', contributorsString)
-  placeholderMap.set('EXTERNAL_CONTRIBUTORS', externalContributorString)
+  releaseNotesTemplateContext.set('CONTRIBUTORS', contributorsString)
+  releaseNotesTemplateContext.set('EXTERNAL_CONTRIBUTORS', externalContributorString)
   // fill other placeholders
-  placeholderMap.set('CATEGORIZED_COUNT', categorizedPrs.length.toString())
-  placeholderMap.set('UNCATEGORIZED_COUNT', uncategorizedPrs.length.toString())
-  placeholderMap.set('OPEN_COUNT', openPrs.length.toString())
-  placeholderMap.set('IGNORED_COUNT', ignoredPrs.length.toString())
+  releaseNotesTemplateContext.set('CATEGORIZED_COUNT', categorizedPrs.length.toString())
+  releaseNotesTemplateContext.set('UNCATEGORIZED_COUNT', uncategorizedPrs.length.toString())
+  releaseNotesTemplateContext.set('OPEN_COUNT', openPrs.length.toString())
+  releaseNotesTemplateContext.set('IGNORED_COUNT', ignoredPrs.length.toString())
   // code change placeholders
-  placeholderMap.set('CHANGED_FILES', diffInfo.changedFiles.toString())
-  placeholderMap.set('ADDITIONS', diffInfo.additions.toString())
-  placeholderMap.set('DELETIONS', diffInfo.deletions.toString())
-  placeholderMap.set('CHANGES', diffInfo.changes.toString())
-  placeholderMap.set('COMMITS', diffInfo.commits.toString())
-  fillAdditionalPlaceholders(options, placeholderMap)
+  releaseNotesTemplateContext.set('CHANGED_FILES', diffInfo.changedFiles.toString())
+  releaseNotesTemplateContext.set('ADDITIONS', diffInfo.additions.toString())
+  releaseNotesTemplateContext.set('DELETIONS', diffInfo.deletions.toString())
+  releaseNotesTemplateContext.set('CHANGES', diffInfo.changes.toString())
+  releaseNotesTemplateContext.set('COMMITS', diffInfo.commits.toString())
 
-  let transformedChangelog = config.template
-  transformedChangelog = replacePlaceholders(transformedChangelog, EMPTY_MAP, placeholderMap, placeholders, placeholderPrMap, config)
-  transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap, config)
-  transformedChangelog = cleanupPrPlaceholders(transformedChangelog, placeholders)
-  transformedChangelog = cleanupPlaceholders(transformedChangelog)
+  const coreReleasesNotesContext = buildCoreReleaseNotesTemplateContext(options)
+
+  releaseNotesTemplateContext = mergeMaps(releaseNotesTemplateContext, coreReleasesNotesContext)
+
+  let renderedReleaseNotesTemplate = renderTemplateAndCollectPlaceholderContext(
+    config.template,
+    releaseNotesTemplateContext,
+    groupedPlaceholders,
+    customPlaceholdersTemplateContext,
+    config
+  )
+
+  renderedReleaseNotesTemplate = renderTemplateWithContext(renderedReleaseNotesTemplate, customPlaceholdersTemplateContext, config)
+  renderedReleaseNotesTemplate = cleanupPrPlaceholders(renderedReleaseNotesTemplate, groupedPlaceholders)
+  renderedReleaseNotesTemplate = cleanupPlaceholders(renderedReleaseNotesTemplate)
   core.info(`ℹ️ Filled template`)
   core.endGroup()
-  return transformedChangelog
+  return renderedReleaseNotesTemplate
 }
 
 function recursiveCategorizePr(category: Category, pr: PullRequestInfo, body: string): boolean[] {
@@ -401,7 +469,7 @@ function categorizePr(category: Category, pr: PullRequestInfo): boolean {
   return matched
 }
 
-function attachCategoryChangelog(changelog: string, category: Category, pullRequests: string[]): string {
+function buildCategorizedChangelog(changelog: string, category: Category, pullRequests: string[]): string {
   if (pullRequests.length > 0 || hasChildWithEntries(category)) {
     if (category.title) {
       changelog = `${changelog + category.title}\n\n`
@@ -420,137 +488,159 @@ function attachCategoryChangelog(changelog: string, category: Category, pullRequ
   return changelog
 }
 
-export function replaceEmptyTemplate(template: string, options: ReleaseNotesOptions): string {
+export function renderEmptyChangelogTemplate(template: string, options: ReleaseNotesOptions): string {
   const placeholders = new Map<string, Placeholder[]>()
   for (const ph of options.configuration.custom_placeholders || []) {
     createOrSet(placeholders, ph.source, ph)
   }
-  const placeholderMap = new Map<string, string>()
-  fillAdditionalPlaceholders(options, placeholderMap)
-  return replacePlaceholders(template, EMPTY_MAP, placeholderMap, placeholders, undefined, options.configuration)
+
+  const releaseNotesTemplateContext = buildCoreReleaseNotesTemplateContext(options)
+
+  const renderedEmptyChangelogTemplate = renderTemplateAndCollectPlaceholderContext(
+    template,
+    releaseNotesTemplateContext,
+    placeholders,
+    undefined,
+    options.configuration
+  )
+
+  return renderedEmptyChangelogTemplate
 }
 
-function fillAdditionalPlaceholders(
-  options: ReleaseNotesOptions,
-  placeholderMap: Map<string, string> /* placeholderKey and original value */
-): void {
-  placeholderMap.set('OWNER', options.owner)
-  placeholderMap.set('REPO', options.repo)
-  placeholderMap.set('FROM_TAG', options.fromTag.name)
-  placeholderMap.set('FROM_TAG_DATE', options.fromTag.date?.toISOString() || '')
-  placeholderMap.set('TO_TAG', options.toTag.name)
-  placeholderMap.set('TO_TAG_DATE', options.toTag.date?.toISOString() || '')
+function buildCoreReleaseNotesTemplateContext(options: ReleaseNotesOptions): TemplateContext {
+  const templateContext = new TemplateContext()
+
+  templateContext.set('OWNER', options.owner)
+  templateContext.set('REPO', options.repo)
+  templateContext.set('FROM_TAG', options.fromTag.name)
+  templateContext.set('FROM_TAG_DATE', options.fromTag.date?.toISOString() || '')
+  templateContext.set('TO_TAG', options.toTag.name)
+  templateContext.set('TO_TAG_DATE', options.toTag.date?.toISOString() || '')
   const fromDate = options.fromTag.date
   const toDate = options.toTag.date
   if (fromDate !== undefined && toDate !== undefined) {
-    placeholderMap.set('DAYS_SINCE', toDate.diff(fromDate, 'days').toString() || '')
+    templateContext.set('DAYS_SINCE', toDate.diff(fromDate, 'days').toString() || '')
   } else {
-    placeholderMap.set('DAYS_SINCE', '')
+    templateContext.set('DAYS_SINCE', '')
   }
-  placeholderMap.set(
+  templateContext.set(
     'RELEASE_DIFF',
     `${options.repositoryUtils.homeUrl}/${options.owner}/${options.repo}/compare/${options.fromTag.name}...${options.toTag.name}`
   )
+
+  return templateContext
 }
 
-function fillPrTemplate(
-  pr: PullRequestData,
-  template: string,
-  placeholders: Map<string, Placeholder[]> /* placeholders to apply */,
-  placeholderPrMap: Map<string, string[]> /* map to keep replaced placeholder values with their key */,
-  configuration: Configuration
-): string {
-  const arrayPlaceholderMap = new Map<string, string>()
-  fillReviewPlaceholders(arrayPlaceholderMap, 'REVIEWS', pr.reviews || [])
-  fillChildPrPlaceholders(arrayPlaceholderMap, 'REFERENCED', pr.childPrs || [])
-  const placeholderMap = new Map<string, string>()
-  placeholderMap.set('NUMBER', pr.number.toString())
-  placeholderMap.set('TITLE', pr.title)
-  placeholderMap.set('URL', pr.htmlURL)
-  placeholderMap.set('STATUS', pr.status)
-  placeholderMap.set('CREATED_AT', pr.createdAt.toISOString())
-  placeholderMap.set('MERGED_AT', pr.mergedAt?.toISOString() || '')
-  placeholderMap.set('MERGE_SHA', pr.mergeCommitSha)
-  placeholderMap.set('AUTHOR', pr.author)
-  placeholderMap.set('AUTHOR_NAME', pr.authorName || '')
-  placeholderMap.set('LABELS', [...pr.labels]?.filter(l => !l.startsWith('--rcba-'))?.join(', ') || '')
-  placeholderMap.set('MILESTONE', pr.milestone || '')
-  placeholderMap.set('BODY', pr.body)
-  fillArrayPlaceholders(arrayPlaceholderMap, 'ASSIGNEES', pr.assignees || [])
-  placeholderMap.set('ASSIGNEES', pr.assignees?.join(', ') || '')
-  fillArrayPlaceholders(arrayPlaceholderMap, 'REVIEWERS', pr.requestedReviewers || [])
-  placeholderMap.set('REVIEWERS', pr.requestedReviewers?.join(', ') || '')
-  fillArrayPlaceholders(arrayPlaceholderMap, 'APPROVERS', pr.approvedReviewers || [])
-  placeholderMap.set('APPROVERS', pr.approvedReviewers?.join(', ') || '')
-  placeholderMap.set('BRANCH', pr.branch || '')
-  placeholderMap.set('BASE_BRANCH', pr.baseBranch)
-  return replacePlaceholders(template, arrayPlaceholderMap, placeholderMap, placeholders, placeholderPrMap, configuration)
+function buildPrTemplateContext(pr: PullRequestData): [TemplateContext, TemplateContext] {
+  const prTemplateContext = new TemplateContext()
+
+  prTemplateContext.set('NUMBER', pr.number.toString())
+  prTemplateContext.set('TITLE', pr.title)
+  prTemplateContext.set('URL', pr.htmlURL)
+  prTemplateContext.set('STATUS', pr.status)
+  prTemplateContext.set('CREATED_AT', pr.createdAt.toISOString())
+  prTemplateContext.set('MERGED_AT', pr.mergedAt?.toISOString() || '')
+  prTemplateContext.set('MERGE_SHA', pr.mergeCommitSha)
+  prTemplateContext.set('AUTHOR', pr.author)
+  prTemplateContext.set('AUTHOR_NAME', pr.authorName || '')
+  prTemplateContext.set('LABELS', [...pr.labels]?.filter(l => !l.startsWith('--rcba-'))?.join(', ') || '')
+  prTemplateContext.set('MILESTONE', pr.milestone || '')
+  prTemplateContext.set('BODY', pr.body)
+  prTemplateContext.set('ASSIGNEES', pr.assignees?.join(', ') || '')
+  prTemplateContext.set('REVIEWERS', pr.requestedReviewers?.join(', ') || '')
+  prTemplateContext.set('APPROVERS', pr.approvedReviewers?.join(', ') || '')
+  prTemplateContext.set('BRANCH', pr.branch || '')
+  prTemplateContext.set('BASE_BRANCH', pr.baseBranch)
+
+  const prArrayTemplateContext = new TemplateContext()
+  fillReviewPlaceholders(prArrayTemplateContext, 'REVIEWS', pr.reviews || [])
+  fillChildPrPlaceholders(prArrayTemplateContext, 'REFERENCED', pr.childPrs || [])
+  fillArrayPlaceholders(prArrayTemplateContext, 'ASSIGNEES', pr.assignees || [])
+  fillArrayPlaceholders(prArrayTemplateContext, 'REVIEWERS', pr.requestedReviewers || [])
+  fillArrayPlaceholders(prArrayTemplateContext, 'APPROVERS', pr.approvedReviewers || [])
+
+  return [prTemplateContext, prArrayTemplateContext]
 }
 
-function replacePlaceholders(
+function renderTemplateAndCollectPlaceholderContext(
   template: string,
-  arrayPlaceholderMap: Map<string, string> /* arrayPlaceholderKey and original value */,
-  placeholderMap: Map<string, string> /* placeholderKey and original value */,
-  placeholders: Map<string, Placeholder[]> /* placeholders to apply */,
-  placeholderPrMap: Map<string, string[]> | undefined /* map to keep replaced placeholder values with their key */,
+  templateContext: TemplateContext /* placeholderKey and original value */,
+  customPlaceholders: PlaceholderGroup /* placeholders to apply */,
+  customPlaceholdersTemplateContext: GroupedTemplateContext | undefined /* map to keep replaced placeholder values with their key */,
   configuration: Configuration
 ): string {
   let transformed = template
 
-  // replace array placeholders first
-  for (const [key, value] of arrayPlaceholderMap) {
-    transformed = handlePlaceholder(transformed, key, value, placeholders, placeholderPrMap, configuration)
-  }
-
+  const trimValues = configuration.trim_values
   // replace traditional placeholders
-  for (const [key, value] of placeholderMap) {
-    transformed = handlePlaceholder(transformed, key, value, placeholders, placeholderPrMap, configuration)
+  for (const [key, value] of templateContext) {
+    transformed = transformed.replaceAll(`#{{${key}}}`, trimValues ? value.trim() : value)
+
+    const extractedValues = extractPlaceholderValues(key, value, customPlaceholders, customPlaceholdersTemplateContext)
+
+    for (const [placeholderName, extractedValue] of extractedValues) {
+      transformed = transformed.replaceAll(`#{{${placeholderName}}}`, trimValues ? extractedValue.trim() : extractedValue)
+    }
   }
 
   return transformed
 }
 
-function handlePlaceholder(
-  template: string,
+function extractPlaceholderValues(
   key: string,
   value: string,
-  placeholders: Map<string, Placeholder[]> /* placeholders to apply */,
-  placeholderPrMap: Map<string, string[]> | undefined /* map to keep replaced placeholder values with their key */,
-  configuration: Configuration
-): string {
-  let transformed = template.replaceAll(`#{{${key}}}`, configuration.trim_values ? value.trim() : value)
-  // replace custom placeholders
-  const phs = placeholders.get(key)
-  if (phs) {
-    for (const placeholder of phs) {
-      const transformer = validateRegex(placeholder.transformer)
-      if (transformer?.pattern) {
-        const extractedValue = transformStringToOptionalValue(value, transformer)
-        // note: `.replace` will return the full string again if there was no match
-        // note: This is mostly backwards compatibility
-        if (extractedValue && ((transformer.method && transformer.method !== 'replace') || extractedValue !== value)) {
-          if (placeholderPrMap) {
-            createOrSet(placeholderPrMap, placeholder.name, extractedValue)
-          }
-          transformed = transformed.replaceAll(
-            `#{{${placeholder.name}}}`,
-            configuration.trim_values ? extractedValue.trim() : extractedValue
-          )
+  customPlaceholders: PlaceholderGroup,
+  customPlaceholdersTemplateContext: GroupedTemplateContext | undefined
+): TemplateContext {
+  // Replace custom placeholders
+  const placeholdersForKey = customPlaceholders.get(key)
 
-          if (core.isDebug()) {
-            core.debug(`    Custom Placeholder successfully matched data - ${extractedValue} (${placeholder.name})`)
-          }
-        } else if (core.isDebug() && extractedValue === value) {
-          core.debug(`    Custom Placeholder did result in the full original value returned. Skipping. (${placeholder.name})`)
-        }
+  const extractedValues = new TemplateContext()
+
+  if (!placeholdersForKey) {
+    return extractedValues
+  }
+
+  for (const placeholder of placeholdersForKey) {
+    const extractedValue = extractTransformedValue(value, placeholder)
+
+    if (extractedValue) {
+      extractedValues.set(placeholder.name, extractedValue)
+
+      if (customPlaceholdersTemplateContext) {
+        createOrSet(customPlaceholdersTemplateContext, placeholder.name, extractedValue)
       }
     }
   }
-  return transformed
+
+  return extractedValues
+}
+
+function extractTransformedValue(value: string, placeholder: Placeholder): string | undefined {
+  const transformer = validateRegex(placeholder.transformer)
+
+  if (!transformer?.pattern) {
+    return undefined
+  }
+
+  const extractedValue = transformStringToOptionalValue(value, transformer)
+
+  if (extractedValue && ((transformer.method && transformer.method !== 'replace') || extractedValue !== value)) {
+    if (core.isDebug()) {
+      core.debug(`    Custom Placeholder successfully matched data - ${extractedValue} (${placeholder.name})`)
+    }
+    return extractedValue
+  }
+
+  if (core.isDebug() && extractedValue === value) {
+    core.debug(`    Custom Placeholder did result in the full original value returned. Skipping. (${placeholder.name})`)
+  }
+
+  return undefined
 }
 
 function fillArrayPlaceholders(
-  placeholderMap: Map<string, string> /* placeholderKey and original value */,
+  placeholderMap: TemplateContext /* placeholderKey and original value */,
   key: string,
   values: string[]
 ): void {
@@ -562,7 +652,7 @@ function fillArrayPlaceholders(
 }
 
 function fillReviewPlaceholders(
-  placeholderMap: Map<string, string> /* placeholderKey and original value */,
+  placeholderMap: TemplateContext /* placeholderKey and original value */,
   parentKey: string,
   values: CommentInfo[]
 ): void {
@@ -580,7 +670,7 @@ function fillReviewPlaceholders(
 }
 
 function fillChildPrPlaceholders(
-  placeholderMap: Map<string, string> /* placeholderKey and original value */,
+  placeholderMap: TemplateContext /* placeholderKey and original value */,
   parentKey: string,
   values: PullRequestInfo[]
 ): void {
@@ -597,13 +687,13 @@ function fillChildPrPlaceholders(
   }
 }
 
-function replacePrPlaceholders(
+function renderTemplateWithContext(
   template: string,
-  placeholderPrMap: Map<string, string[]> /* map with all pr related custom placeholder values */,
+  templateContext: GroupedTemplateContext /* map with all pr related custom placeholder values */,
   configuration: Configuration
 ): string {
   let transformed = template
-  for (const [key, values] of placeholderPrMap) {
+  for (const [key, values] of templateContext) {
     for (let i = 0; i < values.length; i++) {
       transformed = transformed.replaceAll(`#{{${key}[${i}]}}`, configuration.trim_values ? values[i].trim() : values[i])
     }
@@ -612,7 +702,7 @@ function replacePrPlaceholders(
   return transformed
 }
 
-function cleanupPrPlaceholders(template: string, placeholders: Map<string, Placeholder[]>): string {
+function cleanupPrPlaceholders(template: string, placeholders: PlaceholderGroup): string {
   let transformed = template
   for (const [, phs] of placeholders) {
     for (const ph of phs) {
