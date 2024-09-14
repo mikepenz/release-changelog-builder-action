@@ -280,8 +280,7 @@ export class GithubRepository extends BaseRepository {
     requestedReviewers: pr.requested_reviewers?.map(reviewer => reviewer?.login || '') || [],
     approvedReviewers: [],
     reviews: undefined,
-    status,
-    isConvertedFromCommit: false
+    status
   })
 
   private mapComment = (comment: Unpacked<PullReviewsData>): CommentInfo => ({

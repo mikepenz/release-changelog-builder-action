@@ -26,9 +26,6 @@ export interface PullRequestInfo {
   approvedReviewers: string[]
   reviews?: CommentInfo[]
   status: 'open' | 'merged'
-  // TODO create a "CommitInfo" type with only relevant properties
-  // And maybe a common "ChangelogItemInfo" type
-  isConvertedFromCommit: boolean
 }
 export interface PullRequestData extends PullRequestInfo {
   childPrs?: PullRequestInfo[]
@@ -59,8 +56,7 @@ export const EMPTY_PULL_REQUEST_INFO: PullRequestInfo = {
   assignees: [],
   requestedReviewers: [],
   approvedReviewers: [],
-  status: 'open',
-  isConvertedFromCommit: false
+  status: 'open'
 }
 
 export const EMPTY_COMMENT_INFO: CommentInfo = {

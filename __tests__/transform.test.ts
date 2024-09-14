@@ -50,8 +50,7 @@ mergedPullRequests.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged',
-    isConvertedFromCommit: false
+    status: 'merged'
   },
   {
     number: 2,
@@ -70,8 +69,7 @@ mergedPullRequests.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged',
-    isConvertedFromCommit: false
+    status: 'merged'
   },
   {
     number: 3,
@@ -90,8 +88,7 @@ mergedPullRequests.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged',
-    isConvertedFromCommit: false
+    status: 'merged'
   },
   {
     number: 4,
@@ -110,8 +107,7 @@ mergedPullRequests.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged',
-    isConvertedFromCommit: false
+    status: 'merged'
   }
 )
 
@@ -132,8 +128,7 @@ const pullRequestWithLabelInBody: PullRequestInfo = {
   assignees: [],
   requestedReviewers: [],
   approvedReviewers: [],
-  status: 'merged',
-  isConvertedFromCommit: false
+  status: 'merged'
 }
 
 const openPullRequest: PullRequestInfo = {
@@ -153,8 +148,7 @@ const openPullRequest: PullRequestInfo = {
   assignees: [],
   requestedReviewers: [],
   approvedReviewers: [],
-  status: 'open',
-  isConvertedFromCommit: false
+  status: 'open'
 }
 
 it('Extract label from title, combined regex', async () => {
@@ -270,8 +264,7 @@ pullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged',
-    isConvertedFromCommit: false
+    status: 'merged'
   },
   {
     number: 2,
@@ -290,8 +283,7 @@ pullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged',
-    isConvertedFromCommit: false
+    status: 'merged'
   },
   {
     number: 3,
@@ -310,8 +302,7 @@ pullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged',
-    isConvertedFromCommit: false
+    status: 'merged'
   },
   {
     number: 4,
@@ -330,8 +321,7 @@ pullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'merged',
-    isConvertedFromCommit: false
+    status: 'merged'
   }
 )
 
@@ -354,8 +344,7 @@ openPullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'open',
-    isConvertedFromCommit: false
+    status: 'open'
   },
   {
     number: 7,
@@ -374,8 +363,7 @@ openPullRequestsWithLabels.push(
     assignees: [],
     requestedReviewers: [],
     approvedReviewers: [],
-    status: 'open',
-    isConvertedFromCommit: false
+    status: 'open'
   }
 )
 
@@ -473,9 +461,9 @@ it('Commit SHA-1 in commitMode', async () => {
   customConfig.sort = 'DESC'
   customConfig.commit_template = '#{{MERGE_SHA}}'
 
-  // Since this is COMMIT mode, the prs would have been built with "isConvertedFromCommit: true"
+  // Since this is COMMIT mode, the prs would have been built with "number: 0"
   const convertedPrs = pullRequestsWithLabels.map(pr => {
-    return {...pr, isConvertedFromCommit: true}
+    return {...pr, number: 0}
   })
 
   const resultChangelog = buildChangelog(DefaultDiffInfo, convertedPrs, {

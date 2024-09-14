@@ -136,8 +136,8 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
   const includeCommits = options.mode === 'COMMIT' || options.mode === 'HYBRID'
 
   // convert PRs to their text representation
-  const realPrs = includePrs ? prs.filter(x => !x.isConvertedFromCommit) : []
-  const commitPrs = includeCommits ? prs.filter(x => x.isConvertedFromCommit) : []
+  const realPrs = includePrs ? prs.filter(x => x.number !== 0) : []
+  const commitPrs = includeCommits ? prs.filter(x => x.number === 0) : []
 
   if (includePrs) {
     core.info(`✒️ Wrote messages for ${prs.length} pull requests`)

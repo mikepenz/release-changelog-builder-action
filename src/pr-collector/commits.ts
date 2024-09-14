@@ -127,8 +127,7 @@ export function convertCommitsToPrs(options: Options, diffInfo: DiffInfo): [Diff
       assignees: [],
       requestedReviewers: [],
       approvedReviewers: [],
-      status: 'merged',
-      isConvertedFromCommit: true
+      status: 'merged'
     }
   })
   return [diffInfo, prs]

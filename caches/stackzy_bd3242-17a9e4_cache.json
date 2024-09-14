@@ -1,548 +1,517 @@
 {
-    "mergedPullRequests": [
-        {
-            "number": 0,
-            "title": "💚 fix tests",
-            "htmlURL": "",
-            "baseBranch": "",
-            "createdAt": "2021-02-17T02:21:29.000Z",
-            "mergedAt": "2021-02-17T02:21:29.000Z",
-            "mergeCommitSha": "2fac84de45bb39cc954f89c11905ac832dd2202b",
-            "author": "theapache64",
-            "repoName": "",
-            "labels": [],
-            "milestone": "",
-            "body": "💚 fix tests",
-            "assignees": [],
-            "requestedReviewers": [],
-            "approvedReviewers": [],
-            "status": "merged",
-            "isConvertedFromCommit": true
-        },
-        {
-            "number": 0,
-            "title": "◀️ improve lib merging",
-            "htmlURL": "",
-            "baseBranch": "",
-            "createdAt": "2021-02-17T02:43:31.000Z",
-            "mergedAt": "2021-02-17T02:43:31.000Z",
-            "mergeCommitSha": "9d75b1716ddb729827c5d2383c30a90edf015fd8",
-            "author": "theapache64",
-            "repoName": "",
-            "labels": [],
-            "milestone": "",
-            "body": "◀️ improve lib merging",
-            "assignees": [],
-            "requestedReviewers": [],
-            "approvedReviewers": [],
-            "status": "merged",
-            "isConvertedFromCommit": true
-        },
-        {
-            "number": 0,
-            "title": "🌟 add dynamic merging",
-            "htmlURL": "",
-            "baseBranch": "",
-            "createdAt": "2021-02-17T02:51:15.000Z",
-            "mergedAt": "2021-02-17T02:51:15.000Z",
-            "mergeCommitSha": "77d6ee9f51a3f5bab5b59fcd807380c6bb050ed2",
-            "author": "theapache64",
-            "repoName": "",
-            "labels": [],
-            "milestone": "",
-            "body": "🌟 add dynamic merging",
-            "assignees": [],
-            "requestedReviewers": [],
-            "approvedReviewers": [],
-            "status": "merged",
-            "isConvertedFromCommit": true
-        },
-        {
-            "number": 0,
-            "title": "◀️ disable lib tracking",
-            "htmlURL": "",
-            "baseBranch": "",
-            "createdAt": "2021-02-17T02:52:00.000Z",
-            "mergedAt": "2021-02-17T02:52:00.000Z",
-            "mergeCommitSha": "78a1f31a8bee4827ede57a4a442a1540d5bc06ba",
-            "author": "theapache64",
-            "repoName": "",
-            "labels": [],
-            "milestone": "",
-            "body": "◀️ disable lib tracking",
-            "assignees": [],
-            "requestedReviewers": [],
-            "approvedReviewers": [],
-            "status": "merged",
-            "isConvertedFromCommit": true
-        },
-        {
-            "number": 0,
-            "title": "🐛 fix dynamic lib replacement",
-            "htmlURL": "",
-            "baseBranch": "",
-            "createdAt": "2021-02-17T02:55:19.000Z",
-            "mergedAt": "2021-02-17T02:55:19.000Z",
-            "mergeCommitSha": "65bec59b224d71ab57f2e4030d58f796a0aefbfb",
-            "author": "theapache64",
-            "repoName": "",
-            "labels": [],
-            "milestone": "",
-            "body": "🐛 fix dynamic lib replacement",
-            "assignees": [],
-            "requestedReviewers": [],
-            "approvedReviewers": [],
-            "status": "merged",
-            "isConvertedFromCommit": true
-        },
-        {
-            "number": 0,
-            "title": "🌟 add auto-cleaning",
-            "htmlURL": "",
-            "baseBranch": "",
-            "createdAt": "2021-02-17T03:09:37.000Z",
-            "mergedAt": "2021-02-17T03:09:37.000Z",
-            "mergeCommitSha": "75322fd674ad75db961d7fdffe2dddbb827465e4",
-            "author": "theapache64",
-            "repoName": "",
-            "labels": [],
-            "milestone": "",
-            "body": "🌟 add auto-cleaning",
-            "assignees": [],
-            "requestedReviewers": [],
-            "approvedReviewers": [],
-            "status": "merged",
-            "isConvertedFromCommit": true
-        },
-        {
-            "number": 0,
-            "title": "👕 code refactor",
-            "htmlURL": "",
-            "baseBranch": "",
-            "createdAt": "2021-02-17T03:10:21.000Z",
-            "mergedAt": "2021-02-17T03:10:21.000Z",
-            "mergeCommitSha": "05e47270d5965bf44509b1524fadcd1f9af4dcef",
-            "author": "theapache64",
-            "repoName": "",
-            "labels": [],
-            "milestone": "",
-            "body": "👕 code refactor",
-            "assignees": [],
-            "requestedReviewers": [],
-            "approvedReviewers": [],
-            "status": "merged",
-            "isConvertedFromCommit": true
-        },
-        {
-            "number": 0,
-            "title": "🌟 add built-in adb support",
-            "htmlURL": "",
-            "baseBranch": "",
-            "createdAt": "2021-02-17T09:02:00.000Z",
-            "mergedAt": "2021-02-17T09:02:00.000Z",
-            "mergeCommitSha": "822348a5f2f7fc7ae4c2e87ea3e420e40e1fb393",
-            "author": "theapache64",
-            "repoName": "",
-            "labels": [],
-            "milestone": "",
-            "body": "🌟 add built-in adb support",
-            "assignees": [],
-            "requestedReviewers": [],
-            "approvedReviewers": [],
-            "status": "merged",
-            "isConvertedFromCommit": true
-        },
-        {
-            "number": 0,
-            "title": "🌟 add adb fallback (thanks to @mikepenz ;))",
-            "htmlURL": "",
-            "baseBranch": "",
-            "createdAt": "2021-02-17T10:54:03.000Z",
-            "mergedAt": "2021-02-17T10:54:03.000Z",
-            "mergeCommitSha": "b2431355a870956ac36d22345552ec1ed74ecd7c",
-            "author": "theapache64",
-            "repoName": "",
-            "labels": [],
-            "milestone": "",
-            "body": "🌟 add adb fallback (thanks to @mikepenz ;))",
-            "assignees": [],
-            "requestedReviewers": [],
-            "approvedReviewers": [],
-            "status": "merged",
-            "isConvertedFromCommit": true
-        },
-        {
-            "number": 0,
-            "title": "🐛 fix apostrophe issue with app name",
-            "htmlURL": "",
-            "baseBranch": "",
-            "createdAt": "2021-02-17T11:55:49.000Z",
-            "mergedAt": "2021-02-17T11:55:49.000Z",
-            "mergeCommitSha": "bdea54101b5198abcebbcc9b55b027e52717ce99",
-            "author": "theapache64",
-            "repoName": "",
-            "labels": [],
-            "milestone": "",
-            "body": "🐛 fix apostrophe issue with app name",
-            "assignees": [],
-            "requestedReviewers": [],
-            "approvedReviewers": [],
-            "status": "merged",
-            "isConvertedFromCommit": true
-        },
-        {
-            "number": 0,
-            "title": "🌟 add install note",
-            "htmlURL": "",
-            "baseBranch": "",
-            "createdAt": "2021-02-18T15:02:11.000Z",
-            "mergedAt": "2021-02-18T15:02:11.000Z",
-            "mergeCommitSha": "4da2f341279548c1386a4d5879dfcf88530a1667",
-            "author": "theapache64",
-            "repoName": "",
-            "labels": [],
-            "milestone": "",
-            "body": "🌟 add install note",
-            "assignees": [],
-            "requestedReviewers": [],
-            "approvedReviewers": [],
-            "status": "merged",
-            "isConvertedFromCommit": true
-        },
-        {
-            "number": 0,
-            "title": "🌟 add @mikepenz to credits",
-            "htmlURL": "",
-            "baseBranch": "",
-            "createdAt": "2021-02-18T19:34:57.000Z",
-            "mergedAt": "2021-02-18T19:34:57.000Z",
-            "mergeCommitSha": "8060a9ffd2f07f9e4c69e68ff999a6f430628b7b",
-            "author": "theapache64",
-            "repoName": "",
-            "labels": [],
-            "milestone": "",
-            "body": "🌟 add @mikepenz to credits",
-            "assignees": [],
-            "requestedReviewers": [],
-            "approvedReviewers": [],
-            "status": "merged",
-            "isConvertedFromCommit": true
-        },
-        {
-            "number": 0,
-            "title": "🐛 fix java.util.logger error",
-            "htmlURL": "",
-            "baseBranch": "",
-            "createdAt": "2021-02-18T21:47:18.000Z",
-            "mergedAt": "2021-02-18T21:47:18.000Z",
-            "mergeCommitSha": "7f33fb2ba1537f1056137d281f55aeefc5a046a7",
-            "author": "theapache64",
-            "repoName": "",
-            "labels": [],
-            "milestone": "",
-            "body": "🐛 fix java.util.logger error",
-            "assignees": [],
-            "requestedReviewers": [],
-            "approvedReviewers": [],
-            "status": "merged",
-            "isConvertedFromCommit": true
-        },
-        {
-            "number": 0,
-            "title": "👕 move merging logic to report class and apply sort by category",
-            "htmlURL": "",
-            "baseBranch": "",
-            "createdAt": "2021-02-19T05:37:51.000Z",
-            "mergedAt": "2021-02-19T05:37:51.000Z",
-            "mergeCommitSha": "8cb2762a9d7b6c1f934200294a235fd729e6f7ca",
-            "author": "theapache64",
-            "repoName": "",
-            "labels": [],
-            "milestone": "",
-            "body": "👕 move merging logic to report class and apply sort by category",
-            "assignees": [],
-            "requestedReviewers": [],
-            "approvedReviewers": [],
-            "status": "merged",
-            "isConvertedFromCommit": true
-        },
-        {
-            "number": 0,
-            "title": "📖 update screenshot with truecaller stack",
-            "htmlURL": "",
-            "baseBranch": "",
-            "createdAt": "2021-02-19T05:40:07.000Z",
-            "mergedAt": "2021-02-19T05:40:07.000Z",
-            "mergeCommitSha": "14248286122a2c683307dd303fa1306dbfeab2a0",
-            "author": "theapache64",
-            "repoName": "",
-            "labels": [],
-            "milestone": "",
-            "body": "📖 update screenshot with truecaller stack",
-            "assignees": [],
-            "requestedReviewers": [],
-            "approvedReviewers": [],
-            "status": "merged",
-            "isConvertedFromCommit": true
-        },
-        {
-            "number": 0,
-            "title": "◀️ remove map categorizing since we're not using that any more. also add some method docs",
-            "htmlURL": "",
-            "baseBranch": "",
-            "createdAt": "2021-02-19T06:02:25.000Z",
-            "mergedAt": "2021-02-19T06:02:25.000Z",
-            "mergeCommitSha": "17a9e4dfaedcabe6a6eff2754bebb715e1c58ec4",
-            "author": "theapache64",
-            "repoName": "",
-            "labels": [],
-            "milestone": "",
-            "body": "◀️ remove map categorizing since we're not using that any more. also add some method docs",
-            "assignees": [],
-            "requestedReviewers": [],
-            "approvedReviewers": [],
-            "status": "merged",
-            "isConvertedFromCommit": true
-        }
-    ],
-    "diffInfo": {
-        "changedFiles": 20,
-        "additions": 235,
-        "deletions": 75,
-        "changes": 310,
-        "commits": 16,
-        "commitInfo": [
-            {
-                "sha": "2fac84de45bb39cc954f89c11905ac832dd2202b",
-                "summary": "💚 fix tests",
-                "message": "💚 fix tests",
-                "author": "theapache64",
-                "authorDate": "2021-02-17T02:21:29.000Z",
-                "committer": "theapache64",
-                "commitDate": "2021-02-17T02:21:29.000Z"
-            },
-            {
-                "sha": "9d75b1716ddb729827c5d2383c30a90edf015fd8",
-                "summary": "◀️ improve lib merging",
-                "message": "◀️ improve lib merging",
-                "author": "theapache64",
-                "authorDate": "2021-02-17T02:43:31.000Z",
-                "committer": "theapache64",
-                "commitDate": "2021-02-17T02:43:31.000Z"
-            },
-            {
-                "sha": "77d6ee9f51a3f5bab5b59fcd807380c6bb050ed2",
-                "summary": "🌟 add dynamic merging",
-                "message": "🌟 add dynamic merging",
-                "author": "theapache64",
-                "authorDate": "2021-02-17T02:51:15.000Z",
-                "committer": "theapache64",
-                "commitDate": "2021-02-17T02:51:15.000Z"
-            },
-            {
-                "sha": "78a1f31a8bee4827ede57a4a442a1540d5bc06ba",
-                "summary": "◀️ disable lib tracking",
-                "message": "◀️ disable lib tracking",
-                "author": "theapache64",
-                "authorDate": "2021-02-17T02:52:00.000Z",
-                "committer": "theapache64",
-                "commitDate": "2021-02-17T02:52:00.000Z"
-            },
-            {
-                "sha": "65bec59b224d71ab57f2e4030d58f796a0aefbfb",
-                "summary": "🐛 fix dynamic lib replacement",
-                "message": "🐛 fix dynamic lib replacement",
-                "author": "theapache64",
-                "authorDate": "2021-02-17T02:55:19.000Z",
-                "committer": "theapache64",
-                "commitDate": "2021-02-17T02:55:19.000Z"
-            },
-            {
-                "sha": "75322fd674ad75db961d7fdffe2dddbb827465e4",
-                "summary": "🌟 add auto-cleaning",
-                "message": "🌟 add auto-cleaning",
-                "author": "theapache64",
-                "authorDate": "2021-02-17T03:09:37.000Z",
-                "committer": "theapache64",
-                "commitDate": "2021-02-17T03:09:37.000Z"
-            },
-            {
-                "sha": "05e47270d5965bf44509b1524fadcd1f9af4dcef",
-                "summary": "👕 code refactor",
-                "message": "👕 code refactor",
-                "author": "theapache64",
-                "authorDate": "2021-02-17T03:10:21.000Z",
-                "committer": "theapache64",
-                "commitDate": "2021-02-17T03:10:21.000Z"
-            },
-            {
-                "sha": "822348a5f2f7fc7ae4c2e87ea3e420e40e1fb393",
-                "summary": "🌟 add built-in adb support",
-                "message": "🌟 add built-in adb support",
-                "author": "theapache64",
-                "authorDate": "2021-02-17T09:02:00.000Z",
-                "committer": "theapache64",
-                "commitDate": "2021-02-17T09:02:00.000Z"
-            },
-            {
-                "sha": "b2431355a870956ac36d22345552ec1ed74ecd7c",
-                "summary": "🌟 add adb fallback (thanks to @mikepenz ;))",
-                "message": "🌟 add adb fallback (thanks to @mikepenz ;))",
-                "author": "theapache64",
-                "authorDate": "2021-02-17T10:54:03.000Z",
-                "committer": "theapache64",
-                "commitDate": "2021-02-17T10:54:03.000Z"
-            },
-            {
-                "sha": "bdea54101b5198abcebbcc9b55b027e52717ce99",
-                "summary": "🐛 fix apostrophe issue with app name",
-                "message": "🐛 fix apostrophe issue with app name",
-                "author": "theapache64",
-                "authorDate": "2021-02-17T11:55:49.000Z",
-                "committer": "theapache64",
-                "commitDate": "2021-02-17T11:55:49.000Z"
-            },
-            {
-                "sha": "4da2f341279548c1386a4d5879dfcf88530a1667",
-                "summary": "🌟 add install note",
-                "message": "🌟 add install note",
-                "author": "theapache64",
-                "authorDate": "2021-02-18T15:02:11.000Z",
-                "committer": "theapache64",
-                "commitDate": "2021-02-18T15:02:11.000Z"
-            },
-            {
-                "sha": "8060a9ffd2f07f9e4c69e68ff999a6f430628b7b",
-                "summary": "🌟 add @mikepenz to credits",
-                "message": "🌟 add @mikepenz to credits",
-                "author": "theapache64",
-                "authorDate": "2021-02-18T19:34:57.000Z",
-                "committer": "theapache64",
-                "commitDate": "2021-02-18T19:34:57.000Z"
-            },
-            {
-                "sha": "7f33fb2ba1537f1056137d281f55aeefc5a046a7",
-                "summary": "🐛 fix java.util.logger error",
-                "message": "🐛 fix java.util.logger error",
-                "author": "theapache64",
-                "authorDate": "2021-02-18T21:47:18.000Z",
-                "committer": "theapache64",
-                "commitDate": "2021-02-18T21:47:18.000Z"
-            },
-            {
-                "sha": "8cb2762a9d7b6c1f934200294a235fd729e6f7ca",
-                "summary": "👕 move merging logic to report class and apply sort by category",
-                "message": "👕 move merging logic to report class and apply sort by category",
-                "author": "theapache64",
-                "authorDate": "2021-02-19T05:37:51.000Z",
-                "committer": "theapache64",
-                "commitDate": "2021-02-19T05:37:51.000Z"
-            },
-            {
-                "sha": "14248286122a2c683307dd303fa1306dbfeab2a0",
-                "summary": "📖 update screenshot with truecaller stack",
-                "message": "📖 update screenshot with truecaller stack",
-                "author": "theapache64",
-                "authorDate": "2021-02-19T05:40:07.000Z",
-                "committer": "theapache64",
-                "commitDate": "2021-02-19T05:40:07.000Z"
-            },
-            {
-                "sha": "17a9e4dfaedcabe6a6eff2754bebb715e1c58ec4",
-                "summary": "◀️ remove map categorizing since we're not using that any more. also add some method docs",
-                "message": "◀️ remove map categorizing since we're not using that any more. also add some method docs",
-                "author": "theapache64",
-                "authorDate": "2021-02-19T06:02:25.000Z",
-                "committer": "theapache64",
-                "commitDate": "2021-02-19T06:02:25.000Z"
-            }
-        ]
+  "mergedPullRequests": [
+    {
+      "number": 0,
+      "title": "💚 fix tests",
+      "htmlURL": "",
+      "baseBranch": "",
+      "createdAt": "2021-02-17T02:21:29.000Z",
+      "mergedAt": "2021-02-17T02:21:29.000Z",
+      "mergeCommitSha": "2fac84de45bb39cc954f89c11905ac832dd2202b",
+      "author": "theapache64",
+      "repoName": "",
+      "labels": [],
+      "milestone": "",
+      "body": "💚 fix tests",
+      "assignees": [],
+      "requestedReviewers": [],
+      "approvedReviewers": [],
+      "status": "merged"
     },
-    "options": {
-        "owner": "theapache64",
-        "repo": "stackzy",
-        "fromTag": {
-            "name": "bd3242a6b6eadb24744c478e112c4628e89609c2",
-            "commit": "bd3242a6b6eadb24744c478e112c4628e89609c2"
-        },
-        "toTag": {
-            "name": "17a9e4dfaedcabe6a6eff2754bebb715e1c58ec4",
-            "commit": "17a9e4dfaedcabe6a6eff2754bebb715e1c58ec4"
-        },
-        "includeOpen": false,
-        "failOnError": false,
-        "fetchReviewers": false,
-        "fetchReleaseInformation": false,
-        "fetchReviews": false,
-        "commitMode": true,
-        "configuration": {
-            "max_tags_to_fetch": 200,
-            "max_pull_requests": 1000,
-            "max_back_track_time_days": 1000,
-            "exclude_merge_branches": [],
-            "sort": {
-                "order": "ASC",
-                "on_property": "mergedAt"
-            },
-            "template": "#{{CHANGELOG}}",
-            "pr_template": "#{{TITLE}}",
-            "empty_template": "- no changes",
-            "categories": [
-                {
-                    "title": "## 🚀 Features",
-                    "labels": [
-                        "🚀",
-                        "🌟"
-                    ]
-                },
-                {
-                    "title": "## 🐛 Fixes",
-                    "labels": [
-                        "🐛"
-                    ]
-                },
-                {
-                    "title": "## 🧪 Tests",
-                    "labels": [
-                        "🧪"
-                    ]
-                },
-                {
-                    "title": "## 💬 Other",
-                    "labels": [
-                        "💬",
-                        "📖",
-                        "🚨"
-                    ]
-                },
-                {
-                    "title": "## 📦 Dependencies",
-                    "labels": [
-                        "dependencies"
-                    ]
-                }
-            ],
-            "ignore_labels": [
-                "ignore"
-            ],
-            "label_extractor": [
-                {
-                    "pattern": "(.) (.+)",
-                    "target": "$1"
-                }
-            ],
-            "transformers": [
-                {
-                    "pattern": "(.) (.+)",
-                    "target": "- $2"
-                }
-            ],
-            "tag_resolver": {
-                "method": "semver"
-            },
-            "base_branches": [],
-            "custom_placeholders": [],
-            "trim_values": false
-        }
+    {
+      "number": 0,
+      "title": "◀️ improve lib merging",
+      "htmlURL": "",
+      "baseBranch": "",
+      "createdAt": "2021-02-17T02:43:31.000Z",
+      "mergedAt": "2021-02-17T02:43:31.000Z",
+      "mergeCommitSha": "9d75b1716ddb729827c5d2383c30a90edf015fd8",
+      "author": "theapache64",
+      "repoName": "",
+      "labels": [],
+      "milestone": "",
+      "body": "◀️ improve lib merging",
+      "assignees": [],
+      "requestedReviewers": [],
+      "approvedReviewers": [],
+      "status": "merged"
+    },
+    {
+      "number": 0,
+      "title": "🌟 add dynamic merging",
+      "htmlURL": "",
+      "baseBranch": "",
+      "createdAt": "2021-02-17T02:51:15.000Z",
+      "mergedAt": "2021-02-17T02:51:15.000Z",
+      "mergeCommitSha": "77d6ee9f51a3f5bab5b59fcd807380c6bb050ed2",
+      "author": "theapache64",
+      "repoName": "",
+      "labels": [],
+      "milestone": "",
+      "body": "🌟 add dynamic merging",
+      "assignees": [],
+      "requestedReviewers": [],
+      "approvedReviewers": [],
+      "status": "merged"
+    },
+    {
+      "number": 0,
+      "title": "◀️ disable lib tracking",
+      "htmlURL": "",
+      "baseBranch": "",
+      "createdAt": "2021-02-17T02:52:00.000Z",
+      "mergedAt": "2021-02-17T02:52:00.000Z",
+      "mergeCommitSha": "78a1f31a8bee4827ede57a4a442a1540d5bc06ba",
+      "author": "theapache64",
+      "repoName": "",
+      "labels": [],
+      "milestone": "",
+      "body": "◀️ disable lib tracking",
+      "assignees": [],
+      "requestedReviewers": [],
+      "approvedReviewers": [],
+      "status": "merged"
+    },
+    {
+      "number": 0,
+      "title": "🐛 fix dynamic lib replacement",
+      "htmlURL": "",
+      "baseBranch": "",
+      "createdAt": "2021-02-17T02:55:19.000Z",
+      "mergedAt": "2021-02-17T02:55:19.000Z",
+      "mergeCommitSha": "65bec59b224d71ab57f2e4030d58f796a0aefbfb",
+      "author": "theapache64",
+      "repoName": "",
+      "labels": [],
+      "milestone": "",
+      "body": "🐛 fix dynamic lib replacement",
+      "assignees": [],
+      "requestedReviewers": [],
+      "approvedReviewers": [],
+      "status": "merged"
+    },
+    {
+      "number": 0,
+      "title": "🌟 add auto-cleaning",
+      "htmlURL": "",
+      "baseBranch": "",
+      "createdAt": "2021-02-17T03:09:37.000Z",
+      "mergedAt": "2021-02-17T03:09:37.000Z",
+      "mergeCommitSha": "75322fd674ad75db961d7fdffe2dddbb827465e4",
+      "author": "theapache64",
+      "repoName": "",
+      "labels": [],
+      "milestone": "",
+      "body": "🌟 add auto-cleaning",
+      "assignees": [],
+      "requestedReviewers": [],
+      "approvedReviewers": [],
+      "status": "merged"
+    },
+    {
+      "number": 0,
+      "title": "👕 code refactor",
+      "htmlURL": "",
+      "baseBranch": "",
+      "createdAt": "2021-02-17T03:10:21.000Z",
+      "mergedAt": "2021-02-17T03:10:21.000Z",
+      "mergeCommitSha": "05e47270d5965bf44509b1524fadcd1f9af4dcef",
+      "author": "theapache64",
+      "repoName": "",
+      "labels": [],
+      "milestone": "",
+      "body": "👕 code refactor",
+      "assignees": [],
+      "requestedReviewers": [],
+      "approvedReviewers": [],
+      "status": "merged"
+    },
+    {
+      "number": 0,
+      "title": "🌟 add built-in adb support",
+      "htmlURL": "",
+      "baseBranch": "",
+      "createdAt": "2021-02-17T09:02:00.000Z",
+      "mergedAt": "2021-02-17T09:02:00.000Z",
+      "mergeCommitSha": "822348a5f2f7fc7ae4c2e87ea3e420e40e1fb393",
+      "author": "theapache64",
+      "repoName": "",
+      "labels": [],
+      "milestone": "",
+      "body": "🌟 add built-in adb support",
+      "assignees": [],
+      "requestedReviewers": [],
+      "approvedReviewers": [],
+      "status": "merged"
+    },
+    {
+      "number": 0,
+      "title": "🌟 add adb fallback (thanks to @mikepenz ;))",
+      "htmlURL": "",
+      "baseBranch": "",
+      "createdAt": "2021-02-17T10:54:03.000Z",
+      "mergedAt": "2021-02-17T10:54:03.000Z",
+      "mergeCommitSha": "b2431355a870956ac36d22345552ec1ed74ecd7c",
+      "author": "theapache64",
+      "repoName": "",
+      "labels": [],
+      "milestone": "",
+      "body": "🌟 add adb fallback (thanks to @mikepenz ;))",
+      "assignees": [],
+      "requestedReviewers": [],
+      "approvedReviewers": [],
+      "status": "merged"
+    },
+    {
+      "number": 0,
+      "title": "🐛 fix apostrophe issue with app name",
+      "htmlURL": "",
+      "baseBranch": "",
+      "createdAt": "2021-02-17T11:55:49.000Z",
+      "mergedAt": "2021-02-17T11:55:49.000Z",
+      "mergeCommitSha": "bdea54101b5198abcebbcc9b55b027e52717ce99",
+      "author": "theapache64",
+      "repoName": "",
+      "labels": [],
+      "milestone": "",
+      "body": "🐛 fix apostrophe issue with app name",
+      "assignees": [],
+      "requestedReviewers": [],
+      "approvedReviewers": [],
+      "status": "merged"
+    },
+    {
+      "number": 0,
+      "title": "🌟 add install note",
+      "htmlURL": "",
+      "baseBranch": "",
+      "createdAt": "2021-02-18T15:02:11.000Z",
+      "mergedAt": "2021-02-18T15:02:11.000Z",
+      "mergeCommitSha": "4da2f341279548c1386a4d5879dfcf88530a1667",
+      "author": "theapache64",
+      "repoName": "",
+      "labels": [],
+      "milestone": "",
+      "body": "🌟 add install note",
+      "assignees": [],
+      "requestedReviewers": [],
+      "approvedReviewers": [],
+      "status": "merged"
+    },
+    {
+      "number": 0,
+      "title": "🌟 add @mikepenz to credits",
+      "htmlURL": "",
+      "baseBranch": "",
+      "createdAt": "2021-02-18T19:34:57.000Z",
+      "mergedAt": "2021-02-18T19:34:57.000Z",
+      "mergeCommitSha": "8060a9ffd2f07f9e4c69e68ff999a6f430628b7b",
+      "author": "theapache64",
+      "repoName": "",
+      "labels": [],
+      "milestone": "",
+      "body": "🌟 add @mikepenz to credits",
+      "assignees": [],
+      "requestedReviewers": [],
+      "approvedReviewers": [],
+      "status": "merged"
+    },
+    {
+      "number": 0,
+      "title": "🐛 fix java.util.logger error",
+      "htmlURL": "",
+      "baseBranch": "",
+      "createdAt": "2021-02-18T21:47:18.000Z",
+      "mergedAt": "2021-02-18T21:47:18.000Z",
+      "mergeCommitSha": "7f33fb2ba1537f1056137d281f55aeefc5a046a7",
+      "author": "theapache64",
+      "repoName": "",
+      "labels": [],
+      "milestone": "",
+      "body": "🐛 fix java.util.logger error",
+      "assignees": [],
+      "requestedReviewers": [],
+      "approvedReviewers": [],
+      "status": "merged"
+    },
+    {
+      "number": 0,
+      "title": "👕 move merging logic to report class and apply sort by category",
+      "htmlURL": "",
+      "baseBranch": "",
+      "createdAt": "2021-02-19T05:37:51.000Z",
+      "mergedAt": "2021-02-19T05:37:51.000Z",
+      "mergeCommitSha": "8cb2762a9d7b6c1f934200294a235fd729e6f7ca",
+      "author": "theapache64",
+      "repoName": "",
+      "labels": [],
+      "milestone": "",
+      "body": "👕 move merging logic to report class and apply sort by category",
+      "assignees": [],
+      "requestedReviewers": [],
+      "approvedReviewers": [],
+      "status": "merged"
+    },
+    {
+      "number": 0,
+      "title": "📖 update screenshot with truecaller stack",
+      "htmlURL": "",
+      "baseBranch": "",
+      "createdAt": "2021-02-19T05:40:07.000Z",
+      "mergedAt": "2021-02-19T05:40:07.000Z",
+      "mergeCommitSha": "14248286122a2c683307dd303fa1306dbfeab2a0",
+      "author": "theapache64",
+      "repoName": "",
+      "labels": [],
+      "milestone": "",
+      "body": "📖 update screenshot with truecaller stack",
+      "assignees": [],
+      "requestedReviewers": [],
+      "approvedReviewers": [],
+      "status": "merged"
+    },
+    {
+      "number": 0,
+      "title": "◀️ remove map categorizing since we're not using that any more. also add some method docs",
+      "htmlURL": "",
+      "baseBranch": "",
+      "createdAt": "2021-02-19T06:02:25.000Z",
+      "mergedAt": "2021-02-19T06:02:25.000Z",
+      "mergeCommitSha": "17a9e4dfaedcabe6a6eff2754bebb715e1c58ec4",
+      "author": "theapache64",
+      "repoName": "",
+      "labels": [],
+      "milestone": "",
+      "body": "◀️ remove map categorizing since we're not using that any more. also add some method docs",
+      "assignees": [],
+      "requestedReviewers": [],
+      "approvedReviewers": [],
+      "status": "merged"
     }
+  ],
+  "diffInfo": {
+    "changedFiles": 20,
+    "additions": 235,
+    "deletions": 75,
+    "changes": 310,
+    "commits": 16,
+    "commitInfo": [
+      {
+        "sha": "2fac84de45bb39cc954f89c11905ac832dd2202b",
+        "summary": "💚 fix tests",
+        "message": "💚 fix tests",
+        "author": "theapache64",
+        "authorDate": "2021-02-17T02:21:29.000Z",
+        "committer": "theapache64",
+        "commitDate": "2021-02-17T02:21:29.000Z"
+      },
+      {
+        "sha": "9d75b1716ddb729827c5d2383c30a90edf015fd8",
+        "summary": "◀️ improve lib merging",
+        "message": "◀️ improve lib merging",
+        "author": "theapache64",
+        "authorDate": "2021-02-17T02:43:31.000Z",
+        "committer": "theapache64",
+        "commitDate": "2021-02-17T02:43:31.000Z"
+      },
+      {
+        "sha": "77d6ee9f51a3f5bab5b59fcd807380c6bb050ed2",
+        "summary": "🌟 add dynamic merging",
+        "message": "🌟 add dynamic merging",
+        "author": "theapache64",
+        "authorDate": "2021-02-17T02:51:15.000Z",
+        "committer": "theapache64",
+        "commitDate": "2021-02-17T02:51:15.000Z"
+      },
+      {
+        "sha": "78a1f31a8bee4827ede57a4a442a1540d5bc06ba",
+        "summary": "◀️ disable lib tracking",
+        "message": "◀️ disable lib tracking",
+        "author": "theapache64",
+        "authorDate": "2021-02-17T02:52:00.000Z",
+        "committer": "theapache64",
+        "commitDate": "2021-02-17T02:52:00.000Z"
+      },
+      {
+        "sha": "65bec59b224d71ab57f2e4030d58f796a0aefbfb",
+        "summary": "🐛 fix dynamic lib replacement",
+        "message": "🐛 fix dynamic lib replacement",
+        "author": "theapache64",
+        "authorDate": "2021-02-17T02:55:19.000Z",
+        "committer": "theapache64",
+        "commitDate": "2021-02-17T02:55:19.000Z"
+      },
+      {
+        "sha": "75322fd674ad75db961d7fdffe2dddbb827465e4",
+        "summary": "🌟 add auto-cleaning",
+        "message": "🌟 add auto-cleaning",
+        "author": "theapache64",
+        "authorDate": "2021-02-17T03:09:37.000Z",
+        "committer": "theapache64",
+        "commitDate": "2021-02-17T03:09:37.000Z"
+      },
+      {
+        "sha": "05e47270d5965bf44509b1524fadcd1f9af4dcef",
+        "summary": "👕 code refactor",
+        "message": "👕 code refactor",
+        "author": "theapache64",
+        "authorDate": "2021-02-17T03:10:21.000Z",
+        "committer": "theapache64",
+        "commitDate": "2021-02-17T03:10:21.000Z"
+      },
+      {
+        "sha": "822348a5f2f7fc7ae4c2e87ea3e420e40e1fb393",
+        "summary": "🌟 add built-in adb support",
+        "message": "🌟 add built-in adb support",
+        "author": "theapache64",
+        "authorDate": "2021-02-17T09:02:00.000Z",
+        "committer": "theapache64",
+        "commitDate": "2021-02-17T09:02:00.000Z"
+      },
+      {
+        "sha": "b2431355a870956ac36d22345552ec1ed74ecd7c",
+        "summary": "🌟 add adb fallback (thanks to @mikepenz ;))",
+        "message": "🌟 add adb fallback (thanks to @mikepenz ;))",
+        "author": "theapache64",
+        "authorDate": "2021-02-17T10:54:03.000Z",
+        "committer": "theapache64",
+        "commitDate": "2021-02-17T10:54:03.000Z"
+      },
+      {
+        "sha": "bdea54101b5198abcebbcc9b55b027e52717ce99",
+        "summary": "🐛 fix apostrophe issue with app name",
+        "message": "🐛 fix apostrophe issue with app name",
+        "author": "theapache64",
+        "authorDate": "2021-02-17T11:55:49.000Z",
+        "committer": "theapache64",
+        "commitDate": "2021-02-17T11:55:49.000Z"
+      },
+      {
+        "sha": "4da2f341279548c1386a4d5879dfcf88530a1667",
+        "summary": "🌟 add install note",
+        "message": "🌟 add install note",
+        "author": "theapache64",
+        "authorDate": "2021-02-18T15:02:11.000Z",
+        "committer": "theapache64",
+        "commitDate": "2021-02-18T15:02:11.000Z"
+      },
+      {
+        "sha": "8060a9ffd2f07f9e4c69e68ff999a6f430628b7b",
+        "summary": "🌟 add @mikepenz to credits",
+        "message": "🌟 add @mikepenz to credits",
+        "author": "theapache64",
+        "authorDate": "2021-02-18T19:34:57.000Z",
+        "committer": "theapache64",
+        "commitDate": "2021-02-18T19:34:57.000Z"
+      },
+      {
+        "sha": "7f33fb2ba1537f1056137d281f55aeefc5a046a7",
+        "summary": "🐛 fix java.util.logger error",
+        "message": "🐛 fix java.util.logger error",
+        "author": "theapache64",
+        "authorDate": "2021-02-18T21:47:18.000Z",
+        "committer": "theapache64",
+        "commitDate": "2021-02-18T21:47:18.000Z"
+      },
+      {
+        "sha": "8cb2762a9d7b6c1f934200294a235fd729e6f7ca",
+        "summary": "👕 move merging logic to report class and apply sort by category",
+        "message": "👕 move merging logic to report class and apply sort by category",
+        "author": "theapache64",
+        "authorDate": "2021-02-19T05:37:51.000Z",
+        "committer": "theapache64",
+        "commitDate": "2021-02-19T05:37:51.000Z"
+      },
+      {
+        "sha": "14248286122a2c683307dd303fa1306dbfeab2a0",
+        "summary": "📖 update screenshot with truecaller stack",
+        "message": "📖 update screenshot with truecaller stack",
+        "author": "theapache64",
+        "authorDate": "2021-02-19T05:40:07.000Z",
+        "committer": "theapache64",
+        "commitDate": "2021-02-19T05:40:07.000Z"
+      },
+      {
+        "sha": "17a9e4dfaedcabe6a6eff2754bebb715e1c58ec4",
+        "summary": "◀️ remove map categorizing since we're not using that any more. also add some method docs",
+        "message": "◀️ remove map categorizing since we're not using that any more. also add some method docs",
+        "author": "theapache64",
+        "authorDate": "2021-02-19T06:02:25.000Z",
+        "committer": "theapache64",
+        "commitDate": "2021-02-19T06:02:25.000Z"
+      }
+    ]
+  },
+  "options": {
+    "owner": "theapache64",
+    "repo": "stackzy",
+    "fromTag": {
+      "name": "bd3242a6b6eadb24744c478e112c4628e89609c2",
+      "commit": "bd3242a6b6eadb24744c478e112c4628e89609c2"
+    },
+    "toTag": {
+      "name": "17a9e4dfaedcabe6a6eff2754bebb715e1c58ec4",
+      "commit": "17a9e4dfaedcabe6a6eff2754bebb715e1c58ec4"
+    },
+    "includeOpen": false,
+    "failOnError": false,
+    "fetchReviewers": false,
+    "fetchReleaseInformation": false,
+    "fetchReviews": false,
+    "commitMode": true,
+    "configuration": {
+      "max_tags_to_fetch": 200,
+      "max_pull_requests": 1000,
+      "max_back_track_time_days": 1000,
+      "exclude_merge_branches": [],
+      "sort": {
+        "order": "ASC",
+        "on_property": "mergedAt"
+      },
+      "template": "#{{CHANGELOG}}",
+      "pr_template": "#{{TITLE}}",
+      "empty_template": "- no changes",
+      "categories": [
+        {
+          "title": "## 🚀 Features",
+          "labels": ["🚀", "🌟"]
+        },
+        {
+          "title": "## 🐛 Fixes",
+          "labels": ["🐛"]
+        },
+        {
+          "title": "## 🧪 Tests",
+          "labels": ["🧪"]
+        },
+        {
+          "title": "## 💬 Other",
+          "labels": ["💬", "📖", "🚨"]
+        },
+        {
+          "title": "## 📦 Dependencies",
+          "labels": ["dependencies"]
+        }
+      ],
+      "ignore_labels": ["ignore"],
+      "label_extractor": [
+        {
+          "pattern": "(.) (.+)",
+          "target": "$1"
+        }
+      ],
+      "transformers": [
+        {
+          "pattern": "(.) (.+)",
+          "target": "- $2"
+        }
+      ],
+      "tag_resolver": {
+        "method": "semver"
+      },
+      "base_branches": [],
+      "custom_placeholders": [],
+      "trim_values": false
+    }
+  }
 }
