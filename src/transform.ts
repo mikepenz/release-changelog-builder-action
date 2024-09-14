@@ -147,7 +147,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
     core.info(`✒️ Wrote messages for ${commitPrs.length} commits`)
   }
 
-  const prInfoMap = buildInfoMapAndCollectPlaceholderContext(
+  const prInfoMap = buildInfoMapAndFillPlaceholderContext(
     realPrs,
     config.pr_template,
     groupedPlaceholders,
@@ -155,7 +155,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
     config
   )
 
-  const commitInfoMap = buildInfoMapAndCollectPlaceholderContext(
+  const commitInfoMap = buildInfoMapAndFillPlaceholderContext(
     commitPrs,
     config.commit_template,
     groupedPlaceholders,
@@ -177,7 +177,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
     }
   }
 
-  const prStrings = buildPrStringsAndFillCategoryEntires(combinedInfoMap, config.ignore_labels, categories, flatCategories)
+  const prStrings = buildPrStringsAndFillCategoryEntries(combinedInfoMap, config.ignore_labels, categories, flatCategories)
   core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`)
 
   // serialize and provide the categorized content as json
@@ -213,7 +213,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
     options
   )
 
-  let renderedReleaseNotesTemplate = renderTemplateAndCollectPlaceholderContext(
+  let renderedReleaseNotesTemplate = renderTemplateAndFillPlaceholderContext(
     config.template,
     releaseNotesTemplateContext,
     groupedPlaceholders,
@@ -231,7 +231,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
   return renderedReleaseNotesTemplate
 }
 
-function buildInfoMapAndCollectPlaceholderContext(
+function buildInfoMapAndFillPlaceholderContext(
   prData: PullRequestData[],
   template: string,
   groupedPlaceholders: Map<string, Placeholder[]>,
@@ -243,31 +243,31 @@ function buildInfoMapAndCollectPlaceholderContext(
   for (const pr of prData) {
     const [prTemplateContext, prArrayTemplateContext] = buildPrTemplateContext(pr)
 
-    let renderedPrTemplate = template
+    let renderedTemplate = template
 
-    renderedPrTemplate = renderTemplateAndCollectPlaceholderContext(
-      renderedPrTemplate,
+    renderedTemplate = renderTemplateAndFillPlaceholderContext(
+      renderedTemplate,
       prArrayTemplateContext,
       groupedPlaceholders,
       customPlaceholdersTemplateContext,
       config
     )
 
-    renderedPrTemplate = renderTemplateAndCollectPlaceholderContext(
-      renderedPrTemplate,
+    renderedTemplate = renderTemplateAndFillPlaceholderContext(
+      renderedTemplate,
       prTemplateContext,
       groupedPlaceholders,
       customPlaceholdersTemplateContext,
       config
     )
 
-    infoMap.set(pr, renderedPrTemplate)
+    infoMap.set(pr, renderedTemplate)
   }
 
   return infoMap
 }
 
-function buildPrStringsAndFillCategoryEntires(
+function buildPrStringsAndFillCategoryEntries(
   prInfoMap: Map<PullRequestInfo, string>,
   ignoredLabels: string[],
   categories: Category[],
@@ -585,7 +585,7 @@ export function renderEmptyChangelogTemplate(template: string, options: ReleaseN
 
   const releaseNotesTemplateContext = buildCoreReleaseNotesTemplateContext(options)
 
-  const renderedEmptyChangelogTemplate = renderTemplateAndCollectPlaceholderContext(
+  const renderedEmptyChangelogTemplate = renderTemplateAndFillPlaceholderContext(
     template,
     releaseNotesTemplateContext,
     placeholders,
@@ -651,7 +651,7 @@ function buildPrTemplateContext(pr: PullRequestData): [TemplateContext, Template
   return [prTemplateContext, prArrayTemplateContext]
 }
 
-function renderTemplateAndCollectPlaceholderContext(
+function renderTemplateAndFillPlaceholderContext(
   template: string,
   templateContext: TemplateContext /* placeholderKey and original value */,
   customPlaceholders: PlaceholderGroup /* placeholders to apply */,
@@ -665,7 +665,7 @@ function renderTemplateAndCollectPlaceholderContext(
   for (const [key, value] of templateContext) {
     transformed = transformed.replaceAll(`#{{${key}}}`, trimValues ? value.trim() : value)
 
-    const extractedValues = extractPlaceholderValuesAndCollectPlaceholderContext(
+    const extractedValues = extractPlaceholderValuesAndFillPlaceholderContext(
       key,
       value,
       customPlaceholders,
@@ -680,7 +680,7 @@ function renderTemplateAndCollectPlaceholderContext(
   return transformed
 }
 
-function extractPlaceholderValuesAndCollectPlaceholderContext(
+function extractPlaceholderValuesAndFillPlaceholderContext(
   key: string,
   value: string,
   customPlaceholders: PlaceholderGroup,
