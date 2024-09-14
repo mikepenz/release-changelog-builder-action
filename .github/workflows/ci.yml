@@ -4,6 +4,7 @@ on:
     tags:
       - '*'
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.event.pull_request.number }}-ci
@@ -11,7 +12,7 @@ concurrency:
 
 jobs:
   build:
-    # if: github.event_name  == 'pull_request'
+    if: github.event_name  == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
