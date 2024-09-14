@@ -127,6 +127,11 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
 
   core.info(`ℹ️ Used ${validatedTransformers.length} transformers to adjust message`)
 
+  for (const pr of prs) {
+    const prAsObject = pr as unknown as Record<string, unknown>
+    transformObject(prAsObject, validatedTransformers)
+  }
+
   const includePrs = options.mode === 'PR' || options.mode === 'HYBRID'
   const includeCommits = options.mode === 'COMMIT' || options.mode === 'HYBRID'
 
@@ -147,8 +152,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
     config.pr_template,
     groupedPlaceholders,
     customPlaceholdersTemplateContext,
-    config,
-    validatedTransformers
+    config
   )
 
   const commitInfoMap = buildInfoMapAndCollectPlaceholderContext(
@@ -156,12 +160,11 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
     config.commit_template,
     groupedPlaceholders,
     customPlaceholdersTemplateContext,
-    config,
-    validatedTransformers
+    config
   )
 
   // If the mode is not HYBRID, the map will contain only one or the other map
-  const combinedInfoMap = {...prInfoMap, ...commitInfoMap}
+  const combinedInfoMap = mergeMaps(prInfoMap, commitInfoMap)
 
   // bring PRs into the order of categories
   const categories = config.categories
@@ -233,8 +236,7 @@ function buildInfoMapAndCollectPlaceholderContext(
   template: string,
   groupedPlaceholders: Map<string, Placeholder[]>,
   customPlaceholdersTemplateContext: GroupedTemplateContext,
-  config: Configuration,
-  validatedTransformers: RegexTransformer[]
+  config: Configuration
 ): Map<PullRequestInfo, string> {
   const infoMap = new Map<PullRequestInfo, string>()
 
@@ -259,7 +261,7 @@ function buildInfoMapAndCollectPlaceholderContext(
       config
     )
 
-    infoMap.set(pr, transform(renderedPrTemplate, validatedTransformers))
+    infoMap.set(pr, renderedPrTemplate)
   }
 
   return infoMap
@@ -661,7 +663,12 @@ function renderTemplateAndCollectPlaceholderContext(
   for (const [key, value] of templateContext) {
     transformed = transformed.replaceAll(`#{{${key}}}`, trimValues ? value.trim() : value)
 
-    const extractedValues = extractPlaceholderValues(key, value, customPlaceholders, customPlaceholdersTemplateContext)
+    const extractedValues = extractPlaceholderValuesAndCollectPlaceholderContext(
+      key,
+      value,
+      customPlaceholders,
+      customPlaceholdersTemplateContext
+    )
 
     for (const [placeholderName, extractedValue] of extractedValues) {
       transformed = transformed.replaceAll(`#{{${placeholderName}}}`, trimValues ? extractedValue.trim() : extractedValue)
@@ -671,7 +678,7 @@ function renderTemplateAndCollectPlaceholderContext(
   return transformed
 }
 
-function extractPlaceholderValues(
+function extractPlaceholderValuesAndCollectPlaceholderContext(
   key: string,
   value: string,
   customPlaceholders: PlaceholderGroup,
@@ -803,6 +810,27 @@ function cleanupPlaceholders(template: string): string {
     transformed = transformed.replaceAll(new RegExp(`#\\{\\{${phs}\\[.+?\\]\\..*?\\}\\}`, 'gu'), '')
   }
   return transformed
+}
+
+function transformObject(obj: Record<string, unknown>, transformers: RegexTransformer[]): void {
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined) {
+      continue
+    }
+    if (Array.isArray(value)) {
+      if (value.every(item => typeof item === 'string')) {
+        // If the array contains only strings, apply the transformation to each string
+        obj[key] = value.map(item => transform(item, transformers))
+      } else {
+        // If the array contains objects, recursively apply the transformation to each object
+        for (const child of value) {
+          transformObject(child as Record<string, unknown>, transformers)
+        }
+      }
+    } else if (typeof value === 'string') {
+      obj[key] = transform(value, transformers)
+    }
+  }
 }
 
 function transform(filled: string, transformers: RegexTransformer[]): string {

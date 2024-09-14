@@ -366,7 +366,7 @@ it('Default configuration with commit mode', async () => {
 
 it('Default configuration with commit mode and custom placeholder', async () => {
   const configuration = Object.assign({}, mergeConfiguration(undefined, undefined, 'COMMIT'))
-  configuration.pr_template = '- #{{TITLE_ONLY}}'
+  configuration.commit_template = '- #{{TITLE_ONLY}}'
   configuration.trim_values = true
   configuration.custom_placeholders = [
     {

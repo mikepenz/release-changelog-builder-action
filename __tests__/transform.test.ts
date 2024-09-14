@@ -461,7 +461,8 @@ it('Use empty_content for empty category', async () => {
       labels: ['Feature']
     }
   ]
-  expect(buildChangelogTest(customConfig, pullRequestsWithLabels, repositoryUtils)).toStrictEqual(
+  const changelog = buildChangelogTest(customConfig, pullRequestsWithLabels, repositoryUtils)
+  expect(changelog).toStrictEqual(
     `## 🚀 Features and 🐛 Issues\n\n- No PRs in this category\n\n## 🚀 Features\n\n- [ABC-1234] - this is a PR 1 title message\n   - PR: #1\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
@@ -470,9 +471,14 @@ const repositoryUtils = new GithubRepository(process.env.GITEA_TOKEN || '', unde
 it('Commit SHA-1 in commitMode', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.sort = 'DESC'
-  customConfig.pr_template = '#{{MERGE_SHA}}'
+  customConfig.commit_template = '#{{MERGE_SHA}}'
 
-  const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
+  // Since this is COMMIT mode, the prs would have been built with "isConvertedFromCommit: true"
+  const convertedPrs = pullRequestsWithLabels.map(pr => {
+    return {...pr, isConvertedFromCommit: true}
+  })
+
+  const resultChangelog = buildChangelog(DefaultDiffInfo, convertedPrs, {
     owner: 'mikepenz',
     repo: 'test-repo',
     fromTag: {name: '1.0.0'},

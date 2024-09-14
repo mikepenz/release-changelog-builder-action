@@ -198,6 +198,14 @@ export function mergeConfiguration(jc?: Configuration, fc?: Configuration, mode?
     def = DefaultConfiguration
   }
 
+  // Handle backwards compatibility for addition of `commit_template` in COMMIT mode
+  // If the user configuration provides a pr_template, but not a commit_template, we will use the pr_template
+  const prTemplate = jc?.pr_template || fc?.pr_template
+  let commitTemplate = jc?.commit_template || fc?.commit_template
+  if (mode === 'COMMIT' && !!prTemplate && !commitTemplate) {
+    commitTemplate = prTemplate
+  }
+
   return {
     max_tags_to_fetch: jc?.max_tags_to_fetch || fc?.max_tags_to_fetch || def.max_tags_to_fetch,
     max_pull_requests: jc?.max_pull_requests || fc?.max_pull_requests || def.max_pull_requests,
@@ -205,8 +213,8 @@ export function mergeConfiguration(jc?: Configuration, fc?: Configuration, mode?
     exclude_merge_branches: jc?.exclude_merge_branches || fc?.exclude_merge_branches || def.exclude_merge_branches,
     sort: jc?.sort || fc?.sort || def.sort,
     template: jc?.template || fc?.template || def.template,
-    pr_template: jc?.pr_template || fc?.pr_template || def.pr_template,
-    commit_template: jc?.commit_template || fc?.commit_template || def.commit_template,
+    pr_template: prTemplate || def.pr_template,
+    commit_template: commitTemplate || def.commit_template,
     empty_template: jc?.empty_template || fc?.empty_template || def.empty_template,
     categories: jc?.categories || fc?.categories || def.categories,
     ignore_labels: jc?.ignore_labels || fc?.ignore_labels || def.ignore_labels,
@@ -283,6 +291,6 @@ export function haveEveryElementsArr(arr1: string[], arr2: string[]): boolean {
   return haveEveryElements(arr1, new Set(arr2))
 }
 
-export function mergeMaps(map1: Map<string, string>, map2: Map<string, string>): Map<string, string> {
-  return new Map<string, string>([...map1, ...map2])
+export function mergeMaps<T, U>(map1: Map<T, U>, map2: Map<T, U>): Map<T, U> {
+  return new Map<T, U>([...map1, ...map2])
 }
