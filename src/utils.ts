@@ -107,6 +107,16 @@ export function checkExportedData(exportCache: boolean, cacheInput: string | nul
       options.toTag.date = moment(options.toTag.date)
     }
 
+    // Handle backwards compatibility for addition of `commit_template` in COMMIT and HYBRID mode
+    // If there is no provided commit_template, fallback to the provided pr_template,
+    // and if that is not provided either, fallback to the default commit_template
+    const {mode, configuration} = options
+    const prTemplate = configuration?.pr_template
+    const commitTemplate = configuration?.commit_template
+    if ((mode === 'COMMIT' || mode === 'HYBRID') && !commitTemplate) {
+      options.configuration.commit_template = prTemplate || DefaultConfiguration.commit_template
+    }
+
     return {
       diffInfo,
       mergedPullRequests,
@@ -198,12 +208,17 @@ export function mergeConfiguration(jc?: Configuration, fc?: Configuration, mode?
     def = DefaultConfiguration
   }
 
-  // Handle backwards compatibility for addition of `commit_template` in COMMIT mode
-  // If the user configuration provides a pr_template, but not a commit_template, we will use the pr_template
+  // Handle backwards compatibility for addition of `commit_template` in COMMIT and HYBRID mode
+  // If there is no provided commit_template, fallback to the provided pr_template,
+  // and if that is not provided either, fallback to the default commit_template
   const prTemplate = jc?.pr_template || fc?.pr_template
   let commitTemplate = jc?.commit_template || fc?.commit_template
-  if (mode === 'COMMIT' && !!prTemplate && !commitTemplate) {
-    commitTemplate = prTemplate
+  if ((mode === 'COMMIT' || mode === 'HYBRID') && !commitTemplate) {
+    if (prTemplate) {
+      commitTemplate = prTemplate
+    } else {
+      commitTemplate = def.commit_template
+    }
   }
 
   return {

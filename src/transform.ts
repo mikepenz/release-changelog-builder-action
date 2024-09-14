@@ -295,7 +295,8 @@ function buildPrStringsAndFillCategoryEntires(
     }
 
     let matchedOnce = false // in case we matched once at least, the PR can't be uncategorized
-    for (const category of categories) {
+    const filteredCategories = filterCategoriesByPrType(categories, pr)
+    for (const category of filteredCategories) {
       const [matched, consumed] = recursiveCategorizePr(category, pr, body)
       if (consumed) {
         continue prLoop
@@ -305,7 +306,8 @@ function buildPrStringsAndFillCategoryEntires(
 
     if (!matchedOnce) {
       // we allow to have pull requests included in an "uncategorized" category
-      for (const category of flatCategories) {
+      const filteredFlatCategories = filterCategoriesByPrType(flatCategories, pr)
+      for (const category of filteredFlatCategories) {
         category.entries = category.entries || []
         if ((category.labels === undefined || category.labels.length === 0) && category.rules === undefined) {
           // check if any exclude label matches for the "uncategorized" category
@@ -912,4 +914,24 @@ function hasChildWithEntries(category: Category): boolean {
     hasEntries = hasEntries || hasChildWithEntries(cat)
   }
   return hasEntries
+}
+
+/**
+ * Filters the provided categories based on the type of pull request information.
+ *
+ * @param {Category[]} categories - The list of categories to filter.
+ * @param {PullRequestInfo} prInfo - The pull request information used to determine the type of PR.
+ * @returns {Category[]} The filtered list of categories:
+ * - If 'prInfo' represents a real pull request (has a number other than 0), it excludes categories with mode 'COMMIT'.
+ * - If 'prInfo' represents a commit (has number 0), it excludes categories with mode 'PR'.
+ * - Defaults to keeping categories with mode 'HYBRID' in either case.
+ */
+function filterCategoriesByPrType(categories: Category[], prInfo: PullRequestInfo): Category[] {
+  const isRealPr = prInfo.number !== 0
+
+  if (isRealPr) {
+    return categories.filter(category => (category.mode || 'HYBRID') !== 'COMMIT')
+  } else {
+    return categories.filter(category => (category.mode || 'HYBRID') !== 'PR')
+  }
 }
