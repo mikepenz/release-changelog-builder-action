@@ -171,7 +171,7 @@ jobs:
                   "pattern": "^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\\([\\w\\-\\.]+\\))?(!)?: ([\\w ])+([\\s\\S]*)",
                   "target": "$1"
                 }
-              ],
+              ]
             }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
