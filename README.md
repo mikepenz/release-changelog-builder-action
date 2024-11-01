@@ -279,7 +279,7 @@ A full set list of possible output values for this action.
 > 2. Create an initial tag on the commit you want to begin a changelog from (for example `v0.0.1`).
 
 > [!NOTE]  
-> By default not specifying `fromTag` or `toTag` will resolve `toTag` from either the `ref` or alternatively fallback to the latest tag from the git API. `fromTag` is resolved by sorting tags using [semver](https://semver.org/). Check the [configuration](#configuration-specification) for alternatives.
+> By default not specifying `fromTag` or `toTag` will resolve `toTag` from either the `ref` or alternatively fallback to the latest tag from the git API. `fromTag` is resolved by sorting tags using [semver](https://semver.org/). Tags not following semver are filtered out. Check the [configuration](#configuration-specification) for alternatives.
 
 > [!NOTE]  
 > If you are behind a corporate HTTP proxy, you can set the `https_proxy` environment variable to the proxy URL. For reference, please see the Octokit [documentation](https://github.com/octokit/octokit.js/#proxy-servers-nodejs-only).
