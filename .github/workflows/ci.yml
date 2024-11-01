@@ -1,8 +1,8 @@
-name: 'CI'
+name: "CI"
 on:
   push:
     tags:
-      - '*'
+      - "*"
   pull_request:
 
 concurrency:
@@ -25,13 +25,13 @@ jobs:
       - name: Install NPM
         run: |
           npm install
-          
+
       - name: Run NPM
         run: |
           npm run all
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
+
   test:
     if: github.event_name  == 'pull_request'
     runs-on: ubuntu-latest
@@ -72,7 +72,7 @@ jobs:
             }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Echo Configuration without Checkout Changelog
         env:
           CHANGELOG: ${{ steps.without_checkout.outputs.changelog }}
@@ -89,7 +89,7 @@ jobs:
         uses: ./
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Echo Minimal Configuration Changelog
         env:
           CHANGELOG: ${{ steps.minimal_release.outputs.changelog }}
@@ -125,7 +125,7 @@ jobs:
           token: ${{ secrets.PERSONAL_TOKEN }}
           exportCache: true
           exportOnly: true
-      
+
       - name: "External Repo Configuration"
         id: external_changelog
         uses: ./
@@ -188,4 +188,3 @@ jobs:
           prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-b') || contains(github.ref, '-a') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-

@@ -193,6 +193,7 @@ it('Extract label from title, split regex', async () => {
       on_property: 'title'
     }
   ]
+
   expect(buildChangelogTest(configuration, mergedPullRequests, repositoryUtils)).toStrictEqual(
     `## 🚀 Features\n\n- [Feature][AB-1234] - this is a PR 1 title message\n   - PR: #1\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n## 🐛 Fixes\n\n- [Issue][AB-4321] - this is a PR 2 title message\n   - PR: #2\n- [Issue][Feature][AB-1234321] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
@@ -448,7 +449,8 @@ it('Use empty_content for empty category', async () => {
       labels: ['Feature']
     }
   ]
-  expect(buildChangelogTest(customConfig, pullRequestsWithLabels, repositoryUtils)).toStrictEqual(
+  const changelog = buildChangelogTest(customConfig, pullRequestsWithLabels, repositoryUtils)
+  expect(changelog).toStrictEqual(
     `## 🚀 Features and 🐛 Issues\n\n- No PRs in this category\n\n## 🚀 Features\n\n- [ABC-1234] - this is a PR 1 title message\n   - PR: #1\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
@@ -457,9 +459,14 @@ const repositoryUtils = new GithubRepository(process.env.GITEA_TOKEN || '', unde
 it('Commit SHA-1 in commitMode', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.sort = 'DESC'
-  customConfig.pr_template = '#{{MERGE_SHA}}'
+  customConfig.commit_template = '#{{MERGE_SHA}}'
 
-  const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
+  // Since this is COMMIT mode, the prs would have been built with "number: 0"
+  const convertedPrs = pullRequestsWithLabels.map(pr => {
+    return {...pr, number: 0}
+  })
+
+  const resultChangelog = buildChangelog(DefaultDiffInfo, convertedPrs, {
     owner: 'mikepenz',
     repo: 'test-repo',
     fromTag: {name: '1.0.0'},

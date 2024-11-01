@@ -226,7 +226,7 @@ it('[Github] Uncategorized category', async () => {
 })
 
 it('[Github] Verify commit based changelog', async () => {
-  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_commits.json'))
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_commits.json'), 'COMMIT')
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
     githubRepository,
@@ -257,7 +257,7 @@ it('[Github] Verify commit based changelog', async () => {
 })
 
 it('[Github] Verify commit based changelog, with emoji categorisation', async () => {
-  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_commits_emoji.json'))
+  const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_commits_emoji.json'), 'COMMIT')
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
     githubRepository,

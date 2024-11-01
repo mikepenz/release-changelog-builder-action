@@ -19,7 +19,7 @@ test('missing values should result in failure', () => {
   }
   try {
     cp.execSync(`node ${ip}`, options).toString()
-  } catch (error: any) {
+  } catch (error: unknown) {
     expect(true).toBe(true)
   }
 })
