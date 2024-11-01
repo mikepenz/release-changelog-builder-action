@@ -39,7 +39,7 @@
     "@actions/core": "^1.11.1",
     "@actions/exec": "^1.1.1",
     "@actions/github": "^6.0.0",
-    "@octokit/rest": "^21.0.2",
+    "@octokit/rest": "^20.1.1",
     "gitea-js": "^1.22.0",
     "https-proxy-agent": "^7.0.5",
     "moment": "^2.30.1",
