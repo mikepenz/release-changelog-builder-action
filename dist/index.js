@@ -7,7 +7,10 @@ require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.DefaultCommitConfiguration = exports.DefaultConfiguration = void 0;
+exports.DefaultCommitConfiguration = exports.DefaultConfiguration = exports.PlaceholderGroup = void 0;
+class PlaceholderGroup extends Map {
+}
+exports.PlaceholderGroup = PlaceholderGroup;
 exports.DefaultConfiguration = {
     max_tags_to_fetch: 200, // the amount of tags to fetch from the github API
     max_pull_requests: 200, // the amount of pull requests to process
@@ -53,16 +56,7 @@ exports.DefaultConfiguration = {
     custom_placeholders: [],
     trim_values: false // defines if values are being trimmed prior to inserting
 };
-exports.DefaultCommitConfiguration = {
-    max_tags_to_fetch: exports.DefaultConfiguration.max_tags_to_fetch,
-    max_pull_requests: exports.DefaultConfiguration.max_pull_requests,
-    max_back_track_time_days: exports.DefaultConfiguration.max_back_track_time_days,
-    exclude_merge_branches: exports.DefaultConfiguration.exclude_merge_branches,
-    sort: exports.DefaultConfiguration.sort,
-    template: '#{{CHANGELOG}}', // the global template to host the changelog
-    pr_template: '- #{{TITLE}}', // the per PR template to pick for commit based mode
-    empty_template: exports.DefaultConfiguration.empty_template,
-    categories: [
+exports.DefaultCommitConfiguration = Object.assign(Object.assign({}, exports.DefaultConfiguration), { pr_template: '- #{{TITLE}}', categories: [
         {
             title: '## 🚀 Features',
             labels: ['feature', 'feat']
@@ -79,20 +73,12 @@ exports.DefaultCommitConfiguration = {
             title: '## 📦 Other',
             labels: []
         }
-    ], // the categories to support for the ordering
-    ignore_labels: exports.DefaultConfiguration.ignore_labels,
-    label_extractor: [
+    ], label_extractor: [
         {
             pattern: '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\\([\\w\\-\\.]+\\))?(!)?: ([\\w ])+([\\s\\S]*)',
             target: '$1'
         }
-    ],
-    transformers: exports.DefaultConfiguration.transformers,
-    tag_resolver: exports.DefaultConfiguration.tag_resolver,
-    base_branches: exports.DefaultConfiguration.base_branches,
-    custom_placeholders: exports.DefaultConfiguration.custom_placeholders,
-    trim_values: exports.DefaultConfiguration.trim_values
-};
+    ] });
 
 
 /***/ }),
@@ -751,17 +737,17 @@ class PullRequests {
     }
     getForCommitHash(owner, repo, commit_sha, maxPullRequests) {
         return __awaiter(this, void 0, void 0, function* () {
-            return sortPrs(yield this.repositoryUtils.getForCommitHash(owner, repo, commit_sha, maxPullRequests));
+            return sortPrsByMergedAt(yield this.repositoryUtils.getForCommitHash(owner, repo, commit_sha, maxPullRequests));
         });
     }
     getBetweenDates(owner, repo, fromDate, toDate, maxPullRequests) {
         return __awaiter(this, void 0, void 0, function* () {
-            return sortPrs(yield this.repositoryUtils.getBetweenDates(owner, repo, fromDate, toDate, maxPullRequests));
+            return sortPrsByMergedAt(yield this.repositoryUtils.getBetweenDates(owner, repo, fromDate, toDate, maxPullRequests));
         });
     }
     getOpen(owner, repo, maxPullRequests) {
         return __awaiter(this, void 0, void 0, function* () {
-            return sortPrs(yield this.repositoryUtils.getOpen(owner, repo, maxPullRequests));
+            return sortPrsByMergedAt(yield this.repositoryUtils.getOpen(owner, repo, maxPullRequests));
         });
     }
     getReviews(owner, repo, pr) {
@@ -876,7 +862,7 @@ class PullRequests {
     }
 }
 exports.PullRequests = PullRequests;
-function sortPrs(pullRequests) {
+function sortPrsByMergedAt(pullRequests) {
     return sortPullRequests(pullRequests, {
         order: 'ASC',
         on_property: 'mergedAt'
@@ -1417,6 +1403,23 @@ function stringTags(tags) {
         }
     });
 }
+
+
+/***/ }),
+
+/***/ 3616:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.TemplateContext = exports.GroupedTemplateContext = void 0;
+class GroupedTemplateContext extends Map {
+}
+exports.GroupedTemplateContext = GroupedTemplateContext;
+class TemplateContext extends Map {
+}
+exports.TemplateContext = TemplateContext;
 
 
 /***/ }),
@@ -2559,13 +2562,13 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.clear = clear;
 exports.buildChangelog = buildChangelog;
-exports.replaceEmptyTemplate = replaceEmptyTemplate;
+exports.renderEmptyChangelogTemplate = renderEmptyChangelogTemplate;
 const core = __importStar(__nccwpck_require__(7484));
 const utils_1 = __nccwpck_require__(9277);
 const pullRequests_1 = __nccwpck_require__(1516);
 const regexUtils_1 = __nccwpck_require__(7793);
+const types_1 = __nccwpck_require__(3616);
 const regexUtils_2 = __nccwpck_require__(4826);
-const EMPTY_MAP = new Map();
 let CLEAR = false;
 function clear() {
     CLEAR = true;
@@ -2575,7 +2578,7 @@ function buildChangelog(diffInfo, origPrs, options) {
     let prs = origPrs;
     if (prs.length === 0) {
         core.warning(`⚠️ No pull requests found`);
-        const result = replaceEmptyTemplate(options.configuration.empty_template, options);
+        const result = renderEmptyChangelogTemplate(options.configuration.empty_template, options);
         core.endGroup();
         return result;
     }
@@ -2664,36 +2667,75 @@ function buildChangelog(diffInfo, origPrs, options) {
             }
         }
     }
-    // keep reference for the placeholder values
-    const placeholders = new Map();
-    for (const ph of config.custom_placeholders || []) {
-        (0, utils_1.createOrSet)(placeholders, ph.source, ph);
-    }
-    const placeholderPrMap = new Map();
+    const groupedPlaceholders = (0, utils_1.groupPlaceholders)(config.custom_placeholders || []);
+    const customPlaceholdersTemplateContext = new types_1.GroupedTemplateContext();
     const validatedTransformers = validateTransformers(config.transformers);
-    const transformedMap = new Map();
-    // convert PRs to their text representation
-    for (const pr of prs) {
-        transformedMap.set(pr, transform(fillPrTemplate(pr, config.pr_template, placeholders, placeholderPrMap, config), validatedTransformers));
+    core.info(`ℹ️ Using ${validatedTransformers.length} transformers to rewrite content`);
+    if (validatedTransformers.length > 0) {
+        for (const pr of prs) {
+            const prAsObject = pr;
+            transformObject(prAsObject, validatedTransformers);
+        }
+        core.info(`✒️ Transformed ${prs.length} pull requests`);
     }
-    core.info(`ℹ️ Used ${validatedTransformers.length} transformers to adjust message`);
-    core.info(`✒️ Wrote messages for ${prs.length} pull requests`);
+    const prInfoMap = buildInfoMapAndFillPlaceholderContext(prs, config.pr_template, groupedPlaceholders, customPlaceholdersTemplateContext, config);
     // bring PRs into the order of categories
     const categories = config.categories;
-    const ignoredLabels = config.ignore_labels;
     const flatCategories = flatten(config.categories);
-    const categorizedPrs = [];
-    const ignoredPrs = [];
-    const openPrs = [];
-    const uncategorizedPrs = [];
     // set-up the category object
     for (const category of flatCategories) {
         if (CLEAR || !category.entries) {
             category.entries = [];
         }
     }
+    const prStrings = buildPrStringsAndFillCategoryEntries(prInfoMap, config.ignore_labels, categories, flatCategories);
+    core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`);
+    // serialize and provide the categorized content as json
+    const transformedCategorized = buildCategorizedOutput(flatCategories);
+    core.setOutput('categorized', JSON.stringify(transformedCategorized));
+    // construct final changelog
+    const changelogStrings = buildChangelogStrings(flatCategories, prStrings);
+    core.info(`✒️ Wrote ${changelogStrings.categorized.length} categorized pull requests down`);
+    core.info(`✒️ Wrote ${changelogStrings.uncategorized.length} non categorized pull requests down`);
+    core.info(`✒️ Wrote ${changelogStrings.open.length} open pull requests down`);
+    core.info(`✒️ Wrote ${changelogStrings.ignored.length} ignored pull requests down`);
+    core.setOutput('categorized_prs', changelogStrings.categorized.length);
+    core.setOutput('uncategorized_prs', changelogStrings.uncategorized.length);
+    core.setOutput('open_prs', changelogStrings.open.length);
+    core.setOutput('ignored_prs', changelogStrings.ignored.length);
+    // collect all contributors
+    const contributorsSet = new Set(prs.map(pr => `@${pr.author}`));
+    const contributorsArray = Array.from(contributorsSet);
+    const contributorsString = contributorsArray.join(', ');
+    const externalContributorString = contributorsArray.filter(value => value !== options.owner).join(', ');
+    core.setOutput('contributors', JSON.stringify(contributorsSet));
+    const releaseNotesTemplateContext = buildReleaseNotesTemplateContext(changelogStrings, contributorsString, externalContributorString, prStrings, diffInfo, options);
+    let renderedReleaseNotesTemplate = renderTemplateAndFillPlaceholderContext(config.template, releaseNotesTemplateContext, groupedPlaceholders, customPlaceholdersTemplateContext, config);
+    renderedReleaseNotesTemplate = renderTemplateWithContext(renderedReleaseNotesTemplate, customPlaceholdersTemplateContext, config);
+    renderedReleaseNotesTemplate = cleanupPrPlaceholders(renderedReleaseNotesTemplate, groupedPlaceholders);
+    renderedReleaseNotesTemplate = cleanupPlaceholders(renderedReleaseNotesTemplate);
+    core.info(`ℹ️ Filled template`);
+    core.endGroup();
+    return renderedReleaseNotesTemplate;
+}
+function buildInfoMapAndFillPlaceholderContext(prData, template, groupedPlaceholders, customPlaceholdersTemplateContext, config) {
+    const infoMap = new Map();
+    for (const pr of prData) {
+        const [prTemplateContext, prArrayTemplateContext] = buildPrTemplateContext(pr);
+        let renderedTemplate = template;
+        renderedTemplate = renderTemplateAndFillPlaceholderContext(renderedTemplate, prArrayTemplateContext, groupedPlaceholders, customPlaceholdersTemplateContext, config);
+        renderedTemplate = renderTemplateAndFillPlaceholderContext(renderedTemplate, prTemplateContext, groupedPlaceholders, customPlaceholdersTemplateContext, config);
+        infoMap.set(pr, renderedTemplate);
+    }
+    return infoMap;
+}
+function buildPrStringsAndFillCategoryEntries(prInfoMap, ignoredLabels, categories, flatCategories) {
+    const categorizedPrs = [];
+    const ignoredPrs = [];
+    const openPrs = [];
+    const uncategorizedPrs = [];
     // bring elements in order
-    prLoop: for (const [pr, body] of transformedMap) {
+    prLoop: for (const [pr, body] of prInfoMap) {
         if ((0, utils_1.haveCommonElementsArr)(ignoredLabels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
             ignoredPrs.push(body);
             continue;
@@ -2712,12 +2754,12 @@ function buildChangelog(diffInfo, origPrs, options) {
         if (!matchedOnce) {
             // we allow to have pull requests included in an "uncategorized" category
             for (const category of flatCategories) {
-                const pullRequests = category.entries || [];
+                category.entries = category.entries || [];
                 if ((category.labels === undefined || category.labels.length === 0) && category.rules === undefined) {
                     // check if any exclude label matches for the "uncategorized" category
                     if (category.exclude_labels !== undefined) {
                         if (!(0, utils_1.haveCommonElementsArr)(category.exclude_labels.map(lbl => lbl.toLocaleLowerCase('en')), pr.labels)) {
-                            pullRequests.push(body);
+                            category.entries.push(body);
                         }
                         else if (core.isDebug()) {
                             const excludeLabels = JSON.stringify(category.exclude_labels);
@@ -2725,7 +2767,7 @@ function buildChangelog(diffInfo, origPrs, options) {
                         }
                     }
                     else {
-                        pullRequests.push(body);
+                        category.entries.push(body);
                     }
                     break;
                 }
@@ -2737,98 +2779,95 @@ function buildChangelog(diffInfo, origPrs, options) {
             categorizedPrs.push(body);
         }
     }
-    core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`);
-    // serialize and provide the categorized content as json
+    const prStrings = {
+        categorizedList: categorizedPrs,
+        uncategorizedList: uncategorizedPrs,
+        openList: openPrs,
+        ignoredList: ignoredPrs
+    };
+    return prStrings;
+}
+function buildChangelogStrings(flatCategories, prStrings) {
+    const { categorizedList, uncategorizedList, openList, ignoredList } = prStrings;
+    let changelogCategorized = '';
+    for (const category of flatCategories) {
+        const pullRequests = category.entries || [];
+        changelogCategorized += buildCategorizedChangelogString(category, pullRequests);
+    }
+    if (core.isDebug()) {
+        for (const pr of categorizedList) {
+            core.debug(`    ${pr}`);
+        }
+    }
+    let changelogUncategorized = '';
+    for (const pr of uncategorizedList) {
+        changelogUncategorized = `${changelogUncategorized + pr}\n`;
+    }
+    if (core.isDebug()) {
+        for (const pr of uncategorizedList) {
+            core.debug(`    ${pr}`);
+        }
+    }
+    let changelogOpen = '';
+    if (openList.length > 0) {
+        for (const pr of openList) {
+            changelogOpen = `${changelogOpen + pr}\n`;
+        }
+        if (core.isDebug()) {
+            for (const pr of openList) {
+                core.debug(`    ${pr}`);
+            }
+        }
+    }
+    let changelogIgnored = '';
+    for (const pr of ignoredList) {
+        changelogIgnored = `${changelogIgnored + pr}\n`;
+    }
+    if (core.isDebug()) {
+        for (const pr of ignoredList) {
+            core.debug(`    ${pr}`);
+        }
+    }
+    const changelogStrings = {
+        categorized: changelogCategorized,
+        uncategorized: changelogUncategorized,
+        open: changelogOpen,
+        ignored: changelogIgnored
+    };
+    return changelogStrings;
+}
+function buildReleaseNotesTemplateContext(changelogStrings, contributorsString, externalContributorString, prStrings, diffInfo, options) {
+    const { categorized: changelogCategorized, uncategorized: changelogUncategorized, open: changelogOpen, ignored: changelogIgnored } = changelogStrings;
+    const { categorizedList, uncategorizedList, openList, ignoredList } = prStrings;
+    let releaseNotesTemplateContext = new types_1.TemplateContext();
+    releaseNotesTemplateContext.set('CHANGELOG', changelogCategorized);
+    releaseNotesTemplateContext.set('UNCATEGORIZED', changelogUncategorized);
+    releaseNotesTemplateContext.set('OPEN', changelogOpen);
+    releaseNotesTemplateContext.set('IGNORED', changelogIgnored);
+    // fill special collected contributors
+    releaseNotesTemplateContext.set('CONTRIBUTORS', contributorsString);
+    releaseNotesTemplateContext.set('EXTERNAL_CONTRIBUTORS', externalContributorString);
+    // fill other placeholders
+    releaseNotesTemplateContext.set('CATEGORIZED_COUNT', categorizedList.length.toString());
+    releaseNotesTemplateContext.set('UNCATEGORIZED_COUNT', uncategorizedList.length.toString());
+    releaseNotesTemplateContext.set('OPEN_COUNT', openList.length.toString());
+    releaseNotesTemplateContext.set('IGNORED_COUNT', ignoredList.length.toString());
+    // code change placeholders
+    releaseNotesTemplateContext.set('CHANGED_FILES', diffInfo.changedFiles.toString());
+    releaseNotesTemplateContext.set('ADDITIONS', diffInfo.additions.toString());
+    releaseNotesTemplateContext.set('DELETIONS', diffInfo.deletions.toString());
+    releaseNotesTemplateContext.set('CHANGES', diffInfo.changes.toString());
+    releaseNotesTemplateContext.set('COMMITS', diffInfo.commits.toString());
+    const coreReleasesNotesContext = buildCoreReleaseNotesTemplateContext(options);
+    releaseNotesTemplateContext = (0, utils_1.mergeMaps)(releaseNotesTemplateContext, coreReleasesNotesContext);
+    return releaseNotesTemplateContext;
+}
+function buildCategorizedOutput(flatCategories) {
     const transformedCategorized = {};
     for (const category of flatCategories) {
         Object.assign(transformedCategorized, { [category.key || category.title]: category.entries });
     }
-    core.setOutput('categorized', JSON.stringify(transformedCategorized));
-    // construct final changelog
-    let changelog = '';
-    for (const category of flatCategories) {
-        const pullRequests = category.entries || [];
-        changelog = attachCategoryChangelog(changelog, category, pullRequests);
-    }
-    core.info(`✒️ Wrote ${categorizedPrs.length} categorized pull requests down`);
-    if (core.isDebug()) {
-        for (const pr of categorizedPrs) {
-            core.debug(`    ${pr}`);
-        }
-    }
-    core.setOutput('categorized_prs', categorizedPrs.length);
-    let changelogUncategorized = '';
-    for (const pr of uncategorizedPrs) {
-        changelogUncategorized = `${changelogUncategorized + pr}\n`;
-    }
-    core.info(`✒️ Wrote ${uncategorizedPrs.length} non categorized pull requests down`);
-    if (core.isDebug()) {
-        for (const pr of uncategorizedPrs) {
-            core.debug(`    ${pr}`);
-        }
-    }
-    core.setOutput('uncategorized_prs', uncategorizedPrs.length);
-    let changelogOpen = '';
-    if (openPrs.length > 0) {
-        for (const pr of openPrs) {
-            changelogOpen = `${changelogOpen + pr}\n`;
-        }
-        core.info(`✒️ Wrote ${openPrs.length} open pull requests down`);
-        if (core.isDebug()) {
-            for (const pr of openPrs) {
-                core.debug(`    ${pr}`);
-            }
-        }
-        core.setOutput('open_prs', openPrs.length);
-    }
-    let changelogIgnored = '';
-    for (const pr of ignoredPrs) {
-        changelogIgnored = `${changelogIgnored + pr}\n`;
-    }
-    if (core.isDebug()) {
-        for (const pr of ignoredPrs) {
-            core.debug(`    ${pr}`);
-        }
-    }
-    core.info(`✒️ Wrote ${ignoredPrs.length} ignored pull requests down`);
-    // collect all contributors
-    const contributorsSet = new Set();
-    for (const pr of prs) {
-        contributorsSet.add(`@${pr.author}`);
-    }
-    const contributorsArray = Array.from(contributorsSet);
-    const contributorsString = contributorsArray.join(', ');
-    const externalContributorString = contributorsArray.filter(value => value !== options.owner).join(', ');
-    core.setOutput('contributors', JSON.stringify(contributorsSet));
-    // fill template
-    const placeholderMap = new Map();
-    placeholderMap.set('CHANGELOG', changelog);
-    placeholderMap.set('UNCATEGORIZED', changelogUncategorized);
-    placeholderMap.set('OPEN', changelogOpen);
-    placeholderMap.set('IGNORED', changelogIgnored);
-    // fill special collected contributors
-    placeholderMap.set('CONTRIBUTORS', contributorsString);
-    placeholderMap.set('EXTERNAL_CONTRIBUTORS', externalContributorString);
-    // fill other placeholders
-    placeholderMap.set('CATEGORIZED_COUNT', categorizedPrs.length.toString());
-    placeholderMap.set('UNCATEGORIZED_COUNT', uncategorizedPrs.length.toString());
-    placeholderMap.set('OPEN_COUNT', openPrs.length.toString());
-    placeholderMap.set('IGNORED_COUNT', ignoredPrs.length.toString());
-    // code change placeholders
-    placeholderMap.set('CHANGED_FILES', diffInfo.changedFiles.toString());
-    placeholderMap.set('ADDITIONS', diffInfo.additions.toString());
-    placeholderMap.set('DELETIONS', diffInfo.deletions.toString());
-    placeholderMap.set('CHANGES', diffInfo.changes.toString());
-    placeholderMap.set('COMMITS', diffInfo.commits.toString());
-    fillAdditionalPlaceholders(options, placeholderMap);
-    let transformedChangelog = config.template;
-    transformedChangelog = replacePlaceholders(transformedChangelog, EMPTY_MAP, placeholderMap, placeholders, placeholderPrMap, config);
-    transformedChangelog = replacePrPlaceholders(transformedChangelog, placeholderPrMap, config);
-    transformedChangelog = cleanupPrPlaceholders(transformedChangelog, placeholders);
-    transformedChangelog = cleanupPlaceholders(transformedChangelog);
-    core.info(`ℹ️ Filled template`);
-    core.endGroup();
-    return transformedChangelog;
+    return transformedCategorized;
 }
 function recursiveCategorizePr(category, pr, body) {
     let matched = false;
@@ -2844,10 +2883,10 @@ function recursiveCategorizePr(category, pr, body) {
     }
     // if consumed we don't handle it anymore, as it was matched in a child, don't handle anymore
     if (!consumed && !matched) {
-        const pullRequests = category.entries || [];
+        category.entries = category.entries || [];
         matched = matchesParent;
         if (matched) {
-            pullRequests.push(body); // if matched add the PR to the list
+            category.entries.push(body); // if matched add the PR to the list
         }
     }
     if (matched && category.consume) {
@@ -2898,118 +2937,129 @@ function categorizePr(category, pr) {
     }
     return matched;
 }
-function attachCategoryChangelog(changelog, category, pullRequests) {
+function buildCategorizedChangelogString(category, pullRequests) {
+    let categorizedString = '';
     if (pullRequests.length > 0 || hasChildWithEntries(category)) {
         if (category.title) {
-            changelog = `${changelog + category.title}\n\n`;
+            categorizedString = `${categorizedString + category.title}\n\n`;
         }
         for (const pr of pullRequests) {
-            changelog = `${changelog + pr}\n`;
+            categorizedString = `${categorizedString + pr}\n`;
         }
-        changelog = `${changelog}\n`; // add space between sections
+        categorizedString = `${categorizedString}\n`; // add space between sections
     }
     else if (category.empty_content !== undefined) {
         if (category.title) {
-            changelog = `${changelog + category.title}\n\n`;
+            categorizedString = `${categorizedString + category.title}\n\n`;
         }
-        changelog = `${changelog + category.empty_content}\n\n`;
+        categorizedString = `${categorizedString + category.empty_content}\n\n`;
     }
-    return changelog;
+    return categorizedString;
 }
-function replaceEmptyTemplate(template, options) {
+function renderEmptyChangelogTemplate(template, options) {
     const placeholders = new Map();
     for (const ph of options.configuration.custom_placeholders || []) {
         (0, utils_1.createOrSet)(placeholders, ph.source, ph);
     }
-    const placeholderMap = new Map();
-    fillAdditionalPlaceholders(options, placeholderMap);
-    return replacePlaceholders(template, EMPTY_MAP, placeholderMap, placeholders, undefined, options.configuration);
+    const releaseNotesTemplateContext = buildCoreReleaseNotesTemplateContext(options);
+    const renderedEmptyChangelogTemplate = renderTemplateAndFillPlaceholderContext(template, releaseNotesTemplateContext, placeholders, undefined, options.configuration);
+    return renderedEmptyChangelogTemplate;
 }
-function fillAdditionalPlaceholders(options, placeholderMap /* placeholderKey and original value */) {
+function buildCoreReleaseNotesTemplateContext(options) {
     var _a, _b;
-    placeholderMap.set('OWNER', options.owner);
-    placeholderMap.set('REPO', options.repo);
-    placeholderMap.set('FROM_TAG', options.fromTag.name);
-    placeholderMap.set('FROM_TAG_DATE', ((_a = options.fromTag.date) === null || _a === void 0 ? void 0 : _a.toISOString()) || '');
-    placeholderMap.set('TO_TAG', options.toTag.name);
-    placeholderMap.set('TO_TAG_DATE', ((_b = options.toTag.date) === null || _b === void 0 ? void 0 : _b.toISOString()) || '');
+    const templateContext = new types_1.TemplateContext();
+    templateContext.set('OWNER', options.owner);
+    templateContext.set('REPO', options.repo);
+    templateContext.set('FROM_TAG', options.fromTag.name);
+    templateContext.set('FROM_TAG_DATE', ((_a = options.fromTag.date) === null || _a === void 0 ? void 0 : _a.toISOString()) || '');
+    templateContext.set('TO_TAG', options.toTag.name);
+    templateContext.set('TO_TAG_DATE', ((_b = options.toTag.date) === null || _b === void 0 ? void 0 : _b.toISOString()) || '');
     const fromDate = options.fromTag.date;
     const toDate = options.toTag.date;
     if (fromDate !== undefined && toDate !== undefined) {
-        placeholderMap.set('DAYS_SINCE', toDate.diff(fromDate, 'days').toString() || '');
+        templateContext.set('DAYS_SINCE', toDate.diff(fromDate, 'days').toString() || '');
     }
     else {
-        placeholderMap.set('DAYS_SINCE', '');
+        templateContext.set('DAYS_SINCE', '');
     }
-    placeholderMap.set('RELEASE_DIFF', `${options.repositoryUtils.homeUrl}/${options.owner}/${options.repo}/compare/${options.fromTag.name}...${options.toTag.name}`);
+    templateContext.set('RELEASE_DIFF', `${options.repositoryUtils.homeUrl}/${options.owner}/${options.repo}/compare/${options.fromTag.name}...${options.toTag.name}`);
+    return templateContext;
 }
-function fillPrTemplate(pr, template, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */, configuration) {
+function buildPrTemplateContext(pr) {
     var _a, _b, _c, _d, _e, _f;
-    const arrayPlaceholderMap = new Map();
-    fillReviewPlaceholders(arrayPlaceholderMap, 'REVIEWS', pr.reviews || []);
-    fillChildPrPlaceholders(arrayPlaceholderMap, 'REFERENCED', pr.childPrs || []);
-    const placeholderMap = new Map();
-    placeholderMap.set('NUMBER', pr.number.toString());
-    placeholderMap.set('TITLE', pr.title);
-    placeholderMap.set('URL', pr.htmlURL);
-    placeholderMap.set('STATUS', pr.status);
-    placeholderMap.set('CREATED_AT', pr.createdAt.toISOString());
-    placeholderMap.set('MERGED_AT', ((_a = pr.mergedAt) === null || _a === void 0 ? void 0 : _a.toISOString()) || '');
-    placeholderMap.set('MERGE_SHA', pr.mergeCommitSha);
-    placeholderMap.set('AUTHOR', pr.author);
-    placeholderMap.set('AUTHOR_NAME', pr.authorName || '');
-    placeholderMap.set('LABELS', ((_c = (_b = [...pr.labels]) === null || _b === void 0 ? void 0 : _b.filter(l => !l.startsWith('--rcba-'))) === null || _c === void 0 ? void 0 : _c.join(', ')) || '');
-    placeholderMap.set('MILESTONE', pr.milestone || '');
-    placeholderMap.set('BODY', pr.body);
-    fillArrayPlaceholders(arrayPlaceholderMap, 'ASSIGNEES', pr.assignees || []);
-    placeholderMap.set('ASSIGNEES', ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.join(', ')) || '');
-    fillArrayPlaceholders(arrayPlaceholderMap, 'REVIEWERS', pr.requestedReviewers || []);
-    placeholderMap.set('REVIEWERS', ((_e = pr.requestedReviewers) === null || _e === void 0 ? void 0 : _e.join(', ')) || '');
-    fillArrayPlaceholders(arrayPlaceholderMap, 'APPROVERS', pr.approvedReviewers || []);
-    placeholderMap.set('APPROVERS', ((_f = pr.approvedReviewers) === null || _f === void 0 ? void 0 : _f.join(', ')) || '');
-    placeholderMap.set('BRANCH', pr.branch || '');
-    placeholderMap.set('BASE_BRANCH', pr.baseBranch);
-    return replacePlaceholders(template, arrayPlaceholderMap, placeholderMap, placeholders, placeholderPrMap, configuration);
+    const prTemplateContext = new types_1.TemplateContext();
+    prTemplateContext.set('NUMBER', pr.number.toString());
+    prTemplateContext.set('TITLE', pr.title);
+    prTemplateContext.set('URL', pr.htmlURL);
+    prTemplateContext.set('STATUS', pr.status);
+    prTemplateContext.set('CREATED_AT', pr.createdAt.toISOString());
+    prTemplateContext.set('MERGED_AT', ((_a = pr.mergedAt) === null || _a === void 0 ? void 0 : _a.toISOString()) || '');
+    prTemplateContext.set('MERGE_SHA', pr.mergeCommitSha);
+    prTemplateContext.set('AUTHOR', pr.author);
+    prTemplateContext.set('AUTHOR_NAME', pr.authorName || '');
+    prTemplateContext.set('LABELS', ((_c = (_b = [...pr.labels]) === null || _b === void 0 ? void 0 : _b.filter(l => !l.startsWith('--rcba-'))) === null || _c === void 0 ? void 0 : _c.join(', ')) || '');
+    prTemplateContext.set('MILESTONE', pr.milestone || '');
+    prTemplateContext.set('BODY', pr.body);
+    prTemplateContext.set('ASSIGNEES', ((_d = pr.assignees) === null || _d === void 0 ? void 0 : _d.join(', ')) || '');
+    prTemplateContext.set('REVIEWERS', ((_e = pr.requestedReviewers) === null || _e === void 0 ? void 0 : _e.join(', ')) || '');
+    prTemplateContext.set('APPROVERS', ((_f = pr.approvedReviewers) === null || _f === void 0 ? void 0 : _f.join(', ')) || '');
+    prTemplateContext.set('BRANCH', pr.branch || '');
+    prTemplateContext.set('BASE_BRANCH', pr.baseBranch);
+    const prArrayTemplateContext = new types_1.TemplateContext();
+    fillReviewPlaceholders(prArrayTemplateContext, 'REVIEWS', pr.reviews || []);
+    fillChildPrPlaceholders(prArrayTemplateContext, 'REFERENCED', pr.childPrs || []);
+    fillArrayPlaceholders(prArrayTemplateContext, 'ASSIGNEES', pr.assignees || []);
+    fillArrayPlaceholders(prArrayTemplateContext, 'REVIEWERS', pr.requestedReviewers || []);
+    fillArrayPlaceholders(prArrayTemplateContext, 'APPROVERS', pr.approvedReviewers || []);
+    return [prTemplateContext, prArrayTemplateContext];
 }
-function replacePlaceholders(template, arrayPlaceholderMap /* arrayPlaceholderKey and original value */, placeholderMap /* placeholderKey and original value */, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */, configuration) {
+function renderTemplateAndFillPlaceholderContext(template, templateContext /* placeholderKey and original value */, customPlaceholders /* placeholders to apply */, customPlaceholdersTemplateContext /* map to keep replaced placeholder values with their key */, configuration) {
     let transformed = template;
-    // replace array placeholders first
-    for (const [key, value] of arrayPlaceholderMap) {
-        transformed = handlePlaceholder(transformed, key, value, placeholders, placeholderPrMap, configuration);
-    }
+    const trimValues = configuration.trim_values;
     // replace traditional placeholders
-    for (const [key, value] of placeholderMap) {
-        transformed = handlePlaceholder(transformed, key, value, placeholders, placeholderPrMap, configuration);
-    }
-    return transformed;
-}
-function handlePlaceholder(template, key, value, placeholders /* placeholders to apply */, placeholderPrMap /* map to keep replaced placeholder values with their key */, configuration) {
-    let transformed = template.replaceAll(`#{{${key}}}`, configuration.trim_values ? value.trim() : value);
-    // replace custom placeholders
-    const phs = placeholders.get(key);
-    if (phs) {
-        for (const placeholder of phs) {
-            const transformer = (0, regexUtils_1.validateRegex)(placeholder.transformer);
-            if (transformer === null || transformer === void 0 ? void 0 : transformer.pattern) {
-                const extractedValue = (0, regexUtils_1.transformStringToOptionalValue)(value, transformer);
-                // note: `.replace` will return the full string again if there was no match
-                // note: This is mostly backwards compatibility
-                if (extractedValue && ((transformer.method && transformer.method !== 'replace') || extractedValue !== value)) {
-                    if (placeholderPrMap) {
-                        (0, utils_1.createOrSet)(placeholderPrMap, placeholder.name, extractedValue);
-                    }
-                    transformed = transformed.replaceAll(`#{{${placeholder.name}}}`, configuration.trim_values ? extractedValue.trim() : extractedValue);
-                    if (core.isDebug()) {
-                        core.debug(`    Custom Placeholder successfully matched data - ${extractedValue} (${placeholder.name})`);
-                    }
-                }
-                else if (core.isDebug() && extractedValue === value) {
-                    core.debug(`    Custom Placeholder did result in the full original value returned. Skipping. (${placeholder.name})`);
-                }
-            }
+    for (const [key, value] of templateContext) {
+        transformed = transformed.replaceAll(`#{{${key}}}`, trimValues ? value.trim() : value);
+        const extractedValues = extractPlaceholderValuesAndFillPlaceholderContext(key, value, customPlaceholders, customPlaceholdersTemplateContext);
+        for (const [placeholderName, extractedValue] of extractedValues) {
+            transformed = transformed.replaceAll(`#{{${placeholderName}}}`, trimValues ? extractedValue.trim() : extractedValue);
         }
     }
     return transformed;
+}
+function extractPlaceholderValuesAndFillPlaceholderContext(key, value, customPlaceholders, customPlaceholdersTemplateContext) {
+    // Replace custom placeholders
+    const placeholdersForKey = customPlaceholders.get(key);
+    const extractedValues = new types_1.TemplateContext();
+    if (!placeholdersForKey) {
+        return extractedValues;
+    }
+    for (const placeholder of placeholdersForKey) {
+        const extractedValue = extractTransformedValue(value, placeholder);
+        if (extractedValue) {
+            extractedValues.set(placeholder.name, extractedValue);
+            if (customPlaceholdersTemplateContext) {
+                (0, utils_1.createOrSet)(customPlaceholdersTemplateContext, placeholder.name, extractedValue);
+            }
+        }
+    }
+    return extractedValues;
+}
+function extractTransformedValue(value, placeholder) {
+    const transformer = (0, regexUtils_1.validateRegex)(placeholder.transformer);
+    if (!(transformer === null || transformer === void 0 ? void 0 : transformer.pattern)) {
+        return undefined;
+    }
+    const extractedValue = (0, regexUtils_1.transformStringToOptionalValue)(value, transformer);
+    if (extractedValue && ((transformer.method && transformer.method !== 'replace') || extractedValue !== value)) {
+        if (core.isDebug()) {
+            core.debug(`    Custom Placeholder successfully matched data - ${extractedValue} (${placeholder.name})`);
+        }
+        return extractedValue;
+    }
+    if (core.isDebug() && extractedValue === value) {
+        core.debug(`    Custom Placeholder did result in the full original value returned. Skipping. (${placeholder.name})`);
+    }
+    return undefined;
 }
 function fillArrayPlaceholders(placeholderMap /* placeholderKey and original value */, key, values) {
     if (values.length === 0)
@@ -3043,9 +3093,9 @@ function fillChildPrPlaceholders(placeholderMap /* placeholderKey and original v
         placeholderMap.set(`${parentKey}[*].${childKey}`, values.map(value => { var _a; return ((_a = value[childKey]) === null || _a === void 0 ? void 0 : _a.toLocaleString('en')) || ''; }).join(', '));
     }
 }
-function replacePrPlaceholders(template, placeholderPrMap /* map with all pr related custom placeholder values */, configuration) {
+function renderTemplateWithContext(template, templateContext /* map with all pr related custom placeholder values */, configuration) {
     let transformed = template;
-    for (const [key, values] of placeholderPrMap) {
+    for (const [key, values] of templateContext) {
         for (let i = 0; i < values.length; i++) {
             transformed = transformed.replaceAll(`#{{${key}[${i}]}}`, configuration.trim_values ? values[i].trim() : values[i]);
         }
@@ -3069,6 +3119,28 @@ function cleanupPlaceholders(template) {
     }
     return transformed;
 }
+function transformObject(obj, transformers) {
+    for (const [key, value] of Object.entries(obj)) {
+        if (value === undefined) {
+            continue;
+        }
+        if (Array.isArray(value)) {
+            if (value.every(item => typeof item === 'string')) {
+                // If the array contains only strings, apply the transformation to each string
+                obj[key] = value.map(item => transform(item, transformers));
+            }
+            else {
+                // If the array contains objects, recursively apply the transformation to each object
+                for (const child of value) {
+                    transformObject(child, transformers);
+                }
+            }
+        }
+        else if (typeof value === 'string') {
+            obj[key] = transform(value, transformers);
+        }
+    }
+}
 function transform(filled, transformers) {
     if (transformers.length === 0) {
         return filled;
@@ -3082,8 +3154,7 @@ function transform(filled, transformers) {
     return transformed;
 }
 function validateTransformers(specifiedTransformers) {
-    const transformers = specifiedTransformers;
-    return transformers
+    return specifiedTransformers
         .map(transformer => {
         return (0, regexUtils_1.validateRegex)(transformer);
     })
@@ -3191,10 +3262,12 @@ exports.parseConfiguration = parseConfiguration;
 exports.mergeConfiguration = mergeConfiguration;
 exports.writeOutput = writeOutput;
 exports.createOrSet = createOrSet;
+exports.groupPlaceholders = groupPlaceholders;
 exports.haveCommonElements = haveCommonElements;
 exports.haveCommonElementsArr = haveCommonElementsArr;
 exports.haveEveryElements = haveEveryElements;
 exports.haveEveryElementsArr = haveEveryElementsArr;
+exports.mergeMaps = mergeMaps;
 const core = __importStar(__nccwpck_require__(7484));
 const fs = __importStar(__nccwpck_require__(9896));
 const path = __importStar(__nccwpck_require__(6928));
@@ -3429,6 +3502,27 @@ function createOrSet(map, key, value) {
         entry.push(value);
     }
 }
+/**
+ * Groups an array of Placeholder objects by their source attribute.
+ *
+ * @param {Placeholder[]} placeholders - An array of Placeholder objects to be grouped.
+ * @returns {Map<string, Placeholder[]>} A map where the key is the source attribute of the Placeholder objects,
+ * and the value is an array of Placeholder objects that share the same source attribute.
+ */
+function groupPlaceholders(placeholders) {
+    const map = new Map();
+    for (const ph of placeholders) {
+        const key = ph.source;
+        const entry = map.get(key);
+        if (entry === undefined) {
+            map.set(key, [ph]);
+        }
+        else {
+            entry.push(ph);
+        }
+    }
+    return map;
+}
 function haveCommonElements(arr1, arr2) {
     return arr1.some(item => arr2.has(item));
 }
@@ -3440,6 +3534,9 @@ function haveEveryElements(arr1, arr2) {
 }
 function haveEveryElementsArr(arr1, arr2) {
     return haveEveryElements(arr1, new Set(arr2));
+}
+function mergeMaps(map1, map2) {
+    return new Map([...map1, ...map2]);
 }
 
 

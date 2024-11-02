@@ -1,11 +1,6 @@
-import {Extractor, PullConfiguration, Regex, Rule, Sort} from './pr-collector/types'
+import {Extractor, PullConfiguration, Regex, Rule} from './pr-collector/types'
 
 export interface Configuration extends PullConfiguration {
-  max_tags_to_fetch: number
-  max_pull_requests: number
-  max_back_track_time_days: number
-  exclude_merge_branches: string[]
-  sort: Sort | string // "ASC" or "DESC"
   template: string
   pr_template: string
   empty_template: string
@@ -15,8 +10,6 @@ export interface Configuration extends PullConfiguration {
   duplicate_filter?: Extractor // extract an identifier from a PR used to detect duplicates, will keep the last match (depends on `sort`)
   reference?: Extractor // extracts a reference from a PR, used to establish parent child relations. This will remove the child from the main PR list.
   transformers: Regex[]
-  tag_resolver: TagResolver
-  base_branches: string[]
   custom_placeholders?: Placeholder[]
   trim_values: boolean
 }
@@ -62,6 +55,8 @@ export interface Placeholder {
   source: string // the src placeholder which will be used to apply the transformer on
   transformer: Regex // the transformer to use to transform the original placeholder into the custom placeheolder
 }
+
+export class PlaceholderGroup extends Map<string, Placeholder[]> {}
 
 export const DefaultConfiguration: Configuration = {
   max_tags_to_fetch: 200, // the amount of tags to fetch from the github API
@@ -110,14 +105,8 @@ export const DefaultConfiguration: Configuration = {
 }
 
 export const DefaultCommitConfiguration: Configuration = {
-  max_tags_to_fetch: DefaultConfiguration.max_tags_to_fetch,
-  max_pull_requests: DefaultConfiguration.max_pull_requests,
-  max_back_track_time_days: DefaultConfiguration.max_back_track_time_days,
-  exclude_merge_branches: DefaultConfiguration.exclude_merge_branches,
-  sort: DefaultConfiguration.sort,
-  template: '#{{CHANGELOG}}', // the global template to host the changelog
-  pr_template: '- #{{TITLE}}', // the per PR template to pick for commit based mode
-  empty_template: DefaultConfiguration.empty_template,
+  ...DefaultConfiguration,
+  pr_template: '- #{{TITLE}}', // the per PR template to pick
   categories: [
     {
       title: '## 🚀 Features',
@@ -135,17 +124,11 @@ export const DefaultCommitConfiguration: Configuration = {
       title: '## 📦 Other',
       labels: []
     }
-  ], // the categories to support for the ordering
-  ignore_labels: DefaultConfiguration.ignore_labels,
+  ],
   label_extractor: [
     {
       pattern: '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\\([\\w\\-\\.]+\\))?(!)?: ([\\w ])+([\\s\\S]*)',
       target: '$1'
     }
-  ],
-  transformers: DefaultConfiguration.transformers,
-  tag_resolver: DefaultConfiguration.tag_resolver,
-  base_branches: DefaultConfiguration.base_branches,
-  custom_placeholders: DefaultConfiguration.custom_placeholders,
-  trim_values: DefaultConfiguration.trim_values
+  ]
 }
