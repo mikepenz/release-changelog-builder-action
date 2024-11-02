@@ -62,15 +62,15 @@ Specify the action as part of your GitHub actions workflow:
   uses: mikepenz/release-changelog-builder-action@{latest-release}
 ```
 
+> [!IMPORTANT]  
+> When upgrading from v4 to v5, please ensure to read the upgrade warning in the [release notes](https://github.com/mikepenz/release-changelog-builder-action/releases), especially if [regexes](https://github.com/mikepenz/release-changelog-builder-action?tab=readme-ov-file#regex-configuration) are used.
+
 ## Full Sample 🖥️
 
 Below is a complete example showcasing how to define a build, which is executed when tagging the project. It consists of:
 - Prepare tag, via the GITHUB_REF environment variable
 - Build changelog, given the tag
 - Create a release on GitHub - specifying body with a constructed changelog
-
-> [!NOTE]  
-> Pre v4 PRs will only show up in the changelog if assigned one of the default label categories "feature", "fix" or "test". Starting with v4 these PRs will be in the `Uncategorized` section.
 
 <details><summary><b>Example</b></summary>
 <p>
