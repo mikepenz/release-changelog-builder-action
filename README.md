@@ -62,15 +62,15 @@ Specify the action as part of your GitHub actions workflow:
   uses: mikepenz/release-changelog-builder-action@{latest-release}
 ```
 
+> [!IMPORTANT]  
+> When upgrading from v4 to v5, please ensure to read the upgrade warning in the [release notes](https://github.com/mikepenz/release-changelog-builder-action/releases), especially if [regexes](https://github.com/mikepenz/release-changelog-builder-action?tab=readme-ov-file#regex-configuration) are used.
+
 ## Full Sample 🖥️
 
 Below is a complete example showcasing how to define a build, which is executed when tagging the project. It consists of:
 - Prepare tag, via the GITHUB_REF environment variable
 - Build changelog, given the tag
 - Create a release on GitHub - specifying body with a constructed changelog
-
-> [!NOTE]  
-> Pre v4 PRs will only show up in the changelog if assigned one of the default label categories "feature", "fix" or "test". Starting with v4 these PRs will be in the `Uncategorized` section.
 
 <details><summary><b>Example</b></summary>
 <p>
@@ -171,7 +171,7 @@ jobs:
                   "pattern": "^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\\([\\w\\-\\.]+\\))?(!)?: ([\\w ])+([\\s\\S]*)",
                   "target": "$1"
                 }
-              ],
+              ]
             }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -279,7 +279,7 @@ A full set list of possible output values for this action.
 > 2. Create an initial tag on the commit you want to begin a changelog from (for example `v0.0.1`).
 
 > [!NOTE]  
-> By default not specifying `fromTag` or `toTag` will resolve `toTag` from either the `ref` or alternatively fallback to the latest tag from the git API. `fromTag` is resolved by sorting tags using [semver](https://semver.org/). Check the [configuration](#configuration-specification) for alternatives.
+> By default not specifying `fromTag` or `toTag` will resolve `toTag` from either the `ref` or alternatively fallback to the latest tag from the git API. `fromTag` is resolved by sorting tags using [semver](https://semver.org/). Tags not following semver are filtered out. Check the [configuration](#configuration-specification) for alternatives.
 
 > [!NOTE]  
 > If you are behind a corporate HTTP proxy, you can set the `https_proxy` environment variable to the proxy URL. For reference, please see the Octokit [documentation](https://github.com/octokit/octokit.js/#proxy-servers-nodejs-only).
@@ -577,7 +577,7 @@ This applies to all configurations outlined in `Configuration Specification` and
 | <parent>.method      | The extraction method used. Defaults to: `replace`. Alternative values: `replaceAll`, `match`. These methods specified references the JavaScript String method. And a special method  `regexr`, that functions similar to the `list` within the regexr tool.                                                                                                                                                                                                                                                                    |
 | <parent>.flags       | Defines the regex flags specified for the pattern. Default: `gu`.                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | <parent>.on_empty    | Defines the placeholder to be filled in, if the regex does not lead to a result.                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| <parent>.on_property | This is available for `Extractor` type regex objects. With the property describing a field available in PRs. (e.g.: title, body, ...)                                                                                                                                                                                                                                                                                                                                                                                           |
+| <parent>.on_property | This is available for `Extractor` type regex objects. With the property describing a field available in PRs. (e.g.: title, body, ...) Default: `body`.                                                                                                                                                                                                                                                                                                                                                                          |
 
 <details><summary><b>Example regex configuration block</b></summary>
 <p>
