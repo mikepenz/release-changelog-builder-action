@@ -100,3 +100,4 @@ lib/**/*
 
 lib
 src/pr-collector/dist
+.idea
