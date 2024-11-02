@@ -178,7 +178,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
   const contributorsSet: Set<string> = new Set(prs.map(pr => `@${pr.author}`))
   const contributorsArray = Array.from(contributorsSet)
   const contributorsString = contributorsArray.join(', ')
-  const externalContributorString = contributorsArray.filter(value => value !== options.owner).join(', ')
+  const externalContributorString = contributorsArray.filter(value => value !== `@${options.owner}`).join(', ')
   core.setOutput('contributors', JSON.stringify(contributorsSet))
 
   const releaseNotesTemplateContext = buildReleaseNotesTemplateContext(
