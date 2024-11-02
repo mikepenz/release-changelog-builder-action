@@ -7,7 +7,7 @@ import {validateRegex} from './pr-collector/regexUtils'
  * Checks if any of the rules match the given PR
  */
 export function matchesRules(rules: Rule[], pr: PullRequestInfo, exhaustive: boolean): boolean {
-  const transformers: RegexTransformer[] = rules.map(rule => validateRegex(rule)).filter(t => t !== null)
+  const transformers: RegexTransformer[] = rules.map(rule => validateRegex(rule)).filter(t => t !== null) as RegexTransformer[]
   if (exhaustive) {
     return transformers.every(transformer => {
       return matches(pr, transformer, 'rule')
