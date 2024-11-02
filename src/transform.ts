@@ -125,14 +125,15 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
 
   const validatedTransformers = validateTransformers(config.transformers)
 
-  core.info(`ℹ️ Used ${validatedTransformers.length} transformers to adjust message`)
+  core.info(`ℹ️ Using ${validatedTransformers.length} transformers to rewrite content`)
 
-  for (const pr of prs) {
-    const prAsObject = pr as unknown as Record<string, unknown>
-    transformObject(prAsObject, validatedTransformers)
+  if (validatedTransformers.length > 0) {
+    for (const pr of prs) {
+      const prAsObject = pr as unknown as Record<string, unknown>
+      transformObject(prAsObject, validatedTransformers)
+    }
+    core.info(`✒️ Transformed ${prs.length} pull requests`)
   }
-
-  core.info(`✒️ Wrote messages for ${prs.length} commits`)
 
   const prInfoMap = buildInfoMapAndFillPlaceholderContext(
     prs,
@@ -813,8 +814,7 @@ function transform(filled: string, transformers: RegexTransformer[]): string {
 }
 
 function validateTransformers(specifiedTransformers: Regex[]): RegexTransformer[] {
-  const transformers = specifiedTransformers
-  return transformers
+  return specifiedTransformers
     .map(transformer => {
       return validateRegex(transformer)
     })
