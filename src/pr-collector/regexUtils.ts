@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import {Extractor, Property, Regex, RegexTransformer} from './types'
+import {Extractor, Property, Regex, RegexTransformer} from './types.js'
 
 export function validateRegex(regex?: Regex): RegexTransformer | null {
   if (regex === undefined) {

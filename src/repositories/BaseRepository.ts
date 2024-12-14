@@ -1,9 +1,9 @@
-import {TagInfo} from '../pr-collector/tags'
-import {DiffInfo} from '../pr-collector/commits'
-import moment from 'moment/moment'
-import {PullRequestInfo} from '../pr-collector/pullRequests'
+import {TagInfo} from '../pr-collector/tags.js'
+import {DiffInfo} from '../pr-collector/commits.js'
+import {PullRequestInfo} from '../pr-collector/pullRequests.js'
 import * as core from '@actions/core'
-import {createCommandManager} from '../pr-collector/gitHelper'
+import {createCommandManager} from '../pr-collector/gitHelper.js'
+import moment from 'moment'
 
 export abstract class BaseRepository {
   proxy?: string

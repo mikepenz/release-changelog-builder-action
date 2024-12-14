@@ -1,9 +1,9 @@
 import * as core from '@actions/core'
 import moment from 'moment'
-import {failOrError} from './utils'
-import {PullRequestInfo} from './pullRequests'
-import {Options} from './prCollector'
-import {BaseRepository} from '../repositories/BaseRepository'
+import {failOrError} from './utils.js'
+import {PullRequestInfo} from './pullRequests.js'
+import {Options} from './prCollector.js'
+import {BaseRepository} from '../repositories/BaseRepository.js'
 
 export interface DiffInfo {
   changedFiles: number

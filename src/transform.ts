@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
-import {Category, Configuration, Placeholder, PlaceholderGroup, Property} from './configuration'
-import {createOrSet, groupPlaceholders, haveCommonElementsArr, haveEveryElementsArr, mergeMaps} from './utils'
+import {Category, Configuration, Placeholder, PlaceholderGroup, Property} from './configuration.js'
+import {createOrSet, groupPlaceholders, haveCommonElementsArr, haveEveryElementsArr, mergeMaps} from './utils.js'
 import {
   CommentInfo,
   EMPTY_COMMENT_INFO,
@@ -9,12 +9,12 @@ import {
   PullRequestInfo,
   retrieveProperty,
   sortPullRequests
-} from './pr-collector/pullRequests'
-import {DiffInfo} from './pr-collector/commits'
-import {transformStringToOptionalValue, transformStringToValues, validateRegex} from './pr-collector/regexUtils'
-import {ChangelogStrings, GroupedTemplateContext, PrStrings, Regex, RegexTransformer, TemplateContext} from './pr-collector/types'
-import {ReleaseNotesOptions} from './releaseNotesBuilder'
-import {matchesRules} from './regexUtils'
+} from './pr-collector/pullRequests.js'
+import {DiffInfo} from './pr-collector/commits.js'
+import {transformStringToOptionalValue, transformStringToValues, validateRegex} from './pr-collector/regexUtils.js'
+import {ChangelogStrings, GroupedTemplateContext, PrStrings, Regex, RegexTransformer, TemplateContext} from './pr-collector/types.js'
+import {ReleaseNotesOptions} from './releaseNotesBuilder.js'
+import {matchesRules} from './regexUtils.js'
 
 let CLEAR = false
 

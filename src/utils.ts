@@ -1,11 +1,11 @@
 import * as core from '@actions/core'
 import * as fs from 'fs'
 import * as path from 'path'
-import {Configuration, DefaultCommitConfiguration, DefaultConfiguration, Placeholder} from './configuration'
+import {Configuration, DefaultCommitConfiguration, DefaultConfiguration, Placeholder} from './configuration.js'
 import moment from 'moment'
-import {DiffInfo} from './pr-collector/commits'
-import {PullRequestInfo} from './pr-collector/pullRequests'
-import {Data, ReleaseNotesOptions} from './releaseNotesBuilder'
+import {DiffInfo} from './pr-collector/commits.js'
+import {PullRequestInfo} from './pr-collector/pullRequests.js'
+import {Data, ReleaseNotesOptions} from './releaseNotesBuilder.js'
 import {env} from 'process'
 
 /**

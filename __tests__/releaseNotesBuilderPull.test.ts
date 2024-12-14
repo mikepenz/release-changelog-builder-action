@@ -1,9 +1,9 @@
-import {checkExportedData, mergeConfiguration, resolveConfiguration} from '../src/utils'
-import {buildChangelog} from '../src/transform'
-import {Options, pullData} from '../src/pr-collector/prCollector'
-import {GithubRepository} from '../src/repositories/GithubRepository'
-import {clear} from '../src/transform'
-import {ReleaseNotesOptions} from '../src/releaseNotesBuilder'
+import {checkExportedData, mergeConfiguration, resolveConfiguration} from '../src/utils.js'
+import {buildChangelog} from '../src/transform.js'
+import {Options, pullData} from '../src/pr-collector/prCollector.js'
+import {GithubRepository} from '../src/repositories/GithubRepository.js'
+import {clear} from '../src/transform.js'
+import {ReleaseNotesOptions} from '../src/releaseNotesBuilder.js'
 
 jest.setTimeout(180000)
 clear()

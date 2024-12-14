@@ -1,13 +1,13 @@
 import * as core from '@actions/core'
-import {Configuration} from './configuration'
-import {checkExportedData, writeCacheData} from './utils'
-import {buildChangelog} from './transform'
-import {PullRequestCollector} from './pr-collector/prCollector'
-import {failOrError} from './pr-collector/utils'
-import {TagInfo} from './pr-collector/tags'
-import {DiffInfo} from './pr-collector/commits'
-import {PullRequestData, PullRequestInfo} from './pr-collector/pullRequests'
-import {BaseRepository} from './repositories/BaseRepository'
+import {Configuration} from './configuration.js'
+import {checkExportedData, writeCacheData} from './utils.js'
+import {buildChangelog} from './transform.js'
+import {PullRequestCollector} from './pr-collector/prCollector.js'
+import {failOrError} from './pr-collector/utils.js'
+import {TagInfo} from './pr-collector/tags.js'
+import {DiffInfo} from './pr-collector/commits.js'
+import {PullRequestData, PullRequestInfo} from './pr-collector/pullRequests.js'
+import {BaseRepository} from './repositories/BaseRepository.js'
 
 export interface ReleaseNotesOptions {
   owner: string // the owner of the repository

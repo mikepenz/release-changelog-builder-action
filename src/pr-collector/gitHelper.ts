@@ -1,6 +1,6 @@
 import * as exec from '@actions/exec'
 import * as io from '@actions/io'
-import {directoryExistsSync} from './utils'
+import {directoryExistsSync} from './utils.js'
 
 export async function createCommandManager(workingDirectory: string): Promise<GitCommandManager> {
   return await GitCommandManager.createCommandManager(workingDirectory)
