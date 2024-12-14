@@ -1,9 +1,9 @@
 import moment from 'moment'
-import {DefaultConfiguration} from '../src/configuration'
-import {PullRequestInfo} from '../src/pr-collector/pullRequests'
-import {GithubRepository} from '../src/repositories/GithubRepository'
-import {clear} from '../src/transform'
-import {buildChangelogTest, buildPullRequeset} from './utils'
+import {DefaultConfiguration} from '../src/configuration.js'
+import {PullRequestInfo} from '../src/pr-collector/pullRequests.js'
+import {GithubRepository} from '../src/repositories/GithubRepository.js'
+import {clear} from '../src/transform.js'
+import {buildChangelogTest, buildPullRequeset} from './utils.js'
 
 jest.setTimeout(180000)
 clear()

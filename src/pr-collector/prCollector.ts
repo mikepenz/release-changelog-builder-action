@@ -1,10 +1,10 @@
 import * as core from '@actions/core'
-import {PullConfiguration} from './types'
-import {TagInfo, Tags} from './tags'
-import {failOrError} from './utils'
-import {PullRequestInfo, PullRequests} from './pullRequests'
-import {Commits, DefaultDiffInfo, DiffInfo, convertCommitsToPrs} from './commits'
-import {BaseRepository} from '../repositories/BaseRepository'
+import {PullConfiguration} from './types.js'
+import {TagInfo, Tags} from './tags.js'
+import {failOrError} from './utils.js'
+import {PullRequestInfo, PullRequests} from './pullRequests.js'
+import {Commits, DefaultDiffInfo, DiffInfo, convertCommitsToPrs} from './commits.js'
+import {BaseRepository} from '../repositories/BaseRepository.js'
 
 export interface Options {
   owner: string // the owner of the repository

@@ -2,11 +2,11 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import * as semver from 'semver'
 import {SemVer} from 'semver'
-import {Regex, RegexTransformer, TagResolver} from './types'
-import {createCommandManager} from './gitHelper'
+import {Regex, RegexTransformer, TagResolver} from './types.js'
+import {createCommandManager} from './gitHelper.js'
 import moment from 'moment'
-import {transformStringToOptionalValue, transformStringToValue, validateRegex} from './regexUtils'
-import {BaseRepository} from '../repositories/BaseRepository'
+import {transformStringToOptionalValue, transformStringToValue, validateRegex} from './regexUtils.js'
+import {BaseRepository} from '../repositories/BaseRepository.js'
 
 export interface TagResult {
   from: TagInfo | null

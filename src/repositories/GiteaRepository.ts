@@ -1,11 +1,11 @@
-import {BaseRepository} from './BaseRepository'
-import {TagInfo} from '../pr-collector/tags'
-import {CommentInfo, PullRequestInfo} from '../pr-collector/pullRequests'
-import {DiffInfo} from '../pr-collector/commits'
+import {BaseRepository} from './BaseRepository.js'
+import {TagInfo} from '../pr-collector/tags.js'
+import {CommentInfo, PullRequestInfo} from '../pr-collector/pullRequests.js'
+import {DiffInfo} from '../pr-collector/commits.js'
 import {Api, PullRequest, PullReview, giteaApi} from 'gitea-js'
 import moment from 'moment'
 import * as core from '@actions/core'
-import {createCommandManager} from '../pr-collector/gitHelper'
+import {createCommandManager} from '../pr-collector/gitHelper.js'
 
 interface Pulls {
   closed: PullRequest[]

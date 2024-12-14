@@ -1,7 +1,7 @@
-import {TagResolver} from '../src/configuration'
-import {validateRegex} from '../src/pr-collector/regexUtils'
-import {filterTags, prepareAndSortTags, TagInfo, transformTags} from '../src/pr-collector/tags'
-import {clear} from '../src/transform'
+import {TagResolver} from '../src/configuration.js'
+import {validateRegex} from '../src/pr-collector/regexUtils.js'
+import {filterTags, prepareAndSortTags, TagInfo, transformTags} from '../src/pr-collector/tags.js'
+import {clear} from '../src/transform.js'
 
 jest.setTimeout(180000)
 clear()

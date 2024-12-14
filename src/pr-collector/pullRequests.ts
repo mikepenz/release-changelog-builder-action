@@ -1,10 +1,10 @@
 import * as core from '@actions/core'
 import {RestEndpointMethodTypes} from '@octokit/rest'
 import moment from 'moment'
-import {Property, Sort} from './types'
-import {Commits, DiffInfo, filterCommits} from './commits'
-import {Options} from './prCollector'
-import {BaseRepository} from '../repositories/BaseRepository'
+import {Property, Sort} from './types.js'
+import {Commits, DiffInfo, filterCommits} from './commits.js'
+import {Options} from './prCollector.js'
+import {BaseRepository} from '../repositories/BaseRepository.js'
 
 export interface PullRequestInfo {
   number: number
