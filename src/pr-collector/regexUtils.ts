@@ -21,7 +21,7 @@ export function validateRegex(regex?: Regex): RegexTransformer | null {
     }
 
     return buildRegex(regex, target, onProperty, method, onEmpty)
-  } catch (e) {
+  } catch {
     core.warning(`⚠️ Failed to validate transformer: ${regex.pattern}`)
     return null
   }
