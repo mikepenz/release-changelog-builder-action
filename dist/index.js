@@ -44504,7 +44504,7 @@ function checkExportedData(exportCache, cacheInput) {
     }
 }
 function resolveMode(mode, commitMode) {
-    if (commitMode === true) {
+    if (commitMode) {
         return 'COMMIT';
     }
     if (mode !== undefined) {
@@ -44565,11 +44565,11 @@ function readConfiguration(filename) {
 function parseConfiguration(config) {
     try {
         // for compatibility with the `yml` file we require to use `#{{}}` instead of `${{}}` - replace it here.
-        const configurationJSON = JSON.parse(config.replace(/\${{/g, '#{{'));
-        return configurationJSON;
+        return JSON.parse(config.replace(/\${{/g, '#{{'));
     }
     catch (error) {
         core.info(`⚠️ Configuration provided, but it couldn't be parsed. Fallback to Defaults.`);
+        core.debug(`Error parsing configuration: ${error}`);
         return undefined;
     }
 }
@@ -45439,13 +45439,12 @@ function buildPrStringsAndFillCategoryEntries(prInfoMap, ignoredLabels, categori
             categorizedPrs.push(body);
         }
     }
-    const prStrings = {
+    return {
         categorizedList: categorizedPrs,
         uncategorizedList: uncategorizedPrs,
         openList: openPrs,
         ignoredList: ignoredPrs
     };
-    return prStrings;
 }
 function buildChangelogStrings(flatCategories, prStrings) {
     const { categorizedList, uncategorizedList, openList, ignoredList } = prStrings;
@@ -45488,13 +45487,12 @@ function buildChangelogStrings(flatCategories, prStrings) {
             core.debug(`    ${pr}`);
         }
     }
-    const changelogStrings = {
+    return {
         categorized: changelogCategorized,
         uncategorized: changelogUncategorized,
         open: changelogOpen,
         ignored: changelogIgnored
     };
-    return changelogStrings;
 }
 function buildReleaseNotesTemplateContext(changelogStrings, contributorsString, externalContributorString, prStrings, diffInfo, options) {
     const { categorized: changelogCategorized, uncategorized: changelogUncategorized, open: changelogOpen, ignored: changelogIgnored } = changelogStrings;
@@ -45622,8 +45620,7 @@ function renderEmptyChangelogTemplate(template, options) {
         createOrSet(placeholders, ph.source, ph);
     }
     const releaseNotesTemplateContext = buildCoreReleaseNotesTemplateContext(options);
-    const renderedEmptyChangelogTemplate = renderTemplateAndFillPlaceholderContext(template, releaseNotesTemplateContext, placeholders, undefined, options.configuration);
-    return renderedEmptyChangelogTemplate;
+    return renderTemplateAndFillPlaceholderContext(template, releaseNotesTemplateContext, placeholders, undefined, options.configuration);
 }
 function buildCoreReleaseNotesTemplateContext(options) {
     const templateContext = new TemplateContext();

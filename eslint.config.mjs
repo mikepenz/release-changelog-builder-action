@@ -19,7 +19,7 @@ export default [{
   ignores: ["**/dist/", "**/lib/", "**/node_modules/"]
 }, ...compat.extends("plugin:github/recommended"), {
 
-  files: ["src/*.ts", "src/**/*.ts", "__tests__/**/*.ts", "__tests__/*.ts"],
+  files: ["src/**.ts", "__tests__/**.ts"],
 
   plugins: {
     jest,

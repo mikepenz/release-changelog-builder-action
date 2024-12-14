@@ -7,9 +7,9 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "format": "prettier --write **/*.ts **/**/*.ts",
-    "format-check": "prettier --check **/*.ts",
-    "format-fix": "eslint --fix src/**/*.ts",
+    "format": "prettier --write src/**.ts",
+    "format-check": "prettier --check src/**.ts",
+    "format-fix": "eslint --fix src/**.ts",
     "lint": "eslint src/**/*.ts",
     "package": "ncc build --source-map --license licenses.txt",
     "test": "jest",

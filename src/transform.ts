@@ -315,14 +315,12 @@ function buildPrStringsAndFillCategoryEntries(
     }
   }
 
-  const prStrings: PrStrings = {
+  return {
     categorizedList: categorizedPrs,
     uncategorizedList: uncategorizedPrs,
     openList: openPrs,
     ignoredList: ignoredPrs
   }
-
-  return prStrings
 }
 
 function buildChangelogStrings(flatCategories: Category[], prStrings: PrStrings): ChangelogStrings {
@@ -371,14 +369,12 @@ function buildChangelogStrings(flatCategories: Category[], prStrings: PrStrings)
     }
   }
 
-  const changelogStrings: ChangelogStrings = {
+  return {
     categorized: changelogCategorized,
     uncategorized: changelogUncategorized,
     open: changelogOpen,
     ignored: changelogIgnored
   }
-
-  return changelogStrings
 }
 
 function buildReleaseNotesTemplateContext(
@@ -550,15 +546,7 @@ export function renderEmptyChangelogTemplate(template: string, options: ReleaseN
 
   const releaseNotesTemplateContext = buildCoreReleaseNotesTemplateContext(options)
 
-  const renderedEmptyChangelogTemplate = renderTemplateAndFillPlaceholderContext(
-    template,
-    releaseNotesTemplateContext,
-    placeholders,
-    undefined,
-    options.configuration
-  )
-
-  return renderedEmptyChangelogTemplate
+  return renderTemplateAndFillPlaceholderContext(template, releaseNotesTemplateContext, placeholders, undefined, options.configuration)
 }
 
 function buildCoreReleaseNotesTemplateContext(options: ReleaseNotesOptions): TemplateContext {
