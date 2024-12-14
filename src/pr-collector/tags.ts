@@ -67,7 +67,7 @@ export class Tags {
         return {name: initialCommit, commit: initialCommit}
       }
       return tags[0]
-    } catch (error) {
+    } catch {
       if (tags.length <= 0) {
         core.warning(`⚠️ No tag found for the given repository`)
       }
