@@ -44,7 +44,7 @@
     "@eslint/js": "^9.17.0",
     "@octokit/rest": "^20.1.1",
     "eslint-import-resolver-typescript": "^3.7.0",
-    "gitea-js": "^1.22.0",
+    "gitea-js": "^1.23.0",
     "globals": "^15.14.0",
     "https-proxy-agent": "^7.0.6",
     "moment": "^2.30.1",
