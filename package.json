@@ -41,7 +41,7 @@
     "@actions/exec": "^1.1.1",
     "@actions/github": "^6.0.0",
     "@eslint/eslintrc": "^3.2.0",
-    "@eslint/js": "^9.17.0",
+    "@eslint/js": "^9.18.0",
     "@octokit/rest": "^20.1.1",
     "eslint-import-resolver-typescript": "^3.7.0",
     "gitea-js": "^1.22.0",
