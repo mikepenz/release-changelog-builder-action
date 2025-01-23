@@ -3,6 +3,7 @@ import {Extractor, PullConfiguration, Regex, Rule} from './pr-collector/types.js
 export interface Configuration extends PullConfiguration {
   template: string
   pr_template: string
+  commit_template: string // (COMMIT and HYBRID mode only for PRs converted to commits)
   empty_template: string
   categories: Category[]
   ignore_labels: string[]
@@ -25,6 +26,7 @@ export interface Category {
   empty_content?: string // if the category has no matching PRs, this content will be used. If not set, the category will be skipped in the changelog.
   categories?: Category[] // allows for nested categories, items matched for a child category won't show up in the parent
   consume?: boolean // defines if the matched PR will be consumed by this category. Consumed PRs won't show up in any category *after*
+  mode?: 'HYBRID' | 'COMMIT' | 'PR' // defines if this category applies to PRs, commits or both
   entries?: string[] // array of single changelog entries, used to construct the changelog. (this is filled during the build)
 }
 
@@ -70,6 +72,7 @@ export const DefaultConfiguration: Configuration = {
   },
   template: '#{{CHANGELOG}}', // the global template to host the changelog
   pr_template: '- #{{TITLE}}\n   - PR: ##{{NUMBER}}', // the per PR template to pick
+  commit_template: '- #{{TITLE}}', // the per PR template to pick for commit based mode
   empty_template: '- no changes', // the template to use if no pull requests are found
   categories: [
     {
@@ -106,7 +109,6 @@ export const DefaultConfiguration: Configuration = {
 
 export const DefaultCommitConfiguration: Configuration = {
   ...DefaultConfiguration,
-  pr_template: '- #{{TITLE}}', // the per PR template to pick
   categories: [
     {
       title: '## 🚀 Features',

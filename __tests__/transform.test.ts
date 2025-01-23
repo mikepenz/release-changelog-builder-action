@@ -477,9 +477,14 @@ const repositoryUtils = new GithubRepository(process.env.GITEA_TOKEN || '', unde
 it('Commit SHA-1 in commitMode', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.sort = 'DESC'
-  customConfig.pr_template = '#{{MERGE_SHA}}'
+  customConfig.commit_template = '#{{MERGE_SHA}}'
 
-  const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
+  // Since this is COMMIT mode, the prs would have been built with "number: 0"
+  const convertedPrs = pullRequestsWithLabels.map(pr => {
+    return {...pr, number: 0}
+  })
+
+  const resultChangelog = buildChangelog(DefaultDiffInfo, convertedPrs, {
     owner: 'mikepenz',
     repo: 'test-repo',
     fromTag: {name: '1.0.0'},

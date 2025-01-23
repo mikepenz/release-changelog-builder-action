@@ -127,21 +127,46 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
 
   core.info(`ℹ️ Using ${validatedTransformers.length} transformers to rewrite content`)
 
+  const includePrs = options.mode === 'PR' || options.mode === 'HYBRID'
+  const includeCommits = options.mode === 'COMMIT' || options.mode === 'HYBRID'
+
+  // convert PRs to their text representation
+  const realPrs = includePrs ? prs.filter(x => x.number !== 0) : []
+  const commitPrs = includeCommits ? prs.filter(x => x.number === 0) : []
+
   if (validatedTransformers.length > 0) {
     for (const pr of prs) {
       const prAsObject = pr as unknown as Record<string, unknown>
       transformObject(prAsObject, validatedTransformers)
     }
-    core.info(`✒️ Transformed ${prs.length} pull requests`)
+
+    if (includePrs) {
+      core.info(`✒️ Transformed ${realPrs.length} pull requests`)
+    }
+
+    if (includeCommits) {
+      core.info(`✒️ Transformed ${commitPrs.length} commits`)
+    }
   }
 
   const prInfoMap = buildInfoMapAndFillPlaceholderContext(
-    prs,
+    realPrs,
     config.pr_template,
     groupedPlaceholders,
     customPlaceholdersTemplateContext,
     config
   )
+
+  const commitInfoMap = buildInfoMapAndFillPlaceholderContext(
+    commitPrs,
+    config.commit_template,
+    groupedPlaceholders,
+    customPlaceholdersTemplateContext,
+    config
+  )
+
+  // If the mode is not HYBRID, the map will contain only one or the other map
+  const combinedInfoMap = mergeMaps(prInfoMap, commitInfoMap)
 
   // bring PRs into the order of categories
   const categories = config.categories
@@ -154,7 +179,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
     }
   }
 
-  const prStrings = buildPrStringsAndFillCategoryEntries(prInfoMap, config.ignore_labels, categories, flatCategories)
+  const prStrings = buildPrStringsAndFillCategoryEntries(combinedInfoMap, config.ignore_labels, categories, flatCategories)
   core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`)
 
   // serialize and provide the categorized content as json
@@ -272,7 +297,8 @@ function buildPrStringsAndFillCategoryEntries(
     }
 
     let matchedOnce = false // in case we matched once at least, the PR can't be uncategorized
-    for (const category of categories) {
+    const filteredCategories = filterCategoriesByPrType(categories, pr)
+    for (const category of filteredCategories) {
       const [matched, consumed] = recursiveCategorizePr(category, pr, body)
       if (consumed) {
         continue prLoop
@@ -282,7 +308,8 @@ function buildPrStringsAndFillCategoryEntries(
 
     if (!matchedOnce) {
       // we allow to have pull requests included in an "uncategorized" category
-      for (const category of flatCategories) {
+      const filteredFlatCategories = filterCategoriesByPrType(flatCategories, pr)
+      for (const category of filteredFlatCategories) {
         category.entries = category.entries || []
         if ((category.labels === undefined || category.labels.length === 0) && category.rules === undefined) {
           // check if any exclude label matches for the "uncategorized" category
@@ -546,7 +573,15 @@ export function renderEmptyChangelogTemplate(template: string, options: ReleaseN
 
   const releaseNotesTemplateContext = buildCoreReleaseNotesTemplateContext(options)
 
-  return renderTemplateAndFillPlaceholderContext(template, releaseNotesTemplateContext, placeholders, undefined, options.configuration)
+  const renderedEmptyChangelogTemplate = renderTemplateAndFillPlaceholderContext(
+    template,
+    releaseNotesTemplateContext,
+    placeholders,
+    undefined,
+    options.configuration
+  )
+
+  return renderedEmptyChangelogTemplate
 }
 
 function buildCoreReleaseNotesTemplateContext(options: ReleaseNotesOptions): TemplateContext {
@@ -866,4 +901,24 @@ function hasChildWithEntries(category: Category): boolean {
     hasEntries = hasEntries || hasChildWithEntries(cat)
   }
   return hasEntries
+}
+
+/**
+ * Filters the provided categories based on the type of pull request information.
+ *
+ * @param {Category[]} categories - The list of categories to filter.
+ * @param {PullRequestInfo} prInfo - The pull request information used to determine the type of PR.
+ * @returns {Category[]} The filtered list of categories:
+ * - If 'prInfo' represents a real pull request (has a number other than 0), it excludes categories with mode 'COMMIT'.
+ * - If 'prInfo' represents a commit (has number 0), it excludes categories with mode 'PR'.
+ * - Defaults to keeping categories with mode 'HYBRID' in either case.
+ */
+function filterCategoriesByPrType(categories: Category[], prInfo: PullRequestInfo): Category[] {
+  const isRealPr = prInfo.number !== 0
+
+  if (isRealPr) {
+    return categories.filter(category => (category.mode || 'HYBRID') !== 'COMMIT')
+  } else {
+    return categories.filter(category => (category.mode || 'HYBRID') !== 'PR')
+  }
 }
