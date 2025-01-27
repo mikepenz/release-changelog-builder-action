@@ -40,7 +40,7 @@
     "@actions/core": "^1.11.1",
     "@actions/exec": "^1.1.1",
     "@actions/github": "^6.0.0",
-    "@octokit/rest": "^20.1.1",
+    "@octokit/rest": "^21.1.0",
     "gitea-js": "^1.23.0",
     "globals": "^15.14.0",
     "https-proxy-agent": "^7.0.6",
