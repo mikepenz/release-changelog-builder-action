@@ -28301,6 +28301,14 @@ const { isUint8Array, isArrayBuffer } = __nccwpck_require__(8253)
 const { File: UndiciFile } = __nccwpck_require__(3041)
 const { parseMIMEType, serializeAMimeType } = __nccwpck_require__(4322)
 
+let random
+try {
+  const crypto = __nccwpck_require__(7598)
+  random = (max) => crypto.randomInt(0, max)
+} catch {
+  random = (max) => Math.floor(Math.random(max))
+}
+
 let ReadableStream = globalThis.ReadableStream
 
 /** @type {globalThis['File']} */
@@ -28386,7 +28394,7 @@ function extractBody (object, keepalive = false) {
     // Set source to a copy of the bytes held by object.
     source = new Uint8Array(object.buffer.slice(object.byteOffset, object.byteOffset + object.byteLength))
   } else if (util.isFormDataLike(object)) {
-    const boundary = `----formdata-undici-0${`${Math.floor(Math.random() * 1e11)}`.padStart(11, '0')}`
+    const boundary = `----formdata-undici-0${`${random(1e11)}`.padStart(11, '0')}`
     const prefix = `--${boundary}\r\nContent-Disposition: form-data`
 
     /*! formdata-polyfill. MIT License. Jimmy Wärting <https://jimmy.warting.se/opensource> */
@@ -42513,6 +42521,13 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("net");
 
 /***/ }),
 
+/***/ 7598:
+/***/ ((module) => {
+
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:crypto");
+
+/***/ }),
+
 /***/ 8474:
 /***/ ((module) => {
 
@@ -48439,6 +48454,20 @@ var Api = class extends HttpClient {
        * No description
        *
        * @tags repository
+       * @name RepoGetRunnerRegistrationToken
+       * @summary Get a repository's actions runner registration token
+       * @request GET:/repos/{owner}/{repo}/actions/runners/registration-token
+       * @secure
+       */
+      repoGetRunnerRegistrationToken: (owner, repo, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/actions/runners/registration-token`,
+        method: "GET",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
        * @name RepoListActionsSecrets
        * @summary List an repo's actions secrets
        * @request GET:/repos/{owner}/{repo}/actions/secrets
@@ -48480,6 +48509,21 @@ var Api = class extends HttpClient {
         method: "DELETE",
         secure: true,
         type: "application/json" /* Json */
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
+       * @name ListActionTasks
+       * @summary List a repository's action tasks
+       * @request GET:/repos/{owner}/{repo}/actions/tasks
+       * @secure
+       */
+      listActionTasks: (owner, repo, query, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/actions/tasks`,
+        method: "GET",
+        query,
+        secure: true
       }, params)),
       /**
        * No description
@@ -48663,6 +48707,22 @@ var Api = class extends HttpClient {
        * No description
        *
        * @tags repository
+       * @name RepoUpdateBranchProtectionPriories
+       * @summary Update the priorities of branch protections for a repository.
+       * @request POST:/repos/{owner}/{repo}/branch_protections/priority
+       * @secure
+       */
+      repoUpdateBranchProtectionPriories: (owner, repo, body, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/branch_protections/priority`,
+        method: "POST",
+        body,
+        secure: true,
+        type: "application/json" /* Json */
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
        * @name RepoGetBranchProtection
        * @summary Get a specific branch protection for the repository
        * @request GET:/repos/{owner}/{repo}/branch_protections/{name}
@@ -48766,6 +48826,22 @@ var Api = class extends HttpClient {
        * No description
        *
        * @tags repository
+       * @name RepoUpdateBranch
+       * @summary Update a branch
+       * @request PATCH:/repos/{owner}/{repo}/branches/{branch}
+       * @secure
+       */
+      repoUpdateBranch: (owner, repo, branch, body, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/branches/${branch}`,
+        method: "PATCH",
+        body,
+        secure: true,
+        type: "application/json" /* Json */
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
        * @name RepoListCollaborators
        * @summary List a repository's collaborators
        * @request GET:/repos/{owner}/{repo}/collaborators
@@ -48796,7 +48872,7 @@ var Api = class extends HttpClient {
        *
        * @tags repository
        * @name RepoAddCollaborator
-       * @summary Add a collaborator to a repository
+       * @summary Add or Update a collaborator to a repository
        * @request PUT:/repos/{owner}/{repo}/collaborators/{collaborator}
        * @secure
        */
@@ -48885,7 +48961,7 @@ var Api = class extends HttpClient {
        *
        * @tags repository
        * @name RepoGetCommitPullRequest
-       * @summary Get the pull request of the commit
+       * @summary Get the merged pull request of the commit
        * @request GET:/repos/{owner}/{repo}/commits/{sha}/pull
        * @secure
        */
@@ -50382,6 +50458,20 @@ var Api = class extends HttpClient {
        * No description
        *
        * @tags repository
+       * @name RepoGetLicenses
+       * @summary Get repo licenses
+       * @request GET:/repos/{owner}/{repo}/licenses
+       * @secure
+       */
+      repoGetLicenses: (owner, repo, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/licenses`,
+        method: "GET",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
        * @name RepoGetRawFileOrLfs
        * @summary Get a file or it's LFS object from a repository
        * @request GET:/repos/{owner}/{repo}/media/{filepath}
@@ -50392,6 +50482,22 @@ var Api = class extends HttpClient {
         method: "GET",
         query,
         secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
+       * @name RepoMergeUpstream
+       * @summary Merge a branch from upstream
+       * @request POST:/repos/{owner}/{repo}/merge-upstream
+       * @secure
+       */
+      repoMergeUpstream: (owner, repo, body, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/merge-upstream`,
+        method: "POST",
+        body,
+        secure: true,
+        type: "application/json" /* Json */
       }, params)),
       /**
        * No description
@@ -51168,20 +51274,6 @@ var Api = class extends HttpClient {
        * No description
        *
        * @tags repository
-       * @name RepoGetRunnerRegistrationToken
-       * @summary Get a repository's actions runner registration token
-       * @request GET:/repos/{owner}/{repo}/runners/registration-token
-       * @secure
-       */
-      repoGetRunnerRegistrationToken: (owner, repo, params = {}) => this.request(__spreadValues({
-        path: `/repos/${owner}/${repo}/runners/registration-token`,
-        method: "GET",
-        secure: true
-      }, params)),
-      /**
-       * No description
-       *
-       * @tags repository
        * @name RepoSigningKey
        * @summary Get signing-key.gpg for given repository
        * @request GET:/repos/{owner}/{repo}/signing-key.gpg
@@ -51294,6 +51386,80 @@ var Api = class extends HttpClient {
         path: `/repos/${owner}/${repo}/subscription`,
         method: "DELETE",
         secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
+       * @name RepoListTagProtection
+       * @summary List tag protections for a repository
+       * @request GET:/repos/{owner}/{repo}/tag_protections
+       * @secure
+       */
+      repoListTagProtection: (owner, repo, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/tag_protections`,
+        method: "GET",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
+       * @name RepoCreateTagProtection
+       * @summary Create a tag protections for a repository
+       * @request POST:/repos/{owner}/{repo}/tag_protections
+       * @secure
+       */
+      repoCreateTagProtection: (owner, repo, body, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/tag_protections`,
+        method: "POST",
+        body,
+        secure: true,
+        type: "application/json" /* Json */
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
+       * @name RepoGetTagProtection
+       * @summary Get a specific tag protection for the repository
+       * @request GET:/repos/{owner}/{repo}/tag_protections/{id}
+       * @secure
+       */
+      repoGetTagProtection: (owner, repo, id, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/tag_protections/${id}`,
+        method: "GET",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
+       * @name RepoDeleteTagProtection
+       * @summary Delete a specific tag protection for the repository
+       * @request DELETE:/repos/{owner}/{repo}/tag_protections/{id}
+       * @secure
+       */
+      repoDeleteTagProtection: (owner, repo, id, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/tag_protections/${id}`,
+        method: "DELETE",
+        secure: true
+      }, params)),
+      /**
+       * No description
+       *
+       * @tags repository
+       * @name RepoEditTagProtection
+       * @summary Edit a tag protections for a repository. Only fields that are set will be changed
+       * @request PATCH:/repos/{owner}/{repo}/tag_protections/{id}
+       * @secure
+       */
+      repoEditTagProtection: (owner, repo, id, body, params = {}) => this.request(__spreadValues({
+        path: `/repos/${owner}/${repo}/tag_protections/${id}`,
+        method: "PATCH",
+        body,
+        secure: true,
+        type: "application/json" /* Json */
       }, params)),
       /**
        * No description
@@ -53058,7 +53224,7 @@ function giteaApi(baseUrl, options) {
 
 /**
  * @title Gitea API
- * @version 1.22.0
+ * @version 1.23.1
  * @license MIT (http://opensource.org/licenses/MIT)
  * @baseUrl /api/v1
  *
