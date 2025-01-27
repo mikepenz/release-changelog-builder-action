@@ -1,6 +1,6 @@
-import {transformStringToValue, validateRegex} from '../src/pr-collector/regexUtils'
-import {Regex} from '../src/pr-collector/types'
-import {clear} from '../src/transform'
+import {transformStringToValue, validateRegex} from '../src/pr-collector/regexUtils.js'
+import {Regex} from '../src/pr-collector/types.js'
+import {clear} from '../src/transform.js'
 
 jest.setTimeout(180000)
 clear()

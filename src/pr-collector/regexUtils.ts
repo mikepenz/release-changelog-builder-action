@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import {Extractor, Property, Regex, RegexTransformer} from './types'
+import {Extractor, Property, Regex, RegexTransformer} from './types.js'
 
 export function validateRegex(regex?: Regex): RegexTransformer | null {
   if (regex === undefined) {
@@ -21,7 +21,7 @@ export function validateRegex(regex?: Regex): RegexTransformer | null {
     }
 
     return buildRegex(regex, target, onProperty, method, onEmpty)
-  } catch (e) {
+  } catch {
     core.warning(`⚠️ Failed to validate transformer: ${regex.pattern}`)
     return null
   }

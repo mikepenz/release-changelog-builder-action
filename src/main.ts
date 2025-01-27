@@ -1,10 +1,10 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import {mergeConfiguration, parseConfiguration, resolveConfiguration, resolveMode, retrieveRepositoryPath, writeOutput} from './utils'
-import {ReleaseNotesBuilder} from './releaseNotesBuilder'
-import {Configuration} from './configuration'
-import {GithubRepository} from './repositories/GithubRepository'
-import {GiteaRepository} from './repositories/GiteaRepository'
+import {mergeConfiguration, parseConfiguration, resolveConfiguration, resolveMode, retrieveRepositoryPath, writeOutput} from './utils.js'
+import {ReleaseNotesBuilder} from './releaseNotesBuilder.js'
+import {Configuration} from './configuration.js'
+import {GithubRepository} from './repositories/GithubRepository.js'
+import {GiteaRepository} from './repositories/GiteaRepository.js'
 
 async function run(): Promise<void> {
   const supportedPlatform = {

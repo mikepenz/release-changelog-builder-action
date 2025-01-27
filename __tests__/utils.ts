@@ -1,8 +1,8 @@
-import {Configuration} from '../src/configuration'
-import {DefaultDiffInfo} from '../src/pr-collector/commits'
-import {PullRequestInfo} from '../src/pr-collector/pullRequests'
-import {buildChangelog} from '../src/transform'
-import {BaseRepository} from '../src/repositories/BaseRepository'
+import {Configuration} from '../src/configuration.js'
+import {DefaultDiffInfo} from '../src/pr-collector/commits.js'
+import {PullRequestInfo} from '../src/pr-collector/pullRequests.js'
+import {buildChangelog} from '../src/transform.js'
+import {BaseRepository} from '../src/repositories/BaseRepository.js'
 import moment from 'moment'
 
 export const buildChangelogTest = (config: Configuration, prs: PullRequestInfo[], repositoryUtils: BaseRepository): string => {

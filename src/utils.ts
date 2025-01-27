@@ -1,11 +1,11 @@
 import * as core from '@actions/core'
 import * as fs from 'fs'
 import * as path from 'path'
-import {Configuration, DefaultCommitConfiguration, DefaultConfiguration, Placeholder} from './configuration'
+import {Configuration, DefaultCommitConfiguration, DefaultConfiguration, Placeholder} from './configuration.js'
 import moment from 'moment'
-import {DiffInfo} from './pr-collector/commits'
-import {PullRequestInfo} from './pr-collector/pullRequests'
-import {Data, ReleaseNotesOptions} from './releaseNotesBuilder'
+import {DiffInfo} from './pr-collector/commits.js'
+import {PullRequestInfo} from './pr-collector/pullRequests.js'
+import {Data, ReleaseNotesOptions} from './releaseNotesBuilder.js'
 import {env} from 'process'
 
 /**
@@ -118,7 +118,7 @@ export function checkExportedData(exportCache: boolean, cacheInput: string | nul
 }
 
 export function resolveMode(mode: string | undefined, commitMode: boolean): 'PR' | 'COMMIT' | 'HYBRID' {
-  if (commitMode === true) {
+  if (commitMode) {
     return 'COMMIT'
   }
 
@@ -179,10 +179,10 @@ function readConfiguration(filename: string): Configuration | undefined {
 export function parseConfiguration(config: string): Configuration | undefined {
   try {
     // for compatibility with the `yml` file we require to use `#{{}}` instead of `${{}}` - replace it here.
-    const configurationJSON: Configuration = JSON.parse(config.replace(/\${{/g, '#{{'))
-    return configurationJSON
+    return JSON.parse(config.replace(/\${{/g, '#{{'))
   } catch (error) {
     core.info(`⚠️ Configuration provided, but it couldn't be parsed. Fallback to Defaults.`)
+    core.debug(`Error parsing configuration: ${error}`)
     return undefined
   }
 }

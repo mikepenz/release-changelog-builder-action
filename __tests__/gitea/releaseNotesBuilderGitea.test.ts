@@ -1,7 +1,7 @@
-import {mergeConfiguration, resolveConfiguration} from '../../src/utils'
-import {ReleaseNotesBuilder} from '../../src/releaseNotesBuilder'
-import {GiteaRepository} from '../../src/repositories/GiteaRepository'
-import {clear} from '../../src/transform'
+import {mergeConfiguration, resolveConfiguration} from '../../src/utils.js'
+import {ReleaseNotesBuilder} from '../../src/releaseNotesBuilder.js'
+import {GiteaRepository} from '../../src/repositories/GiteaRepository.js'
+import {clear} from '../../src/transform.js'
 
 jest.setTimeout(180000)
 clear()

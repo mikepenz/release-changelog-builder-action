@@ -1,12 +1,12 @@
-import {BaseRepository} from './BaseRepository'
+import {BaseRepository} from './BaseRepository.js'
 import {Octokit, RestEndpointMethodTypes} from '@octokit/rest'
 import {HttpsProxyAgent} from 'https-proxy-agent'
 import * as core from '@actions/core'
-import {TagInfo} from '../pr-collector/tags'
-import moment from 'moment/moment'
-import {DiffInfo} from '../pr-collector/commits'
-import {CommentInfo, PullData, PullRequestInfo, PullReviewsData, PullsListData} from '../pr-collector/pullRequests'
-import {Unpacked} from '../pr-collector/utils'
+import {TagInfo} from '../pr-collector/tags.js'
+import {DiffInfo} from '../pr-collector/commits.js'
+import {CommentInfo, PullData, PullRequestInfo, PullReviewsData, PullsListData} from '../pr-collector/pullRequests.js'
+import {Unpacked} from '../pr-collector/utils.js'
+import moment from 'moment'
 
 export class GithubRepository extends BaseRepository {
   async getDiffRemote(owner: string, repo: string, base: string, head: string): Promise<DiffInfo> {
@@ -20,7 +20,7 @@ export class GithubRepository extends BaseRepository {
     // This is because the GitHub API limits the number of commits returned in a single response.
     let commits: RestEndpointMethodTypes['repos']['compareCommits']['response']['data']['commits'] = []
     let compareHead = head
-    // eslint-disable-next-line no-constant-condition
+
     while (true) {
       const compareResult = await this.octokit.repos.compareCommits({
         owner,
@@ -249,7 +249,7 @@ export class GithubRepository extends BaseRepository {
       const release: ReleaseInformation = response.data as ReleaseInformation
       tagInfo.date = moment(release.created_at)
       core.info(`ℹ️ Retrieved information about the release associated with ${tagInfo.name} from the GitHub API`)
-    } catch (error) {
+    } catch {
       tagInfo = await this.getTagByCreateTime(repositoryPath, tagInfo)
     }
     return tagInfo

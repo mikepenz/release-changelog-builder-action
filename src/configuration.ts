@@ -1,4 +1,4 @@
-import {Extractor, PullConfiguration, Regex, Rule} from './pr-collector/types'
+import {Extractor, PullConfiguration, Regex, Rule} from './pr-collector/types.js'
 
 export interface Configuration extends PullConfiguration {
   template: string
