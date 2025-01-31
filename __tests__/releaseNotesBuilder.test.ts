@@ -2,6 +2,7 @@ import {mergeConfiguration, resolveConfiguration} from '../src/utils.js'
 import {ReleaseNotesBuilder} from '../src/releaseNotesBuilder.js'
 import {GithubRepository} from '../src/repositories/GithubRepository.js'
 import {clear} from '../src/transform.js'
+import {jest} from '@jest/globals'
 
 jest.setTimeout(180000)
 clear()

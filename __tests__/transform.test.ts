@@ -5,7 +5,8 @@ import {PullRequestInfo} from '../src/pr-collector/pullRequests.js'
 import {DefaultDiffInfo} from '../src/pr-collector/commits.js'
 import {GithubRepository} from '../src/repositories/GithubRepository.js'
 import {clear} from '../src/transform.js'
-import { buildChangelogTest } from "./utils.js";
+import { buildChangelogTest } from "./src/utils.js";
+import {jest} from '@jest/globals'
 
 jest.setTimeout(180000)
 clear()

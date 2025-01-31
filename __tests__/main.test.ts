@@ -3,6 +3,7 @@ import * as process from 'process'
 import * as cp from 'child_process'
 import * as fs from 'fs'
 import {clear} from '../src/transform.js'
+import {jest} from '@jest/globals'
 
 jest.setTimeout(180000)
 clear()

@@ -3,7 +3,8 @@ import {DefaultConfiguration} from '../src/configuration.js'
 import {PullRequestInfo} from '../src/pr-collector/pullRequests.js'
 import {GithubRepository} from '../src/repositories/GithubRepository.js'
 import {clear} from '../src/transform.js'
-import {buildChangelogTest, buildPullRequeset} from './utils.js'
+import {buildChangelogTest, buildPullRequeset} from './src/utils.js'
+import {jest} from '@jest/globals'
 
 jest.setTimeout(180000)
 clear()
