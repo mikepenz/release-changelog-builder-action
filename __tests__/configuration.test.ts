@@ -1,6 +1,6 @@
-
 import {mergeConfiguration, parseConfiguration, resolveConfiguration} from '../src/utils.js'
-import { clear } from "../src/transform.js";
+import {clear} from '../src/transform.js'
+import {jest} from '@jest/globals'
 
 jest.setTimeout(180000)
 clear()

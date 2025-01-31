@@ -3,9 +3,14 @@ import * as process from 'process'
 import * as cp from 'child_process'
 import * as fs from 'fs'
 import {clear} from '../src/transform.js'
+import {jest} from '@jest/globals'
+import { fileURLToPath } from 'url';
 
 jest.setTimeout(180000)
 clear()
+
+const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
+const __dirname = path.dirname(__filename); // get the name of the directory
 
 test('missing values should result in failure', () => {
   expect.assertions(1)

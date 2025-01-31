@@ -2,6 +2,7 @@ import {TagResolver} from '../src/configuration.js'
 import {validateRegex} from '../src/pr-collector/regexUtils.js'
 import {filterTags, prepareAndSortTags, TagInfo, transformTags} from '../src/pr-collector/tags.js'
 import {clear} from '../src/transform.js'
+import {jest} from '@jest/globals'
 
 jest.setTimeout(180000)
 clear()
