@@ -41896,6 +41896,7 @@ const DefaultConfiguration = {
     },
     template: '#{{CHANGELOG}}', // the global template to host the changelog
     pr_template: '- #{{TITLE}}\n   - PR: ##{{NUMBER}}', // the per PR template to pick
+    commit_template: '- #{{TITLE}}', // the per PR template to pick for commit based mode
     empty_template: '- no changes', // the template to use if no pull requests are found
     categories: [
         {
@@ -41931,7 +41932,6 @@ const DefaultConfiguration = {
 };
 const DefaultCommitConfiguration = {
     ...DefaultConfiguration,
-    pr_template: '- #{{TITLE}}', // the per PR template to pick
     categories: [
         {
             title: '## 🚀 Features',
@@ -42062,6 +42062,15 @@ function checkExportedData(exportCache, cacheInput) {
         if (options.toTag.date) {
             options.toTag.date = moment(options.toTag.date);
         }
+        // Handle backwards compatibility for addition of `commit_template` in COMMIT and HYBRID mode
+        // If there is no provided commit_template, fallback to the provided pr_template,
+        // and if that is not provided either, fallback to the default commit_template
+        const { mode, configuration } = options;
+        const prTemplate = configuration?.pr_template;
+        const commitTemplate = configuration?.commit_template;
+        if ((mode === 'COMMIT' || mode === 'HYBRID') && !commitTemplate) {
+            options.configuration.commit_template = prTemplate || DefaultConfiguration.commit_template;
+        }
         return {
             diffInfo,
             mergedPullRequests,
@@ -42153,6 +42162,19 @@ function mergeConfiguration(jc, fc, mode) {
     else {
         def = DefaultConfiguration;
     }
+    // Handle backwards compatibility for addition of `commit_template` in COMMIT and HYBRID mode
+    // If there is no provided commit_template, fallback to the provided pr_template,
+    // and if that is not provided either, fallback to the default commit_template
+    const prTemplate = jc?.pr_template || fc?.pr_template;
+    let commitTemplate = jc?.commit_template || fc?.commit_template;
+    if ((mode === 'COMMIT' || mode === 'HYBRID') && !commitTemplate) {
+        if (prTemplate) {
+            commitTemplate = prTemplate;
+        }
+        else {
+            commitTemplate = def.commit_template;
+        }
+    }
     return {
         max_tags_to_fetch: jc?.max_tags_to_fetch || fc?.max_tags_to_fetch || def.max_tags_to_fetch,
         max_pull_requests: jc?.max_pull_requests || fc?.max_pull_requests || def.max_pull_requests,
@@ -42160,7 +42182,8 @@ function mergeConfiguration(jc, fc, mode) {
         exclude_merge_branches: jc?.exclude_merge_branches || fc?.exclude_merge_branches || def.exclude_merge_branches,
         sort: jc?.sort || fc?.sort || def.sort,
         template: jc?.template || fc?.template || def.template,
-        pr_template: jc?.pr_template || fc?.pr_template || def.pr_template,
+        pr_template: prTemplate || def.pr_template,
+        commit_template: commitTemplate || def.commit_template,
         empty_template: jc?.empty_template || fc?.empty_template || def.empty_template,
         categories: jc?.categories || fc?.categories || def.categories,
         ignore_labels: jc?.ignore_labels || fc?.ignore_labels || def.ignore_labels,
@@ -42900,14 +42923,27 @@ function buildChangelog(diffInfo, origPrs, options) {
     const customPlaceholdersTemplateContext = new GroupedTemplateContext();
     const validatedTransformers = validateTransformers(config.transformers);
     core.info(`ℹ️ Using ${validatedTransformers.length} transformers to rewrite content`);
+    const includePrs = options.mode === 'PR' || options.mode === 'HYBRID';
+    const includeCommits = options.mode === 'COMMIT' || options.mode === 'HYBRID';
+    // convert PRs to their text representation
+    const realPrs = includePrs ? prs.filter(x => x.number !== 0) : [];
+    const commitPrs = includeCommits ? prs.filter(x => x.number === 0) : [];
     if (validatedTransformers.length > 0) {
         for (const pr of prs) {
             const prAsObject = pr;
             transformObject(prAsObject, validatedTransformers);
         }
-        core.info(`✒️ Transformed ${prs.length} pull requests`);
+        if (includePrs) {
+            core.info(`✒️ Transformed ${realPrs.length} pull requests`);
+        }
+        if (includeCommits) {
+            core.info(`✒️ Transformed ${commitPrs.length} commits`);
+        }
     }
-    const prInfoMap = buildInfoMapAndFillPlaceholderContext(prs, config.pr_template, groupedPlaceholders, customPlaceholdersTemplateContext, config);
+    const prInfoMap = buildInfoMapAndFillPlaceholderContext(realPrs, config.pr_template, groupedPlaceholders, customPlaceholdersTemplateContext, config);
+    const commitInfoMap = buildInfoMapAndFillPlaceholderContext(commitPrs, config.commit_template, groupedPlaceholders, customPlaceholdersTemplateContext, config);
+    // If the mode is not HYBRID, the map will contain only one or the other map
+    const combinedInfoMap = mergeMaps(prInfoMap, commitInfoMap);
     // bring PRs into the order of categories
     const categories = config.categories;
     const flatCategories = flatten(config.categories);
@@ -42917,7 +42953,7 @@ function buildChangelog(diffInfo, origPrs, options) {
             category.entries = [];
         }
     }
-    const prStrings = buildPrStringsAndFillCategoryEntries(prInfoMap, config.ignore_labels, categories, flatCategories);
+    const prStrings = buildPrStringsAndFillCategoryEntries(combinedInfoMap, config.ignore_labels, categories, flatCategories);
     core.info(`ℹ️ Ordered all pull requests into ${categories.length} categories`);
     // serialize and provide the categorized content as json
     const transformedCategorized = buildCategorizedOutput(flatCategories);
@@ -42973,7 +43009,8 @@ function buildPrStringsAndFillCategoryEntries(prInfoMap, ignoredLabels, categori
             openPrs.push(body);
         }
         let matchedOnce = false; // in case we matched once at least, the PR can't be uncategorized
-        for (const category of categories) {
+        const filteredCategories = filterCategoriesByPrType(categories, pr);
+        for (const category of filteredCategories) {
             const [matched, consumed] = recursiveCategorizePr(category, pr, body);
             if (consumed) {
                 continue prLoop;
@@ -42982,7 +43019,8 @@ function buildPrStringsAndFillCategoryEntries(prInfoMap, ignoredLabels, categori
         }
         if (!matchedOnce) {
             // we allow to have pull requests included in an "uncategorized" category
-            for (const category of flatCategories) {
+            const filteredFlatCategories = filterCategoriesByPrType(flatCategories, pr);
+            for (const category of filteredFlatCategories) {
                 category.entries = category.entries || [];
                 if ((category.labels === undefined || category.labels.length === 0) && category.rules === undefined) {
                     // check if any exclude label matches for the "uncategorized" category
@@ -43189,7 +43227,8 @@ function renderEmptyChangelogTemplate(template, options) {
         createOrSet(placeholders, ph.source, ph);
     }
     const releaseNotesTemplateContext = buildCoreReleaseNotesTemplateContext(options);
-    return renderTemplateAndFillPlaceholderContext(template, releaseNotesTemplateContext, placeholders, undefined, options.configuration);
+    const renderedEmptyChangelogTemplate = renderTemplateAndFillPlaceholderContext(template, releaseNotesTemplateContext, placeholders, undefined, options.configuration);
+    return renderedEmptyChangelogTemplate;
 }
 function buildCoreReleaseNotesTemplateContext(options) {
     const templateContext = new TemplateContext();
@@ -43437,6 +43476,25 @@ function hasChildWithEntries(category) {
         hasEntries = hasEntries || hasChildWithEntries(cat);
     }
     return hasEntries;
+}
+/**
+ * Filters the provided categories based on the type of pull request information.
+ *
+ * @param {Category[]} categories - The list of categories to filter.
+ * @param {PullRequestInfo} prInfo - The pull request information used to determine the type of PR.
+ * @returns {Category[]} The filtered list of categories:
+ * - If 'prInfo' represents a real pull request (has a number other than 0), it excludes categories with mode 'COMMIT'.
+ * - If 'prInfo' represents a commit (has number 0), it excludes categories with mode 'PR'.
+ * - Defaults to keeping categories with mode 'HYBRID' in either case.
+ */
+function filterCategoriesByPrType(categories, prInfo) {
+    const isRealPr = prInfo.number !== 0;
+    if (isRealPr) {
+        return categories.filter(category => (category.mode || 'HYBRID') !== 'COMMIT');
+    }
+    else {
+        return categories.filter(category => (category.mode || 'HYBRID') !== 'PR');
+    }
 }
 
 // EXTERNAL MODULE: ./node_modules/semver/index.js
