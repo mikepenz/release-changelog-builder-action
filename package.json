@@ -67,7 +67,7 @@
     "ts-jest": "^29.2.5",
     "typescript": "^5.7.3",
     "@eslint/eslintrc": "^3.2.0",
-    "@eslint/js": "^9.19.0"
+    "@eslint/js": "^9.20.0"
   },
   "overrides": {
     "glob": "11.0.1"
