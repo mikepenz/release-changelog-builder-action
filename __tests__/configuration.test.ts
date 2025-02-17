@@ -19,7 +19,7 @@ it('Configurations are merged correctly', async () => {
 
   expect(expectedStringified).toEqual(
     `{
-  "max_tags_to_fetch": 100,
+  "max_tags_to_fetch": 200,
   "max_pull_requests": 1000,
   "max_back_track_time_days": 1000,
   "exclude_merge_branches": [],

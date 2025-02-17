@@ -11,7 +11,6 @@ const token = process.env.GITHUB_TOKEN || ''
 const githubRepository = new GithubRepository(token, undefined, '.')
 it('[Github] Should match generated changelog (unspecified fromTag)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs/configuration.json'))
-  configuration.max_tags_to_fetch = 300 // we change to load less, but those tests are pretty old releases
   const releaseNotesBuilder = new ReleaseNotesBuilder(
     null,
     githubRepository,
