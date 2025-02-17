@@ -7,7 +7,6 @@ import {DiffInfo} from '../pr-collector/commits.js'
 import {CommentInfo, PullData, PullRequestInfo, PullReviewsData, PullsListData} from '../pr-collector/pullRequests.js'
 import {Unpacked} from '../pr-collector/utils.js'
 import moment from 'moment'
-import {GraphQlQueryResponse} from '@octokit/graphql/types'
 
 export class GithubRepository extends BaseRepository {
   async getDiffRemote(owner: string, repo: string, base: string, head: string): Promise<DiffInfo> {
@@ -214,7 +213,8 @@ export class GithubRepository extends BaseRepository {
     let hasNextPage = true
     let cursor: string | null = null
     while (hasNextPage && tagsInfo.length < maxTagsToFetch) {
-      const result: GraphQlQueryResponse<unknown> = await this.octokit.graphql(`
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result: any = await this.octokit.graphql(`
       {
         repository(owner: "${owner}", name: "${repo}") {
           refs(refPrefix: "refs/tags/", first: ${pageSize}, after: ${cursor ? `"${cursor}"` : 'null'}, orderBy: {field: TAG_COMMIT_DATE, direction: DESC}) {
@@ -244,7 +244,6 @@ export class GithubRepository extends BaseRepository {
       }
     `)
 
-      // @ts-expect-error graphql response
       const refs = result.repository.refs
       hasNextPage = refs.pageInfo.hasNextPage && tagsInfo.length < maxTagsToFetch
       cursor = refs.pageInfo.endCursor
