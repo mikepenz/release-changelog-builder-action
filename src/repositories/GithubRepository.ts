@@ -211,66 +211,56 @@ export class GithubRepository extends BaseRepository {
     const pageSize = maxTagsToFetch > 100 ? 100 : maxTagsToFetch // 100 max page size in graphql
     const tagsInfo: TagInfo[] = []
 
-    const result: GraphQlQueryResponse<unknown> = await this.octokit.graphql(`
-  {
-  repository(owner: "${owner}", name: "${repo}") {
-    refs(refPrefix: "refs/tags/", first: ${pageSize}, orderBy: {field: TAG_COMMIT_DATE, direction: DESC}) {
-      edges {
-        node {
-          name
-          target {
-            oid
-            ... on Tag {
-              message
-              commitUrl
-              tagger {
+    let hasNextPage = true
+    let cursor: string | null = null
+    while (hasNextPage && tagsInfo.length < maxTagsToFetch) {
+      const result: GraphQlQueryResponse<unknown> = await this.octokit.graphql(`
+      {
+        repository(owner: "${owner}", name: "${repo}") {
+          refs(refPrefix: "refs/tags/", first: ${pageSize}, after: ${cursor ? `"${cursor}"` : 'null'}, orderBy: {field: TAG_COMMIT_DATE, direction: DESC}) {
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+            edges {
+              node {
                 name
-                email
-                date
+                target {
+                  oid
+                  ... on Tag {
+                    message
+                    commitUrl
+                    tagger {
+                      name
+                      email
+                      date
+                    }
+                  }
+                }
               }
             }
           }
         }
       }
-    }
-  }
-}
-`)
+    `)
 
-    // @ts-expect-error graphql response
-    // eslint-disable-next-line github/array-foreach, @typescript-eslint/no-explicit-any
-    result.repository.refs.edges.forEach((edge: any) => {
-      tagsInfo.push({
-        name: edge.node.name,
-        commit: edge.node.target.oid
+      // @ts-expect-error graphql response
+      const refs = result.repository.refs
+      hasNextPage = refs.pageInfo.hasNextPage && tagsInfo.length < maxTagsToFetch
+      cursor = refs.pageInfo.endCursor
+
+      // eslint-disable-next-line github/array-foreach, @typescript-eslint/no-explicit-any
+      refs.edges.forEach((edge: any) => {
+        if (tagsInfo.length < maxTagsToFetch) {
+          tagsInfo.push({
+            name: edge.node.name,
+            commit: edge.node.target.oid
+          })
+        }
       })
-    })
-
-    const options = this.octokit.repos.listTags.endpoint.merge({
-      owner,
-      repo,
-      direction: 'desc',
-      per_page: 100
-    })
-
-    for await (const response of this.octokit.paginate.iterator(options)) {
-      type TagsListData = RestEndpointMethodTypes['repos']['listTags']['response']['data']
-      const tags: TagsListData = response.data as TagsListData
-
-      for (const tag of tags) {
-        tagsInfo.push({
-          name: tag.name,
-          commit: tag.commit.sha
-        })
-      }
-
-      // for performance only fetch newest maxTagsToFetch tags!!
-      if (tagsInfo.length >= maxTagsToFetch) {
-        break
-      }
     }
 
-    core.info(`ℹ️ Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`)
+    core.info(`ℹ️ Retrieved ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`)
     return tagsInfo
   }
 

@@ -61,7 +61,7 @@ export interface Placeholder {
 export class PlaceholderGroup extends Map<string, Placeholder[]> {}
 
 export const DefaultConfiguration: Configuration = {
-  max_tags_to_fetch: 200, // the amount of tags to fetch from the github API
+  max_tags_to_fetch: 100, // the amount of tags to fetch from the github API
   max_pull_requests: 200, // the amount of pull requests to process
   max_back_track_time_days: 365, // allow max of 365 days back to check up on pull requests
   exclude_merge_branches: [], // branches to exclude from counting as PRs (e.g. YourOrg/qa, YourOrg/main)
