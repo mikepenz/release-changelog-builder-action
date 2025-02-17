@@ -7,6 +7,7 @@ import {DiffInfo} from '../pr-collector/commits.js'
 import {CommentInfo, PullData, PullRequestInfo, PullReviewsData, PullsListData} from '../pr-collector/pullRequests.js'
 import {Unpacked} from '../pr-collector/utils.js'
 import moment from 'moment'
+import {GraphQlQueryResponse} from '@octokit/graphql/types'
 
 export class GithubRepository extends BaseRepository {
   async getDiffRemote(owner: string, repo: string, base: string, head: string): Promise<DiffInfo> {
@@ -194,6 +195,7 @@ export class GithubRepository extends BaseRepository {
       auth: `token ${this.token}`,
       baseUrl: this.url
     })
+
     if (this.proxy) {
       const agent = new HttpsProxyAgent(this.proxy)
       this.octokit.hook.before('request', options => {
@@ -206,7 +208,44 @@ export class GithubRepository extends BaseRepository {
   }
 
   async getTags(owner: string, repo: string, maxTagsToFetch: number): Promise<TagInfo[]> {
+    const pageSize = maxTagsToFetch > 100 ? 100 : maxTagsToFetch // 100 max page size in graphql
     const tagsInfo: TagInfo[] = []
+
+    const result: GraphQlQueryResponse<unknown> = await this.octokit.graphql(`
+  {
+  repository(owner: "${owner}", name: "${repo}") {
+    refs(refPrefix: "refs/tags/", first: ${pageSize}, orderBy: {field: TAG_COMMIT_DATE, direction: DESC}) {
+      edges {
+        node {
+          name
+          target {
+            oid
+            ... on Tag {
+              message
+              commitUrl
+              tagger {
+                name
+                email
+                date
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+`)
+
+    // @ts-expect-error graphql response
+    // eslint-disable-next-line github/array-foreach, @typescript-eslint/no-explicit-any
+    result.repository.refs.edges.forEach((edge: any) => {
+      tagsInfo.push({
+        name: edge.node.name,
+        commit: edge.node.target.oid
+      })
+    })
+
     const options = this.octokit.repos.listTags.endpoint.merge({
       owner,
       repo,
