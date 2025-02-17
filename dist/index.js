@@ -3714,7 +3714,7 @@ module.exports = __toCommonJS(dist_src_exports);
 var import_universal_user_agent = __nccwpck_require__(3843);
 
 // pkg/dist-src/version.js
-var VERSION = "9.0.5";
+var VERSION = "9.0.6";
 
 // pkg/dist-src/defaults.js
 var userAgent = `octokit-endpoint.js/${VERSION} ${(0, import_universal_user_agent.getUserAgent)()}`;
@@ -3819,9 +3819,9 @@ function addQueryParameters(url, parameters) {
 }
 
 // pkg/dist-src/util/extract-url-variable-names.js
-var urlVariableRegex = /\{[^}]+\}/g;
+var urlVariableRegex = /\{[^{}}]+\}/g;
 function removeNonChars(variableName) {
-  return variableName.replace(/^\W+|\W+$/g, "").split(/,/);
+  return variableName.replace(/(?:^\W+)|(?:(?<!\W)\W+$)/g, "").split(/,/);
 }
 function extractUrlVariableNames(url) {
   const matches = url.match(urlVariableRegex);
@@ -4007,7 +4007,7 @@ function parse(options) {
     }
     if (url.endsWith("/graphql")) {
       if (options.mediaType.previews?.length) {
-        const previewsFromAcceptHeader = headers.accept.match(/[\w-]+(?=-preview)/g) || [];
+        const previewsFromAcceptHeader = headers.accept.match(/(?<![\w-])[\w-]+(?=-preview)/g) || [];
         headers.accept = previewsFromAcceptHeader.concat(options.mediaType.previews).map((preview) => {
           const format = options.mediaType.format ? `.${options.mediaType.format}` : "+json";
           return `application/vnd.github.${preview}-preview${format}`;
@@ -4254,7 +4254,7 @@ __export(dist_src_exports, {
 module.exports = __toCommonJS(dist_src_exports);
 
 // pkg/dist-src/version.js
-var VERSION = "9.2.1";
+var VERSION = "9.2.2";
 
 // pkg/dist-src/normalize-paginated-list-response.js
 function normalizePaginatedListResponse(response) {
@@ -4302,7 +4302,7 @@ function iterator(octokit, route, parameters) {
           const response = await requestMethod({ method, url, headers });
           const normalizedResponse = normalizePaginatedListResponse(response);
           url = ((normalizedResponse.headers.link || "").match(
-            /<([^>]+)>;\s*rel="next"/
+            /<([^<>]+)>;\s*rel="next"/
           ) || [])[1];
           return { value: normalizedResponse };
         } catch (error) {
@@ -6852,7 +6852,7 @@ var RequestError = class extends Error {
     if (options.request.headers.authorization) {
       requestCopy.headers = Object.assign({}, options.request.headers, {
         authorization: options.request.headers.authorization.replace(
-          / .*$/,
+          /(?<! ) .*$/,
           " [REDACTED]"
         )
       });
@@ -6919,7 +6919,7 @@ var import_endpoint = __nccwpck_require__(4471);
 var import_universal_user_agent = __nccwpck_require__(3843);
 
 // pkg/dist-src/version.js
-var VERSION = "8.4.0";
+var VERSION = "8.4.1";
 
 // pkg/dist-src/is-plain-object.js
 function isPlainObject(value) {
@@ -6978,7 +6978,7 @@ function fetchWrapper(requestOptions) {
       headers[keyAndValue[0]] = keyAndValue[1];
     }
     if ("deprecation" in headers) {
-      const matches = headers.link && headers.link.match(/<([^>]+)>; rel="deprecation"/);
+      const matches = headers.link && headers.link.match(/<([^<>]+)>; rel="deprecation"/);
       const deprecationLink = matches && matches.pop();
       log.warn(
         `[@octokit/request] "${requestOptions.method} ${requestOptions.url}" is deprecated. It is scheduled to be removed on ${headers.sunset}${deprecationLink ? `. See ${deprecationLink}` : ""}`
@@ -15382,7 +15382,7 @@ const testSet = (set, version, options) => {
 
 const debug = __nccwpck_require__(1159)
 const { MAX_LENGTH, MAX_SAFE_INTEGER } = __nccwpck_require__(5101)
-const { safeRe: re, t } = __nccwpck_require__(5471)
+const { safeRe: re, safeSrc: src, t } = __nccwpck_require__(5471)
 
 const parseOptions = __nccwpck_require__(356)
 const { compareIdentifiers } = __nccwpck_require__(3348)
@@ -15564,7 +15564,8 @@ class SemVer {
       }
       // Avoid an invalid semver results
       if (identifier) {
-        const match = `-${identifier}`.match(this.options.loose ? re[t.PRERELEASELOOSE] : re[t.PRERELEASE])
+        const r = new RegExp(`^${this.options.loose ? src[t.PRERELEASELOOSE] : src[t.PRERELEASE]}$`)
+        const match = `-${identifier}`.match(r)
         if (!match || match[1] !== identifier) {
           throw new Error(`invalid identifier: ${identifier}`)
         }
@@ -16421,6 +16422,7 @@ exports = module.exports = {}
 const re = exports.re = []
 const safeRe = exports.safeRe = []
 const src = exports.src = []
+const safeSrc = exports.safeSrc = []
 const t = exports.t = {}
 let R = 0
 
@@ -16453,6 +16455,7 @@ const createToken = (name, value, isGlobal) => {
   debug(name, index, value)
   t[name] = index
   src[index] = value
+  safeSrc[index] = safe
   re[index] = new RegExp(value, isGlobal ? 'g' : undefined)
   safeRe[index] = new RegExp(safe, isGlobal ? 'g' : undefined)
 }
@@ -41885,7 +41888,7 @@ var external_path_ = __nccwpck_require__(6928);
 class PlaceholderGroup extends (/* unused pure expression or super */ null && (Map)) {
 }
 const DefaultConfiguration = {
-    max_tags_to_fetch: 200, // the amount of tags to fetch from the github API
+    max_tags_to_fetch: 100, // the amount of tags to fetch from the github API
     max_pull_requests: 200, // the amount of pull requests to process
     max_back_track_time_days: 365, // allow max of 365 days back to check up on pull requests
     exclude_merge_branches: [], // branches to exclude from counting as PRs (e.g. YourOrg/qa, YourOrg/main)
@@ -44408,9 +44411,9 @@ function addQueryParameters(url, parameters) {
 }
 
 // pkg/dist-src/util/extract-url-variable-names.js
-var urlVariableRegex = /\{[^}]+\}/g;
+var urlVariableRegex = /\{[^{}}]+\}/g;
 function removeNonChars(variableName) {
-  return variableName.replace(/^\W+|\W+$/g, "").split(/,/);
+  return variableName.replace(/(?:^\W+)|(?:(?<!\W)\W+$)/g, "").split(/,/);
 }
 function extractUrlVariableNames(url) {
   const matches = url.match(urlVariableRegex);
@@ -44596,7 +44599,7 @@ function parse(options) {
     }
     if (url.endsWith("/graphql")) {
       if (options.mediaType.previews?.length) {
-        const previewsFromAcceptHeader = headers.accept.match(/[\w-]+(?=-preview)/g) || [];
+        const previewsFromAcceptHeader = headers.accept.match(/(?<![\w-])[\w-]+(?=-preview)/g) || [];
         headers.accept = previewsFromAcceptHeader.concat(options.mediaType.previews).map((preview) => {
           const format = options.mediaType.format ? `.${options.mediaType.format}` : "+json";
           return `application/vnd.github.${preview}-preview${format}`;
@@ -44680,7 +44683,7 @@ class RequestError extends Error {
     if (options.request.headers.authorization) {
       requestCopy.headers = Object.assign({}, options.request.headers, {
         authorization: options.request.headers.authorization.replace(
-          / .*$/,
+          /(?<! ) .*$/,
           " [REDACTED]"
         )
       });
@@ -44786,7 +44789,7 @@ async function fetchWrapper(requestOptions) {
     data: ""
   };
   if ("deprecation" in responseHeaders) {
-    const matches = responseHeaders.link && responseHeaders.link.match(/<([^>]+)>; rel="deprecation"/);
+    const matches = responseHeaders.link && responseHeaders.link.match(/<([^<>]+)>; rel="deprecation"/);
     const deprecationLink = matches && matches.pop();
     log.warn(
       `[@octokit/request] "${requestOptions.method} ${requestOptions.url}" is deprecated. It is scheduled to be removed on ${responseHeaders.sunset}${deprecationLink ? `. See ${deprecationLink}` : ""}`
@@ -44931,7 +44934,8 @@ var NON_VARIABLE_OPTIONS = [
   "headers",
   "request",
   "query",
-  "mediaType"
+  "mediaType",
+  "operationName"
 ];
 var FORBIDDEN_VARIABLE_OPTIONS = ["query", "method", "url"];
 var GHES_V3_SUFFIX_REGEX = /\/api\/v3\/?$/;
@@ -45069,7 +45073,7 @@ var createTokenAuth = function createTokenAuth2(token) {
 
 
 ;// CONCATENATED MODULE: ./node_modules/@octokit/rest/node_modules/@octokit/core/dist-src/version.js
-const version_VERSION = "6.1.3";
+const version_VERSION = "6.1.4";
 
 
 ;// CONCATENATED MODULE: ./node_modules/@octokit/rest/node_modules/@octokit/core/dist-src/index.js
@@ -45284,7 +45288,7 @@ function iterator(octokit, route, parameters) {
           const response = await requestMethod({ method, url, headers });
           const normalizedResponse = normalizePaginatedListResponse(response);
           url = ((normalizedResponse.headers.link || "").match(
-            /<([^>]+)>;\s*rel="next"/
+            /<([^<>]+)>;\s*rel="next"/
           ) || [])[1];
           return { value: normalizedResponse };
         } catch (error) {
@@ -45618,7 +45622,7 @@ paginateRest.VERSION = plugin_paginate_rest_dist_bundle_VERSION;
 
 
 ;// CONCATENATED MODULE: ./node_modules/@octokit/rest/node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/version.js
-const plugin_rest_endpoint_methods_dist_src_version_VERSION = "13.3.0";
+const plugin_rest_endpoint_methods_dist_src_version_VERSION = "13.3.1";
 
 //# sourceMappingURL=version.js.map
 
@@ -47840,7 +47844,7 @@ legacyRestEndpointMethods.VERSION = plugin_rest_endpoint_methods_dist_src_versio
 //# sourceMappingURL=index.js.map
 
 ;// CONCATENATED MODULE: ./node_modules/@octokit/rest/dist-src/version.js
-const rest_dist_src_version_VERSION = "21.1.0";
+const rest_dist_src_version_VERSION = "21.1.1";
 
 
 ;// CONCATENATED MODULE: ./node_modules/@octokit/rest/dist-src/index.js
@@ -48037,27 +48041,55 @@ class GithubRepository extends BaseRepository {
         }
     }
     async getTags(owner, repo, maxTagsToFetch) {
+        const pageSize = maxTagsToFetch > 100 ? 100 : maxTagsToFetch; // 100 max page size in graphql
         const tagsInfo = [];
-        const options = this.octokit.repos.listTags.endpoint.merge({
-            owner,
-            repo,
-            direction: 'desc',
-            per_page: 100
-        });
-        for await (const response of this.octokit.paginate.iterator(options)) {
-            const tags = response.data;
-            for (const tag of tags) {
-                tagsInfo.push({
-                    name: tag.name,
-                    commit: tag.commit.sha
-                });
+        let hasNextPage = true;
+        let cursor = null;
+        while (hasNextPage && tagsInfo.length < maxTagsToFetch) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const result = await this.octokit.graphql(`
+      {
+        repository(owner: "${owner}", name: "${repo}") {
+          refs(refPrefix: "refs/tags/", first: ${pageSize}, after: ${cursor ? `"${cursor}"` : 'null'}, orderBy: {field: TAG_COMMIT_DATE, direction: DESC}) {
+            pageInfo {
+              hasNextPage
+              endCursor
             }
-            // for performance only fetch newest maxTagsToFetch tags!!
-            if (tagsInfo.length >= maxTagsToFetch) {
-                break;
+            edges {
+              node {
+                name
+                target {
+                  oid
+                  ... on Tag {
+                    message
+                    commitUrl
+                    tagger {
+                      name
+                      email
+                      date
+                    }
+                  }
+                }
+              }
             }
+          }
         }
-        core.info(`ℹ️ Found ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`);
+      }
+    `);
+            const refs = result.repository.refs;
+            hasNextPage = refs.pageInfo.hasNextPage && tagsInfo.length < maxTagsToFetch;
+            cursor = refs.pageInfo.endCursor;
+            // eslint-disable-next-line github/array-foreach, @typescript-eslint/no-explicit-any
+            refs.edges.forEach((edge) => {
+                if (tagsInfo.length < maxTagsToFetch) {
+                    tagsInfo.push({
+                        name: edge.node.name,
+                        commit: edge.node.target.oid
+                    });
+                }
+            });
+        }
+        core.info(`ℹ️ Retrieved ${tagsInfo.length} (fetching max: ${maxTagsToFetch}) tags from the GitHub API for ${owner}/${repo}`);
         return tagsInfo;
     }
     async fillTagInformation(repositoryPath, owner, repo, tagInfo) {
