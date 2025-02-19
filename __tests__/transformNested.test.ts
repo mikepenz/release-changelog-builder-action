@@ -1,15 +1,54 @@
 import moment from 'moment'
-import {DefaultConfiguration} from '../src/configuration.js'
+import {Configuration, DefaultConfiguration} from '../src/configuration.js'
 import {PullRequestInfo} from '../src/pr-collector/pullRequests.js'
 import {GithubRepository} from '../src/repositories/GithubRepository.js'
-import {clear} from '../src/transform.js'
-import {buildChangelogTest, buildPullRequeset} from './utils.js'
+import {buildChangelog, clear} from '../src/transform.js'
+import {jest} from '@jest/globals'
+import {BaseRepository} from '../src/repositories/BaseRepository.js'
+import {DefaultDiffInfo} from '../src/pr-collector/commits.js'
 
 jest.setTimeout(180000)
 clear()
 
 const repositoryUtils = new GithubRepository(process.env.GITEA_TOKEN || '', undefined, '.')
+const buildChangelogTest = (config: Configuration, prs: PullRequestInfo[], repositoryUtils: BaseRepository): string => {
+  return buildChangelog(DefaultDiffInfo, prs, {
+    owner: 'mikepenz',
+    repo: 'test-repo',
+    fromTag: {name: '1.0.0'},
+    toTag: {name: '2.0.0'},
+    includeOpen: false,
+    failOnError: false,
+    fetchReviewers: false,
+    fetchReleaseInformation: false,
+    fetchReviews: false,
+    mode: 'PR',
+    configuration: config,
+    repositoryUtils
+  })
+}
 
+const buildPullRequeset = (number: number, title: string, labels: string[] = ['feature']): PullRequestInfo => {
+  return {
+    number,
+    title,
+    htmlURL: '',
+    baseBranch: '',
+    createdAt: moment(),
+    mergedAt: moment(),
+    mergeCommitSha: 'sha',
+    author: 'Author',
+    authorName: 'Author',
+    repoName: 'test-repo',
+    labels,
+    milestone: '',
+    body: '',
+    assignees: [],
+    requestedReviewers: [],
+    approvedReviewers: [],
+    status: 'merged'
+  }
+}
 // test set of PRs with lables predefined
 const pullRequestsWithLabels: PullRequestInfo[] = []
 pullRequestsWithLabels.push(

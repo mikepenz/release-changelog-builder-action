@@ -107,6 +107,16 @@ export function checkExportedData(exportCache: boolean, cacheInput: string | nul
       options.toTag.date = moment(options.toTag.date)
     }
 
+    // Handle backwards compatibility for addition of `commit_template` in COMMIT and HYBRID mode
+    // If there is no provided commit_template, fallback to the provided pr_template,
+    // and if that is not provided either, fallback to the default commit_template
+    const {mode, configuration} = options
+    const prTemplate = configuration?.pr_template
+    const commitTemplate = configuration?.commit_template
+    if ((mode === 'COMMIT' || mode === 'HYBRID') && !commitTemplate) {
+      options.configuration.commit_template = prTemplate || DefaultConfiguration.commit_template
+    }
+
     return {
       diffInfo,
       mergedPullRequests,
@@ -198,6 +208,19 @@ export function mergeConfiguration(jc?: Configuration, fc?: Configuration, mode?
     def = DefaultConfiguration
   }
 
+  // Handle backwards compatibility for addition of `commit_template` in COMMIT and HYBRID mode
+  // If there is no provided commit_template, fallback to the provided pr_template,
+  // and if that is not provided either, fallback to the default commit_template
+  const prTemplate = jc?.pr_template || fc?.pr_template
+  let commitTemplate = jc?.commit_template || fc?.commit_template
+  if ((mode === 'COMMIT' || mode === 'HYBRID') && !commitTemplate) {
+    if (prTemplate) {
+      commitTemplate = prTemplate
+    } else {
+      commitTemplate = def.commit_template
+    }
+  }
+
   return {
     max_tags_to_fetch: jc?.max_tags_to_fetch || fc?.max_tags_to_fetch || def.max_tags_to_fetch,
     max_pull_requests: jc?.max_pull_requests || fc?.max_pull_requests || def.max_pull_requests,
@@ -205,7 +228,8 @@ export function mergeConfiguration(jc?: Configuration, fc?: Configuration, mode?
     exclude_merge_branches: jc?.exclude_merge_branches || fc?.exclude_merge_branches || def.exclude_merge_branches,
     sort: jc?.sort || fc?.sort || def.sort,
     template: jc?.template || fc?.template || def.template,
-    pr_template: jc?.pr_template || fc?.pr_template || def.pr_template,
+    pr_template: prTemplate || def.pr_template,
+    commit_template: commitTemplate || def.commit_template,
     empty_template: jc?.empty_template || fc?.empty_template || def.empty_template,
     categories: jc?.categories || fc?.categories || def.categories,
     ignore_labels: jc?.ignore_labels || fc?.ignore_labels || def.ignore_labels,

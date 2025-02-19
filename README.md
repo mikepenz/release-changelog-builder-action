@@ -525,6 +525,21 @@ Similar to `REVIEWS`, `REFERENCED` PRs also offer special placeholders.
 </p>
 </details>
 
+### Commit Template placeholders
+
+Table of supported placeholders allowed to be used in the `commit_template` configuration, which will be included in the release notes / changelog. Applies to `HYBRID` and `COMMIT` modes only.
+
+| **Placeholder**    | **Description**                                                                                    |
+|--------------------|----------------------------------------------------------------------------------------------------|
+| `#{{NUMBER}}`      | Always 0.                                                                                          |
+| `#{{TITLE}}`       | The commit summary.                                                                                |
+| `#{{STATUS}}`      | Always `merged`.                                                                                   |
+| `#{{CREATED_AT}}`  | The ISO time of the commit.                                                                        |
+| `#{{MERGE_SHA}}`   | The commit SHA.                                                                                    |
+| `#{{AUTHOR}}`      | The username of the commit Author.                                                                      |
+| `#{{AUTHOR_NAME}}` | The name of the commit Author (Can be empty).                                                      |
+| `#{{BODY}}`        | The commit message.                                                                                |
+
 ### Configuration Specification
 
 Table of descriptions for the `configuration.json` options to configure the resulting release notes / changelog.
@@ -543,12 +558,14 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | category.rules.pattern               | A `regex` pattern to match the property value towards. Uses `RegExp.test("val")`                                                                                                                                                                                                                                                      |
 | category.rules.flags                 | Defines the regex flags specified for the pattern. Default: `gu`.                                                                                                                                                                                                                                                                     |
 | category.rules.on_property           | The PR property to match against. [Possible values](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/src/configuration.ts#L33-L43).                                                                                                                                                                          |
+| category.mode                        | Defines if this category applies to PRs, commits or both. Allowed values: `PR`, `COMMIT`, `HYBRID`. Default: `HYBRID`.                                                                                                                                                                                                                |
 | ignore_labels                        | An array of labels, to match pull request labels against. If any PR label overlaps, the pull request will be ignored from the changelog. This takes precedence over category labels                                                                                                                                                   |
 | sort                                 | A `sort` specification, offering the ability to define sort order and property.                                                                                                                                                                                                                                                       |
 | sort.order                           | The sort order. Allowed values: `ASC`, `DESC`                                                                                                                                                                                                                                                                                         |
 | sort.on_property                     | The property to sort on. Allowed values: `mergedAt`, `title`                                                                                                                                                                                                                                                                          |
 | template                             | Specifies the global template to pick for creating the changelog. See [Template placeholders](#template-placeholders) for possible values                                                                                                                                                                                             |
 | pr_template                          | Defines the per pull request template. See [PR Template placeholders](#pr-template-placeholders) for possible values                                                                                                                                                                                                                  |
+| commit_template                      | Defines the per commit template. Used in `HYBRID` and `COMMIT` modes only. If empty, uses the template defined for `pr_template`. See [Commit Template placeholders](#commit-template-placeholders) for possible values.                                                                                                              |
 | empty_template                       | Template to pick if no changes are detected. See [Template placeholders](#template-placeholders) for possible values                                                                                                                                                                                                                  |
 | label_extractor.\[{\<EXTRACTOR\>}\]  | An array of `Extractor` specifications, offering a flexible API to extract additional labels from a PR. Please see the documentation related to [Regex Configuration](#regex-configuration) for more details.                                                                                                                         |
 | duplicate_filter.{\<EXTRACTOR\>}     | Defines the `Extractor` to use for retrieving the identifier for a PR. In case of duplicates will keep the last matching pull request (depends on `sort`). Please see the documentation related to [Regex Configuration](#regex-configuration) for more details.                                                                      |

@@ -1,14 +1,32 @@
 import {buildChangelog} from '../src/transform.js'
 import moment from 'moment'
-import {DefaultConfiguration} from '../src/configuration.js'
+import {Configuration, DefaultConfiguration} from '../src/configuration.js'
 import {PullRequestInfo} from '../src/pr-collector/pullRequests.js'
 import {DefaultDiffInfo} from '../src/pr-collector/commits.js'
 import {GithubRepository} from '../src/repositories/GithubRepository.js'
 import {clear} from '../src/transform.js'
-import { buildChangelogTest } from "./utils.js";
+import {jest} from '@jest/globals'
+import {BaseRepository} from '../src/repositories/BaseRepository.js'
 
 jest.setTimeout(180000)
 clear()
+
+const buildChangelogTest = (config: Configuration, prs: PullRequestInfo[], repositoryUtils: BaseRepository): string => {
+  return buildChangelog(DefaultDiffInfo, prs, {
+    owner: 'mikepenz',
+    repo: 'test-repo',
+    fromTag: {name: '1.0.0'},
+    toTag: {name: '2.0.0'},
+    includeOpen: false,
+    failOnError: false,
+    fetchReviewers: false,
+    fetchReleaseInformation: false,
+    fetchReviews: false,
+    mode: 'PR',
+    configuration: config,
+    repositoryUtils
+  })
+}
 
 const configuration = Object.assign({}, DefaultConfiguration)
 configuration.categories = [
@@ -459,9 +477,14 @@ const repositoryUtils = new GithubRepository(process.env.GITEA_TOKEN || '', unde
 it('Commit SHA-1 in commitMode', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.sort = 'DESC'
-  customConfig.pr_template = '#{{MERGE_SHA}}'
+  customConfig.commit_template = '#{{MERGE_SHA}}'
 
-  const resultChangelog = buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
+  // Since this is COMMIT mode, the prs would have been built with "number: 0"
+  const convertedPrs = pullRequestsWithLabels.map(pr => {
+    return {...pr, number: 0}
+  })
+
+  const resultChangelog = buildChangelog(DefaultDiffInfo, convertedPrs, {
     owner: 'mikepenz',
     repo: 'test-repo',
     fromTag: {name: '1.0.0'},

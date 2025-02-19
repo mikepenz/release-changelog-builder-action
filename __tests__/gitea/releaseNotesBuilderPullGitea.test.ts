@@ -4,6 +4,7 @@ import {Options, pullData} from '../../src/pr-collector/prCollector.js'
 import {GiteaRepository} from '../../src/repositories/GiteaRepository.js'
 import {clear} from '../../src/transform.js'
 import {ReleaseNotesOptions} from '../../src/releaseNotesBuilder.js'
+import {jest} from '@jest/globals'
 
 jest.setTimeout(180000)
 clear()
