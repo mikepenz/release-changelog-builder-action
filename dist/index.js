@@ -3536,11 +3536,11 @@ var __copyProps = (to, from, except, desc) => {
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // pkg/dist-src/index.js
-var dist_src_exports = {};
-__export(dist_src_exports, {
+var index_exports = {};
+__export(index_exports, {
   Octokit: () => Octokit
 });
-module.exports = __toCommonJS(dist_src_exports);
+module.exports = __toCommonJS(index_exports);
 var import_universal_user_agent = __nccwpck_require__(3843);
 var import_before_after_hook = __nccwpck_require__(2732);
 var import_request = __nccwpck_require__(8636);
@@ -3548,7 +3548,7 @@ var import_graphql = __nccwpck_require__(7);
 var import_auth_token = __nccwpck_require__(7864);
 
 // pkg/dist-src/version.js
-var VERSION = "5.2.0";
+var VERSION = "5.2.1";
 
 // pkg/dist-src/index.js
 var noop = () => {
@@ -4087,18 +4087,18 @@ var __copyProps = (to, from, except, desc) => {
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // pkg/dist-src/index.js
-var dist_src_exports = {};
-__export(dist_src_exports, {
+var index_exports = {};
+__export(index_exports, {
   GraphqlResponseError: () => GraphqlResponseError,
   graphql: () => graphql2,
   withCustomRequest: () => withCustomRequest
 });
-module.exports = __toCommonJS(dist_src_exports);
+module.exports = __toCommonJS(index_exports);
 var import_request3 = __nccwpck_require__(8636);
 var import_universal_user_agent = __nccwpck_require__(3843);
 
 // pkg/dist-src/version.js
-var VERSION = "7.1.0";
+var VERSION = "7.1.1";
 
 // pkg/dist-src/with-defaults.js
 var import_request2 = __nccwpck_require__(8636);
@@ -4146,8 +4146,7 @@ function graphql(request2, query, options) {
       );
     }
     for (const key in options) {
-      if (!FORBIDDEN_VARIABLE_OPTIONS.includes(key))
-        continue;
+      if (!FORBIDDEN_VARIABLE_OPTIONS.includes(key)) continue;
       return Promise.reject(
         new Error(
           `[@octokit/graphql] "${key}" cannot be used as variable name`
@@ -22959,7 +22958,7 @@ module.exports = {
 
 
 const { parseSetCookie } = __nccwpck_require__(8915)
-const { stringify, getHeadersList } = __nccwpck_require__(3834)
+const { stringify } = __nccwpck_require__(3834)
 const { webidl } = __nccwpck_require__(4222)
 const { Headers } = __nccwpck_require__(6349)
 
@@ -23035,14 +23034,13 @@ function getSetCookies (headers) {
 
   webidl.brandCheck(headers, Headers, { strict: false })
 
-  const cookies = getHeadersList(headers).cookies
+  const cookies = headers.getSetCookie()
 
   if (!cookies) {
     return []
   }
 
-  // In older versions of undici, cookies is a list of name:value.
-  return cookies.map((pair) => parseSetCookie(Array.isArray(pair) ? pair[1] : pair))
+  return cookies.map((pair) => parseSetCookie(pair))
 }
 
 /**
@@ -23469,13 +23467,14 @@ module.exports = {
 /***/ }),
 
 /***/ 3834:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+/***/ ((module) => {
 
 
 
-const assert = __nccwpck_require__(2613)
-const { kHeadersList } = __nccwpck_require__(6443)
-
+/**
+ * @param {string} value
+ * @returns {boolean}
+ */
 function isCTLExcludingHtab (value) {
   if (value.length === 0) {
     return false
@@ -23736,31 +23735,13 @@ function stringify (cookie) {
   return out.join('; ')
 }
 
-let kHeadersListNode
-
-function getHeadersList (headers) {
-  if (headers[kHeadersList]) {
-    return headers[kHeadersList]
-  }
-
-  if (!kHeadersListNode) {
-    kHeadersListNode = Object.getOwnPropertySymbols(headers).find(
-      (symbol) => symbol.description === 'headers list'
-    )
-
-    assert(kHeadersListNode, 'Headers cannot be parsed')
-  }
-
-  const headersList = headers[kHeadersListNode]
-  assert(headersList)
-
-  return headersList
-}
-
 module.exports = {
   isCTLExcludingHtab,
-  stringify,
-  getHeadersList
+  validateCookieName,
+  validateCookiePath,
+  validateCookieValue,
+  toIMFDate,
+  stringify
 }
 
 
@@ -27751,6 +27732,7 @@ const {
   isValidHeaderName,
   isValidHeaderValue
 } = __nccwpck_require__(5523)
+const util = __nccwpck_require__(9023)
 const { webidl } = __nccwpck_require__(4222)
 const assert = __nccwpck_require__(2613)
 
@@ -28304,6 +28286,9 @@ Object.defineProperties(Headers.prototype, {
   [Symbol.toStringTag]: {
     value: 'Headers',
     configurable: true
+  },
+  [util.inspect.custom]: {
+    enumerable: false
   }
 })
 
@@ -37451,6 +37436,20 @@ class Pool extends PoolBase {
       ? { ...options.interceptors }
       : undefined
     this[kFactory] = factory
+
+    this.on('connectionError', (origin, targets, error) => {
+      // If a connection error occurs, we remove the client from the pool,
+      // and emit a connectionError event. They will not be re-used.
+      // Fixes https://github.com/nodejs/undici/issues/3895
+      for (const target of targets) {
+        // Do not use kRemoveClient here, as it will close the client,
+        // but the client cannot be closed in this state.
+        const idx = this[kClients].indexOf(target)
+        if (idx !== -1) {
+          this[kClients].splice(idx, 1)
+        }
+      }
+    })
   }
 
   [kGetDispatcher] () {
@@ -45376,8 +45375,10 @@ var paginatingEndpoints = (/* unused pure expression or super */ null && ([
   "GET /notifications",
   "GET /organizations",
   "GET /orgs/{org}/actions/cache/usage-by-repository",
+  "GET /orgs/{org}/actions/hosted-runners",
   "GET /orgs/{org}/actions/permissions/repositories",
   "GET /orgs/{org}/actions/runner-groups",
+  "GET /orgs/{org}/actions/runner-groups/{runner_group_id}/hosted-runners",
   "GET /orgs/{org}/actions/runner-groups/{runner_group_id}/repositories",
   "GET /orgs/{org}/actions/runner-groups/{runner_group_id}/runners",
   "GET /orgs/{org}/actions/runners",
@@ -45430,8 +45431,10 @@ var paginatingEndpoints = (/* unused pure expression or super */ null && ([
   "GET /orgs/{org}/repos",
   "GET /orgs/{org}/rulesets",
   "GET /orgs/{org}/rulesets/rule-suites",
+  "GET /orgs/{org}/rulesets/{ruleset_id}/history",
   "GET /orgs/{org}/secret-scanning/alerts",
   "GET /orgs/{org}/security-advisories",
+  "GET /orgs/{org}/settings/network-configurations",
   "GET /orgs/{org}/team/{team_slug}/copilot/metrics",
   "GET /orgs/{org}/team/{team_slug}/copilot/usage",
   "GET /orgs/{org}/teams",
@@ -45528,6 +45531,7 @@ var paginatingEndpoints = (/* unused pure expression or super */ null && ([
   "GET /repos/{owner}/{repo}/rules/branches/{branch}",
   "GET /repos/{owner}/{repo}/rulesets",
   "GET /repos/{owner}/{repo}/rulesets/rule-suites",
+  "GET /repos/{owner}/{repo}/rulesets/{ruleset_id}/history",
   "GET /repos/{owner}/{repo}/secret-scanning/alerts",
   "GET /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}/locations",
   "GET /repos/{owner}/{repo}/security-advisories",
@@ -45623,7 +45627,7 @@ paginateRest.VERSION = plugin_paginate_rest_dist_bundle_VERSION;
 
 
 ;// CONCATENATED MODULE: ./node_modules/@octokit/rest/node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/version.js
-const plugin_rest_endpoint_methods_dist_src_version_VERSION = "13.3.1";
+const plugin_rest_endpoint_methods_dist_src_version_VERSION = "13.5.0";
 
 //# sourceMappingURL=version.js.map
 
@@ -45654,6 +45658,7 @@ const Endpoints = {
     createEnvironmentVariable: [
       "POST /repos/{owner}/{repo}/environments/{environment_name}/variables"
     ],
+    createHostedRunnerForOrg: ["POST /orgs/{org}/actions/hosted-runners"],
     createOrUpdateEnvironmentSecret: [
       "PUT /repos/{owner}/{repo}/environments/{environment_name}/secrets/{secret_name}"
     ],
@@ -45690,6 +45695,9 @@ const Endpoints = {
     ],
     deleteEnvironmentVariable: [
       "DELETE /repos/{owner}/{repo}/environments/{environment_name}/variables/{name}"
+    ],
+    deleteHostedRunnerForOrg: [
+      "DELETE /orgs/{org}/actions/hosted-runners/{hosted_runner_id}"
     ],
     deleteOrgSecret: ["DELETE /orgs/{org}/actions/secrets/{secret_name}"],
     deleteOrgVariable: ["DELETE /orgs/{org}/actions/variables/{name}"],
@@ -45779,6 +45787,24 @@ const Endpoints = {
     getGithubActionsPermissionsRepository: [
       "GET /repos/{owner}/{repo}/actions/permissions"
     ],
+    getHostedRunnerForOrg: [
+      "GET /orgs/{org}/actions/hosted-runners/{hosted_runner_id}"
+    ],
+    getHostedRunnersGithubOwnedImagesForOrg: [
+      "GET /orgs/{org}/actions/hosted-runners/images/github-owned"
+    ],
+    getHostedRunnersLimitsForOrg: [
+      "GET /orgs/{org}/actions/hosted-runners/limits"
+    ],
+    getHostedRunnersMachineSpecsForOrg: [
+      "GET /orgs/{org}/actions/hosted-runners/machine-sizes"
+    ],
+    getHostedRunnersPartnerImagesForOrg: [
+      "GET /orgs/{org}/actions/hosted-runners/images/partner"
+    ],
+    getHostedRunnersPlatformsForOrg: [
+      "GET /orgs/{org}/actions/hosted-runners/platforms"
+    ],
     getJobForWorkflowRun: ["GET /repos/{owner}/{repo}/actions/jobs/{job_id}"],
     getOrgPublicKey: ["GET /orgs/{org}/actions/secrets/public-key"],
     getOrgSecret: ["GET /orgs/{org}/actions/secrets/{secret_name}"],
@@ -45822,6 +45848,10 @@ const Endpoints = {
     listEnvironmentVariables: [
       "GET /repos/{owner}/{repo}/environments/{environment_name}/variables"
     ],
+    listGithubHostedRunnersInGroupForOrg: [
+      "GET /orgs/{org}/actions/runner-groups/{runner_group_id}/hosted-runners"
+    ],
+    listHostedRunnersForOrg: ["GET /orgs/{org}/actions/hosted-runners"],
     listJobsForWorkflowRun: [
       "GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs"
     ],
@@ -45939,6 +45969,9 @@ const Endpoints = {
     ],
     updateEnvironmentVariable: [
       "PATCH /repos/{owner}/{repo}/environments/{environment_name}/variables/{name}"
+    ],
+    updateHostedRunnerForOrg: [
+      "PATCH /orgs/{org}/actions/hosted-runners/{hosted_runner_id}"
     ],
     updateOrgVariable: ["PATCH /orgs/{org}/actions/variables/{name}"],
     updateRepoVariable: [
@@ -46457,6 +46490,26 @@ const Endpoints = {
     getAllTemplates: ["GET /gitignore/templates"],
     getTemplate: ["GET /gitignore/templates/{name}"]
   },
+  hostedCompute: {
+    createNetworkConfigurationForOrg: [
+      "POST /orgs/{org}/settings/network-configurations"
+    ],
+    deleteNetworkConfigurationFromOrg: [
+      "DELETE /orgs/{org}/settings/network-configurations/{network_configuration_id}"
+    ],
+    getNetworkConfigurationForOrg: [
+      "GET /orgs/{org}/settings/network-configurations/{network_configuration_id}"
+    ],
+    getNetworkSettingsForOrg: [
+      "GET /orgs/{org}/settings/network-settings/{network_settings_id}"
+    ],
+    listNetworkConfigurationsForOrg: [
+      "GET /orgs/{org}/settings/network-configurations"
+    ],
+    updateNetworkConfigurationForOrg: [
+      "PATCH /orgs/{org}/settings/network-configurations/{network_configuration_id}"
+    ]
+  },
   interactions: {
     getRestrictionsForAuthenticatedUser: ["GET /user/interaction-limits"],
     getRestrictionsForOrg: ["GET /orgs/{org}/interaction-limits"],
@@ -46648,6 +46701,7 @@ const Endpoints = {
       "PUT /orgs/{org}/outside_collaborators/{username}"
     ],
     createInvitation: ["POST /orgs/{org}/invitations"],
+    createIssueType: ["POST /orgs/{org}/issue-types"],
     createOrUpdateCustomProperties: ["PATCH /orgs/{org}/properties/schema"],
     createOrUpdateCustomPropertiesValuesForRepos: [
       "PATCH /orgs/{org}/properties/values"
@@ -46657,6 +46711,7 @@ const Endpoints = {
     ],
     createWebhook: ["POST /orgs/{org}/hooks"],
     delete: ["DELETE /orgs/{org}"],
+    deleteIssueType: ["DELETE /orgs/{org}/issue-types/{issue_type_id}"],
     deleteWebhook: ["DELETE /orgs/{org}/hooks/{hook_id}"],
     enableOrDisableSecurityProductOnAllOrgRepos: [
       "POST /orgs/{org}/{security_product}/{enablement}",
@@ -46673,6 +46728,10 @@ const Endpoints = {
     getMembershipForAuthenticatedUser: ["GET /user/memberships/orgs/{org}"],
     getMembershipForUser: ["GET /orgs/{org}/memberships/{username}"],
     getOrgRole: ["GET /orgs/{org}/organization-roles/{role_id}"],
+    getOrgRulesetHistory: ["GET /orgs/{org}/rulesets/{ruleset_id}/history"],
+    getOrgRulesetVersion: [
+      "GET /orgs/{org}/rulesets/{ruleset_id}/history/{version_id}"
+    ],
     getWebhook: ["GET /orgs/{org}/hooks/{hook_id}"],
     getWebhookConfigForOrg: ["GET /orgs/{org}/hooks/{hook_id}/config"],
     getWebhookDelivery: [
@@ -46687,6 +46746,7 @@ const Endpoints = {
     listForAuthenticatedUser: ["GET /user/orgs"],
     listForUser: ["GET /users/{username}/orgs"],
     listInvitationTeams: ["GET /orgs/{org}/invitations/{invitation_id}/teams"],
+    listIssueTypes: ["GET /orgs/{org}/issue-types"],
     listMembers: ["GET /orgs/{org}/members"],
     listMembershipsForAuthenticatedUser: ["GET /user/memberships/orgs"],
     listOrgRoleTeams: ["GET /orgs/{org}/organization-roles/{role_id}/teams"],
@@ -46761,6 +46821,7 @@ const Endpoints = {
     ],
     unblockUser: ["DELETE /orgs/{org}/blocks/{username}"],
     update: ["PATCH /orgs/{org}"],
+    updateIssueType: ["PUT /orgs/{org}/issue-types/{issue_type_id}"],
     updateMembershipForAuthenticatedUser: [
       "PATCH /user/memberships/orgs/{org}"
     ],
@@ -46874,35 +46935,181 @@ const Endpoints = {
     ]
   },
   projects: {
-    addCollaborator: ["PUT /projects/{project_id}/collaborators/{username}"],
-    createCard: ["POST /projects/columns/{column_id}/cards"],
-    createColumn: ["POST /projects/{project_id}/columns"],
-    createForAuthenticatedUser: ["POST /user/projects"],
-    createForOrg: ["POST /orgs/{org}/projects"],
-    createForRepo: ["POST /repos/{owner}/{repo}/projects"],
-    delete: ["DELETE /projects/{project_id}"],
-    deleteCard: ["DELETE /projects/columns/cards/{card_id}"],
-    deleteColumn: ["DELETE /projects/columns/{column_id}"],
-    get: ["GET /projects/{project_id}"],
-    getCard: ["GET /projects/columns/cards/{card_id}"],
-    getColumn: ["GET /projects/columns/{column_id}"],
+    addCollaborator: [
+      "PUT /projects/{project_id}/collaborators/{username}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.addCollaborator() is deprecated, see https://docs.github.com/rest/projects/collaborators#add-project-collaborator"
+      }
+    ],
+    createCard: [
+      "POST /projects/columns/{column_id}/cards",
+      {},
+      {
+        deprecated: "octokit.rest.projects.createCard() is deprecated, see https://docs.github.com/rest/projects/cards#create-a-project-card"
+      }
+    ],
+    createColumn: [
+      "POST /projects/{project_id}/columns",
+      {},
+      {
+        deprecated: "octokit.rest.projects.createColumn() is deprecated, see https://docs.github.com/rest/projects/columns#create-a-project-column"
+      }
+    ],
+    createForAuthenticatedUser: [
+      "POST /user/projects",
+      {},
+      {
+        deprecated: "octokit.rest.projects.createForAuthenticatedUser() is deprecated, see https://docs.github.com/rest/projects/projects#create-a-user-project"
+      }
+    ],
+    createForOrg: [
+      "POST /orgs/{org}/projects",
+      {},
+      {
+        deprecated: "octokit.rest.projects.createForOrg() is deprecated, see https://docs.github.com/rest/projects/projects#create-an-organization-project"
+      }
+    ],
+    createForRepo: [
+      "POST /repos/{owner}/{repo}/projects",
+      {},
+      {
+        deprecated: "octokit.rest.projects.createForRepo() is deprecated, see https://docs.github.com/rest/projects/projects#create-a-repository-project"
+      }
+    ],
+    delete: [
+      "DELETE /projects/{project_id}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.delete() is deprecated, see https://docs.github.com/rest/projects/projects#delete-a-project"
+      }
+    ],
+    deleteCard: [
+      "DELETE /projects/columns/cards/{card_id}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.deleteCard() is deprecated, see https://docs.github.com/rest/projects/cards#delete-a-project-card"
+      }
+    ],
+    deleteColumn: [
+      "DELETE /projects/columns/{column_id}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.deleteColumn() is deprecated, see https://docs.github.com/rest/projects/columns#delete-a-project-column"
+      }
+    ],
+    get: [
+      "GET /projects/{project_id}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.get() is deprecated, see https://docs.github.com/rest/projects/projects#get-a-project"
+      }
+    ],
+    getCard: [
+      "GET /projects/columns/cards/{card_id}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.getCard() is deprecated, see https://docs.github.com/rest/projects/cards#get-a-project-card"
+      }
+    ],
+    getColumn: [
+      "GET /projects/columns/{column_id}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.getColumn() is deprecated, see https://docs.github.com/rest/projects/columns#get-a-project-column"
+      }
+    ],
     getPermissionForUser: [
-      "GET /projects/{project_id}/collaborators/{username}/permission"
+      "GET /projects/{project_id}/collaborators/{username}/permission",
+      {},
+      {
+        deprecated: "octokit.rest.projects.getPermissionForUser() is deprecated, see https://docs.github.com/rest/projects/collaborators#get-project-permission-for-a-user"
+      }
     ],
-    listCards: ["GET /projects/columns/{column_id}/cards"],
-    listCollaborators: ["GET /projects/{project_id}/collaborators"],
-    listColumns: ["GET /projects/{project_id}/columns"],
-    listForOrg: ["GET /orgs/{org}/projects"],
-    listForRepo: ["GET /repos/{owner}/{repo}/projects"],
-    listForUser: ["GET /users/{username}/projects"],
-    moveCard: ["POST /projects/columns/cards/{card_id}/moves"],
-    moveColumn: ["POST /projects/columns/{column_id}/moves"],
+    listCards: [
+      "GET /projects/columns/{column_id}/cards",
+      {},
+      {
+        deprecated: "octokit.rest.projects.listCards() is deprecated, see https://docs.github.com/rest/projects/cards#list-project-cards"
+      }
+    ],
+    listCollaborators: [
+      "GET /projects/{project_id}/collaborators",
+      {},
+      {
+        deprecated: "octokit.rest.projects.listCollaborators() is deprecated, see https://docs.github.com/rest/projects/collaborators#list-project-collaborators"
+      }
+    ],
+    listColumns: [
+      "GET /projects/{project_id}/columns",
+      {},
+      {
+        deprecated: "octokit.rest.projects.listColumns() is deprecated, see https://docs.github.com/rest/projects/columns#list-project-columns"
+      }
+    ],
+    listForOrg: [
+      "GET /orgs/{org}/projects",
+      {},
+      {
+        deprecated: "octokit.rest.projects.listForOrg() is deprecated, see https://docs.github.com/rest/projects/projects#list-organization-projects"
+      }
+    ],
+    listForRepo: [
+      "GET /repos/{owner}/{repo}/projects",
+      {},
+      {
+        deprecated: "octokit.rest.projects.listForRepo() is deprecated, see https://docs.github.com/rest/projects/projects#list-repository-projects"
+      }
+    ],
+    listForUser: [
+      "GET /users/{username}/projects",
+      {},
+      {
+        deprecated: "octokit.rest.projects.listForUser() is deprecated, see https://docs.github.com/rest/projects/projects#list-user-projects"
+      }
+    ],
+    moveCard: [
+      "POST /projects/columns/cards/{card_id}/moves",
+      {},
+      {
+        deprecated: "octokit.rest.projects.moveCard() is deprecated, see https://docs.github.com/rest/projects/cards#move-a-project-card"
+      }
+    ],
+    moveColumn: [
+      "POST /projects/columns/{column_id}/moves",
+      {},
+      {
+        deprecated: "octokit.rest.projects.moveColumn() is deprecated, see https://docs.github.com/rest/projects/columns#move-a-project-column"
+      }
+    ],
     removeCollaborator: [
-      "DELETE /projects/{project_id}/collaborators/{username}"
+      "DELETE /projects/{project_id}/collaborators/{username}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.removeCollaborator() is deprecated, see https://docs.github.com/rest/projects/collaborators#remove-user-as-a-collaborator"
+      }
     ],
-    update: ["PATCH /projects/{project_id}"],
-    updateCard: ["PATCH /projects/columns/cards/{card_id}"],
-    updateColumn: ["PATCH /projects/columns/{column_id}"]
+    update: [
+      "PATCH /projects/{project_id}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.update() is deprecated, see https://docs.github.com/rest/projects/projects#update-a-project"
+      }
+    ],
+    updateCard: [
+      "PATCH /projects/columns/cards/{card_id}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.updateCard() is deprecated, see https://docs.github.com/rest/projects/cards#update-an-existing-project-card"
+      }
+    ],
+    updateColumn: [
+      "PATCH /projects/columns/{column_id}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.updateColumn() is deprecated, see https://docs.github.com/rest/projects/columns#update-an-existing-project-column"
+      }
+    ]
   },
   pulls: {
     checkIfMerged: ["GET /repos/{owner}/{repo}/pulls/{pull_number}/merge"],
@@ -47275,6 +47482,12 @@ const Endpoints = {
     ],
     getRepoRuleSuites: ["GET /repos/{owner}/{repo}/rulesets/rule-suites"],
     getRepoRuleset: ["GET /repos/{owner}/{repo}/rulesets/{ruleset_id}"],
+    getRepoRulesetHistory: [
+      "GET /repos/{owner}/{repo}/rulesets/{ruleset_id}/history"
+    ],
+    getRepoRulesetVersion: [
+      "GET /repos/{owner}/{repo}/rulesets/{ruleset_id}/history/{version_id}"
+    ],
     getRepoRulesets: ["GET /repos/{owner}/{repo}/rulesets"],
     getStatusChecksProtection: [
       "GET /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks"
@@ -47448,7 +47661,13 @@ const Endpoints = {
   search: {
     code: ["GET /search/code"],
     commits: ["GET /search/commits"],
-    issuesAndPullRequests: ["GET /search/issues"],
+    issuesAndPullRequests: [
+      "GET /search/issues",
+      {},
+      {
+        deprecated: "octokit.rest.search.issuesAndPullRequests() is deprecated, see https://docs.github.com/rest/search/search#search-issues-and-pull-requests"
+      }
+    ],
     labels: ["GET /search/labels"],
     repos: ["GET /search/repositories"],
     topics: ["GET /search/topics"],
@@ -47503,13 +47722,35 @@ const Endpoints = {
       "PUT /orgs/{org}/teams/{team_slug}/memberships/{username}"
     ],
     addOrUpdateProjectPermissionsInOrg: [
-      "PUT /orgs/{org}/teams/{team_slug}/projects/{project_id}"
+      "PUT /orgs/{org}/teams/{team_slug}/projects/{project_id}",
+      {},
+      {
+        deprecated: "octokit.rest.teams.addOrUpdateProjectPermissionsInOrg() is deprecated, see https://docs.github.com/rest/teams/teams#add-or-update-team-project-permissions"
+      }
+    ],
+    addOrUpdateProjectPermissionsLegacy: [
+      "PUT /teams/{team_id}/projects/{project_id}",
+      {},
+      {
+        deprecated: "octokit.rest.teams.addOrUpdateProjectPermissionsLegacy() is deprecated, see https://docs.github.com/rest/teams/teams#add-or-update-team-project-permissions-legacy"
+      }
     ],
     addOrUpdateRepoPermissionsInOrg: [
       "PUT /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
     ],
     checkPermissionsForProjectInOrg: [
-      "GET /orgs/{org}/teams/{team_slug}/projects/{project_id}"
+      "GET /orgs/{org}/teams/{team_slug}/projects/{project_id}",
+      {},
+      {
+        deprecated: "octokit.rest.teams.checkPermissionsForProjectInOrg() is deprecated, see https://docs.github.com/rest/teams/teams#check-team-permissions-for-a-project"
+      }
+    ],
+    checkPermissionsForProjectLegacy: [
+      "GET /teams/{team_id}/projects/{project_id}",
+      {},
+      {
+        deprecated: "octokit.rest.teams.checkPermissionsForProjectLegacy() is deprecated, see https://docs.github.com/rest/teams/teams#check-team-permissions-for-a-project-legacy"
+      }
     ],
     checkPermissionsForRepoInOrg: [
       "GET /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
@@ -47547,13 +47788,37 @@ const Endpoints = {
     listPendingInvitationsInOrg: [
       "GET /orgs/{org}/teams/{team_slug}/invitations"
     ],
-    listProjectsInOrg: ["GET /orgs/{org}/teams/{team_slug}/projects"],
+    listProjectsInOrg: [
+      "GET /orgs/{org}/teams/{team_slug}/projects",
+      {},
+      {
+        deprecated: "octokit.rest.teams.listProjectsInOrg() is deprecated, see https://docs.github.com/rest/teams/teams#list-team-projects"
+      }
+    ],
+    listProjectsLegacy: [
+      "GET /teams/{team_id}/projects",
+      {},
+      {
+        deprecated: "octokit.rest.teams.listProjectsLegacy() is deprecated, see https://docs.github.com/rest/teams/teams#list-team-projects-legacy"
+      }
+    ],
     listReposInOrg: ["GET /orgs/{org}/teams/{team_slug}/repos"],
     removeMembershipForUserInOrg: [
       "DELETE /orgs/{org}/teams/{team_slug}/memberships/{username}"
     ],
     removeProjectInOrg: [
-      "DELETE /orgs/{org}/teams/{team_slug}/projects/{project_id}"
+      "DELETE /orgs/{org}/teams/{team_slug}/projects/{project_id}",
+      {},
+      {
+        deprecated: "octokit.rest.teams.removeProjectInOrg() is deprecated, see https://docs.github.com/rest/teams/teams#remove-a-project-from-a-team"
+      }
+    ],
+    removeProjectLegacy: [
+      "DELETE /teams/{team_id}/projects/{project_id}",
+      {},
+      {
+        deprecated: "octokit.rest.teams.removeProjectLegacy() is deprecated, see https://docs.github.com/rest/teams/teams#remove-a-project-from-a-team-legacy"
+      }
     ],
     removeRepoInOrg: [
       "DELETE /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
@@ -48080,7 +48345,7 @@ class GithubRepository extends BaseRepository {
             const refs = result.repository.refs;
             hasNextPage = refs.pageInfo.hasNextPage && tagsInfo.length < maxTagsToFetch;
             cursor = refs.pageInfo.endCursor;
-            // eslint-disable-next-line github/array-foreach, @typescript-eslint/no-explicit-any
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             refs.edges.forEach((edge) => {
                 if (tagsInfo.length < maxTagsToFetch) {
                     tagsInfo.push({
