@@ -248,7 +248,7 @@ export class GithubRepository extends BaseRepository {
       hasNextPage = refs.pageInfo.hasNextPage && tagsInfo.length < maxTagsToFetch
       cursor = refs.pageInfo.endCursor
 
-      // eslint-disable-next-line github/array-foreach, @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       refs.edges.forEach((edge: any) => {
         if (tagsInfo.length < maxTagsToFetch) {
           tagsInfo.push({

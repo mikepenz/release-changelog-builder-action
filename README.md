@@ -169,6 +169,7 @@ jobs:
               "label_extractor": [
                 {
                   "pattern": "^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\\([\\w\\-\\.]+\\))?(!)?: ([\\w ])+([\\s\\S]*)",
+                  "on_property": "title",
                   "target": "$1"
                 }
               ]
@@ -835,7 +836,7 @@ For Classic tokens you only have to create the token without special permissions
 
 All patches and changes applied to the original source are licensed under the Apache 2.0 license.
 
-    Copyright 2024 Mike Penz
+    Copyright 2025 Mike Penz
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
