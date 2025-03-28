@@ -169,6 +169,7 @@ jobs:
               "label_extractor": [
                 {
                   "pattern": "^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\\([\\w\\-\\.]+\\))?(!)?: ([\\w ])+([\\s\\S]*)",
+                  "on_property": "title",
                   "target": "$1"
                 }
               ]
