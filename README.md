@@ -705,7 +705,6 @@ The API for gitea is equal to the one from GitHub, however it requires the `plat
   with:
     platform: "gitea" # gitea or GitHub, default is GitHub
     configuration: "configuration.json"
-  env:
     token: ${{ secrets.GITEA_TOKEN }}
 ```
 
