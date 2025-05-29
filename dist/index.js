@@ -1871,6 +1871,7 @@ class Context {
         this.action = process.env.GITHUB_ACTION;
         this.actor = process.env.GITHUB_ACTOR;
         this.job = process.env.GITHUB_JOB;
+        this.runAttempt = parseInt(process.env.GITHUB_RUN_ATTEMPT, 10);
         this.runNumber = parseInt(process.env.GITHUB_RUN_NUMBER, 10);
         this.runId = parseInt(process.env.GITHUB_RUN_ID, 10);
         this.apiUrl = (_a = process.env.GITHUB_API_URL) !== null && _a !== void 0 ? _a : `https://api.github.com`;
@@ -7778,7 +7779,7 @@ function save(namespaces) {
 function load() {
 	let r;
 	try {
-		r = exports.storage.getItem('debug');
+		r = exports.storage.getItem('debug') || exports.storage.getItem('DEBUG') ;
 	} catch (error) {
 		// Swallow
 		// XXX (@Qix-) should we be logging these?
@@ -8006,7 +8007,7 @@ function setup(env) {
 
 		const split = (typeof namespaces === 'string' ? namespaces : '')
 			.trim()
-			.replace(' ', ',')
+			.replace(/\s+/g, ',')
 			.split(',')
 			.filter(Boolean);
 
@@ -14670,6 +14671,8 @@ function onceStrict (fn) {
 /***/ 9379:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+
+
 const ANY = Symbol('SemVer ANY')
 // hoisted class for cyclic dependency
 class Comparator {
@@ -14817,6 +14820,8 @@ const Range = __nccwpck_require__(6782)
 
 /***/ 6782:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
 
 const SPACE_CHARACTERS = /\s+/g
 
@@ -15379,9 +15384,11 @@ const testSet = (set, version, options) => {
 /***/ 7163:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+
+
 const debug = __nccwpck_require__(1159)
 const { MAX_LENGTH, MAX_SAFE_INTEGER } = __nccwpck_require__(5101)
-const { safeRe: re, safeSrc: src, t } = __nccwpck_require__(5471)
+const { safeRe: re, t } = __nccwpck_require__(5471)
 
 const parseOptions = __nccwpck_require__(356)
 const { compareIdentifiers } = __nccwpck_require__(3348)
@@ -15563,8 +15570,7 @@ class SemVer {
       }
       // Avoid an invalid semver results
       if (identifier) {
-        const r = new RegExp(`^${this.options.loose ? src[t.PRERELEASELOOSE] : src[t.PRERELEASE]}$`)
-        const match = `-${identifier}`.match(r)
+        const match = `-${identifier}`.match(this.options.loose ? re[t.PRERELEASELOOSE] : re[t.PRERELEASE])
         if (!match || match[1] !== identifier) {
           throw new Error(`invalid identifier: ${identifier}`)
         }
@@ -15704,6 +15710,8 @@ module.exports = SemVer
 /***/ 1799:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+
+
 const parse = __nccwpck_require__(6353)
 const clean = (version, options) => {
   const s = parse(version.trim().replace(/^[=v]+/, ''), options)
@@ -15716,6 +15724,8 @@ module.exports = clean
 
 /***/ 8646:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
 
 const eq = __nccwpck_require__(5082)
 const neq = __nccwpck_require__(4974)
@@ -15775,6 +15785,8 @@ module.exports = cmp
 
 /***/ 5385:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
 
 const SemVer = __nccwpck_require__(7163)
 const parse = __nccwpck_require__(6353)
@@ -15843,6 +15855,8 @@ module.exports = coerce
 /***/ 7648:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+
+
 const SemVer = __nccwpck_require__(7163)
 const compareBuild = (a, b, loose) => {
   const versionA = new SemVer(a, loose)
@@ -15857,6 +15871,8 @@ module.exports = compareBuild
 /***/ 6874:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+
+
 const compare = __nccwpck_require__(8469)
 const compareLoose = (a, b) => compare(a, b, true)
 module.exports = compareLoose
@@ -15866,6 +15882,8 @@ module.exports = compareLoose
 
 /***/ 8469:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
 
 const SemVer = __nccwpck_require__(7163)
 const compare = (a, b, loose) =>
@@ -15878,6 +15896,8 @@ module.exports = compare
 
 /***/ 711:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
 
 const parse = __nccwpck_require__(6353)
 
@@ -15944,6 +15964,8 @@ module.exports = diff
 /***/ 5082:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+
+
 const compare = __nccwpck_require__(8469)
 const eq = (a, b, loose) => compare(a, b, loose) === 0
 module.exports = eq
@@ -15953,6 +15975,8 @@ module.exports = eq
 
 /***/ 6599:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
 
 const compare = __nccwpck_require__(8469)
 const gt = (a, b, loose) => compare(a, b, loose) > 0
@@ -15964,6 +15988,8 @@ module.exports = gt
 /***/ 1236:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+
+
 const compare = __nccwpck_require__(8469)
 const gte = (a, b, loose) => compare(a, b, loose) >= 0
 module.exports = gte
@@ -15973,6 +15999,8 @@ module.exports = gte
 
 /***/ 2338:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
 
 const SemVer = __nccwpck_require__(7163)
 
@@ -16000,6 +16028,8 @@ module.exports = inc
 /***/ 3872:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+
+
 const compare = __nccwpck_require__(8469)
 const lt = (a, b, loose) => compare(a, b, loose) < 0
 module.exports = lt
@@ -16009,6 +16039,8 @@ module.exports = lt
 
 /***/ 6717:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
 
 const compare = __nccwpck_require__(8469)
 const lte = (a, b, loose) => compare(a, b, loose) <= 0
@@ -16020,6 +16052,8 @@ module.exports = lte
 /***/ 8511:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+
+
 const SemVer = __nccwpck_require__(7163)
 const major = (a, loose) => new SemVer(a, loose).major
 module.exports = major
@@ -16029,6 +16063,8 @@ module.exports = major
 
 /***/ 2603:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
 
 const SemVer = __nccwpck_require__(7163)
 const minor = (a, loose) => new SemVer(a, loose).minor
@@ -16040,6 +16076,8 @@ module.exports = minor
 /***/ 4974:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+
+
 const compare = __nccwpck_require__(8469)
 const neq = (a, b, loose) => compare(a, b, loose) !== 0
 module.exports = neq
@@ -16049,6 +16087,8 @@ module.exports = neq
 
 /***/ 6353:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
 
 const SemVer = __nccwpck_require__(7163)
 const parse = (version, options, throwErrors = false) => {
@@ -16073,6 +16113,8 @@ module.exports = parse
 /***/ 8756:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+
+
 const SemVer = __nccwpck_require__(7163)
 const patch = (a, loose) => new SemVer(a, loose).patch
 module.exports = patch
@@ -16082,6 +16124,8 @@ module.exports = patch
 
 /***/ 5714:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
 
 const parse = __nccwpck_require__(6353)
 const prerelease = (version, options) => {
@@ -16096,6 +16140,8 @@ module.exports = prerelease
 /***/ 2173:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+
+
 const compare = __nccwpck_require__(8469)
 const rcompare = (a, b, loose) => compare(b, a, loose)
 module.exports = rcompare
@@ -16106,6 +16152,8 @@ module.exports = rcompare
 /***/ 7192:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+
+
 const compareBuild = __nccwpck_require__(7648)
 const rsort = (list, loose) => list.sort((a, b) => compareBuild(b, a, loose))
 module.exports = rsort
@@ -16115,6 +16163,8 @@ module.exports = rsort
 
 /***/ 8011:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
 
 const Range = __nccwpck_require__(6782)
 const satisfies = (version, range, options) => {
@@ -16133,6 +16183,8 @@ module.exports = satisfies
 /***/ 9872:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+
+
 const compareBuild = __nccwpck_require__(7648)
 const sort = (list, loose) => list.sort((a, b) => compareBuild(a, b, loose))
 module.exports = sort
@@ -16142,6 +16194,8 @@ module.exports = sort
 
 /***/ 8780:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
 
 const parse = __nccwpck_require__(6353)
 const valid = (version, options) => {
@@ -16155,6 +16209,8 @@ module.exports = valid
 
 /***/ 2088:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
 
 // just pre-load all the stuff that index.js lazily exports
 const internalRe = __nccwpck_require__(5471)
@@ -16252,6 +16308,8 @@ module.exports = {
 /***/ 5101:
 /***/ ((module) => {
 
+
+
 // Note: this is the semver.org version of the spec that it implements
 // Not necessarily the package version of this code.
 const SEMVER_SPEC_VERSION = '2.0.0'
@@ -16294,6 +16352,8 @@ module.exports = {
 /***/ 1159:
 /***/ ((module) => {
 
+
+
 const debug = (
   typeof process === 'object' &&
   process.env &&
@@ -16309,6 +16369,8 @@ module.exports = debug
 
 /***/ 3348:
 /***/ ((module) => {
+
+
 
 const numeric = /^[0-9]+$/
 const compareIdentifiers = (a, b) => {
@@ -16339,6 +16401,8 @@ module.exports = {
 
 /***/ 1383:
 /***/ ((module) => {
+
+
 
 class LRUCache {
   constructor () {
@@ -16387,6 +16451,8 @@ module.exports = LRUCache
 /***/ 356:
 /***/ ((module) => {
 
+
+
 // parse out just the options we care about
 const looseOption = Object.freeze({ loose: true })
 const emptyOpts = Object.freeze({ })
@@ -16408,6 +16474,8 @@ module.exports = parseOptions
 
 /***/ 5471:
 /***/ ((module, exports, __nccwpck_require__) => {
+
+
 
 const {
   MAX_SAFE_COMPONENT_LENGTH,
@@ -16487,12 +16555,14 @@ createToken('MAINVERSIONLOOSE', `(${src[t.NUMERICIDENTIFIERLOOSE]})\\.` +
 
 // ## Pre-release Version Identifier
 // A numeric identifier, or a non-numeric identifier.
+// Non-numberic identifiers include numberic identifiers but can be longer.
+// Therefore non-numberic identifiers must go first.
 
-createToken('PRERELEASEIDENTIFIER', `(?:${src[t.NUMERICIDENTIFIER]
-}|${src[t.NONNUMERICIDENTIFIER]})`)
+createToken('PRERELEASEIDENTIFIER', `(?:${src[t.NONNUMERICIDENTIFIER]
+}|${src[t.NUMERICIDENTIFIER]})`)
 
-createToken('PRERELEASEIDENTIFIERLOOSE', `(?:${src[t.NUMERICIDENTIFIERLOOSE]
-}|${src[t.NONNUMERICIDENTIFIER]})`)
+createToken('PRERELEASEIDENTIFIERLOOSE', `(?:${src[t.NONNUMERICIDENTIFIER]
+}|${src[t.NUMERICIDENTIFIERLOOSE]})`)
 
 // ## Pre-release Version
 // Hyphen, followed by one or more dot-separated pre-release version
@@ -16635,6 +16705,8 @@ createToken('GTE0PRE', '^\\s*>=\\s*0\\.0\\.0-0\\s*$')
 /***/ 2276:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+
+
 // Determine if version is greater than all the versions possible in the range.
 const outside = __nccwpck_require__(280)
 const gtr = (version, range, options) => outside(version, range, '>', options)
@@ -16645,6 +16717,8 @@ module.exports = gtr
 
 /***/ 3465:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
 
 const Range = __nccwpck_require__(6782)
 const intersects = (r1, r2, options) => {
@@ -16660,6 +16734,8 @@ module.exports = intersects
 /***/ 5213:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+
+
 const outside = __nccwpck_require__(280)
 // Determine if version is less than all the versions possible in the range
 const ltr = (version, range, options) => outside(version, range, '<', options)
@@ -16670,6 +16746,8 @@ module.exports = ltr
 
 /***/ 5574:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
 
 const SemVer = __nccwpck_require__(7163)
 const Range = __nccwpck_require__(6782)
@@ -16703,6 +16781,8 @@ module.exports = maxSatisfying
 /***/ 8595:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+
+
 const SemVer = __nccwpck_require__(7163)
 const Range = __nccwpck_require__(6782)
 const minSatisfying = (versions, range, options) => {
@@ -16733,6 +16813,8 @@ module.exports = minSatisfying
 
 /***/ 1866:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
 
 const SemVer = __nccwpck_require__(7163)
 const Range = __nccwpck_require__(6782)
@@ -16801,6 +16883,8 @@ module.exports = minVersion
 
 /***/ 280:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
 
 const SemVer = __nccwpck_require__(7163)
 const Comparator = __nccwpck_require__(9379)
@@ -16889,6 +16973,8 @@ module.exports = outside
 /***/ 2028:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+
+
 // given a set of versions and a range, create a "simplified" range
 // that includes the same versions that the original range does
 // If the original range is shorter than the simplified one, return that.
@@ -16942,6 +17028,8 @@ module.exports = (versions, range, options) => {
 
 /***/ 1489:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
 
 const Range = __nccwpck_require__(6782)
 const Comparator = __nccwpck_require__(9379)
@@ -17197,6 +17285,8 @@ module.exports = subset
 /***/ 4750:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+
+
 const Range = __nccwpck_require__(6782)
 
 // Mostly just for testing and legacy API reasons
@@ -17211,6 +17301,8 @@ module.exports = toComparators
 
 /***/ 7118:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
 
 const Range = __nccwpck_require__(6782)
 const validRange = (range, options) => {
@@ -45073,7 +45165,7 @@ var createTokenAuth = function createTokenAuth2(token) {
 
 
 ;// CONCATENATED MODULE: ./node_modules/@octokit/rest/node_modules/@octokit/core/dist-src/version.js
-const version_VERSION = "6.1.4";
+const version_VERSION = "7.0.2";
 
 
 ;// CONCATENATED MODULE: ./node_modules/@octokit/rest/node_modules/@octokit/core/dist-src/index.js
@@ -45211,7 +45303,7 @@ class Octokit {
 
 
 ;// CONCATENATED MODULE: ./node_modules/@octokit/rest/node_modules/@octokit/plugin-request-log/dist-src/version.js
-const dist_src_version_VERSION = "5.3.1";
+const dist_src_version_VERSION = "6.0.0";
 
 
 ;// CONCATENATED MODULE: ./node_modules/@octokit/rest/node_modules/@octokit/plugin-request-log/dist-src/index.js
@@ -45388,6 +45480,7 @@ var paginatingEndpoints = (/* unused pure expression or super */ null && ([
   "GET /orgs/{org}/actions/variables/{name}/repositories",
   "GET /orgs/{org}/attestations/{subject_digest}",
   "GET /orgs/{org}/blocks",
+  "GET /orgs/{org}/campaigns",
   "GET /orgs/{org}/code-scanning/alerts",
   "GET /orgs/{org}/code-security/configurations",
   "GET /orgs/{org}/code-security/configurations/{configuration_id}/repositories",
@@ -45396,7 +45489,6 @@ var paginatingEndpoints = (/* unused pure expression or super */ null && ([
   "GET /orgs/{org}/codespaces/secrets/{secret_name}/repositories",
   "GET /orgs/{org}/copilot/billing/seats",
   "GET /orgs/{org}/copilot/metrics",
-  "GET /orgs/{org}/copilot/usage",
   "GET /orgs/{org}/dependabot/alerts",
   "GET /orgs/{org}/dependabot/secrets",
   "GET /orgs/{org}/dependabot/secrets/{secret_name}/repositories",
@@ -45436,7 +45528,6 @@ var paginatingEndpoints = (/* unused pure expression or super */ null && ([
   "GET /orgs/{org}/security-advisories",
   "GET /orgs/{org}/settings/network-configurations",
   "GET /orgs/{org}/team/{team_slug}/copilot/metrics",
-  "GET /orgs/{org}/team/{team_slug}/copilot/usage",
   "GET /orgs/{org}/teams",
   "GET /orgs/{org}/teams/{team_slug}/discussions",
   "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments",
@@ -45627,7 +45718,7 @@ paginateRest.VERSION = plugin_paginate_rest_dist_bundle_VERSION;
 
 
 ;// CONCATENATED MODULE: ./node_modules/@octokit/rest/node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/version.js
-const plugin_rest_endpoint_methods_dist_src_version_VERSION = "13.5.0";
+const plugin_rest_endpoint_methods_dist_src_version_VERSION = "16.0.0";
 
 //# sourceMappingURL=version.js.map
 
@@ -46103,6 +46194,9 @@ const Endpoints = {
     getGithubBillingUsageReportOrg: [
       "GET /organizations/{org}/settings/billing/usage"
     ],
+    getGithubBillingUsageReportUser: [
+      "GET /users/{username}/settings/billing/usage"
+    ],
     getGithubPackagesBillingOrg: ["GET /orgs/{org}/settings/billing/packages"],
     getGithubPackagesBillingUser: [
       "GET /users/{username}/settings/billing/packages"
@@ -46113,6 +46207,13 @@ const Endpoints = {
     getSharedStorageBillingUser: [
       "GET /users/{username}/settings/billing/shared-storage"
     ]
+  },
+  campaigns: {
+    createCampaign: ["POST /orgs/{org}/campaigns"],
+    deleteCampaign: ["DELETE /orgs/{org}/campaigns/{campaign_number}"],
+    getCampaignSummary: ["GET /orgs/{org}/campaigns/{campaign_number}"],
+    listOrgCampaigns: ["GET /orgs/{org}/campaigns"],
+    updateCampaign: ["PATCH /orgs/{org}/campaigns/{campaign_number}"]
   },
   checks: {
     create: ["POST /repos/{owner}/{repo}/check-runs"],
@@ -46392,10 +46493,9 @@ const Endpoints = {
     getCopilotSeatDetailsForUser: [
       "GET /orgs/{org}/members/{username}/copilot"
     ],
-    listCopilotSeats: ["GET /orgs/{org}/copilot/billing/seats"],
-    usageMetricsForOrg: ["GET /orgs/{org}/copilot/usage"],
-    usageMetricsForTeam: ["GET /orgs/{org}/team/{team_slug}/copilot/usage"]
+    listCopilotSeats: ["GET /orgs/{org}/copilot/billing/seats"]
   },
+  credentials: { revoke: ["POST /credentials/revoke"] },
   dependabot: {
     addSelectedRepoToOrgSecret: [
       "PUT /orgs/{org}/dependabot/secrets/{secret_name}/repositories/{repository_id}"
@@ -46932,183 +47032,6 @@ const Endpoints = {
     listOrgPrivateRegistries: ["GET /orgs/{org}/private-registries"],
     updateOrgPrivateRegistry: [
       "PATCH /orgs/{org}/private-registries/{secret_name}"
-    ]
-  },
-  projects: {
-    addCollaborator: [
-      "PUT /projects/{project_id}/collaborators/{username}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.addCollaborator() is deprecated, see https://docs.github.com/rest/projects/collaborators#add-project-collaborator"
-      }
-    ],
-    createCard: [
-      "POST /projects/columns/{column_id}/cards",
-      {},
-      {
-        deprecated: "octokit.rest.projects.createCard() is deprecated, see https://docs.github.com/rest/projects/cards#create-a-project-card"
-      }
-    ],
-    createColumn: [
-      "POST /projects/{project_id}/columns",
-      {},
-      {
-        deprecated: "octokit.rest.projects.createColumn() is deprecated, see https://docs.github.com/rest/projects/columns#create-a-project-column"
-      }
-    ],
-    createForAuthenticatedUser: [
-      "POST /user/projects",
-      {},
-      {
-        deprecated: "octokit.rest.projects.createForAuthenticatedUser() is deprecated, see https://docs.github.com/rest/projects/projects#create-a-user-project"
-      }
-    ],
-    createForOrg: [
-      "POST /orgs/{org}/projects",
-      {},
-      {
-        deprecated: "octokit.rest.projects.createForOrg() is deprecated, see https://docs.github.com/rest/projects/projects#create-an-organization-project"
-      }
-    ],
-    createForRepo: [
-      "POST /repos/{owner}/{repo}/projects",
-      {},
-      {
-        deprecated: "octokit.rest.projects.createForRepo() is deprecated, see https://docs.github.com/rest/projects/projects#create-a-repository-project"
-      }
-    ],
-    delete: [
-      "DELETE /projects/{project_id}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.delete() is deprecated, see https://docs.github.com/rest/projects/projects#delete-a-project"
-      }
-    ],
-    deleteCard: [
-      "DELETE /projects/columns/cards/{card_id}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.deleteCard() is deprecated, see https://docs.github.com/rest/projects/cards#delete-a-project-card"
-      }
-    ],
-    deleteColumn: [
-      "DELETE /projects/columns/{column_id}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.deleteColumn() is deprecated, see https://docs.github.com/rest/projects/columns#delete-a-project-column"
-      }
-    ],
-    get: [
-      "GET /projects/{project_id}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.get() is deprecated, see https://docs.github.com/rest/projects/projects#get-a-project"
-      }
-    ],
-    getCard: [
-      "GET /projects/columns/cards/{card_id}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.getCard() is deprecated, see https://docs.github.com/rest/projects/cards#get-a-project-card"
-      }
-    ],
-    getColumn: [
-      "GET /projects/columns/{column_id}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.getColumn() is deprecated, see https://docs.github.com/rest/projects/columns#get-a-project-column"
-      }
-    ],
-    getPermissionForUser: [
-      "GET /projects/{project_id}/collaborators/{username}/permission",
-      {},
-      {
-        deprecated: "octokit.rest.projects.getPermissionForUser() is deprecated, see https://docs.github.com/rest/projects/collaborators#get-project-permission-for-a-user"
-      }
-    ],
-    listCards: [
-      "GET /projects/columns/{column_id}/cards",
-      {},
-      {
-        deprecated: "octokit.rest.projects.listCards() is deprecated, see https://docs.github.com/rest/projects/cards#list-project-cards"
-      }
-    ],
-    listCollaborators: [
-      "GET /projects/{project_id}/collaborators",
-      {},
-      {
-        deprecated: "octokit.rest.projects.listCollaborators() is deprecated, see https://docs.github.com/rest/projects/collaborators#list-project-collaborators"
-      }
-    ],
-    listColumns: [
-      "GET /projects/{project_id}/columns",
-      {},
-      {
-        deprecated: "octokit.rest.projects.listColumns() is deprecated, see https://docs.github.com/rest/projects/columns#list-project-columns"
-      }
-    ],
-    listForOrg: [
-      "GET /orgs/{org}/projects",
-      {},
-      {
-        deprecated: "octokit.rest.projects.listForOrg() is deprecated, see https://docs.github.com/rest/projects/projects#list-organization-projects"
-      }
-    ],
-    listForRepo: [
-      "GET /repos/{owner}/{repo}/projects",
-      {},
-      {
-        deprecated: "octokit.rest.projects.listForRepo() is deprecated, see https://docs.github.com/rest/projects/projects#list-repository-projects"
-      }
-    ],
-    listForUser: [
-      "GET /users/{username}/projects",
-      {},
-      {
-        deprecated: "octokit.rest.projects.listForUser() is deprecated, see https://docs.github.com/rest/projects/projects#list-user-projects"
-      }
-    ],
-    moveCard: [
-      "POST /projects/columns/cards/{card_id}/moves",
-      {},
-      {
-        deprecated: "octokit.rest.projects.moveCard() is deprecated, see https://docs.github.com/rest/projects/cards#move-a-project-card"
-      }
-    ],
-    moveColumn: [
-      "POST /projects/columns/{column_id}/moves",
-      {},
-      {
-        deprecated: "octokit.rest.projects.moveColumn() is deprecated, see https://docs.github.com/rest/projects/columns#move-a-project-column"
-      }
-    ],
-    removeCollaborator: [
-      "DELETE /projects/{project_id}/collaborators/{username}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.removeCollaborator() is deprecated, see https://docs.github.com/rest/projects/collaborators#remove-user-as-a-collaborator"
-      }
-    ],
-    update: [
-      "PATCH /projects/{project_id}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.update() is deprecated, see https://docs.github.com/rest/projects/projects#update-a-project"
-      }
-    ],
-    updateCard: [
-      "PATCH /projects/columns/cards/{card_id}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.updateCard() is deprecated, see https://docs.github.com/rest/projects/cards#update-an-existing-project-card"
-      }
-    ],
-    updateColumn: [
-      "PATCH /projects/columns/{column_id}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.updateColumn() is deprecated, see https://docs.github.com/rest/projects/columns#update-an-existing-project-column"
-      }
     ]
   },
   pulls: {
@@ -47721,36 +47644,8 @@ const Endpoints = {
     addOrUpdateMembershipForUserInOrg: [
       "PUT /orgs/{org}/teams/{team_slug}/memberships/{username}"
     ],
-    addOrUpdateProjectPermissionsInOrg: [
-      "PUT /orgs/{org}/teams/{team_slug}/projects/{project_id}",
-      {},
-      {
-        deprecated: "octokit.rest.teams.addOrUpdateProjectPermissionsInOrg() is deprecated, see https://docs.github.com/rest/teams/teams#add-or-update-team-project-permissions"
-      }
-    ],
-    addOrUpdateProjectPermissionsLegacy: [
-      "PUT /teams/{team_id}/projects/{project_id}",
-      {},
-      {
-        deprecated: "octokit.rest.teams.addOrUpdateProjectPermissionsLegacy() is deprecated, see https://docs.github.com/rest/teams/teams#add-or-update-team-project-permissions-legacy"
-      }
-    ],
     addOrUpdateRepoPermissionsInOrg: [
       "PUT /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
-    ],
-    checkPermissionsForProjectInOrg: [
-      "GET /orgs/{org}/teams/{team_slug}/projects/{project_id}",
-      {},
-      {
-        deprecated: "octokit.rest.teams.checkPermissionsForProjectInOrg() is deprecated, see https://docs.github.com/rest/teams/teams#check-team-permissions-for-a-project"
-      }
-    ],
-    checkPermissionsForProjectLegacy: [
-      "GET /teams/{team_id}/projects/{project_id}",
-      {},
-      {
-        deprecated: "octokit.rest.teams.checkPermissionsForProjectLegacy() is deprecated, see https://docs.github.com/rest/teams/teams#check-team-permissions-for-a-project-legacy"
-      }
     ],
     checkPermissionsForRepoInOrg: [
       "GET /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
@@ -47788,37 +47683,9 @@ const Endpoints = {
     listPendingInvitationsInOrg: [
       "GET /orgs/{org}/teams/{team_slug}/invitations"
     ],
-    listProjectsInOrg: [
-      "GET /orgs/{org}/teams/{team_slug}/projects",
-      {},
-      {
-        deprecated: "octokit.rest.teams.listProjectsInOrg() is deprecated, see https://docs.github.com/rest/teams/teams#list-team-projects"
-      }
-    ],
-    listProjectsLegacy: [
-      "GET /teams/{team_id}/projects",
-      {},
-      {
-        deprecated: "octokit.rest.teams.listProjectsLegacy() is deprecated, see https://docs.github.com/rest/teams/teams#list-team-projects-legacy"
-      }
-    ],
     listReposInOrg: ["GET /orgs/{org}/teams/{team_slug}/repos"],
     removeMembershipForUserInOrg: [
       "DELETE /orgs/{org}/teams/{team_slug}/memberships/{username}"
-    ],
-    removeProjectInOrg: [
-      "DELETE /orgs/{org}/teams/{team_slug}/projects/{project_id}",
-      {},
-      {
-        deprecated: "octokit.rest.teams.removeProjectInOrg() is deprecated, see https://docs.github.com/rest/teams/teams#remove-a-project-from-a-team"
-      }
-    ],
-    removeProjectLegacy: [
-      "DELETE /teams/{team_id}/projects/{project_id}",
-      {},
-      {
-        deprecated: "octokit.rest.teams.removeProjectLegacy() is deprecated, see https://docs.github.com/rest/teams/teams#remove-a-project-from-a-team-legacy"
-      }
     ],
     removeRepoInOrg: [
       "DELETE /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
@@ -48110,7 +47977,7 @@ legacyRestEndpointMethods.VERSION = plugin_rest_endpoint_methods_dist_src_versio
 //# sourceMappingURL=index.js.map
 
 ;// CONCATENATED MODULE: ./node_modules/@octokit/rest/dist-src/version.js
-const rest_dist_src_version_VERSION = "21.1.1";
+const rest_dist_src_version_VERSION = "22.0.0";
 
 
 ;// CONCATENATED MODULE: ./node_modules/@octokit/rest/dist-src/index.js
