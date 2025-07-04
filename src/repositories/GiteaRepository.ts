@@ -91,12 +91,11 @@ export class GiteaRepository extends BaseRepository {
    * WARNING: This does not actually get the diff from the remote, as Gitea does not offer a compareable API.
    * This uses the local repository to get the diff. NOTE: As such, gitea integration requires the repo available.
    */
-  async getDiffRemote(owner: string, repo: string, base: string, head: string): Promise<DiffInfo> {
+  async getDiffRemote(owner: string, repo: string, base: string, head: string, includeOnlyPaths?: string | null): Promise<DiffInfo> {
     let changedFilesCount = 0
     let additionCount = 0
     let deletionCount = 0
     const changeCount = 0
-    let commitCount = 0
 
     const gitHelper = await createCommandManager(this.repositoryPath)
 
@@ -118,16 +117,28 @@ export class GiteaRepository extends BaseRepository {
     const changedFiles = diffNameOnly.stdout.split('\n')
     changedFilesCount = changedFiles.length - 1 // Subtract one for the empty line at the end
 
-    // Get the commit count between the two branches/commits
-    const logCount = await gitHelper.execGit(['rev-list', '--count', `${base}...${head}`])
-    commitCount = parseInt(logCount.stdout.trim(), 10)
-
     // Now let's get the commit logs between the two branches/commits
-    const log = await gitHelper.execGit(['log', '--pretty=format:%H||||%an||||%ae||||%ad||||%cn||||%ce||||%cd||||%s', `${base}...${head}`])
+    let logArgs = ['log', '--pretty=format:%H||||%an||||%ae||||%ad||||%cn||||%ce||||%cd||||%s', `${base}...${head}`]
+    
+    // Add path filtering if specified
+    if (includeOnlyPaths) {
+      const pathPatterns = includeOnlyPaths.split(',').map(pattern => pattern.trim()).filter(pattern => pattern.length > 0)
+      core.info(`ℹ️ Path filtering enabled with patterns: ${pathPatterns.join(', ')}`)
+      logArgs.push('--', ...pathPatterns)
+    }
+    
+    const log = await gitHelper.execGit(logArgs)
     const commitLogs = log.stdout.trim().split('\n')
 
+    // Filter out empty lines that might occur when no commits match the path filter
+    const filteredCommitLogs = commitLogs.filter(line => line.trim().length > 0)
+    
+    if (includeOnlyPaths && filteredCommitLogs.length < commitLogs.length) {
+      core.info(`ℹ️ After path filtering: ${filteredCommitLogs.length} commits remain`)
+    }
+
     // Process commit logs
-    const commitInfo = commitLogs.map(commitLog => {
+    const commitInfo = filteredCommitLogs.map(commitLog => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const [sha, authorName, authorEmail, authorDate, committerName, committerEmail, committerDate, subject] = commitLog.split('||||')
       return {
@@ -149,7 +160,7 @@ export class GiteaRepository extends BaseRepository {
       additions: additionCount,
       deletions: deletionCount,
       changes: changeCount,
-      commits: commitCount,
+      commits: commitInfo.length,
       commitInfo
     }
   }

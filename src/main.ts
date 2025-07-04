@@ -77,6 +77,7 @@ async function run(): Promise<void> {
     const exportCache = core.getInput('exportCache') === 'true'
     const exportOnly = core.getInput('exportOnly') === 'true'
     const cache = core.getInput('cache')
+    const includeOnlyPaths = core.getInput('includeOnlyPaths')
 
     const repositoryUtils = new supportedPlatform[platform](token, baseUrl, repositoryPath)
     const result = await new ReleaseNotesBuilder(
@@ -98,7 +99,8 @@ async function run(): Promise<void> {
       exportCache,
       exportOnly,
       cache,
-      configuration
+      configuration,
+      includeOnlyPaths
     ).build()
 
     core.setOutput('changelog', result)
