@@ -9,12 +9,11 @@ import {Unpacked} from '../pr-collector/utils.js'
 import moment from 'moment'
 
 export class GithubRepository extends BaseRepository {
-  async getDiffRemote(owner: string, repo: string, base: string, head: string): Promise<DiffInfo> {
+  async getDiffRemote(owner: string, repo: string, base: string, head: string, includeOnlyPaths?: string | null): Promise<DiffInfo> {
     let changedFilesCount = 0
     let additionCount = 0
     let deletionCount = 0
     let changeCount = 0
-    let commitCount = 0
 
     // Fetch comparisons recursively until we don't find any commits
     // This is because the GitHub API limits the number of commits returned in a single response.
@@ -40,21 +39,58 @@ export class GithubRepository extends BaseRepository {
           changeCount += file.changes
         }
       }
-      commitCount += compareResult.data.commits.length
       commits = compareResult.data.commits.concat(commits)
       compareHead = `${commits[0].sha}^`
     }
 
     core.info(`ℹ️ Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`)
 
+    // If path filtering is enabled, we need to get file information for each commit
+    let filteredCommits: RestEndpointMethodTypes['repos']['compareCommits']['response']['data']['commits'] = []
+    const commitToFilesMap = new Map<string, string[]>()
+    
+    if (includeOnlyPaths) {
+      const pathPatterns = includeOnlyPaths.split(',').map(pattern => pattern.trim()).filter(pattern => pattern.length > 0)
+      core.info(`ℹ️ Path filtering enabled with patterns: ${pathPatterns.join(', ')}`)
+      
+      for (const commit of commits.filter(commit => commit.sha)) {
+        try {
+          const commitDetail = await this.octokit.repos.getCommit({
+            owner,
+            repo,
+            ref: commit.sha
+          })
+          
+          const changedFiles = commitDetail.data.files?.map(file => file.filename) || []
+          
+          // Check if any changed file matches any of the path patterns
+          const matchesPattern = changedFiles.some(file => 
+            pathPatterns.some(pattern => file.startsWith(pattern))
+          )
+          
+          if (matchesPattern) {
+            filteredCommits.push(commit)
+            commitToFilesMap.set(commit.sha, changedFiles)
+          }
+        } catch (error) {
+          core.warning(`⚠️ Failed to get files for commit ${commit.sha}: ${error}`)
+          // Include the commit anyway if we can't get file info
+          filteredCommits.push(commit)
+        }
+      }
+      
+      core.info(`ℹ️ After path filtering: ${filteredCommits.length} commits remain from ${commits.length}`)
+    } else {
+      filteredCommits = commits.filter(commit => commit.sha)
+    }
+
     return {
       changedFiles: changedFilesCount,
       additions: additionCount,
       deletions: deletionCount,
       changes: changeCount,
-      commits: commitCount,
-      commitInfo: commits
-        .filter(commit => commit.sha)
+      commits: filteredCommits.length,
+      commitInfo: filteredCommits
         .map(commit => ({
           sha: commit.sha || '',
           summary: commit.commit.message.split('\n')[0],
@@ -65,7 +101,7 @@ export class GithubRepository extends BaseRepository {
           committer: commit.committer?.login || '',
           committerName: commit.committer?.name || '',
           commitDate: moment(commit.commit.committer?.date),
-          prNumber: undefined
+          changedFiles: commitToFilesMap.get(commit.sha)
         }))
     }
   }

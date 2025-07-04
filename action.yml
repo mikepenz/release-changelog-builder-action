@@ -66,6 +66,8 @@ inputs:
   platform:
     description: 'Defines the platform the action is run on. Available options: [`github`, `gitea`]. Defaults to `github`.'
     default: "github"
+  includeOnlyPaths:
+    description: 'Comma separated list of path patterns to include (e.g., "app1/,shared/"). Only commits that touched these paths will be included in the changelog. Useful for monorepo setups.'
 outputs:
   changelog:
     description: The built release changelog built from the merged pull requests
