@@ -5,6 +5,7 @@ import {ReleaseNotesBuilder} from './releaseNotesBuilder.js'
 import {Configuration} from './configuration.js'
 import {GithubRepository} from './repositories/GithubRepository.js'
 import {GiteaRepository} from './repositories/GiteaRepository.js'
+import {OfflineRepository} from './repositories/OfflineRepository.js'
 
 async function run(): Promise<void> {
   const supportedPlatform = {
@@ -52,7 +53,15 @@ async function run(): Promise<void> {
     }
 
     // mode of the action (PR, COMMIT, HYBRID)
-    const mode = resolveMode(core.getInput('mode'), core.getInput('commitMode') === 'true')
+    let mode = resolveMode(core.getInput('mode'), core.getInput('commitMode') === 'true')
+    const offlineMode = core.getInput('offlineMode') === 'true'
+
+    // If offline mode is enabled, ensure commit mode is used
+    if (offlineMode && mode !== 'COMMIT') {
+      core.warning('⚠️ Offline mode requires commit mode. Switching to commit mode.')
+      mode = 'COMMIT'
+    }
+
     core.info(`ℹ️ Running in ${mode} mode.`)
 
     // merge configs, use default values from DefaultConfig on missing definition
@@ -78,7 +87,10 @@ async function run(): Promise<void> {
     const exportOnly = core.getInput('exportOnly') === 'true'
     const cache = core.getInput('cache')
 
-    const repositoryUtils = new supportedPlatform[platform](token, baseUrl, repositoryPath)
+    // Use OfflineRepository if offline mode is enabled, otherwise use the selected platform
+    const repositoryUtils = offlineMode
+      ? new OfflineRepository(repositoryPath)
+      : new supportedPlatform[platform](token, baseUrl, repositoryPath)
     const result = await new ReleaseNotesBuilder(
       baseUrl,
       repositoryUtils,
