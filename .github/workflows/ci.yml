@@ -37,6 +37,8 @@ jobs:
         if: success() || failure() # always run even if the previous step fails
         with:
           report_paths: 'junit.xml'
+          comment: true
+          detailed_summary: true
 
   test:
     if: github.event_name  == 'pull_request'

@@ -5,9 +5,6 @@ import * as fs from 'fs'
 import {clear} from '../src/transform.js'
 import {jest} from '@jest/globals'
 import { fileURLToPath } from 'url';
-import {mergeConfiguration, resolveConfiguration} from '../src/utils.js'
-import {ReleaseNotesBuilder} from '../src/releaseNotesBuilder.js'
-import {OfflineRepository} from '../src/repositories/OfflineRepository.js'
 
 jest.setTimeout(180000)
 clear()
@@ -26,7 +23,7 @@ test('missing values should result in failure', () => {
     env: process.env
   }
   try {
-    cp.execSync(`node ${ip}`, options).toString()
+    cp.execFileSync('node', [ip], options).toString()
   } catch (error: unknown) {
     expect(true).toBe(true)
   }
@@ -64,7 +61,7 @@ test('should write result to file', () => {
   const options: cp.ExecSyncOptions = {
     env: process.env
   }
-  const result = cp.execSync(`node ${ip}`, options).toString()
+  const result = cp.execFileSync('node', [ip], options).toString()
   // should succeed
   expect(result).toBeDefined()
 
@@ -93,7 +90,7 @@ test('offline mode should work with commit mode', () => {
     env: process.env
   }
 
-  const result = cp.execSync(`node ${ip}`, options).toString()
+  const result = cp.execFileSync('node', [ip], options).toString()
   // should succeed
   expect(result).toBeDefined()
 
