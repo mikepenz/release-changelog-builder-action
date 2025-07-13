@@ -3549,13 +3549,28 @@ var import_graphql = __nccwpck_require__(7);
 var import_auth_token = __nccwpck_require__(7864);
 
 // pkg/dist-src/version.js
-var VERSION = "5.2.1";
+var VERSION = "5.2.2";
 
 // pkg/dist-src/index.js
 var noop = () => {
 };
 var consoleWarn = console.warn.bind(console);
 var consoleError = console.error.bind(console);
+function createLogger(logger = {}) {
+  if (typeof logger.debug !== "function") {
+    logger.debug = noop;
+  }
+  if (typeof logger.info !== "function") {
+    logger.info = noop;
+  }
+  if (typeof logger.warn !== "function") {
+    logger.warn = consoleWarn;
+  }
+  if (typeof logger.error !== "function") {
+    logger.error = consoleError;
+  }
+  return logger;
+}
 var userAgentTrail = `octokit-core.js/${VERSION} ${(0, import_universal_user_agent.getUserAgent)()}`;
 var Octokit = class {
   static {
@@ -3629,15 +3644,7 @@ var Octokit = class {
     }
     this.request = import_request.request.defaults(requestDefaults);
     this.graphql = (0, import_graphql.withCustomRequest)(this.request).defaults(requestDefaults);
-    this.log = Object.assign(
-      {
-        debug: noop,
-        info: noop,
-        warn: consoleWarn,
-        error: consoleError
-      },
-      options.log
-    );
+    this.log = createLogger(options.log);
     this.hook = hook;
     if (!options.authStrategy) {
       if (!options.auth) {
@@ -7304,9 +7311,7 @@ class Agent extends http.Agent {
     // In order to properly update the socket pool, we need to call `getName()` on
     // the core `https.Agent` if it is a secureEndpoint.
     getName(options) {
-        const secureEndpoint = typeof options.secureEndpoint === 'boolean'
-            ? options.secureEndpoint
-            : this.isSecureEndpoint(options);
+        const secureEndpoint = this.isSecureEndpoint(options);
         if (secureEndpoint) {
             // @ts-expect-error `getName()` isn't defined in `@types/node`
             return https_1.Agent.prototype.getName.call(this, options);
@@ -44845,7 +44850,7 @@ class RequestError extends Error {
 
 
 // pkg/dist-src/version.js
-var dist_bundle_VERSION = "0.0.0-development";
+var dist_bundle_VERSION = "10.0.3";
 
 // pkg/dist-src/defaults.js
 var defaults_default = {
@@ -45216,7 +45221,7 @@ var createTokenAuth = function createTokenAuth2(token) {
 
 
 ;// CONCATENATED MODULE: ./node_modules/@octokit/rest/node_modules/@octokit/core/dist-src/version.js
-const version_VERSION = "7.0.2";
+const version_VERSION = "7.0.3";
 
 
 ;// CONCATENATED MODULE: ./node_modules/@octokit/rest/node_modules/@octokit/core/dist-src/index.js
@@ -45230,6 +45235,21 @@ const noop = () => {
 };
 const consoleWarn = console.warn.bind(console);
 const consoleError = console.error.bind(console);
+function createLogger(logger = {}) {
+  if (typeof logger.debug !== "function") {
+    logger.debug = noop;
+  }
+  if (typeof logger.info !== "function") {
+    logger.info = noop;
+  }
+  if (typeof logger.warn !== "function") {
+    logger.warn = consoleWarn;
+  }
+  if (typeof logger.error !== "function") {
+    logger.error = consoleError;
+  }
+  return logger;
+}
 const userAgentTrail = `octokit-core.js/${version_VERSION} ${getUserAgent()}`;
 class Octokit {
   static VERSION = version_VERSION;
@@ -45297,15 +45317,7 @@ class Octokit {
     }
     this.request = request.defaults(requestDefaults);
     this.graphql = withCustomRequest(this.request).defaults(requestDefaults);
-    this.log = Object.assign(
-      {
-        debug: noop,
-        info: noop,
-        warn: consoleWarn,
-        error: consoleError
-      },
-      options.log
-    );
+    this.log = createLogger(options.log);
     this.hook = hook;
     if (!options.authStrategy) {
       if (!options.auth) {
@@ -45395,14 +45407,16 @@ function normalizePaginatedListResponse(response) {
       data: []
     };
   }
-  const responseNeedsNormalization = "total_count" in response.data && !("url" in response.data);
+  const responseNeedsNormalization = ("total_count" in response.data || "total_commits" in response.data) && !("url" in response.data);
   if (!responseNeedsNormalization) return response;
   const incompleteResults = response.data.incomplete_results;
   const repositorySelection = response.data.repository_selection;
   const totalCount = response.data.total_count;
+  const totalCommits = response.data.total_commits;
   delete response.data.incomplete_results;
   delete response.data.repository_selection;
   delete response.data.total_count;
+  delete response.data.total_commits;
   const namespaceKey = Object.keys(response.data)[0];
   const data = response.data[namespaceKey];
   response.data = data;
@@ -45413,6 +45427,7 @@ function normalizePaginatedListResponse(response) {
     response.data.repository_selection = repositorySelection;
   }
   response.data.total_count = totalCount;
+  response.data.total_commits = totalCommits;
   return response;
 }
 
@@ -45433,6 +45448,16 @@ function iterator(octokit, route, parameters) {
           url = ((normalizedResponse.headers.link || "").match(
             /<([^<>]+)>;\s*rel="next"/
           ) || [])[1];
+          if (!url && "total_commits" in normalizedResponse.data) {
+            const parsedUrl = new URL(normalizedResponse.url);
+            const params = parsedUrl.searchParams;
+            const page = parseInt(params.get("page") || "1", 10);
+            const per_page = parseInt(params.get("per_page") || "250", 10);
+            if (page * per_page < normalizedResponse.data.total_commits) {
+              params.set("page", String(page + 1));
+              url = parsedUrl.toString();
+            }
+          }
           return { value: normalizedResponse };
         } catch (error) {
           if (error.status !== 409) throw error;
@@ -45627,6 +45652,8 @@ var paginatingEndpoints = (/* unused pure expression or super */ null && ([
   "GET /repos/{owner}/{repo}/commits/{ref}/check-suites",
   "GET /repos/{owner}/{repo}/commits/{ref}/status",
   "GET /repos/{owner}/{repo}/commits/{ref}/statuses",
+  "GET /repos/{owner}/{repo}/compare/{basehead}",
+  "GET /repos/{owner}/{repo}/compare/{base}...{head}",
   "GET /repos/{owner}/{repo}/contributors",
   "GET /repos/{owner}/{repo}/dependabot/alerts",
   "GET /repos/{owner}/{repo}/dependabot/secrets",
