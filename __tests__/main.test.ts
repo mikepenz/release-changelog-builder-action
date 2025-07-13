@@ -109,7 +109,6 @@ test('offline mode should work with commit mode', () => {
   const result = cp.execFileSync('node', [ip], options).toString()
   // should succeed
   expect(result).toBeDefined()
-  console.log(result)
 
   const readOutput = fs.readFileSync('test.md')
   fs.unlinkSync('test.md')
