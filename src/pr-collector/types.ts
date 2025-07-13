@@ -6,6 +6,7 @@ export interface PullConfiguration {
   sort: Sort | string // "ASC" or "DESC"
   tag_resolver: TagResolver
   base_branches: string[]
+  offlineMode?: boolean
 }
 
 /**

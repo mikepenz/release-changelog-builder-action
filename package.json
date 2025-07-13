@@ -16,6 +16,7 @@
     "test-github": "NODE_OPTIONS=--experimental-vm-modules jest __tests__/*.test.ts",
     "test-gitea": "NODE_OPTIONS=--experimental-vm-modules jest __tests__/gitea/*.test.ts",
     "test-demo": "NODE_OPTIONS=--experimental-vm-modules jest __tests__/demo/*.test.ts",
+    "test-offline": "NODE_OPTIONS=--experimental-vm-modules jest __tests__/offline/*.test.ts",
     "all": "npm run build && npm run format && npm run lint && npm run package && npm run test-github"
   },
   "repository": {

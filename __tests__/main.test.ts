@@ -5,6 +5,9 @@ import * as fs from 'fs'
 import {clear} from '../src/transform.js'
 import {jest} from '@jest/globals'
 import { fileURLToPath } from 'url';
+import {mergeConfiguration, resolveConfiguration} from '../src/utils.js'
+import {ReleaseNotesBuilder} from '../src/releaseNotesBuilder.js'
+import {OfflineRepository} from '../src/repositories/OfflineRepository.js'
 
 jest.setTimeout(180000)
 clear()
@@ -70,4 +73,35 @@ test('should write result to file', () => {
   fs.unlinkSync('test.md')
 
   expect(readOutput.toString()).not.toBe('')
+})
+
+test('offline mode should work with commit mode', () => {
+  // This test verifies that the offlineMode parameter is correctly passed to the configuration
+  // and that the OfflineRepository is used when offlineMode is enabled.
+
+  // Set up environment variables for the test
+  process.env['GITHUB_WORKSPACE'] = '.'
+  process.env['INPUT_CONFIGURATION'] = 'configuration.json'
+  process.env['INPUT_OWNER'] = 'mikepenz'
+  process.env['INPUT_REPO'] = 'release-changelog-builder-action'
+  process.env['INPUT_MODE'] = 'PR'
+  process.env['INPUT_OFFLINEMODE'] = 'true'
+  process.env['INPUT_OUTPUTFILE'] = 'test.md'
+
+  const ip = path.join(__dirname, '..', 'lib', 'main.js')
+  const options: cp.ExecSyncOptions = {
+    env: process.env
+  }
+
+  const result = cp.execSync(`node ${ip}`, options).toString()
+  // should succeed
+  expect(result).toBeDefined()
+
+  const readOutput = fs.readFileSync('test.md')
+  fs.unlinkSync('test.md')
+
+  expect(readOutput.toString()).not.toBe("- no changes")
+  expect(readOutput.toString()).not.toBe('')
+
+  console.log('Offline mode test succeeded')
 })

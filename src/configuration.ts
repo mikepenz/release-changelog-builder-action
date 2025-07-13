@@ -104,7 +104,8 @@ export const DefaultConfiguration: Configuration = {
   },
   base_branches: [], // target branches for the merged PR ignoring PRs with different target branch, by default it will get all PRs
   custom_placeholders: [],
-  trim_values: false // defines if values are being trimmed prior to inserting
+  trim_values: false, // defines if values are being trimmed prior to inserting
+  offlineMode: false // defines if the action should run in offline mode, disabling API requests
 }
 
 export const DefaultCommitConfiguration: Configuration = {
