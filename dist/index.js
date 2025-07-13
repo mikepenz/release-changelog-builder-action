@@ -16247,7 +16247,7 @@ const toComparators = __nccwpck_require__(4750)
 const maxSatisfying = __nccwpck_require__(5574)
 const minSatisfying = __nccwpck_require__(8595)
 const minVersion = __nccwpck_require__(1866)
-const validRange = __nccwpck_require__(7118)
+const validRange = __nccwpck_require__(4737)
 const outside = __nccwpck_require__(280)
 const gtr = __nccwpck_require__(2276)
 const ltr = __nccwpck_require__(5213)
@@ -17299,7 +17299,7 @@ module.exports = toComparators
 
 /***/ }),
 
-/***/ 7118:
+/***/ 4737:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
@@ -42022,7 +42022,8 @@ const DefaultConfiguration = {
     },
     base_branches: [], // target branches for the merged PR ignoring PRs with different target branch, by default it will get all PRs
     custom_placeholders: [],
-    trim_values: false // defines if values are being trimmed prior to inserting
+    trim_values: false, // defines if values are being trimmed prior to inserting
+    offlineMode: false // defines if the action should run in offline mode, disabling API requests
 };
 const DefaultCommitConfiguration = {
     ...DefaultConfiguration,
@@ -43625,6 +43626,56 @@ class GitCommandManager {
     async tagCreation(tagName) {
         const creationDate = await this.execGit(['for-each-ref', '--format="%(creatordate:rfc)"', `refs/tags/${tagName}`]);
         return creationDate.stdout.trim().replace(/"/g, '');
+    }
+    async getAllTags() {
+        const tagsOutput = await this.execGit(['tag', '-l']);
+        return tagsOutput.stdout.trim().split('\n').filter(tag => tag.trim() !== '');
+    }
+    async getTagCommit(tagName) {
+        const commitOutput = await this.execGit(['rev-list', '-n', '1', tagName]);
+        return commitOutput.stdout.trim();
+    }
+    async getDiffStats(base, head) {
+        const diffOutput = await this.execGit(['diff', '--numstat', `${base}..${head}`]);
+        const lines = diffOutput.stdout.trim().split('\n').filter(line => line.trim() !== '');
+        let additions = 0;
+        let deletions = 0;
+        for (const line of lines) {
+            const parts = line.split('\t');
+            if (parts.length >= 2) {
+                additions += parseInt(parts[0], 10) || 0;
+                deletions += parseInt(parts[1], 10) || 0;
+            }
+        }
+        return {
+            changedFiles: lines.length,
+            additions,
+            deletions,
+            changes: additions + deletions
+        };
+    }
+    async getCommitsBetween(base, head) {
+        const logOutput = await this.execGit([
+            'log',
+            '--pretty=format:%H|%an|%ae|%aI|%s|%b',
+            `${base}..${head}`
+        ]);
+        const lines = logOutput.stdout.trim().split('\n').filter(line => line.trim() !== '');
+        const commits = lines.map(line => {
+            const [sha, authorName, authorEmail, authorDate, subject, body] = line.split('|');
+            return {
+                sha,
+                subject,
+                message: body,
+                author: authorEmail,
+                authorName,
+                authorDate
+            };
+        });
+        return {
+            count: commits.length,
+            commits
+        };
     }
     static async createCommandManager(workingDirectory) {
         const result = new GitCommandManager();
@@ -54933,7 +54984,102 @@ class GiteaRepository extends BaseRepository {
     }
 }
 
+;// CONCATENATED MODULE: ./lib/repositories/OfflineRepository.js
+
+
+
+
+class OfflineRepository extends BaseRepository {
+    constructor(repositoryPath) {
+        super("", "offline", repositoryPath);
+        this.url = this.defaultUrl;
+    }
+    get defaultUrl() {
+        return "offline";
+    }
+    get homeUrl() {
+        return "offline";
+    }
+    async getTags(owner, repo, maxTagsToFetch) {
+        core.info(`ℹ️ Retrieving tags from local repository in offline mode`);
+        const gitHelper = await createCommandManager(this.repositoryPath);
+        const tags = await gitHelper.getAllTags();
+        // Limit the number of tags to maxTagsToFetch
+        const limitedTags = tags.slice(0, maxTagsToFetch);
+        // Convert to TagInfo objects
+        const tagInfos = [];
+        for (const tag of limitedTags) {
+            const commit = await gitHelper.getTagCommit(tag);
+            tagInfos.push({
+                name: tag,
+                commit
+            });
+        }
+        core.info(`ℹ️ Retrieved ${tagInfos.length} tags from local repository`);
+        return tagInfos;
+    }
+    async fillTagInformation(repositoryPath, owner, repo, tagInfo) {
+        return this.getTagByCreateTime(repositoryPath, tagInfo);
+    }
+    async getDiffRemote(owner, repo, base, head) {
+        core.info(`ℹ️ Getting diff information from local repository in offline mode`);
+        const gitHelper = await createCommandManager(this.repositoryPath);
+        // Get diff stats
+        const diffStats = await gitHelper.getDiffStats(base, head);
+        // Get commits
+        const commitInfo = await gitHelper.getCommitsBetween(base, head);
+        return {
+            changedFiles: diffStats.changedFiles,
+            additions: diffStats.additions,
+            deletions: diffStats.deletions,
+            changes: diffStats.changes,
+            commits: commitInfo.count,
+            commitInfo: commitInfo.commits.map(commit => ({
+                sha: commit.sha,
+                summary: commit.subject.split('\n')[0],
+                message: commit.message,
+                author: commit.author,
+                authorName: commit.authorName,
+                authorDate: moment(commit.authorDate),
+                committer: "",
+                committerName: "",
+                commitDate: moment(commit.authorDate),
+                prNumber: undefined
+            }))
+        };
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async getForCommitHash(owner, repo, commit_sha, maxPullRequests) {
+        core.info(`⚠️ getForCommitHash not supported in offline mode`);
+        return [];
+    }
+    async getBetweenDates(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    owner, 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    repo, 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    fromDate, 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    toDate, 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    maxPullRequests) {
+        core.info(`⚠️ getBetweenDates not supported in offline mode`);
+        return [];
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async getOpen(owner, repo, maxPullRequests) {
+        core.info(`⚠️ getOpen not supported in offline mode`);
+        return [];
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async getReviews(owner, repo, pr) {
+        core.info(`⚠️ getReviews not supported in offline mode`);
+    }
+}
+
 ;// CONCATENATED MODULE: ./lib/main.js
+
 
 
 
@@ -54980,7 +55126,13 @@ async function run() {
             core.info(`ℹ️ No configuration provided. Using Defaults.`);
         }
         // mode of the action (PR, COMMIT, HYBRID)
-        const mode = resolveMode(core.getInput('mode'), core.getInput('commitMode') === 'true');
+        let mode = resolveMode(core.getInput('mode'), core.getInput('commitMode') === 'true');
+        const offlineMode = core.getInput('offlineMode') === 'true';
+        // If offline mode is enabled, ensure commit mode is used
+        if (offlineMode && mode !== 'COMMIT') {
+            core.warning('⚠️ Offline mode requires commit mode. Switching to commit mode.');
+            mode = 'COMMIT';
+        }
         core.info(`ℹ️ Running in ${mode} mode.`);
         // merge configs, use default values from DefaultConfig on missing definition
         const configuration = mergeConfiguration(configJson, configFile, mode);
@@ -55003,7 +55155,10 @@ async function run() {
         const exportCache = core.getInput('exportCache') === 'true';
         const exportOnly = core.getInput('exportOnly') === 'true';
         const cache = core.getInput('cache');
-        const repositoryUtils = new supportedPlatform[platform](token, baseUrl, repositoryPath);
+        // Use OfflineRepository if offline mode is enabled, otherwise use the selected platform
+        const repositoryUtils = offlineMode
+            ? new OfflineRepository(repositoryPath)
+            : new supportedPlatform[platform](token, baseUrl, repositoryPath);
         const result = await new ReleaseNotesBuilder(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchViaCommits, fetchReviewers, fetchReleaseInformation, fetchReviews, mode, exportCache, exportOnly, cache, configuration).build();
         core.setOutput('changelog', result);
         // write the result in changelog to file if possible

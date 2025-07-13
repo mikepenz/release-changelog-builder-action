@@ -45,6 +45,9 @@ inputs:
   commitMode:
     description: '[Deprecated] Enables the commit based mode. This mode generates changelogs based on the commits. Please note that this lacks a lot of features only possible with PRs.'
     default: "false"
+  offlineMode:
+    description: 'Enables offline mode which disables API requests to GitHub or Gitea. Only works with commitMode and retrieves tags and diffs from the local repository.'
+    default: "false"
   outputFile:
     description: 'If defined, the changelog will get written to this file. (relative to the checkout dir)'
   token:
