@@ -13,11 +13,12 @@
     "lint": "eslint src/**/*.ts",
     "package": "ncc build --source-map --license licenses.txt",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest --reporters=default --reporters=jest-junit",
+    "test-main": "NODE_OPTIONS=--experimental-vm-modules jest __tests__/main.test.ts --reporters=default --reporters=jest-junit",
     "test-github": "NODE_OPTIONS=--experimental-vm-modules jest __tests__/*.test.ts --reporters=default --reporters=jest-junit",
     "test-gitea": "NODE_OPTIONS=--experimental-vm-modules jest __tests__/gitea/*.test.ts --reporters=default --reporters=jest-junit",
     "test-demo": "NODE_OPTIONS=--experimental-vm-modules jest __tests__/demo/*.test.ts --reporters=default --reporters=jest-junit",
     "test-offline": "NODE_OPTIONS=--experimental-vm-modules jest __tests__/offline/*.test.ts --reporters=default --reporters=jest-junit",
-    "all": "npm run build && npm run format && npm run lint && npm run package && npm run test-github"
+    "all": "npm run build && npm run format && npm run lint && npm run package && npm run test-main"
   },
   "repository": {
     "type": "git",

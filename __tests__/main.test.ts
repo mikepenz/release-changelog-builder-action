@@ -12,9 +12,21 @@ clear()
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
 
-test('missing values should result in failure', () => {
-  expect.assertions(1)
+function resetEnv(): void {
+  process.env['INPUT_CONFIGURATION'] = ''
+  process.env['INPUT_OWNER'] = ''
+  process.env['INPUT_REPO'] = ''
+  process.env['INPUT_MODE'] = ''
+  process.env['INPUT_OFFLINEMODE'] = ''
+  process.env['INPUT_OUTPUTFILE'] = ''
+  process.env['INPUT_CACHE'] = ''
+  process.env['GITHUB_WORKSPACE'] = ''
+  process.env['INPUT_FROMTAG'] = ''
+  process.env['INPUT_TOTAG'] = ''
+}
 
+test('missing values should result in failure', () => {
+  resetEnv()
   process.env['GITHUB_WORKSPACE'] = '.'
   process.env['INPUT_OWNER'] = undefined
   process.env['INPUT_CONFIGURATION'] = 'configs/configuration.json'
@@ -30,6 +42,7 @@ test('missing values should result in failure', () => {
 })
 
 test('complete input should succeed', () => {
+  resetEnv()
   process.env['GITHUB_WORKSPACE'] = '.'
   process.env['INPUT_CONFIGURATION'] = 'configuration.json'
   process.env['INPUT_OWNER'] = 'mikepenz'
@@ -48,8 +61,9 @@ test('complete input should succeed', () => {
 })
 
 test('should write result to file', () => {
+  resetEnv()
   process.env['GITHUB_WORKSPACE'] = '.'
-  process.env['INPUT_CONFIGURATION'] = 'configuration.json'
+  process.env['INPUT_CONFIGURATION'] = 'configs/configuration.json'
   process.env['INPUT_OWNER'] = 'mikepenz'
   process.env['INPUT_REPO'] = 'release-changelog-builder-action'
   process.env['INPUT_FROMTAG'] = 'v0.3.0'
@@ -73,17 +87,19 @@ test('should write result to file', () => {
 })
 
 test('offline mode should work with commit mode', () => {
+  resetEnv()
   // This test verifies that the offlineMode parameter is correctly passed to the configuration
   // and that the OfflineRepository is used when offlineMode is enabled.
 
   // Set up environment variables for the test
   process.env['GITHUB_WORKSPACE'] = '.'
-  process.env['INPUT_CONFIGURATION'] = 'configuration.json'
+  process.env['INPUT_CONFIGURATION'] = 'configs/configuration_commit.json'
   process.env['INPUT_OWNER'] = 'mikepenz'
   process.env['INPUT_REPO'] = 'release-changelog-builder-action'
   process.env['INPUT_MODE'] = 'PR'
   process.env['INPUT_OFFLINEMODE'] = 'true'
   process.env['INPUT_OUTPUTFILE'] = 'test.md'
+  process.env['INPUT_CACHE'] = ''
 
   const ip = path.join(__dirname, '..', 'lib', 'main.js')
   const options: cp.ExecSyncOptions = {
@@ -93,6 +109,7 @@ test('offline mode should work with commit mode', () => {
   const result = cp.execFileSync('node', [ip], options).toString()
   // should succeed
   expect(result).toBeDefined()
+  console.log(result)
 
   const readOutput = fs.readFileSync('test.md')
   fs.unlinkSync('test.md')
