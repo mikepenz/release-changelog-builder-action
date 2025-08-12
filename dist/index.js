@@ -42419,13 +42419,13 @@ class Commits {
     constructor(repositoryUtils) {
         this.repositoryUtils = repositoryUtils;
     }
-    async getDiff(owner, repo, base, head) {
-        const diff = await this.getDiffRemote(owner, repo, base, head);
+    async getDiff(owner, repo, base, head, includeOnlyPaths) {
+        const diff = await this.getDiffRemote(owner, repo, base, head, includeOnlyPaths);
         diff.commitInfo = this.sortCommits(diff.commitInfo);
         return diff;
     }
-    async getDiffRemote(owner, repo, base, head) {
-        return this.repositoryUtils.getDiffRemote(owner, repo, base, head);
+    async getDiffRemote(owner, repo, base, head, includeOnlyPaths) {
+        return this.repositoryUtils.getDiffRemote(owner, repo, base, head, includeOnlyPaths);
     }
     sortCommits(commits) {
         const commitsResult = [];
@@ -42449,12 +42449,12 @@ class Commits {
         return commitsResult;
     }
     async getCommitHistory(options) {
-        const { owner, repo, fromTag, toTag, failOnError } = options;
+        const { owner, repo, fromTag, toTag, failOnError, includeOnlyPaths } = options;
         core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag.name}...${toTag.name}'`);
         const commitsApi = new Commits(this.repositoryUtils);
         let diffInfo;
         try {
-            diffInfo = await commitsApi.getDiff(owner, repo, fromTag.name, toTag.name);
+            diffInfo = await commitsApi.getDiff(owner, repo, fromTag.name, toTag.name, includeOnlyPaths);
         }
         catch (error) {
             failOrError(`💥 Failed to retrieve - Invalid tag? - Because of: ${error}`, failOnError);
@@ -43999,7 +43999,8 @@ class PullRequestCollector {
     fetchReviews;
     mode;
     configuration;
-    constructor(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, mode = 'PR', configuration) {
+    includeOnlyPaths;
+    constructor(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, mode = 'PR', configuration, includeOnlyPaths = null) {
         this.baseUrl = baseUrl;
         this.repositoryUtils = repositoryUtils;
         this.repositoryPath = repositoryPath;
@@ -44016,6 +44017,7 @@ class PullRequestCollector {
         this.fetchReviews = fetchReviews;
         this.mode = mode;
         this.configuration = configuration;
+        this.includeOnlyPaths = includeOnlyPaths;
     }
     async build() {
         // check proxy setup for GHES environments
@@ -44059,7 +44061,8 @@ class PullRequestCollector {
             fetchReleaseInformation: this.fetchReleaseInformation,
             fetchReviews: this.fetchReviews,
             mode: this.mode,
-            configuration: this.configuration
+            configuration: this.configuration,
+            includeOnlyPaths: this.includeOnlyPaths
         });
     }
 }
@@ -44122,7 +44125,8 @@ class ReleaseNotesBuilder {
     exportOnly;
     cache;
     configuration;
-    constructor(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, mode = 'PR', exportCache = false, exportOnly = false, cache = null, configuration) {
+    includeOnlyPaths;
+    constructor(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, mode = 'PR', exportCache = false, exportOnly = false, cache = null, configuration, includeOnlyPaths = null) {
         this.baseUrl = baseUrl;
         this.repositoryUtils = repositoryUtils;
         this.repositoryPath = repositoryPath;
@@ -44142,6 +44146,7 @@ class ReleaseNotesBuilder {
         this.exportOnly = exportOnly;
         this.cache = cache;
         this.configuration = configuration;
+        this.includeOnlyPaths = includeOnlyPaths;
     }
     async build() {
         let releaseNotesData;
@@ -44168,7 +44173,7 @@ class ReleaseNotesBuilder {
                 core.debug(`Resolved 'repo' as ${this.repo}`);
             }
             core.endGroup();
-            const prData = await new PullRequestCollector(this.baseUrl, this.repositoryUtils, this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.includeOpen, this.failOnError, this.ignorePreReleases, this.fetchViaCommits, this.fetchReviewers, this.fetchReleaseInformation, this.fetchReviews, this.mode, this.configuration).build();
+            const prData = await new PullRequestCollector(this.baseUrl, this.repositoryUtils, this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.includeOpen, this.failOnError, this.ignorePreReleases, this.fetchViaCommits, this.fetchReviewers, this.fetchReleaseInformation, this.fetchReviews, this.mode, this.configuration, this.includeOnlyPaths).build();
             if (prData == null) {
                 return null;
             }
@@ -48080,12 +48085,11 @@ var dist = __nccwpck_require__(3669);
 
 
 class GithubRepository extends BaseRepository {
-    async getDiffRemote(owner, repo, base, head) {
+    async getDiffRemote(owner, repo, base, head, includeOnlyPaths) {
         let changedFilesCount = 0;
         let additionCount = 0;
         let deletionCount = 0;
         let changeCount = 0;
-        let commitCount = 0;
         // Fetch comparisons recursively until we don't find any commits
         // This is because the GitHub API limits the number of commits returned in a single response.
         let commits = [];
@@ -48109,19 +48113,49 @@ class GithubRepository extends BaseRepository {
                     changeCount += file.changes;
                 }
             }
-            commitCount += compareResult.data.commits.length;
             commits = compareResult.data.commits.concat(commits);
             compareHead = `${commits[0].sha}^`;
         }
         core.info(`ℹ️ Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`);
+        // If path filtering is enabled, we need to get file information for each commit
+        let filteredCommits = [];
+        const commitToFilesMap = new Map();
+        if (includeOnlyPaths) {
+            const pathPatterns = includeOnlyPaths.split(',').map(pattern => pattern.trim()).filter(pattern => pattern.length > 0);
+            core.info(`ℹ️ Path filtering enabled with patterns: ${pathPatterns.join(', ')}`);
+            for (const commit of commits.filter(commit => commit.sha)) {
+                try {
+                    const commitDetail = await this.octokit.repos.getCommit({
+                        owner,
+                        repo,
+                        ref: commit.sha
+                    });
+                    const changedFiles = commitDetail.data.files?.map(file => file.filename) || [];
+                    // Check if any changed file matches any of the path patterns
+                    const matchesPattern = changedFiles.some(file => pathPatterns.some(pattern => file.startsWith(pattern)));
+                    if (matchesPattern) {
+                        filteredCommits.push(commit);
+                        commitToFilesMap.set(commit.sha, changedFiles);
+                    }
+                }
+                catch (error) {
+                    core.warning(`⚠️ Failed to get files for commit ${commit.sha}: ${error}`);
+                    // Include the commit anyway if we can't get file info
+                    filteredCommits.push(commit);
+                }
+            }
+            core.info(`ℹ️ After path filtering: ${filteredCommits.length} commits remain from ${commits.length}`);
+        }
+        else {
+            filteredCommits = commits.filter(commit => commit.sha);
+        }
         return {
             changedFiles: changedFilesCount,
             additions: additionCount,
             deletions: deletionCount,
             changes: changeCount,
-            commits: commitCount,
-            commitInfo: commits
-                .filter(commit => commit.sha)
+            commits: filteredCommits.length,
+            commitInfo: filteredCommits
                 .map(commit => ({
                 sha: commit.sha || '',
                 summary: commit.commit.message.split('\n')[0],
@@ -48132,7 +48166,7 @@ class GithubRepository extends BaseRepository {
                 committer: commit.committer?.login || '',
                 committerName: commit.committer?.name || '',
                 commitDate: moment(commit.commit.committer?.date),
-                prNumber: undefined
+                changedFiles: commitToFilesMap.get(commit.sha)
             }))
         };
     }
@@ -54866,12 +54900,11 @@ class GiteaRepository extends BaseRepository {
      * WARNING: This does not actually get the diff from the remote, as Gitea does not offer a compareable API.
      * This uses the local repository to get the diff. NOTE: As such, gitea integration requires the repo available.
      */
-    async getDiffRemote(owner, repo, base, head) {
+    async getDiffRemote(owner, repo, base, head, includeOnlyPaths) {
         let changedFilesCount = 0;
         let additionCount = 0;
         let deletionCount = 0;
         const changeCount = 0;
-        let commitCount = 0;
         const gitHelper = await createCommandManager(this.repositoryPath);
         // Get the diff stats between the two branches/commits
         const diffStat = await gitHelper.execGit(['diff', '--stat', `${base}...${head}`]);
@@ -54888,14 +54921,23 @@ class GiteaRepository extends BaseRepository {
         const diffNameOnly = await gitHelper.execGit(['diff', '--name-only', `${base}...${head}`]);
         const changedFiles = diffNameOnly.stdout.split('\n');
         changedFilesCount = changedFiles.length - 1; // Subtract one for the empty line at the end
-        // Get the commit count between the two branches/commits
-        const logCount = await gitHelper.execGit(['rev-list', '--count', `${base}...${head}`]);
-        commitCount = parseInt(logCount.stdout.trim(), 10);
         // Now let's get the commit logs between the two branches/commits
-        const log = await gitHelper.execGit(['log', '--pretty=format:%H||||%an||||%ae||||%ad||||%cn||||%ce||||%cd||||%s', `${base}...${head}`]);
+        let logArgs = ['log', '--pretty=format:%H||||%an||||%ae||||%ad||||%cn||||%ce||||%cd||||%s', `${base}...${head}`];
+        // Add path filtering if specified
+        if (includeOnlyPaths) {
+            const pathPatterns = includeOnlyPaths.split(',').map(pattern => pattern.trim()).filter(pattern => pattern.length > 0);
+            core.info(`ℹ️ Path filtering enabled with patterns: ${pathPatterns.join(', ')}`);
+            logArgs.push('--', ...pathPatterns);
+        }
+        const log = await gitHelper.execGit(logArgs);
         const commitLogs = log.stdout.trim().split('\n');
+        // Filter out empty lines that might occur when no commits match the path filter
+        const filteredCommitLogs = commitLogs.filter(line => line.trim().length > 0);
+        if (includeOnlyPaths && filteredCommitLogs.length < commitLogs.length) {
+            core.info(`ℹ️ After path filtering: ${filteredCommitLogs.length} commits remain`);
+        }
         // Process commit logs
-        const commitInfo = commitLogs.map(commitLog => {
+        const commitInfo = filteredCommitLogs.map(commitLog => {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const [sha, authorName, authorEmail, authorDate, committerName, committerEmail, committerDate, subject] = commitLog.split('||||');
             return {
@@ -54916,7 +54958,7 @@ class GiteaRepository extends BaseRepository {
             additions: additionCount,
             deletions: deletionCount,
             changes: changeCount,
-            commits: commitCount,
+            commits: commitInfo.length,
             commitInfo
         };
     }
@@ -55182,11 +55224,12 @@ async function run() {
         const exportCache = core.getInput('exportCache') === 'true';
         const exportOnly = core.getInput('exportOnly') === 'true';
         const cache = core.getInput('cache');
+        const includeOnlyPaths = core.getInput('includeOnlyPaths');
         // Use OfflineRepository if offline mode is enabled, otherwise use the selected platform
         const repositoryUtils = offlineMode
             ? new OfflineRepository(repositoryPath)
             : new supportedPlatform[platform](token, baseUrl, repositoryPath);
-        const result = await new ReleaseNotesBuilder(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchViaCommits, fetchReviewers, fetchReleaseInformation, fetchReviews, mode, exportCache, exportOnly, cache, configuration).build();
+        const result = await new ReleaseNotesBuilder(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchViaCommits, fetchReviewers, fetchReleaseInformation, fetchReviews, mode, exportCache, exportOnly, cache, configuration, includeOnlyPaths).build();
         core.setOutput('changelog', result);
         // write the result in changelog to file if possible
         const outputFile = core.getInput('outputFile');
