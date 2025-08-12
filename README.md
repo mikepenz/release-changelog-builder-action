@@ -212,7 +212,9 @@ For **monorepo setups**, you can filter commits by path to generate changelogs o
   if: startsWith(github.ref, 'refs/tags/')
   uses: mikepenz/release-changelog-builder-action@{latest-release}
   with:
-    includeOnlyPaths: "app1/,shared/"
+    includeOnlyPaths: |
+      app1/
+      shared/
     fromTag: "v1.0.0"
     toTag: "v2.0.0"
     token: ${{ secrets.GITHUB_TOKEN }}
@@ -245,7 +247,7 @@ For **monorepo setups**, you can filter commits by path to generate changelogs o
 | `exportCache`             | Will enable exporting the fetched PR information to a cache, which can be re-used by later runs. Default: false                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `exportOnly`              | When enabled, will result in only exporting the cache, without generating a changelog. Default: false (Requires `exportCache` to be enabled)                                                                                                                                                                                                                                                                                                                                                                                |
 | `cache`                   | The file path to write/read the cache to/from.                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `includeOnlyPaths`        | Comma separated list of path patterns to include (e.g., "app1/,shared/"). Only commits that touched these paths will be included in the changelog. Useful for monorepo setups where you want to filter commits by their affected paths.                                                                                                                                                                                                                                                                                  |
+| `includeOnlyPaths`        | List of path patterns to include. Provide as multiline input (one per line). Only commits that touched these paths will be included in the changelog. Useful for monorepo setups where you want to filter commits by their affected paths.                                                                                                                                                                                                                                                                                  |
 
 > [!WARNING]  
 > `${{ secrets.GITHUB_TOKEN }}` only grants rights to the current repository, for other repositories please use a PAT (Personal Access Token).

@@ -9,7 +9,7 @@ import {Unpacked} from '../pr-collector/utils.js'
 import moment from 'moment'
 
 export class GithubRepository extends BaseRepository {
-  async getDiffRemote(owner: string, repo: string, base: string, head: string, includeOnlyPaths?: string | null): Promise<DiffInfo> {
+  async getDiffRemote(owner: string, repo: string, base: string, head: string, includeOnlyPaths?: string[] | null): Promise<DiffInfo> {
     let changedFilesCount = 0
     let additionCount = 0
     let deletionCount = 0
@@ -49,8 +49,8 @@ export class GithubRepository extends BaseRepository {
     let filteredCommits: RestEndpointMethodTypes['repos']['compareCommits']['response']['data']['commits'] = []
     const commitToFilesMap = new Map<string, string[]>()
     
-    if (includeOnlyPaths) {
-      const pathPatterns = includeOnlyPaths.split(',').map(pattern => pattern.trim()).filter(pattern => pattern.length > 0)
+    if (includeOnlyPaths && includeOnlyPaths.length > 0) {
+      const pathPatterns = includeOnlyPaths.map(pattern => pattern.trim()).filter(pattern => pattern.length > 0)
       core.info(`ℹ️ Path filtering enabled with patterns: ${pathPatterns.join(', ')}`)
       
       for (const commit of commits.filter(commit => commit.sha)) {

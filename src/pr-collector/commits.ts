@@ -39,13 +39,13 @@ export interface CommitInfo {
 export class Commits {
   constructor(private repositoryUtils: BaseRepository) {}
 
-  async getDiff(owner: string, repo: string, base: string, head: string, includeOnlyPaths?: string | null): Promise<DiffInfo> {
+  async getDiff(owner: string, repo: string, base: string, head: string, includeOnlyPaths?: string[] | null): Promise<DiffInfo> {
     const diff: DiffInfo = await this.getDiffRemote(owner, repo, base, head, includeOnlyPaths)
     diff.commitInfo = this.sortCommits(diff.commitInfo)
     return diff
   }
 
-  private async getDiffRemote(owner: string, repo: string, base: string, head: string, includeOnlyPaths?: string | null): Promise<DiffInfo> {
+  private async getDiffRemote(owner: string, repo: string, base: string, head: string, includeOnlyPaths?: string[] | null): Promise<DiffInfo> {
     return this.repositoryUtils.getDiffRemote(owner, repo, base, head, includeOnlyPaths)
   }
 

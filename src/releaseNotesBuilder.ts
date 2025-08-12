@@ -51,7 +51,7 @@ export class ReleaseNotesBuilder {
     private exportOnly = false,
     private cache: string | null = null,
     private configuration: Configuration,
-    private includeOnlyPaths: string | null = null
+    private includeOnlyPaths: string[] | null = null
   ) {}
 
   async build(): Promise<string | null> {

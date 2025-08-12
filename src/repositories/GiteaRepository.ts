@@ -91,7 +91,7 @@ export class GiteaRepository extends BaseRepository {
    * WARNING: This does not actually get the diff from the remote, as Gitea does not offer a compareable API.
    * This uses the local repository to get the diff. NOTE: As such, gitea integration requires the repo available.
    */
-  async getDiffRemote(owner: string, repo: string, base: string, head: string, includeOnlyPaths?: string | null): Promise<DiffInfo> {
+  async getDiffRemote(owner: string, repo: string, base: string, head: string, includeOnlyPaths?: string[] | null): Promise<DiffInfo> {
     let changedFilesCount = 0
     let additionCount = 0
     let deletionCount = 0
@@ -121,8 +121,8 @@ export class GiteaRepository extends BaseRepository {
     let logArgs = ['log', '--pretty=format:%H||||%an||||%ae||||%ad||||%cn||||%ce||||%cd||||%s', `${base}...${head}`]
     
     // Add path filtering if specified
-    if (includeOnlyPaths) {
-      const pathPatterns = includeOnlyPaths.split(',').map(pattern => pattern.trim()).filter(pattern => pattern.length > 0)
+    if (includeOnlyPaths && includeOnlyPaths.length > 0) {
+      const pathPatterns = includeOnlyPaths.map(pattern => pattern.trim()).filter(pattern => pattern.length > 0)
       core.info(`ℹ️ Path filtering enabled with patterns: ${pathPatterns.join(', ')}`)
       logArgs.push('--', ...pathPatterns)
     }

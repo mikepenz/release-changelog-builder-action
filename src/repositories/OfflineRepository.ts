@@ -47,7 +47,8 @@ export class OfflineRepository extends BaseRepository {
     return this.getTagByCreateTime(repositoryPath, tagInfo);
   }
 
-  async getDiffRemote(owner: string, repo: string, base: string, head: string): Promise<DiffInfo> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getDiffRemote(owner: string, repo: string, base: string, head: string, _includeOnlyPaths?: string[] | null): Promise<DiffInfo> {
     core.info(`ℹ️ Getting diff information from local repository in offline mode`);
     const gitHelper = await createCommandManager(this.repositoryPath);
 

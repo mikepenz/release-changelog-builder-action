@@ -48120,8 +48120,8 @@ class GithubRepository extends BaseRepository {
         // If path filtering is enabled, we need to get file information for each commit
         let filteredCommits = [];
         const commitToFilesMap = new Map();
-        if (includeOnlyPaths) {
-            const pathPatterns = includeOnlyPaths.split(',').map(pattern => pattern.trim()).filter(pattern => pattern.length > 0);
+        if (includeOnlyPaths && includeOnlyPaths.length > 0) {
+            const pathPatterns = includeOnlyPaths.map(pattern => pattern.trim()).filter(pattern => pattern.length > 0);
             core.info(`ℹ️ Path filtering enabled with patterns: ${pathPatterns.join(', ')}`);
             for (const commit of commits.filter(commit => commit.sha)) {
                 try {
@@ -54924,8 +54924,8 @@ class GiteaRepository extends BaseRepository {
         // Now let's get the commit logs between the two branches/commits
         let logArgs = ['log', '--pretty=format:%H||||%an||||%ae||||%ad||||%cn||||%ce||||%cd||||%s', `${base}...${head}`];
         // Add path filtering if specified
-        if (includeOnlyPaths) {
-            const pathPatterns = includeOnlyPaths.split(',').map(pattern => pattern.trim()).filter(pattern => pattern.length > 0);
+        if (includeOnlyPaths && includeOnlyPaths.length > 0) {
+            const pathPatterns = includeOnlyPaths.map(pattern => pattern.trim()).filter(pattern => pattern.length > 0);
             core.info(`ℹ️ Path filtering enabled with patterns: ${pathPatterns.join(', ')}`);
             logArgs.push('--', ...pathPatterns);
         }
@@ -55090,7 +55090,8 @@ class OfflineRepository extends BaseRepository {
     async fillTagInformation(repositoryPath, owner, repo, tagInfo) {
         return this.getTagByCreateTime(repositoryPath, tagInfo);
     }
-    async getDiffRemote(owner, repo, base, head) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async getDiffRemote(owner, repo, base, head, _includeOnlyPaths) {
         core.info(`ℹ️ Getting diff information from local repository in offline mode`);
         const gitHelper = await createCommandManager(this.repositoryPath);
         // Get diff stats
@@ -55224,7 +55225,7 @@ async function run() {
         const exportCache = core.getInput('exportCache') === 'true';
         const exportOnly = core.getInput('exportOnly') === 'true';
         const cache = core.getInput('cache');
-        const includeOnlyPaths = core.getInput('includeOnlyPaths');
+        const includeOnlyPaths = core.getMultilineInput('includeOnlyPaths');
         // Use OfflineRepository if offline mode is enabled, otherwise use the selected platform
         const repositoryUtils = offlineMode
             ? new OfflineRepository(repositoryPath)

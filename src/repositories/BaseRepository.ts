@@ -32,7 +32,7 @@ export abstract class BaseRepository {
 
   abstract fillTagInformation(repositoryPath: string, owner: string, repo: string, tagInfo: TagInfo): Promise<TagInfo>
 
-  abstract getDiffRemote(owner: string, repo: string, base: string, head: string, includeOnlyPaths?: string | null): Promise<DiffInfo>
+  abstract getDiffRemote(owner: string, repo: string, base: string, head: string, includeOnlyPaths?: string[] | null): Promise<DiffInfo>
 
   abstract getForCommitHash(owner: string, repo: string, commit_sha: string, maxPullRequests: number): Promise<PullRequestInfo[]>
 

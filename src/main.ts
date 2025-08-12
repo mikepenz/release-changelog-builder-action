@@ -86,7 +86,7 @@ async function run(): Promise<void> {
     const exportCache = core.getInput('exportCache') === 'true'
     const exportOnly = core.getInput('exportOnly') === 'true'
     const cache = core.getInput('cache')
-    const includeOnlyPaths = core.getInput('includeOnlyPaths')
+    const includeOnlyPaths = core.getMultilineInput('includeOnlyPaths')
 
     // Use OfflineRepository if offline mode is enabled, otherwise use the selected platform
     const repositoryUtils = offlineMode
