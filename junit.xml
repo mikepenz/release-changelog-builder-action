@@ -1,0 +1,721 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="87" failures="22" errors="0" time="5.843">
+  <testsuite name="undefined" errors="0" failures="0" skipped="0" timestamp="2025-08-12T05:16:16" time="1.675" tests="19">
+    <testcase classname=" Extract label from title, combined regex" name=" Extract label from title, combined regex" time="0.014">
+    </testcase>
+    <testcase classname=" Extract label from title and body, combined regex" name=" Extract label from title and body, combined regex" time="0.004">
+    </testcase>
+    <testcase classname=" Extract label from title, split regex" name=" Extract label from title, split regex" time="0.002">
+    </testcase>
+    <testcase classname=" Extract label from title, match" name=" Extract label from title, match" time="0.002">
+    </testcase>
+    <testcase classname=" Extract label from title, match multiple" name=" Extract label from title, match multiple" time="0.001">
+    </testcase>
+    <testcase classname=" Extract label from title, match multiple, custon non matching label" name=" Extract label from title, match multiple, custon non matching label" time="0.003">
+    </testcase>
+    <testcase classname=" Match multiple labels exhaustive for category" name=" Match multiple labels exhaustive for category" time="0.003">
+    </testcase>
+    <testcase classname=" Deduplicate duplicated PRs" name=" Deduplicate duplicated PRs" time="0.002">
+    </testcase>
+    <testcase classname=" Deduplicate duplicated PRs DESC" name=" Deduplicate duplicated PRs DESC" time="0.003">
+    </testcase>
+    <testcase classname=" Reference PRs" name=" Reference PRs" time="0.039">
+    </testcase>
+    <testcase classname=" Use empty_content for empty category" name=" Use empty_content for empty category" time="0.003">
+    </testcase>
+    <testcase classname=" Commit SHA-1 in commitMode" name=" Commit SHA-1 in commitMode" time="0.002">
+    </testcase>
+    <testcase classname=" Release Diff" name=" Release Diff" time="0.002">
+    </testcase>
+    <testcase classname=" Use exclude labels to not include a PR within a category." name=" Use exclude labels to not include a PR within a category." time="0.003">
+    </testcase>
+    <testcase classname=" Extract custom placeholder from PR body and replace in global template" name=" Extract custom placeholder from PR body and replace in global template" time="0.003">
+    </testcase>
+    <testcase classname=" Use Rules to include a PR within a Category." name=" Use Rules to include a PR within a Category." time="0.002">
+    </testcase>
+    <testcase classname=" Use Rules to get all open PRs in a Category." name=" Use Rules to get all open PRs in a Category." time="0.002">
+    </testcase>
+    <testcase classname=" Use Rules to get current open PR and merged categorised." name=" Use Rules to get current open PR and merged categorised." time="0.003">
+    </testcase>
+    <testcase classname=" Use Rules to get all open PRs in one Category and merged categorised." name=" Use Rules to get all open PRs in one Category and merged categorised." time="0.004">
+    </testcase>
+  </testsuite>
+  <testsuite name="undefined" errors="0" failures="0" skipped="0" timestamp="2025-08-12T05:16:16" time="1.797" tests="15">
+    <testcase classname=" Should have empty changelog (tags)" name=" Should have empty changelog (tags)" time="0.026">
+    </testcase>
+    <testcase classname=" Should match generated changelog (tags)" name=" Should match generated changelog (tags)" time="0.006">
+    </testcase>
+    <testcase classname=" Should match generated changelog (refs)" name=" Should match generated changelog (refs)" time="0.003">
+    </testcase>
+    <testcase classname=" Should match generated changelog and replace all occurrences (refs)" name=" Should match generated changelog and replace all occurrences (refs)" time="0.002">
+    </testcase>
+    <testcase classname=" Should match ordered ASC" name=" Should match ordered ASC" time="0.006">
+    </testcase>
+    <testcase classname=" Should match ordered DESC" name=" Should match ordered DESC" time="0.004">
+    </testcase>
+    <testcase classname=" Should match ordered by title ASC" name=" Should match ordered by title ASC" time="0.017">
+    </testcase>
+    <testcase classname=" Should match ordered by title DESC" name=" Should match ordered by title DESC" time="0.006">
+    </testcase>
+    <testcase classname=" Should ignore PRs not merged into develop branch" name=" Should ignore PRs not merged into develop branch" time="0.013">
+    </testcase>
+    <testcase classname=" Should ignore PRs not merged into main branch" name=" Should ignore PRs not merged into main branch" time="0.003">
+    </testcase>
+    <testcase classname=" Default configuration with commit mode" name=" Default configuration with commit mode" time="0.005">
+    </testcase>
+    <testcase classname=" Default configuration with commit mode and custom placeholder" name=" Default configuration with commit mode and custom placeholder" time="0.007">
+    </testcase>
+    <testcase classname=" Default configuration with hybrid mode and classic categories" name=" Default configuration with hybrid mode and classic categories" time="0.006">
+    </testcase>
+    <testcase classname=" Default configuration with hybrid mode and with separate feature categories" name=" Default configuration with hybrid mode and with separate feature categories" time="0.008">
+    </testcase>
+    <testcase classname=" Default configuration with hybrid mode and with separate feature categories and dup checker" name=" Default configuration with hybrid mode and with separate feature categories and dup checker" time="0.006">
+    </testcase>
+  </testsuite>
+  <testsuite name="undefined" errors="0" failures="14" skipped="0" timestamp="2025-08-12T05:16:16" time="1.917" tests="14">
+    <testcase classname=" [Gitea] Verify reviewers who approved are fetched and also release information" name=" [Gitea] Verify reviewers who approved are fetched and also release information" time="0.042">
+      <failure>TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at GiteaRepository.fillTagInformation (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/repositories/GiteaRepository.ts:35:22)
+    at PullRequestCollector.build (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/pr-collector/prCollector.ts:86:17)
+    at ReleaseNotesBuilder.build (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/releaseNotesBuilder.ts:80:22)
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/gitea/releaseNotesBuilderGitea.test.ts:49:21)</failure>
+    </testcase>
+    <testcase classname=" [Gitea] Should match generated changelog (unspecified fromTag)" name=" [Gitea] Should match generated changelog (unspecified fromTag)" time="0.009">
+      <failure>TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at GiteaRepository.getTags (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/repositories/GiteaRepository.ts:235:22)
+    at Tags.retrieveRange (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/pr-collector/tags.ts:96:9)
+    at PullRequestCollector.build (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/pr-collector/prCollector.ts:57:22)
+    at ReleaseNotesBuilder.build (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/releaseNotesBuilder.ts:80:22)
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/gitea/releaseNotesBuilderGitea.test.ts:89:21)</failure>
+    </testcase>
+    <testcase classname=" [Gitea] Should match generated changelog (unspecified tags)" name=" [Gitea] Should match generated changelog (unspecified tags)" time="0.009">
+      <failure>TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at GiteaRepository.getTags (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/repositories/GiteaRepository.ts:235:22)
+    at Tags.retrieveRange (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/pr-collector/tags.ts:96:9)
+    at PullRequestCollector.build (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/pr-collector/prCollector.ts:57:22)
+    at ReleaseNotesBuilder.build (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/releaseNotesBuilder.ts:80:22)
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/gitea/releaseNotesBuilderGitea.test.ts:126:21)</failure>
+    </testcase>
+    <testcase classname=" [Gitea] Should use empty placeholder" name=" [Gitea] Should use empty placeholder" time="0.018">
+      <failure>Error: expect(received).toStrictEqual(expected) // deep equality
+
+- Expected  - 21
++ Received  +  1
+
+- ## 🚀 Features
+-
+- - Add Drone and releases
+-    - PR: #2
+- - Add search filters
+-    - PR: #8
+- - Add qualifier module
+-    - PR: #10
+- - Add create repo command
+-    - PR: #13
+- - Add release support and CSV output
+-    - PR: #16
+-
+- ## 🐛 Fixes
+-
+- - Fix PR head nil panic
+-    - PR: #7
+- - Fix Drone release
+-    - PR: #14
+-
+-
++ - no changes
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/gitea/releaseNotesBuilderGitea.test.ts:164:21)</failure>
+    </testcase>
+    <testcase classname=" [Gitea] Should fill empty placeholders" name=" [Gitea] Should fill empty placeholders" time="0.016">
+      <failure>Error: expect(received).toStrictEqual(expected) // deep equality
+
+- Expected  - 71
++ Received  +  0
+
+- ## 🚀 Features
+-
+- - Add create repo command
+-    - PR: #13
+- - Add release support and CSV output
+-    - PR: #16
+- - Add open functionality
+-    - PR: #21
+-
+- ## 📦 Uncategorized
+-
+- - Clean up and polish
+-    - PR: #1
+- - Add Drone and releases
+-    - PR: #2
+- - Update Beaver and fix bugs
+-    - PR: #6
+- - Fix PR head nil panic
+-    - PR: #7
+- - Add search filters
+-    - PR: #8
+- - Changelog 0.2.0
+-    - PR: #9
+- - Add qualifier module
+-    - PR: #10
+- - Fix Drone release
+-    - PR: #14
+- - Imp formatting
+-    - PR: #17
+- - Update Gitea SDK and other modules
+-    - PR: #19
+- - Update modules
+-    - PR: #20
+- - Add changelog for 0.3.0 and 0.4.0
+-    - PR: #22
+-
+-
+- - Clean up and polish
+-    - PR: #1
+- - Add Drone and releases
+-    - PR: #2
+- - Update Beaver and fix bugs
+-    - PR: #6
+- - Fix PR head nil panic
+-    - PR: #7
+- - Add search filters
+-    - PR: #8
+- - Changelog 0.2.0
+-    - PR: #9
+- - Add qualifier module
+-    - PR: #10
+- - Fix Drone release
+-    - PR: #14
+- - Imp formatting
+-    - PR: #17
+- - Update Gitea SDK and other modules
+-    - PR: #19
+- - Update modules
+-    - PR: #20
+- - Add changelog for 0.3.0 and 0.4.0
+-    - PR: #22
+-
+-
+  jolheiser
+  sip
+  v0.1.0
+  v0.4.0
+  https://gitea.com/jolheiser/sip/compare/v0.1.0...v0.4.0
+- 3
+- 12
+- 0
+- 36
+- 1322
+- 274
+- 0
+- 16
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/gitea/releaseNotesBuilderGitea.test.ts:215:21)</failure>
+    </testcase>
+    <testcase classname=" [Gitea] Should fill `template` placeholders" name=" [Gitea] Should fill `template` placeholders" time="0.008">
+      <failure>Error: expect(received).toStrictEqual(expected) // deep equality
+
+- Expected  - 71
++ Received  +  0
+
+- ## 🚀 Features
+-
+- - Add create repo command
+-    - PR: #13
+- - Add release support and CSV output
+-    - PR: #16
+- - Add open functionality
+-    - PR: #21
+-
+- ## 📦 Uncategorized
+-
+- - Clean up and polish
+-    - PR: #1
+- - Add Drone and releases
+-    - PR: #2
+- - Update Beaver and fix bugs
+-    - PR: #6
+- - Fix PR head nil panic
+-    - PR: #7
+- - Add search filters
+-    - PR: #8
+- - Changelog 0.2.0
+-    - PR: #9
+- - Add qualifier module
+-    - PR: #10
+- - Fix Drone release
+-    - PR: #14
+- - Imp formatting
+-    - PR: #17
+- - Update Gitea SDK and other modules
+-    - PR: #19
+- - Update modules
+-    - PR: #20
+- - Add changelog for 0.3.0 and 0.4.0
+-    - PR: #22
+-
+-
+- - Clean up and polish
+-    - PR: #1
+- - Add Drone and releases
+-    - PR: #2
+- - Update Beaver and fix bugs
+-    - PR: #6
+- - Fix PR head nil panic
+-    - PR: #7
+- - Add search filters
+-    - PR: #8
+- - Changelog 0.2.0
+-    - PR: #9
+- - Add qualifier module
+-    - PR: #10
+- - Fix Drone release
+-    - PR: #14
+- - Imp formatting
+-    - PR: #17
+- - Update Gitea SDK and other modules
+-    - PR: #19
+- - Update modules
+-    - PR: #20
+- - Add changelog for 0.3.0 and 0.4.0
+-    - PR: #22
+-
+-
+  jolheiser
+  sip
+  v0.1.0
+  v0.4.0
+  https://gitea.com/jolheiser/sip/compare/v0.1.0...v0.4.0
+- 3
+- 12
+- 0
+- 36
+- 1322
+- 274
+- 0
+- 16
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/gitea/releaseNotesBuilderGitea.test.ts:323:21)</failure>
+    </testcase>
+    <testcase classname=" [Gitea] Should fill `template` placeholders, ignore" name=" [Gitea] Should fill `template` placeholders, ignore" time="0.005">
+      <failure>Error: expect(received).toStrictEqual(expected) // deep equality
+
+- Expected  - 28
++ Received  +  0
+
+- ## 🚀 Features
+-
+- - Add open functionality
+-    - PR: #21
+-
+-
+- - Update modules
+-    - PR: #20
+- - Add changelog for 0.3.0 and 0.4.0
+-    - PR: #22
+- - Update Gitea SDK
+-    - PR: #23
+- - Update repo info
+-    - PR: #24
+- - Add release attachments
+-    - PR: #26
+- - Refactor
+-    - PR: #29
+-
+-
+  jolheiser
+  sip
+  v0.3.0
+  v0.5.0
+  https://gitea.com/jolheiser/sip/compare/v0.3.0...v0.5.0
+- 1
+- 6
+- 0
+- 41
+- 748
+- 314
+- 0
+- 8
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/gitea/releaseNotesBuilderGitea.test.ts:432:21)</failure>
+    </testcase>
+    <testcase classname=" [Gitea] Uncategorized category" name=" [Gitea] Uncategorized category" time="0.008">
+      <failure>Error: expect(received).toStrictEqual(expected) // deep equality
+
+- Expected  - 42
++ Received  +  4
+
+- ## 🚀 Features
+-
+- - Add open functionality
+-    - PR: #21
+-
+- ## 📦 Uncategorized
+-
+- - Update modules
+-    - PR: #20
+- - Add changelog for 0.3.0 and 0.4.0
+-    - PR: #22
+- - Update Gitea SDK
+-    - PR: #23
+- - Update repo info
+-    - PR: #24
+- - Add release attachments
+-    - PR: #26
+- - Refactor
+-    - PR: #29
+-
+-
+-
+- Uncategorized:
+- - Update modules
+-    - PR: #20
+- - Add changelog for 0.3.0 and 0.4.0
+-    - PR: #22
+- - Update Gitea SDK
+-    - PR: #23
+- - Update repo info
+-    - PR: #24
+- - Add release attachments
+-    - PR: #26
+- - Refactor
+-    - PR: #29
+-
+-
+- Ignored:
+-
+-
+- 6
+- 0
++ jolheiser
++ sip
++ v0.3.0
++ v0.5.0
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/gitea/releaseNotesBuilderGitea.test.ts:497:21)</failure>
+    </testcase>
+    <testcase classname=" [Gitea] Verify commit based changelog" name=" [Gitea] Verify commit based changelog" time="0.007">
+      <failure>Error: expect(received).toStrictEqual(expected) // deep equality
+
+- Expected  - 45
++ Received  +  4
+
+- ## 📦 Uncategorized
+-
+- - Update modules (#20)
+-
+- - Add open functionality (#21)
+-
+- - Add changelog for 0.3.0 and 0.4.0 (#22)
+-
+- - Update Gitea SDK (#23)
+-
+- - Update repo info (#24)
+-
+- - Add release attachments (#26)
+-
+- - Refactor (#29)
+-
+- - Changelog 0.5.0 (#30)
+-
+-
+-
+-
+- Uncategorized:
+- - Update modules (#20)
+-
+- - Add open functionality (#21)
+-
+- - Add changelog for 0.3.0 and 0.4.0 (#22)
+-
+- - Update Gitea SDK (#23)
+-
+- - Update repo info (#24)
+-
+- - Add release attachments (#26)
+-
+- - Refactor (#29)
+-
+- - Changelog 0.5.0 (#30)
+-
+-
+-
+- Ignored:
+-
+-
+- 8
+- 0
++ jolheiser
++ sip
++ v0.3.0
++ v0.5.0
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/gitea/releaseNotesBuilderGitea.test.ts:571:21)</failure>
+    </testcase>
+    <testcase classname=" [Gitea] Verify commit based changelog" name=" [Gitea] Verify commit based changelog" time="0.005">
+      <failure>Error: expect(received).toStrictEqual(expected) // deep equality
+
+- Expected  - 6
++ Received  + 1
+
+- ## 🚀 Features
+-
+- - Add release attachments (#26)
+-    - PR: #0
+-
+-
++ - no changes
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/gitea/releaseNotesBuilderGitea.test.ts:648:21)</failure>
+    </testcase>
+    <testcase classname=" [Gitea] Verify default inclusion of open PRs" name=" [Gitea] Verify default inclusion of open PRs" time="0.005">
+      <failure>Error: expect(received).toStrictEqual(expected) // deep equality
+
+- Expected  - 11
++ Received  +  1
+
+-
+-
+-
+- Uncategorized
+- - Add attachment removal and change message (#36) merged
+- - Change to vanity URL (#37) merged
+-
+-
+-
+- Open
+-
++ - no changes
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/gitea/releaseNotesBuilderGitea.test.ts:686:21)</failure>
+    </testcase>
+    <testcase classname=" [Gitea] Verify custom categorisation of open PRs" name=" [Gitea] Verify custom categorisation of open PRs" time="0.006">
+      <failure>Error: expect(received).toStrictEqual(expected) // deep equality
+
+Expected: &quot;&quot;
+Received: &quot;- no changes&quot;
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/gitea/releaseNotesBuilderGitea.test.ts:727:21)</failure>
+    </testcase>
+    <testcase classname=" [Gitea] Fetch release information" name=" [Gitea] Fetch release information" time="0.009">
+      <failure>TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at GiteaRepository.fillTagInformation (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/repositories/GiteaRepository.ts:35:22)
+    at PullRequestCollector.build (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/pr-collector/prCollector.ts:86:17)
+    at ReleaseNotesBuilder.build (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/releaseNotesBuilder.ts:80:22)
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/gitea/releaseNotesBuilderGitea.test.ts:757:21)</failure>
+    </testcase>
+    <testcase classname=" [Gitea] Fetch release information for non existing tag / release" name=" [Gitea] Fetch release information for non existing tag / release" time="0.012">
+      <failure>TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at GiteaRepository.fillTagInformation (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/repositories/GiteaRepository.ts:35:22)
+    at PullRequestCollector.build (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/pr-collector/prCollector.ts:86:17)
+    at ReleaseNotesBuilder.build (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/releaseNotesBuilder.ts:80:22)
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/gitea/releaseNotesBuilderGitea.test.ts:791:21)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="undefined" errors="0" failures="0" skipped="0" timestamp="2025-08-12T05:16:18" time="0.327" tests="6">
+    <testcase classname=" [Gitea] Should have  changelog (tags)" name=" [Gitea] Should have  changelog (tags)" time="0.016">
+    </testcase>
+    <testcase classname=" [Gitea] Should match generated changelog (tags)" name=" [Gitea] Should match generated changelog (tags)" time="0.004">
+    </testcase>
+    <testcase classname=" [Gitea] Should match generated changelog (refs)" name=" [Gitea] Should match generated changelog (refs)" time="0.003">
+    </testcase>
+    <testcase classname=" [Gitea] Should match generated changelog and replace all occurrences (refs)" name=" [Gitea] Should match generated changelog and replace all occurrences (refs)" time="0.004">
+    </testcase>
+    <testcase classname=" [Gitea] Should match ordered ASC" name=" [Gitea] Should match ordered ASC" time="0.014">
+    </testcase>
+    <testcase classname=" [Gitea] Should match ordered DESC" name=" [Gitea] Should match ordered DESC" time="0.014">
+    </testcase>
+  </testsuite>
+  <testsuite name="undefined" errors="0" failures="0" skipped="0" timestamp="2025-08-12T05:16:18" time="0.246" tests="6">
+    <testcase classname=" Should order tags correctly using semver" name=" Should order tags correctly using semver" time="0.003">
+    </testcase>
+    <testcase classname=" Should order tags correctly using semver" name=" Should order tags correctly using semver" time="0.003">
+    </testcase>
+    <testcase classname=" Should order tags alphabetical" name=" Should order tags alphabetical" time="0.022">
+    </testcase>
+    <testcase classname=" Should filter tags correctly using the regex" name=" Should filter tags correctly using the regex" time="0.001">
+    </testcase>
+    <testcase classname=" Should filter tags correctly using the regex (inverse)" name=" Should filter tags correctly using the regex (inverse)" time="0">
+    </testcase>
+    <testcase classname=" Should transform tags correctly using the regex" name=" Should transform tags correctly using the regex" time="0.002">
+    </testcase>
+  </testsuite>
+  <testsuite name="undefined" errors="0" failures="0" skipped="0" timestamp="2025-08-12T05:16:18" time="0.25" tests="1">
+    <testcase classname=" Match multiple labels exhaustive for category" name=" Match multiple labels exhaustive for category" time="0.017">
+    </testcase>
+  </testsuite>
+  <testsuite name="undefined" errors="0" failures="0" skipped="0" timestamp="2025-08-12T05:16:18" time="0.665" tests="1">
+    <testcase classname=" Test custom changelog builder" name=" Test custom changelog builder" time="0.418">
+    </testcase>
+  </testsuite>
+  <testsuite name="undefined" errors="0" failures="1" skipped="0" timestamp="2025-08-12T05:16:19" time="0.312" tests="1">
+    <testcase classname=" Test offline mode functionality" name=" Test offline mode functionality" time="0.039">
+      <failure>Error: The process &apos;/usr/bin/git&apos; failed with exit code 128
+    at ExecState._setResult (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/node_modules/@actions/exec/src/toolrunner.ts:668:17)
+    at ExecState.CheckComplete (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/node_modules/@actions/exec/src/toolrunner.ts:649:12)
+    at ChildProcess.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/node_modules/@actions/exec/src/toolrunner.ts:522:15)
+    at ChildProcess.emit (node:events:524:28)
+    at maybeClose (node:internal/child_process:1104:16)
+    at Process.ChildProcess._handle.onexit (node:internal/child_process:304:5)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="undefined" errors="0" failures="0" skipped="0" timestamp="2025-08-12T05:16:19" time="0.186" tests="5">
+    <testcase classname=" Replace into target" name=" Replace into target" time="0.005">
+    </testcase>
+    <testcase classname=" Replace all into target" name=" Replace all into target" time="0.001">
+    </testcase>
+    <testcase classname=" Match without target" name=" Match without target" time="0.001">
+    </testcase>
+    <testcase classname=" Match into target" name=" Match into target" time="0.001">
+    </testcase>
+    <testcase classname=" Match into named group" name=" Match into named group" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="undefined" errors="0" failures="0" skipped="0" timestamp="2025-08-12T05:16:20" time="0.163" tests="1">
+    <testcase classname=" Configurations are merged correctly" name=" Configurations are merged correctly" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="undefined" errors="0" failures="1" skipped="0" timestamp="2025-08-12T05:16:18" time="2.036" tests="4">
+    <testcase classname=" missing values should result in failure" name=" missing values should result in failure" time="0.761">
+    </testcase>
+    <testcase classname=" complete input should succeed" name=" complete input should succeed" time="0.408">
+    </testcase>
+    <testcase classname=" should write result to file" name=" should write result to file" time="0.337">
+    </testcase>
+    <testcase classname=" offline mode should work with commit mode" name=" offline mode should work with commit mode" time="0.328">
+      <failure>Error: Command failed: node /home/runner/work/release-changelog-builder-action/release-changelog-builder-action/lib/main.js
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at checkExecSyncError (node:child_process:891:11)
+    at Module.execFileSync (node:child_process:927:15)
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/main.test.ts:109:21)
+    at Promise.finally.completed (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/node_modules/jest-circus/build/jestAdapterInit.js:1559:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/node_modules/jest-circus/build/jestAdapterInit.js:1499:10)
+    at _callCircusTest (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/node_modules/jest-circus/build/jestAdapterInit.js:1009:40)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at _runTest (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/node_modules/jest-circus/build/jestAdapterInit.js:949:3)
+    at _runTestsForDescribeBlock (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+    at run (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+    at runAndTransformResultsToJestFormat (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/node_modules/jest-circus/build/jestAdapterInit.js:1920:21)
+    at jestAdapter (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/node_modules/jest-circus/build/runner.js:101:19)
+    at runTestInternal (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/node_modules/jest-runner/build/testWorker.js:272:16)
+    at runTest (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/node_modules/jest-runner/build/testWorker.js:340:7)
+    at Object.worker (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/node_modules/jest-runner/build/testWorker.js:494:12)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="undefined" errors="0" failures="6" skipped="0" timestamp="2025-08-12T05:16:18" time="3.611" tests="14">
+    <testcase classname=" [Github] Should match generated changelog (unspecified fromTag)" name=" [Github] Should match generated changelog (unspecified fromTag)" time="0.514">
+      <failure>HttpError: Blocked by DNS monitoring proxy
+    at fetchWrapper (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/node_modules/@octokit/rest/node_modules/@octokit/request/dist-bundle/index.js:122:11)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at GithubRepository.getTags (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/repositories/GithubRepository.ts:217:27)
+    at Tags.retrieveRange (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/pr-collector/tags.ts:96:9)
+    at PullRequestCollector.build (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/pr-collector/prCollector.ts:57:22)
+    at ReleaseNotesBuilder.build (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/releaseNotesBuilder.ts:80:22)
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/releaseNotesBuilder.test.ts:36:21)</failure>
+    </testcase>
+    <testcase classname=" [Github] Should match generated changelog (unspecified tags)" name=" [Github] Should match generated changelog (unspecified tags)" time="0.181">
+      <failure>HttpError: Blocked by DNS monitoring proxy
+    at fetchWrapper (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/node_modules/@octokit/rest/node_modules/@octokit/request/dist-bundle/index.js:122:11)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at GithubRepository.getTags (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/repositories/GithubRepository.ts:217:27)
+    at Tags.retrieveRange (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/pr-collector/tags.ts:96:9)
+    at PullRequestCollector.build (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/pr-collector/prCollector.ts:57:22)
+    at ReleaseNotesBuilder.build (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/src/releaseNotesBuilder.ts:80:22)
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/releaseNotesBuilder.test.ts:70:21)</failure>
+    </testcase>
+    <testcase classname=" [Github] Should use empty placeholder" name=" [Github] Should use empty placeholder" time="0.005">
+    </testcase>
+    <testcase classname=" [Github] Should fill empty placeholders" name=" [Github] Should fill empty placeholders" time="0.001">
+    </testcase>
+    <testcase classname=" [Github] Should fill `template` placeholders" name=" [Github] Should fill `template` placeholders" time="0.006">
+    </testcase>
+    <testcase classname=" [Github] Should fill `template` placeholders, ignore" name=" [Github] Should fill `template` placeholders, ignore" time="0.006">
+    </testcase>
+    <testcase classname=" [Github] Uncategorized category" name=" [Github] Uncategorized category" time="0.004">
+    </testcase>
+    <testcase classname=" [Github] Verify commit based changelog" name=" [Github] Verify commit based changelog" time="0.006">
+    </testcase>
+    <testcase classname=" [Github] Verify commit based changelog, with emoji categorisation" name=" [Github] Verify commit based changelog, with emoji categorisation" time="0.007">
+    </testcase>
+    <testcase classname=" [Github] Verify default inclusion of open PRs" name=" [Github] Verify default inclusion of open PRs" time="0.261">
+      <failure>Error: expect(received).toStrictEqual(expected) // deep equality
+
+- Expected  - 15
++ Received  +  1
+
+- ## 🚀 Features
+-
+- - A feature to be going to v2 (nr3) (#3) merged
+- - New feature to keep open (nr5) (#7) open
+-
+-
+-
+-
+- Uncategorized
+-
+-
+-
+- Open
+- - New feature to keep open (nr5) (#7) open
+-
++ - no changes
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/releaseNotesBuilder.test.ts:317:21)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)</failure>
+    </testcase>
+    <testcase classname=" [Github] Verify custom categorisation of open PRs" name=" [Github] Verify custom categorisation of open PRs" time="0.34">
+      <failure>Error: expect(received).toStrictEqual(expected) // deep equality
+
+- Expected  - 9
++ Received  + 1
+
+- ## 🚀 Features Merged
+-
+- - A feature to be going to v2 (nr3) -- (#3) [merged] {feature}
+-
+- ## 🚀 Features Open
+-
+- - New feature to keep open (nr5) -- (#7) [open] {feature}
+-
+-
++ - no changes
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/releaseNotesBuilder.test.ts:348:21)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)</failure>
+    </testcase>
+    <testcase classname=" [Github] Verify reviewers who approved are fetched and also release information" name=" [Github] Verify reviewers who approved are fetched and also release information" time="0.85">
+      <failure>Error: expect(received).toStrictEqual(expected) // deep equality
+
+- Expected  - 8
++ Received  + 1
+
+- ## 🚀 Features
+-
+- - A feature to be going to v2 (nr3) -- (#3) [merged]  --- 
+- - New feature to keep open (nr5) -- (#7) [open]  --- gabrielpopa
+-
+-
+-
+- 0
++ - no changes
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/releaseNotesBuilder.test.ts:379:21)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)</failure>
+    </testcase>
+    <testcase classname=" [Github] Fetch release information" name=" [Github] Fetch release information" time="0.421">
+      <failure>Error: expect(received).toStrictEqual(expected) // deep equality
+
+- Expected  - 3
++ Received  + 1
+
+- 2.0.0-2022-04-08T07:52:40.000Z
+- 3.0.0-a01-2022-07-26T14:28:36.000Z
+- 109
++ - no changes
+    at Object.&lt;anonymous&gt; (/home/runner/work/release-changelog-builder-action/release-changelog-builder-action/__tests__/releaseNotesBuilder.test.ts:411:21)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)</failure>
+    </testcase>
+    <testcase classname=" [Github] Fetch release information for non existing tag / release" name=" [Github] Fetch release information for non existing tag / release" time="0.613">
+    </testcase>
+  </testsuite>
+</testsuites>
