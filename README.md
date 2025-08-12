@@ -744,7 +744,7 @@ To run locally, or to access private repositories (GitHub Codespaces has automat
 To test your own configuration and use-case, the project contains a [\_\_tests\_\_/demo/demo.test.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/__tests__/demo/demo.test.ts) file, modify this one to your needs. (e.g., change repo, change token, change settings, ...), and then run it via:
 
 ```bash
-npm test -- demo.test.ts
+npm test -- -- demo.test.ts
 ```
 
 <details><summary><b>Debugging with Breakpoints</b></summary>
@@ -770,7 +770,7 @@ export GITHUB_TOKEN=your_read_only_github_token
 Afterwards it is possible to run any test included in the project:
 
 ```bash
-npm test -- main.test.ts # modify the file name to run other testcases
+npm test -- -- main.test.ts # modify the file name to run other testcases
 ```
 
 </p>
