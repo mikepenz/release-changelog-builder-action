@@ -48152,8 +48152,7 @@ class GithubRepository extends BaseRepository {
                 committer: commit.committer?.login || '',
                 committerName: commit.committer?.name || '',
                 commitDate: moment(commit.commit.committer?.date),
-                prNumber: undefined,
-                changedFiles: commitToFilesMap.get(commit.sha)
+                prNumber: undefined
             }))
         };
     }

@@ -5,14 +5,6 @@ import moment from 'moment'
 jest.setTimeout(180000)
 
 describe('Path Filtering', () => {
-  test('should parse includeOnlyPaths parameter correctly', () => {
-    // Test the parsing of comma-separated paths
-    const paths = 'app1/,app2/,shared/'
-    const pathPatterns = paths.split(',')
-    
-    expect(pathPatterns).toEqual(['app1/', 'app2/', 'shared/'])
-  })
-
   test('should filter commits by merge branches (existing functionality)', () => {
     const commits: CommitInfo[] = [
       {
@@ -24,8 +16,7 @@ describe('Path Filtering', () => {
         authorDate: moment(),
         committer: 'user1',
         committerName: 'User One',
-        commitDate: moment(),
-        changedFiles: ['app1/file1.js', 'app1/file2.js']
+        commitDate: moment()
       },
       {
         sha: 'commit2',
@@ -36,8 +27,7 @@ describe('Path Filtering', () => {
         authorDate: moment(),
         committer: 'user2',
         committerName: 'User Two',
-        commitDate: moment(),
-        changedFiles: ['app2/file1.js']
+        commitDate: moment()
       },
       {
         sha: 'commit3',
@@ -48,8 +38,7 @@ describe('Path Filtering', () => {
         authorDate: moment(),
         committer: 'user3',
         committerName: 'User Three',
-        commitDate: moment(),
-        changedFiles: ['shared/utils.js']
+        commitDate: moment()
       }
     ]
 
@@ -59,17 +48,5 @@ describe('Path Filtering', () => {
     expect(filtered).toHaveLength(2)
     expect(filtered[0].sha).toBe('commit1')
     expect(filtered[1].sha).toBe('commit3')
-  })
-
-  test('should handle empty includeOnlyPaths', () => {
-    const emptyPaths = ''
-    expect(emptyPaths.split(',')).toEqual([])
-  })
-
-  test('should handle whitespace in includeOnlyPaths', () => {
-    const pathsWithWhitespace = ' app1/ , app2/ ,  shared/  '
-    const pathPatterns = pathsWithWhitespace.split(',').map(pattern => pattern.trim()).filter(pattern => pattern.length > 0)
-    
-    expect(pathPatterns).toEqual(['app1/', 'app2/', 'shared/'])
   })
 })

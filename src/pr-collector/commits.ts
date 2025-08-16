@@ -33,7 +33,6 @@ export interface CommitInfo {
   committer: string
   committerName: string
   commitDate: moment.Moment
-  changedFiles?: string[] // paths of files changed in this commit
 }
 
 export class Commits {
