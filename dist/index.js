@@ -43640,8 +43640,12 @@ class GitCommandManager {
         const commitOutput = await this.execGit(['rev-list', '-n', '1', tagName]);
         return commitOutput.stdout.trim();
     }
-    async getDiffStats(base, head) {
-        const diffOutput = await this.execGit(['diff', '--numstat', `${base}..${head}`]);
+    async getDiffStats(base, head, includeOnlyPaths) {
+        const logArgs = ['diff', '--numstat', `${base}..${head}`];
+        if (includeOnlyPaths) {
+            logArgs.push('--', ...includeOnlyPaths);
+        }
+        const diffOutput = await this.execGit(logArgs);
         const lines = diffOutput.stdout.trim().split('\n').filter(line => line.trim() !== '');
         let additions = 0;
         let deletions = 0;
@@ -43659,12 +43663,16 @@ class GitCommandManager {
             changes: additions + deletions
         };
     }
-    async getCommitsBetween(base, head) {
-        const logOutput = await this.execGit([
+    async getCommitsBetween(base, head, includeOnlyPaths) {
+        const logArgs = [
             'log',
             '--pretty=format:%H|%an|%ae|%aI|%s|%b',
             `${base}..${head}`
-        ]);
+        ];
+        if (includeOnlyPaths) {
+            logArgs.push('--', ...includeOnlyPaths);
+        }
+        const logOutput = await this.execGit(logArgs);
         const lines = logOutput.stdout.trim().split('\n').filter(line => line.trim() !== '');
         const commits = lines.map(line => {
             const [sha, authorName, authorEmail, authorDate, subject, body] = line.split('|');
@@ -48090,6 +48098,11 @@ class GithubRepository extends BaseRepository {
         let additionCount = 0;
         let deletionCount = 0;
         let changeCount = 0;
+        const commitToFilesMap = new Map();
+        // Add path filtering if specified
+        if (includeOnlyPaths) {
+            core.info(`ℹ️ Path filtering enabled with patterns: ${includeOnlyPaths.join(', ')}`);
+        }
         // Fetch comparisons recursively until we don't find any commits
         // This is because the GitHub API limits the number of commits returned in a single response.
         let commits = [];
@@ -48106,56 +48119,29 @@ class GithubRepository extends BaseRepository {
             }
             changedFilesCount += compareResult.data.files?.length ?? 0;
             const files = compareResult.data.files;
+            const matchedHashes = [];
             if (files !== undefined) {
-                for (const file of files) {
+                const filteredFiles = includeOnlyPaths ? files.filter(file => includeOnlyPaths.some(pattern => file.filename.startsWith(pattern))) : files;
+                commitToFilesMap.set(compareResult.data.base_commit.sha, filteredFiles.map(file => file.filename));
+                for (const file of filteredFiles) {
+                    matchedHashes.push(file.sha);
                     additionCount += file.additions;
                     deletionCount += file.deletions;
                     changeCount += file.changes;
                 }
             }
-            commits = compareResult.data.commits.concat(commits);
+            const filteredCommits = includeOnlyPaths ? compareResult.data.commits.filter(commit => !matchedHashes.includes(commit.sha)) : compareResult.data.commits;
+            commits = filteredCommits.concat(commits);
             compareHead = `${commits[0].sha}^`;
         }
         core.info(`ℹ️ Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`);
-        // If path filtering is enabled, we need to get file information for each commit
-        let filteredCommits = [];
-        const commitToFilesMap = new Map();
-        if (includeOnlyPaths && includeOnlyPaths.length > 0) {
-            const pathPatterns = includeOnlyPaths.map(pattern => pattern.trim()).filter(pattern => pattern.length > 0);
-            core.info(`ℹ️ Path filtering enabled with patterns: ${pathPatterns.join(', ')}`);
-            for (const commit of commits.filter(commit => commit.sha)) {
-                try {
-                    const commitDetail = await this.octokit.repos.getCommit({
-                        owner,
-                        repo,
-                        ref: commit.sha
-                    });
-                    const changedFiles = commitDetail.data.files?.map(file => file.filename) || [];
-                    // Check if any changed file matches any of the path patterns
-                    const matchesPattern = changedFiles.some(file => pathPatterns.some(pattern => file.startsWith(pattern)));
-                    if (matchesPattern) {
-                        filteredCommits.push(commit);
-                        commitToFilesMap.set(commit.sha, changedFiles);
-                    }
-                }
-                catch (error) {
-                    core.warning(`⚠️ Failed to get files for commit ${commit.sha}: ${error}`);
-                    // Include the commit anyway if we can't get file info
-                    filteredCommits.push(commit);
-                }
-            }
-            core.info(`ℹ️ After path filtering: ${filteredCommits.length} commits remain from ${commits.length}`);
-        }
-        else {
-            filteredCommits = commits.filter(commit => commit.sha);
-        }
         return {
             changedFiles: changedFilesCount,
             additions: additionCount,
             deletions: deletionCount,
             changes: changeCount,
-            commits: filteredCommits.length,
-            commitInfo: filteredCommits
+            commits: commits.length,
+            commitInfo: commits
                 .map(commit => ({
                 sha: commit.sha || '',
                 summary: commit.commit.message.split('\n')[0],
@@ -48166,6 +48152,7 @@ class GithubRepository extends BaseRepository {
                 committer: commit.committer?.login || '',
                 committerName: commit.committer?.name || '',
                 commitDate: moment(commit.commit.committer?.date),
+                prNumber: undefined,
                 changedFiles: commitToFilesMap.get(commit.sha)
             }))
         };
@@ -54901,65 +54888,33 @@ class GiteaRepository extends BaseRepository {
      * This uses the local repository to get the diff. NOTE: As such, gitea integration requires the repo available.
      */
     async getDiffRemote(owner, repo, base, head, includeOnlyPaths) {
-        let changedFilesCount = 0;
-        let additionCount = 0;
-        let deletionCount = 0;
-        const changeCount = 0;
         const gitHelper = await createCommandManager(this.repositoryPath);
-        // Get the diff stats between the two branches/commits
-        const diffStat = await gitHelper.execGit(['diff', '--stat', `${base}...${head}`]);
-        const diffStatLines = diffStat.stdout.split('\n');
-        for (const line of diffStatLines) {
-            // Extract the addition and deletion counts from each line of the git diff output
-            const match = line.match(/(\d+) insertions?\(\+\), (\d+) deletions?\(-\)/);
-            if (match) {
-                additionCount += parseInt(match[1], 10);
-                deletionCount += parseInt(match[2], 10);
-            }
-        }
-        // Get the list of changed files
-        const diffNameOnly = await gitHelper.execGit(['diff', '--name-only', `${base}...${head}`]);
-        const changedFiles = diffNameOnly.stdout.split('\n');
-        changedFilesCount = changedFiles.length - 1; // Subtract one for the empty line at the end
-        // Now let's get the commit logs between the two branches/commits
-        let logArgs = ['log', '--pretty=format:%H||||%an||||%ae||||%ad||||%cn||||%ce||||%cd||||%s', `${base}...${head}`];
         // Add path filtering if specified
-        if (includeOnlyPaths && includeOnlyPaths.length > 0) {
-            const pathPatterns = includeOnlyPaths.map(pattern => pattern.trim()).filter(pattern => pattern.length > 0);
-            core.info(`ℹ️ Path filtering enabled with patterns: ${pathPatterns.join(', ')}`);
-            logArgs.push('--', ...pathPatterns);
+        if (includeOnlyPaths) {
+            core.info(`ℹ️ Path filtering enabled with patterns: ${includeOnlyPaths.join(', ')}`);
         }
-        const log = await gitHelper.execGit(logArgs);
-        const commitLogs = log.stdout.trim().split('\n');
-        // Filter out empty lines that might occur when no commits match the path filter
-        const filteredCommitLogs = commitLogs.filter(line => line.trim().length > 0);
-        if (includeOnlyPaths && filteredCommitLogs.length < commitLogs.length) {
-            core.info(`ℹ️ After path filtering: ${filteredCommitLogs.length} commits remain`);
-        }
-        // Process commit logs
-        const commitInfo = filteredCommitLogs.map(commitLog => {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const [sha, authorName, authorEmail, authorDate, committerName, committerEmail, committerDate, subject] = commitLog.split('||||');
-            return {
-                sha,
-                summary: subject,
-                message: '', // This would require another git command to get the full message if needed
-                author: authorName,
-                authorName,
-                authorDate: moment(authorDate, 'ddd MMM DD HH:mm:ss YYYY ZZ', false),
-                committer: committerName,
-                committerName,
-                commitDate: moment(committerDate, 'ddd MMM DD HH:mm:ss YYYY ZZ', false),
-                prNumber: undefined // This is not available directly from git, would require additional logic to associate commits with PRs
-            };
-        });
+        // Get diff stats
+        const diffStats = await gitHelper.getDiffStats(base, head, includeOnlyPaths);
+        // Get commits
+        const commitInfo = await gitHelper.getCommitsBetween(base, head, includeOnlyPaths);
         return {
-            changedFiles: changedFilesCount,
-            additions: additionCount,
-            deletions: deletionCount,
-            changes: changeCount,
-            commits: commitInfo.length,
-            commitInfo
+            changedFiles: diffStats.changedFiles,
+            additions: diffStats.additions,
+            deletions: diffStats.deletions,
+            changes: diffStats.changes,
+            commits: commitInfo.count,
+            commitInfo: commitInfo.commits.map(commit => ({
+                sha: commit.sha,
+                summary: commit.subject.split('\n')[0],
+                message: commit.message,
+                author: commit.author,
+                authorName: commit.authorName,
+                authorDate: moment(commit.authorDate),
+                committer: "",
+                committerName: "",
+                commitDate: moment(commit.authorDate),
+                prNumber: undefined
+            }))
         };
     }
     static pulls = {
@@ -55090,14 +55045,17 @@ class OfflineRepository extends BaseRepository {
     async fillTagInformation(repositoryPath, owner, repo, tagInfo) {
         return this.getTagByCreateTime(repositoryPath, tagInfo);
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async getDiffRemote(owner, repo, base, head, _includeOnlyPaths) {
+    async getDiffRemote(owner, repo, base, head, includeOnlyPaths) {
         core.info(`ℹ️ Getting diff information from local repository in offline mode`);
         const gitHelper = await createCommandManager(this.repositoryPath);
+        // Add path filtering if specified
+        if (includeOnlyPaths) {
+            core.info(`ℹ️ Path filtering enabled with patterns: ${includeOnlyPaths.join(', ')}`);
+        }
         // Get diff stats
-        const diffStats = await gitHelper.getDiffStats(base, head);
+        const diffStats = await gitHelper.getDiffStats(base, head, includeOnlyPaths);
         // Get commits
-        const commitInfo = await gitHelper.getCommitsBetween(base, head);
+        const commitInfo = await gitHelper.getCommitsBetween(base, head, includeOnlyPaths);
         return {
             changedFiles: diffStats.changedFiles,
             additions: diffStats.additions,
@@ -55225,7 +55183,10 @@ async function run() {
         const exportCache = core.getInput('exportCache') === 'true';
         const exportOnly = core.getInput('exportOnly') === 'true';
         const cache = core.getInput('cache');
-        const includeOnlyPaths = core.getMultilineInput('includeOnlyPaths');
+        const rawIncludeOnlyPaths = core.getMultilineInput('includeOnlyPaths');
+        // filter out empty lines and trim whitespace from paths
+        const filteredIncludeOnlyPaths = rawIncludeOnlyPaths.map(pattern => pattern.trim()).filter(pattern => pattern.length > 0);
+        const includeOnlyPaths = filteredIncludeOnlyPaths.length > 0 ? filteredIncludeOnlyPaths : undefined;
         // Use OfflineRepository if offline mode is enabled, otherwise use the selected platform
         const repositoryUtils = offlineMode
             ? new OfflineRepository(repositoryPath)
