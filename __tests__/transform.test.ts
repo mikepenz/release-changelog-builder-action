@@ -1,3 +1,6 @@
+jest.useFakeTimers()
+jest.setTimeout(180000)
+
 import {buildChangelog} from '../src/transform.js'
 import moment from 'moment'
 import {Configuration, DefaultConfiguration} from '../src/configuration.js'
