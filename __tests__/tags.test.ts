@@ -2,12 +2,11 @@ import {TagResolver} from '../src/configuration.js'
 import {validateRegex} from '../src/pr-collector/regexUtils.js'
 import {filterTags, prepareAndSortTags, TagInfo, transformTags} from '../src/pr-collector/tags.js'
 import {clear} from '../src/transform.js'
-import {jest} from '@jest/globals'
+import {expect, test} from 'vitest'
 
-jest.setTimeout(180000)
 clear()
 
-it('Should order tags correctly using semver', async () => {
+test('Should order tags correctly using semver', async () => {
   const tags: TagInfo[] = [
     {name: '2020.4.0', commit: ''},
     {name: '2020.4.0-rc02', commit: ''},
@@ -31,7 +30,7 @@ it('Should order tags correctly using semver', async () => {
   expect(sorted).toStrictEqual(`2020.4.0,2020.4.0-rc02,2020.3.2,v2020.3.1,2020.3.1-rc03,2020.3.1-rc01,2020.3.1-b01,v2020.3.0`)
 })
 
-it('Should order tags correctly using semver', async () => {
+test('Should order tags correctly using semver', async () => {
   const tags: TagInfo[] = [
     {name: '0.0.1', commit: ''},
     {name: '0.0.1-rc01', commit: ''},
@@ -60,7 +59,7 @@ it('Should order tags correctly using semver', async () => {
   expect(sorted).toStrictEqual(`1000.0.0,100.0.0,20.0.2,10.1.0,10.1.0-2,10.0.0,2.0.0,1.0.0,1.0.0-a01,0.1.0,0.1.0-b01,0.0.1,0.0.1-rc01`)
 })
 
-it('Should order tags alphabetical', async () => {
+test('Should order tags alphabetical', async () => {
   const tags: TagInfo[] = [
     {name: '0.0.1', commit: ''},
     {name: '0.0.1-rc01', commit: ''},
@@ -89,7 +88,7 @@ it('Should order tags alphabetical', async () => {
   expect(sorted).toStrictEqual(`a,20.0.2,2.0.0,1000.0.0,10.1.0,10.1.0-2,10.0.0,1.0.0,1.0.0-a01,v1,0.1.0-b01,0.0.1,0.0.1-rc01`)
 })
 
-it('Should filter tags correctly using the regex', async () => {
+test('Should filter tags correctly using the regex', async () => {
   const tags: TagInfo[] = [
     {name: 'api-0.0.1', commit: ''},
     {name: 'api-0.0.1-rc01', commit: ''},
@@ -122,7 +121,7 @@ it('Should filter tags correctly using the regex', async () => {
   expect(filtered).toStrictEqual(`api-0.0.1,api-0.0.1-rc01,api-10.1.0-2`)
 })
 
-it('Should filter tags correctly using the regex (inverse)', async () => {
+test('Should filter tags correctly using the regex (inverse)', async () => {
   const tags: TagInfo[] = [
     {name: 'api-0.0.1', commit: ''},
     {name: 'api-0.0.1-rc01', commit: ''},
@@ -155,7 +154,7 @@ it('Should filter tags correctly using the regex (inverse)', async () => {
   expect(filtered).toStrictEqual(`0.1.0-b01,1.0.0,1.0.0-a01,2.0.0,10.1.0,20.0.2`)
 })
 
-it('Should transform tags correctly using the regex', async () => {
+test('Should transform tags correctly using the regex', async () => {
   const tags: TagInfo[] = [
     {name: 'api-0.0.1', commit: ''},
     {name: 'api-0.0.1-rc01', commit: ''},
