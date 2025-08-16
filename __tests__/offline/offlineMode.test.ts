@@ -16,9 +16,7 @@
 import {mergeConfiguration, resolveConfiguration} from '../../src/utils.js'
 import {ReleaseNotesBuilder} from '../../src/releaseNotesBuilder.js'
 import {OfflineRepository} from '../../src/repositories/OfflineRepository.js'
-import {jest} from '@jest/globals'
-
-jest.setTimeout(180000)
+import { expect, test } from 'vitest'
 
 // This test validates the behavior of the new offline mode
 test('Test offline mode functionality', async () => {

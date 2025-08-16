@@ -1,11 +1,10 @@
 import {mergeConfiguration, parseConfiguration, resolveConfiguration} from '../src/utils.js'
 import {clear} from '../src/transform.js'
-import {jest} from '@jest/globals'
+import {expect, test} from 'vitest'
 
-jest.setTimeout(180000)
 clear()
 
-it('Configurations are merged correctly', async () => {
+test('Configurations are merged correctly', async () => {
   const configurationJson = parseConfiguration(`{
     "sort": "DESC",
     "empty_template": "- no magic changes",

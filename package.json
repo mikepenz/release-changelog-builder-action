@@ -7,17 +7,17 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "format": "prettier --write src/**.ts",
+    "format": "prettier --write src/**.ts __tests__/**.ts",
     "format-check": "prettier --check src/**.ts",
     "format-fix": "eslint --fix src/**.ts",
     "lint": "eslint src/**/*.ts",
     "package": "ncc build --source-map --license licenses.txt",
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest --reporters=default --reporters=jest-junit",
-    "test-main": "NODE_OPTIONS=--experimental-vm-modules jest __tests__/main.test.ts --reporters=default --reporters=jest-junit",
-    "test-github": "NODE_OPTIONS=--experimental-vm-modules jest __tests__/*.test.ts __tests__/offline/*.test.ts --reporters=default --reporters=jest-junit",
-    "test-gitea": "NODE_OPTIONS=--experimental-vm-modules jest __tests__/gitea/*.test.ts --reporters=default --reporters=jest-junit",
-    "test-demo": "NODE_OPTIONS=--experimental-vm-modules jest __tests__/demo/*.test.ts --reporters=default --reporters=jest-junit",
-    "test-offline": "NODE_OPTIONS=--experimental-vm-modules jest __tests__/offline/*.test.ts --reporters=default --reporters=jest-junit",
+    "test": "vitest --run --reporter=default --reporter=junit --outputFile=./junit.xml",
+    "test-main": "vitest --run __tests__/main.test.ts --reporter=default --reporter=junit --outputFile=./junit.xml",
+    "test-github": "vitest --run __tests__/*.test.ts __tests__/offline/*.test.ts --reporter=junit --outputFile=./junit.xml",
+    "test-gitea": "vitest --run __tests__/gitea/*.test.ts --reporter=junit --outputFile=./junit.xml",
+    "test-demo": "vitest --run __tests__/demo/*.test.ts --reporter=junit --outputFile=./junit.xml",
+    "test-offline": "vitest --run __tests__/offline/*.test.ts --reporter=junit --outputFile=./junit.xml",
     "all": "npm run build && npm run format && npm run lint && npm run package && npm run test-github"
   },
   "repository": {
@@ -52,7 +52,6 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.33.0",
-    "@types/jest": "^30.0.0",
     "@types/node": "^24.3.0",
     "@types/semver": "^7.7.0",
     "@typescript-eslint/eslint-plugin": "^8.39.1",
@@ -62,15 +61,11 @@
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-github": "^6.0.0",
     "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-jest": "^29.0.1",
     "eslint-plugin-prettier": "^5.5.4",
-    "jest": "^30.0.5",
-    "jest-junit": "^16.0.0",
-    "jest-circus": "^30.0.5",
     "js-yaml": "^4.1.0",
     "prettier": "3.6.2",
-    "ts-jest": "^29.4.1",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   },
   "overrides": {
     "glob": "11.0.1"

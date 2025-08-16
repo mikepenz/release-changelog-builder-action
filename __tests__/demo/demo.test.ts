@@ -1,15 +1,14 @@
 import {mergeConfiguration, resolveConfiguration} from '../../src/utils.js'
 import {ReleaseNotesBuilder} from '../../src/releaseNotesBuilder.js'
 import {GithubRepository} from '../../src/repositories/GithubRepository.js'
-import {jest} from '@jest/globals'
+import { expect, test } from 'vitest'
 
-jest.setTimeout(180000)
 
 // Define the token to use. Either retrieved from the environment.
 // Alternatively provide it as a string right here.
 const token = process.env.GITHUB_TOKEN || ''
 const githubRepository = new GithubRepository(token, undefined, '.')
-it('Test custom changelog builder', async () => {
+test('Test custom changelog builder', async () => {
   // define the configuration file to use.
   // By default, it retrieves a configuration from a json file
   // You can also quickly modify in code.

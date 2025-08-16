@@ -1,12 +1,11 @@
 import {transformStringToValue, validateRegex} from '../src/pr-collector/regexUtils.js'
 import {Regex} from '../src/pr-collector/types.js'
 import {clear} from '../src/transform.js'
-import {jest} from '@jest/globals'
+import {expect, test} from 'vitest'
 
-jest.setTimeout(180000)
 clear()
 
-it('Replace into target', async () => {
+test('Replace into target', async () => {
   const regex: Regex = {
     pattern: '.*(\\[Feature\\]|\\[Issue\\]).*',
     target: '$1'
@@ -16,7 +15,7 @@ it('Replace into target', async () => {
   expect(transformStringToValue('[Feature] TEST', validatedRegex!!)).toStrictEqual(`[Feature]`)
 })
 
-it('Replace all into target', async () => {
+test('Replace all into target', async () => {
   const regex: Regex = {
     pattern: '.*(\\[Feature\\]|\\[Issue\\]).*',
     method: 'replaceAll',
@@ -27,7 +26,7 @@ it('Replace all into target', async () => {
   expect(transformStringToValue('[Feature] TEST', validatedRegex!!)).toStrictEqual(`[Feature]`)
 })
 
-it('Match without target', async () => {
+test('Match without target', async () => {
   const regex: Regex = {
     pattern: '\\[Feature\\]|\\[Issue\\]',
     method: 'match'
@@ -37,7 +36,7 @@ it('Match without target', async () => {
   expect(transformStringToValue('[Feature] TEST', validatedRegex!!)).toStrictEqual(`[Feature]`)
 })
 
-it('Match into target', async () => {
+test('Match into target', async () => {
   const regex: Regex = {
     pattern: '(?<label>\\[Feature\\]|\\[Issue\\])',
     method: 'match',
@@ -48,7 +47,7 @@ it('Match into target', async () => {
   expect(transformStringToValue('[Feature] TEST', validatedRegex!!)).toStrictEqual(`[Feature]`)
 })
 
-it('Match into named group', async () => {
+test('Match into named group', async () => {
   const regex: Regex = {
     pattern: '(?<label>\\[Feature\\]|\\[Issue\\])',
     method: 'match',
