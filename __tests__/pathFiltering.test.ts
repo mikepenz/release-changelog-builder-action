@@ -1,8 +1,6 @@
-import {jest} from '@jest/globals'
 import {CommitInfo, filterCommits} from '../src/pr-collector/commits.js'
 import moment from 'moment'
-
-jest.setTimeout(180000)
+import {expect, describe, test} from 'vitest'
 
 describe('Path Filtering', () => {
   test('should filter commits by merge branches (existing functionality)', () => {
