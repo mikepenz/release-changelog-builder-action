@@ -14,6 +14,7 @@ export class GithubRepository extends BaseRepository {
     let additionCount = 0
     let deletionCount = 0
     let changeCount = 0
+    const commitToFilesMap = new Map<string, string[]>()
 
     // Add path filtering if specified
     if (includeOnlyPaths) {
@@ -37,68 +38,34 @@ export class GithubRepository extends BaseRepository {
       }
       changedFilesCount += compareResult.data.files?.length ?? 0
       const files = compareResult.data.files
+      const matchedHashes: string[] = []
+
       if (files !== undefined) {
-        for (const file of files) {
-          if(includeOnlyPaths) {
-            // skip files that don't match any of the path patterns'
-            if (!includeOnlyPaths.some(pattern => file.filename.startsWith(pattern))) {
-              continue
-            }
-          }
+        const filteredFiles = includeOnlyPaths ? files.filter(file => includeOnlyPaths.some(pattern => file.filename.startsWith(pattern))) : files
+        commitToFilesMap.set(compareResult.data.base_commit.sha, filteredFiles.map(file => file.filename))
+
+        for (const file of filteredFiles) {
+          matchedHashes.push(file.sha)
           additionCount += file.additions
           deletionCount += file.deletions
           changeCount += file.changes
         }
       }
-      commits = compareResult.data.commits.concat(commits)
+
+      const filteredCommits = includeOnlyPaths ? compareResult.data.commits.filter(commit => !matchedHashes.includes(commit.sha)) : compareResult.data.commits
+      commits = filteredCommits.concat(commits)
       compareHead = `${commits[0].sha}^`
     }
 
     core.info(`ℹ️ Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`)
-
-    // If path filtering is enabled, we need to get file information for each commit
-    let filteredCommits: RestEndpointMethodTypes['repos']['compareCommits']['response']['data']['commits'] = []
-    const commitToFilesMap = new Map<string, string[]>()
-    
-    if (includeOnlyPaths) {
-      for (const commit of commits.filter(commit => commit.sha)) {
-        try {
-          const commitDetail = await this.octokit.repos.getCommit({
-            owner,
-            repo,
-            ref: commit.sha
-          })
-          
-          const changedFiles = commitDetail.data.files?.map(file => file.filename) || []
-          
-          // Check if any changed file matches any of the path patterns
-          const matchesPattern = changedFiles.some(file =>
-            includeOnlyPaths.some(pattern => file.startsWith(pattern))
-          )
-          
-          if (matchesPattern) {
-            filteredCommits.push(commit)
-            commitToFilesMap.set(commit.sha, changedFiles)
-          }
-        } catch (error) {
-          core.warning(`⚠️ Failed to get files for commit ${commit.sha}: ${error}`)
-          // Include the commit anyway if we can't get file info
-          filteredCommits.push(commit)
-        }
-      }
-      
-      core.info(`ℹ️ After path filtering: ${filteredCommits.length} commits remain from ${commits.length}`)
-    } else {
-      filteredCommits = commits.filter(commit => commit.sha)
-    }
 
     return {
       changedFiles: changedFilesCount,
       additions: additionCount,
       deletions: deletionCount,
       changes: changeCount,
-      commits: filteredCommits.length,
-      commitInfo: filteredCommits
+      commits: commits.length,
+      commitInfo: commits
         .map(commit => ({
           sha: commit.sha || '',
           summary: commit.commit.message.split('\n')[0],
@@ -109,6 +76,7 @@ export class GithubRepository extends BaseRepository {
           committer: commit.committer?.login || '',
           committerName: commit.committer?.name || '',
           commitDate: moment(commit.commit.committer?.date),
+          prNumber: undefined,
           changedFiles: commitToFilesMap.get(commit.sha)
         }))
     }
