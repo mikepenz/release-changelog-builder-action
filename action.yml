@@ -67,7 +67,7 @@ inputs:
     description: 'Defines the platform the action is run on. Available options: [`github`, `gitea`]. Defaults to `github`.'
     default: "github"
   includeOnlyPaths:
-    description: 'List of path patterns to include. Provide as multiline input (one per line). Only commits that touched these paths will be included in the changelog. Useful for monorepo setups.'
+    description: 'List of path patterns to include. Provide as multiline input (one per line). Only commits that touched these paths will be included in the changelog. Useful for monorepo setups. Note: On GitHub, enabling this flag triggers one additional API request per commit in the compared range to inspect changed files; for large ranges this can slow down the run and approach API rate limits. Prefer narrowing the from/to range where possible.'
 outputs:
   changelog:
     description: The built release changelog built from the merged pull requests
