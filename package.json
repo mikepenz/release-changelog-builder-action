@@ -12,12 +12,12 @@
     "format-fix": "eslint --fix src/**.ts",
     "lint": "eslint src/**/*.ts",
     "package": "ncc build --source-map --license licenses.txt",
-    "test": "vitest --reporter=junit",
-    "test-main": "vitest __tests__/main.test.ts --reporter=junit",
-    "test-github": "vitest __tests__/*.test.ts __tests__/offline/*.test.ts --reporter=junit",
-    "test-gitea": "vitest __tests__/gitea/*.test.ts --reporter=junit",
-    "test-demo": "vitest __tests__/demo/*.test.ts --reporter=junit",
-    "test-offline": "vitest __tests__/offline/*.test.ts --reporter=junit",
+    "test": "vitest --run --reporter=default --reporter=junit --outputFile=./junit.xml",
+    "test-main": "vitest --run __tests__/main.test.ts --reporter=default --reporter=junit --outputFile=./junit.xml",
+    "test-github": "vitest --run __tests__/*.test.ts __tests__/offline/*.test.ts --reporter=junit --outputFile=./junit.xml",
+    "test-gitea": "vitest --run __tests__/gitea/*.test.ts --reporter=junit --outputFile=./junit.xml",
+    "test-demo": "vitest --run __tests__/demo/*.test.ts --reporter=junit --outputFile=./junit.xml",
+    "test-offline": "vitest --run __tests__/offline/*.test.ts --reporter=junit --outputFile=./junit.xml",
     "all": "npm run build && npm run format && npm run lint && npm run package && npm run test-github"
   },
   "repository": {
