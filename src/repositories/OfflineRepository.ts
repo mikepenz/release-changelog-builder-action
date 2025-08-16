@@ -47,16 +47,20 @@ export class OfflineRepository extends BaseRepository {
     return this.getTagByCreateTime(repositoryPath, tagInfo);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getDiffRemote(owner: string, repo: string, base: string, head: string, _includeOnlyPaths?: string[] | null): Promise<DiffInfo> {
+  async getDiffRemote(owner: string, repo: string, base: string, head: string, includeOnlyPaths?: string[] | null): Promise<DiffInfo> {
     core.info(`ℹ️ Getting diff information from local repository in offline mode`);
     const gitHelper = await createCommandManager(this.repositoryPath);
 
+    // Add path filtering if specified
+    if (includeOnlyPaths) {
+      core.info(`ℹ️ Path filtering enabled with patterns: ${includeOnlyPaths.join(', ')}`)
+    }
+
     // Get diff stats
-    const diffStats = await gitHelper.getDiffStats(base, head);
+    const diffStats = await gitHelper.getDiffStats(base, head, includeOnlyPaths);
 
     // Get commits
-    const commitInfo = await gitHelper.getCommitsBetween(base, head);
+    const commitInfo = await gitHelper.getCommitsBetween(base, head, includeOnlyPaths);
 
     return {
       changedFiles: diffStats.changedFiles,
@@ -76,7 +80,7 @@ export class OfflineRepository extends BaseRepository {
         commitDate: moment(commit.authorDate),
         prNumber: undefined
       }))
-    };
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

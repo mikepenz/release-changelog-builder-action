@@ -8,7 +8,7 @@ describe('Path Filtering', () => {
   test('should parse includeOnlyPaths parameter correctly', () => {
     // Test the parsing of comma-separated paths
     const paths = 'app1/,app2/,shared/'
-    const pathPatterns = paths.split(',').map(pattern => pattern.trim()).filter(pattern => pattern.length > 0)
+    const pathPatterns = paths.split(',')
     
     expect(pathPatterns).toEqual(['app1/', 'app2/', 'shared/'])
   })
@@ -63,9 +63,7 @@ describe('Path Filtering', () => {
 
   test('should handle empty includeOnlyPaths', () => {
     const emptyPaths = ''
-    const pathPatterns = emptyPaths.split(',').map(pattern => pattern.trim()).filter(pattern => pattern.length > 0)
-    
-    expect(pathPatterns).toEqual([])
+    expect(emptyPaths.split(',')).toEqual([])
   })
 
   test('should handle whitespace in includeOnlyPaths', () => {

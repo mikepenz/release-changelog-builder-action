@@ -15,6 +15,11 @@ export class GithubRepository extends BaseRepository {
     let deletionCount = 0
     let changeCount = 0
 
+    // Add path filtering if specified
+    if (includeOnlyPaths) {
+      core.info(`ℹ️ Path filtering enabled with patterns: ${includeOnlyPaths.join(', ')}`)
+    }
+
     // Fetch comparisons recursively until we don't find any commits
     // This is because the GitHub API limits the number of commits returned in a single response.
     let commits: RestEndpointMethodTypes['repos']['compareCommits']['response']['data']['commits'] = []
@@ -34,6 +39,12 @@ export class GithubRepository extends BaseRepository {
       const files = compareResult.data.files
       if (files !== undefined) {
         for (const file of files) {
+          if(includeOnlyPaths) {
+            // skip files that don't match any of the path patterns'
+            if (!includeOnlyPaths.some(pattern => file.filename.startsWith(pattern))) {
+              continue
+            }
+          }
           additionCount += file.additions
           deletionCount += file.deletions
           changeCount += file.changes
@@ -49,10 +60,7 @@ export class GithubRepository extends BaseRepository {
     let filteredCommits: RestEndpointMethodTypes['repos']['compareCommits']['response']['data']['commits'] = []
     const commitToFilesMap = new Map<string, string[]>()
     
-    if (includeOnlyPaths && includeOnlyPaths.length > 0) {
-      const pathPatterns = includeOnlyPaths.map(pattern => pattern.trim()).filter(pattern => pattern.length > 0)
-      core.info(`ℹ️ Path filtering enabled with patterns: ${pathPatterns.join(', ')}`)
-      
+    if (includeOnlyPaths) {
       for (const commit of commits.filter(commit => commit.sha)) {
         try {
           const commitDetail = await this.octokit.repos.getCommit({
@@ -64,8 +72,8 @@ export class GithubRepository extends BaseRepository {
           const changedFiles = commitDetail.data.files?.map(file => file.filename) || []
           
           // Check if any changed file matches any of the path patterns
-          const matchesPattern = changedFiles.some(file => 
-            pathPatterns.some(pattern => file.startsWith(pattern))
+          const matchesPattern = changedFiles.some(file =>
+            includeOnlyPaths.some(pattern => file.startsWith(pattern))
           )
           
           if (matchesPattern) {

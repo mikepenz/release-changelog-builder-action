@@ -43,13 +43,18 @@ class GitCommandManager {
     return commitOutput.stdout.trim()
   }
 
-  async getDiffStats(base: string, head: string): Promise<{
+  async getDiffStats(base: string, head: string, includeOnlyPaths?: string[] | null): Promise<{
     changedFiles: number;
     additions: number;
     deletions: number;
     changes: number;
   }> {
-    const diffOutput = await this.execGit(['diff', '--numstat', `${base}..${head}`])
+    const logArgs = ['diff', '--numstat', `${base}..${head}`]
+    if (includeOnlyPaths) {
+      logArgs.push('--', ...includeOnlyPaths)
+    }
+
+    const diffOutput = await this.execGit(logArgs)
     const lines = diffOutput.stdout.trim().split('\n').filter(line => line.trim() !== '')
 
     let additions = 0
@@ -71,7 +76,7 @@ class GitCommandManager {
     }
   }
 
-  async getCommitsBetween(base: string, head: string): Promise<{
+  async getCommitsBetween(base: string, head: string, includeOnlyPaths?: string[] | null): Promise<{
     count: number;
     commits: {
       sha: string;
@@ -82,12 +87,16 @@ class GitCommandManager {
       authorDate: string;
     }[];
   }> {
-    const logOutput = await this.execGit([
+    const logArgs = [
       'log',
       '--pretty=format:%H|%an|%ae|%aI|%s|%b',
       `${base}..${head}`
-    ])
+    ]
+    if (includeOnlyPaths) {
+      logArgs.push('--', ...includeOnlyPaths)
+    }
 
+    const logOutput = await this.execGit(logArgs)
     const lines = logOutput.stdout.trim().split('\n').filter(line => line.trim() !== '')
     const commits = lines.map(line => {
       const [sha, authorName, authorEmail, authorDate, subject, body] = line.split('|')

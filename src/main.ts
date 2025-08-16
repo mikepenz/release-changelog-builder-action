@@ -86,7 +86,11 @@ async function run(): Promise<void> {
     const exportCache = core.getInput('exportCache') === 'true'
     const exportOnly = core.getInput('exportOnly') === 'true'
     const cache = core.getInput('cache')
-    const includeOnlyPaths = core.getMultilineInput('includeOnlyPaths')
+    const rawIncludeOnlyPaths = core.getMultilineInput('includeOnlyPaths')
+
+    // filter out empty lines and trim whitespace from paths
+    const filteredIncludeOnlyPaths = rawIncludeOnlyPaths.map(pattern => pattern.trim()).filter(pattern => pattern.length > 0)
+    const includeOnlyPaths = filteredIncludeOnlyPaths.length > 0 ? filteredIncludeOnlyPaths : undefined
 
     // Use OfflineRepository if offline mode is enabled, otherwise use the selected platform
     const repositoryUtils = offlineMode
