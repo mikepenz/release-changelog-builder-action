@@ -42,9 +42,12 @@ export class GithubRepository extends BaseRepository {
 
       if (files !== undefined) {
         const filteredFiles = includeOnlyPaths ? files.filter(file => includeOnlyPaths.some(pattern => file.filename.startsWith(pattern))) : files
-        commitToFilesMap.set(compareResult.data.base_commit.sha, filteredFiles.map(file => file.filename))
-
         for (const file of filteredFiles) {
+          // keep track of files per sha
+          const files = commitToFilesMap.get(file.sha) || []
+          files.push(file.filename)
+          commitToFilesMap.set(file.sha, files)
+
           matchedHashes.push(file.sha)
           additionCount += file.additions
           deletionCount += file.deletions
