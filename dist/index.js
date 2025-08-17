@@ -48098,7 +48098,6 @@ class GithubRepository extends BaseRepository {
         let additionCount = 0;
         let deletionCount = 0;
         let changeCount = 0;
-        const commitToFilesMap = new Map();
         // Add path filtering if specified
         if (includeOnlyPaths) {
             core.info(`ℹ️ Path filtering enabled with patterns: ${includeOnlyPaths.join(', ')}`);
@@ -48119,21 +48118,17 @@ class GithubRepository extends BaseRepository {
             }
             changedFilesCount += compareResult.data.files?.length ?? 0;
             const files = compareResult.data.files;
-            const matchedHashes = [];
+            const matchedHashes = new Set();
             if (files !== undefined) {
                 const filteredFiles = includeOnlyPaths ? files.filter(file => includeOnlyPaths.some(pattern => file.filename.startsWith(pattern))) : files;
                 for (const file of filteredFiles) {
-                    // keep track of files per sha
-                    const files = commitToFilesMap.get(file.sha) || [];
-                    files.push(file.filename);
-                    commitToFilesMap.set(file.sha, files);
-                    matchedHashes.push(file.sha);
+                    matchedHashes.add(file.sha);
                     additionCount += file.additions;
                     deletionCount += file.deletions;
                     changeCount += file.changes;
                 }
             }
-            const filteredCommits = includeOnlyPaths ? compareResult.data.commits.filter(commit => !matchedHashes.includes(commit.sha)) : compareResult.data.commits;
+            const filteredCommits = includeOnlyPaths ? compareResult.data.commits.filter(commit => !matchedHashes.has(commit.sha)) : compareResult.data.commits;
             commits = filteredCommits.concat(commits);
             compareHead = `${commits[0].sha}^`;
         }
@@ -48145,6 +48140,7 @@ class GithubRepository extends BaseRepository {
             changes: changeCount,
             commits: commits.length,
             commitInfo: commits
+                .filter(commit => commit.sha)
                 .map(commit => ({
                 sha: commit.sha || '',
                 summary: commit.commit.message.split('\n')[0],
