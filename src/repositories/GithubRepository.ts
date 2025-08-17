@@ -15,14 +15,14 @@ export class GithubRepository extends BaseRepository {
     let deletionCount = 0
     let changeCount = 0
 
-    // Add path filtering if specified
-    if (includeOnlyPaths) {
-      core.info(`ℹ️ Path filtering enabled with patterns: ${includeOnlyPaths.join(', ')}`)
+    const pathFilteringEnabled = (includeOnlyPaths && includeOnlyPaths.length > 0) == true
+    if (pathFilteringEnabled) {
+      core.info(`ℹ️ Path filtering enabled with patterns: ${includeOnlyPaths?.join(', ')}`)
     }
 
     // Fetch comparisons recursively until we don't find any commits
     // This is because the GitHub API limits the number of commits returned in a single response.
-    let commits: RestEndpointMethodTypes['repos']['compareCommits']['response']['data']['commits'] = []
+    let allCommits: RestEndpointMethodTypes['repos']['compareCommits']['response']['data']['commits'] = []
     let compareHead = head
 
     while (true) {
@@ -35,34 +35,64 @@ export class GithubRepository extends BaseRepository {
       if (compareResult.data.total_commits === 0) {
         break
       }
-      changedFilesCount += compareResult.data.files?.length ?? 0
-      const files = compareResult.data.files
-      const matchedHashes = new Set<string>()
 
-      if (files !== undefined) {
-        const filteredFiles = includeOnlyPaths ? files.filter(file => includeOnlyPaths.some(pattern => file.filename.startsWith(pattern))) : files
-        for (const file of filteredFiles) {
-          matchedHashes.add(file.sha)
+      // When no path filtering is enabled, we can use the aggregate file stats from compare API
+      if (!pathFilteringEnabled) {
+        const files = compareResult.data.files || []
+        changedFilesCount += files.length
+        for (const file of files) {
           additionCount += file.additions
           deletionCount += file.deletions
           changeCount += file.changes
         }
+        allCommits = compareResult.data.commits.concat(allCommits)
+      } else {
+        // With path filtering, we will collect all commits here first; counting is done per commit after fetching their files
+        allCommits = compareResult.data.commits.concat(allCommits)
       }
 
-      const filteredCommits = includeOnlyPaths ? compareResult.data.commits.filter(commit => !matchedHashes.has(commit.sha)) : compareResult.data.commits
-      commits = filteredCommits.concat(commits)
-      compareHead = `${commits[0].sha}^`
+      compareHead = `${compareResult.data.commits[0].sha}^`
     }
 
-    core.info(`ℹ️ Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`)
+    core.info(`ℹ️ Found ${allCommits.length} commits from the GitHub API for ${owner}/${repo}`)
+
+    let filteredCommits = allCommits
+
+    if (pathFilteringEnabled) {
+      // Make an extra API call per commit to determine modified files and filter by includeOnlyPaths
+      const patterns = includeOnlyPaths || []
+      const commitsAfterFilter: typeof allCommits = []
+
+      for (const commit of allCommits) {
+        try {
+          const commitResp = await this.octokit.repos.getCommit({ owner, repo, ref: commit.sha })
+          const files = commitResp.data.files || []
+          const matchingFiles = files.filter(f => patterns.some(p => f.filename.startsWith(p)))
+          if (matchingFiles.length > 0) {
+            // count only matching files
+            changedFilesCount += matchingFiles.length
+            for (const file of matchingFiles) {
+              additionCount += file.additions || 0
+              deletionCount += file.deletions || 0
+              changeCount += file.changes || 0
+            }
+            commitsAfterFilter.push(commit)
+          }
+        } catch (e) {
+          core.warning(`⚠️ Failed to retrieve files for commit ${commit.sha}: ${e}`)
+        }
+      }
+
+      filteredCommits = commitsAfterFilter
+    }
 
     return {
       changedFiles: changedFilesCount,
       additions: additionCount,
       deletions: deletionCount,
       changes: changeCount,
-      commits: commits.length,
-      commitInfo: commits
+      commits: filteredCommits.length,
+      commitInfo: filteredCommits
         .filter(commit => commit.sha)
         .map(commit => ({
           sha: commit.sha || '',
