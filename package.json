@@ -1,6 +1,6 @@
 {
   "name": "release-changelog-builder-action",
-  "version": "v5.2.0",
+  "version": "v6.0.0-a01",
   "private": true,
   "description": "A GitHub action that builds your release notes / changelog fast, easy and exactly the way you want.",
   "main": "lib/main.js",
