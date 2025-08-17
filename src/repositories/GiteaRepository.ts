@@ -91,66 +91,38 @@ export class GiteaRepository extends BaseRepository {
    * WARNING: This does not actually get the diff from the remote, as Gitea does not offer a compareable API.
    * This uses the local repository to get the diff. NOTE: As such, gitea integration requires the repo available.
    */
-  async getDiffRemote(owner: string, repo: string, base: string, head: string): Promise<DiffInfo> {
-    let changedFilesCount = 0
-    let additionCount = 0
-    let deletionCount = 0
-    const changeCount = 0
-    let commitCount = 0
-
+  async getDiffRemote(owner: string, repo: string, base: string, head: string, includeOnlyPaths?: string[] | null): Promise<DiffInfo> {
     const gitHelper = await createCommandManager(this.repositoryPath)
 
-    // Get the diff stats between the two branches/commits
-    const diffStat = await gitHelper.execGit(['diff', '--stat', `${base}...${head}`])
-    const diffStatLines = diffStat.stdout.split('\n')
-
-    for (const line of diffStatLines) {
-      // Extract the addition and deletion counts from each line of the git diff output
-      const match = line.match(/(\d+) insertions?\(\+\), (\d+) deletions?\(-\)/)
-      if (match) {
-        additionCount += parseInt(match[1], 10)
-        deletionCount += parseInt(match[2], 10)
-      }
+    // Add path filtering if specified
+    if (includeOnlyPaths) {
+      core.info(`ℹ️ Path filtering enabled with patterns: ${includeOnlyPaths.join(', ')}`)
     }
 
-    // Get the list of changed files
-    const diffNameOnly = await gitHelper.execGit(['diff', '--name-only', `${base}...${head}`])
-    const changedFiles = diffNameOnly.stdout.split('\n')
-    changedFilesCount = changedFiles.length - 1 // Subtract one for the empty line at the end
+    // Get diff stats
+    const diffStats = await gitHelper.getDiffStats(base, head, includeOnlyPaths);
 
-    // Get the commit count between the two branches/commits
-    const logCount = await gitHelper.execGit(['rev-list', '--count', `${base}...${head}`])
-    commitCount = parseInt(logCount.stdout.trim(), 10)
-
-    // Now let's get the commit logs between the two branches/commits
-    const log = await gitHelper.execGit(['log', '--pretty=format:%H||||%an||||%ae||||%ad||||%cn||||%ce||||%cd||||%s', `${base}...${head}`])
-    const commitLogs = log.stdout.trim().split('\n')
-
-    // Process commit logs
-    const commitInfo = commitLogs.map(commitLog => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const [sha, authorName, authorEmail, authorDate, committerName, committerEmail, committerDate, subject] = commitLog.split('||||')
-      return {
-        sha,
-        summary: subject,
-        message: '', // This would require another git command to get the full message if needed
-        author: authorName,
-        authorName,
-        authorDate: moment(authorDate, 'ddd MMM DD HH:mm:ss YYYY ZZ', false),
-        committer: committerName,
-        committerName,
-        commitDate: moment(committerDate, 'ddd MMM DD HH:mm:ss YYYY ZZ', false),
-        prNumber: undefined // This is not available directly from git, would require additional logic to associate commits with PRs
-      }
-    })
+    // Get commits
+    const commitInfo = await gitHelper.getCommitsBetween(base, head, includeOnlyPaths);
 
     return {
-      changedFiles: changedFilesCount,
-      additions: additionCount,
-      deletions: deletionCount,
-      changes: changeCount,
-      commits: commitCount,
-      commitInfo
+      changedFiles: diffStats.changedFiles,
+      additions: diffStats.additions,
+      deletions: diffStats.deletions,
+      changes: diffStats.changes,
+      commits: commitInfo.count,
+      commitInfo: commitInfo.commits.map(commit => ({
+        sha: commit.sha,
+        summary: commit.subject.split('\n')[0],
+        message: commit.message,
+        author: commit.author,
+        authorName: commit.authorName,
+        authorDate: moment(commit.authorDate),
+        committer: "",
+        committerName: "",
+        commitDate: moment(commit.authorDate),
+        prNumber: undefined
+      }))
     }
   }
 

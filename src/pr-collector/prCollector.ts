@@ -19,6 +19,7 @@ export interface Options {
   fetchReviews: boolean // defines if the action should fetch the reviews for the PR.
   mode: 'PR' | 'COMMIT' | 'HYBRID' // defines the mode used. note: the commit or hybrid modes are not fully supported
   configuration: PullConfiguration // the configuration as defined in `configuration.ts`
+  includeOnlyPaths?: string[] | null // list of path patterns to include in changelog
 }
 
 export interface Data {
@@ -45,7 +46,8 @@ export class PullRequestCollector {
     private fetchReleaseInformation = false,
     private fetchReviews = false,
     private mode: 'PR' | 'COMMIT' | 'HYBRID' = 'PR',
-    private configuration: PullConfiguration
+    private configuration: PullConfiguration,
+    private includeOnlyPaths: string[] | null = null
   ) {}
 
   async build(): Promise<Data | null> {
@@ -103,7 +105,8 @@ export class PullRequestCollector {
       fetchReleaseInformation: this.fetchReleaseInformation,
       fetchReviews: this.fetchReviews,
       mode: this.mode,
-      configuration: this.configuration
+      configuration: this.configuration,
+      includeOnlyPaths: this.includeOnlyPaths
     })
   }
 }

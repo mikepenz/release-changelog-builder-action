@@ -38,14 +38,14 @@ export interface CommitInfo {
 export class Commits {
   constructor(private repositoryUtils: BaseRepository) {}
 
-  async getDiff(owner: string, repo: string, base: string, head: string): Promise<DiffInfo> {
-    const diff: DiffInfo = await this.getDiffRemote(owner, repo, base, head)
+  async getDiff(owner: string, repo: string, base: string, head: string, includeOnlyPaths?: string[] | null): Promise<DiffInfo> {
+    const diff: DiffInfo = await this.getDiffRemote(owner, repo, base, head, includeOnlyPaths)
     diff.commitInfo = this.sortCommits(diff.commitInfo)
     return diff
   }
 
-  private async getDiffRemote(owner: string, repo: string, base: string, head: string): Promise<DiffInfo> {
-    return this.repositoryUtils.getDiffRemote(owner, repo, base, head)
+  private async getDiffRemote(owner: string, repo: string, base: string, head: string, includeOnlyPaths?: string[] | null): Promise<DiffInfo> {
+    return this.repositoryUtils.getDiffRemote(owner, repo, base, head, includeOnlyPaths)
   }
 
   private sortCommits(commits: CommitInfo[]): CommitInfo[] {
@@ -73,13 +73,13 @@ export class Commits {
   }
 
   async getCommitHistory(options: Options): Promise<DiffInfo> {
-    const {owner, repo, fromTag, toTag, failOnError} = options
+    const {owner, repo, fromTag, toTag, failOnError, includeOnlyPaths} = options
     core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag.name}...${toTag.name}'`)
 
     const commitsApi = new Commits(this.repositoryUtils)
     let diffInfo: DiffInfo
     try {
-      diffInfo = await commitsApi.getDiff(owner, repo, fromTag.name, toTag.name)
+      diffInfo = await commitsApi.getDiff(owner, repo, fromTag.name, toTag.name, includeOnlyPaths)
     } catch (error) {
       failOrError(`💥 Failed to retrieve - Invalid tag? - Because of: ${error}`, failOnError)
       return DefaultDiffInfo

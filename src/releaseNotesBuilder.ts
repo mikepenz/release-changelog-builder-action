@@ -50,7 +50,8 @@ export class ReleaseNotesBuilder {
     private exportCache = false,
     private exportOnly = false,
     private cache: string | null = null,
-    private configuration: Configuration
+    private configuration: Configuration,
+    private includeOnlyPaths: string[] | null = null
   ) {}
 
   async build(): Promise<string | null> {
@@ -93,7 +94,8 @@ export class ReleaseNotesBuilder {
         this.fetchReleaseInformation,
         this.fetchReviews,
         this.mode,
-        this.configuration
+        this.configuration,
+        this.includeOnlyPaths
       ).build()
 
       if (prData == null) {
