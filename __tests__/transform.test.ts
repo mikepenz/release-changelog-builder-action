@@ -5,10 +5,9 @@ import {PullRequestInfo} from '../src/pr-collector/pullRequests.js'
 import {DefaultDiffInfo} from '../src/pr-collector/commits.js'
 import {GithubRepository} from '../src/repositories/GithubRepository.js'
 import {clear} from '../src/transform.js'
-import {jest} from '@jest/globals'
+import {expect, test} from 'vitest'
 import {BaseRepository} from '../src/repositories/BaseRepository.js'
 
-jest.setTimeout(180000)
 clear()
 
 const buildChangelogTest = (config: Configuration, prs: PullRequestInfo[], repositoryUtils: BaseRepository): string => {
@@ -169,7 +168,7 @@ const openPullRequest: PullRequestInfo = {
   status: 'open'
 }
 
-it('Extract label from title, combined regex', async () => {
+test('Extract label from title, combined regex', async () => {
   configuration.label_extractor = [
     {
       pattern: '.*(\\[Feature\\]|\\[Issue\\]).*',
@@ -182,7 +181,7 @@ it('Extract label from title, combined regex', async () => {
   )
 })
 
-it('Extract label from title and body, combined regex', async () => {
+test('Extract label from title and body, combined regex', async () => {
   configuration.label_extractor = [
     {
       pattern: '.*(\\[Feature\\]|\\[Issue\\]).*',
@@ -198,7 +197,7 @@ it('Extract label from title and body, combined regex', async () => {
   )
 })
 
-it('Extract label from title, split regex', async () => {
+test('Extract label from title, split regex', async () => {
   configuration.label_extractor = [
     {
       pattern: '.*(\\[Feature\\]).*',
@@ -217,7 +216,7 @@ it('Extract label from title, split regex', async () => {
   )
 })
 
-it('Extract label from title, match', async () => {
+test('Extract label from title, match', async () => {
   configuration.label_extractor = [
     {
       pattern: '\\[Feature\\]',
@@ -235,7 +234,7 @@ it('Extract label from title, match', async () => {
   )
 })
 
-it('Extract label from title, match multiple', async () => {
+test('Extract label from title, match multiple', async () => {
   configuration.label_extractor = [
     {
       pattern: '\\[Feature\\]|\\[Issue\\]',
@@ -248,7 +247,7 @@ it('Extract label from title, match multiple', async () => {
   )
 })
 
-it('Extract label from title, match multiple, custon non matching label', async () => {
+test('Extract label from title, match multiple, custon non matching label', async () => {
   configuration.label_extractor = [
     {
       pattern: '\\[Feature\\]|\\[Issue\\]',
@@ -385,7 +384,7 @@ openPullRequestsWithLabels.push(
   }
 )
 
-it('Match multiple labels exhaustive for category', async () => {
+test('Match multiple labels exhaustive for category', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.categories = [
     {
@@ -409,7 +408,7 @@ it('Match multiple labels exhaustive for category', async () => {
   )
 })
 
-it('Deduplicate duplicated PRs', async () => {
+test('Deduplicate duplicated PRs', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.categories.pop() // drop `uncategorized` category
   customConfig.duplicate_filter = {
@@ -422,7 +421,7 @@ it('Deduplicate duplicated PRs', async () => {
   )
 })
 
-it('Deduplicate duplicated PRs DESC', async () => {
+test('Deduplicate duplicated PRs DESC', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.categories.pop() // drop `uncategorized` category
   customConfig.sort = 'DESC'
@@ -436,7 +435,7 @@ it('Deduplicate duplicated PRs DESC', async () => {
   )
 })
 
-it('Reference PRs', async () => {
+test('Reference PRs', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.categories = [
     {
@@ -454,7 +453,7 @@ it('Reference PRs', async () => {
   expect(buildChangelogTest(customConfig, pullRequestsWithLabels, repositoryUtils)).toStrictEqual(`1 -- 2\n4 -- \n3 -- \n\n`)
 })
 
-it('Use empty_content for empty category', async () => {
+test('Use empty_content for empty category', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.categories = [
     {
@@ -474,7 +473,7 @@ it('Use empty_content for empty category', async () => {
 })
 
 const repositoryUtils = new GithubRepository(process.env.GITEA_TOKEN || '', undefined, '.')
-it('Commit SHA-1 in commitMode', async () => {
+test('Commit SHA-1 in commitMode', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.sort = 'DESC'
   customConfig.commit_template = '#{{MERGE_SHA}}'
@@ -502,7 +501,7 @@ it('Commit SHA-1 in commitMode', async () => {
   expect(resultChangelog).toStrictEqual(`## 🚀 Features\n\nsha1-3\nsha1-1\n\n## 🐛 Fixes\n\nsha1-3\nsha1-2\n\n`)
 })
 
-it('Release Diff', async () => {
+test('Release Diff', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.template = '#{{RELEASE_DIFF}}\n#{{DAYS_SINCE}}'
 
@@ -524,7 +523,7 @@ it('Release Diff', async () => {
   expect(resultChangelog).toStrictEqual(`https://github.com/mikepenz/release-changelog-builder-action/compare/v2.8.0...v2.8.1\n`)
 })
 
-it('Use exclude labels to not include a PR within a category.', async () => {
+test('Use exclude labels to not include a PR within a category.', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.categories = [
     {
@@ -549,7 +548,7 @@ it('Use exclude labels to not include a PR within a category.', async () => {
   )
 })
 
-it('Extract custom placeholder from PR body and replace in global template', async () => {
+test('Extract custom placeholder from PR body and replace in global template', async () => {
   const customConfig = Object.assign({}, configuration)
   customConfig.custom_placeholders = [
     {
@@ -594,7 +593,7 @@ it('Extract custom placeholder from PR body and replace in global template', asy
   )
 })
 
-it('Use Rules to include a PR within a Category.', async () => {
+test('Use Rules to include a PR within a Category.', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.categories = [
     {
@@ -619,7 +618,7 @@ it('Use Rules to include a PR within a Category.', async () => {
   )
 })
 
-it('Use Rules to get all open PRs in a Category.', async () => {
+test('Use Rules to get all open PRs in a Category.', async () => {
   let prs = Array.from(pullRequestsWithLabels)
   prs.push(openPullRequest)
 
@@ -640,7 +639,7 @@ it('Use Rules to get all open PRs in a Category.', async () => {
   )
 })
 
-it('Use Rules to get current open PR and merged categorised.', async () => {
+test('Use Rules to get current open PR and merged categorised.', async () => {
   let prs = Array.from(pullRequestsWithLabels)
   prs = prs.concat(Array.from(openPullRequestsWithLabels))
 
@@ -680,7 +679,7 @@ it('Use Rules to get current open PR and merged categorised.', async () => {
   )
 })
 
-it('Use Rules to get all open PRs in one Category and merged categorised.', async () => {
+test('Use Rules to get all open PRs in one Category and merged categorised.', async () => {
   let prs = Array.from(pullRequestsWithLabels)
   prs.push(openPullRequest)
 

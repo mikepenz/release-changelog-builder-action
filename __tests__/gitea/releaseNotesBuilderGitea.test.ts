@@ -2,9 +2,8 @@ import {mergeConfiguration, resolveConfiguration} from '../../src/utils.js'
 import {ReleaseNotesBuilder} from '../../src/releaseNotesBuilder.js'
 import {GiteaRepository} from '../../src/repositories/GiteaRepository.js'
 import {clear} from '../../src/transform.js'
-import {jest} from '@jest/globals'
+import { expect, test } from 'vitest'
 
-jest.setTimeout(180000)
 clear()
 
 /**
@@ -20,7 +19,7 @@ const owner = 'jolheiser'
 const repo = 'sip'
 const configurationFile = 'configs/configuration_gitea.json'
 
-it('[Gitea] Verify reviewers who approved are fetched and also release information', async () => {
+test('[Gitea] Verify reviewers who approved are fetched and also release information', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_approvers.json'))
 
   const giteaRepository = new GiteaRepository(token, undefined, workingDirectory)
@@ -60,7 +59,7 @@ it('[Gitea] Verify reviewers who approved are fetched and also release informati
   )
 })
 
-it('[Gitea] Should match generated changelog (unspecified fromTag)', async () => {
+test('[Gitea] Should match generated changelog (unspecified fromTag)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', configurationFile))
 
   const giteaRepository = new GiteaRepository(token, undefined, workingDirectory)
@@ -97,7 +96,7 @@ it('[Gitea] Should match generated changelog (unspecified fromTag)', async () =>
 })
 
 //
-it('[Gitea] Should match generated changelog (unspecified tags)', async () => {
+test('[Gitea] Should match generated changelog (unspecified tags)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', configurationFile))
 
   const giteaRepository = new GiteaRepository(token, undefined, workingDirectory)
@@ -133,7 +132,7 @@ it('[Gitea] Should match generated changelog (unspecified tags)', async () => {
 `)
 })
 
-it('[Gitea] Should use empty placeholder', async () => {
+test('[Gitea] Should use empty placeholder', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', configurationFile))
 
   const giteaRepository = new GiteaRepository(token, undefined, workingDirectory)
@@ -184,7 +183,7 @@ it('[Gitea] Should use empty placeholder', async () => {
 `)
 })
 
-it('[Gitea] Should fill empty placeholders', async () => {
+test('[Gitea] Should fill empty placeholders', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_empty_all_placeholders.json'))
 
   const giteaRepository = new GiteaRepository(token, undefined, workingDirectory)
@@ -292,7 +291,7 @@ https://gitea.com/jolheiser/sip/compare/v0.1.0...v0.4.0
   )
 })
 
-it('[Gitea] Should fill `template` placeholders', async () => {
+test('[Gitea] Should fill `template` placeholders', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_empty_all_placeholders.json'))
 
   const giteaRepository = new GiteaRepository(token, undefined, workingDirectory)
@@ -400,7 +399,7 @@ https://gitea.com/jolheiser/sip/compare/v0.1.0...v0.4.0
   )
 })
 
-it('[Gitea] Should fill `template` placeholders, ignore', async () => {
+test('[Gitea] Should fill `template` placeholders, ignore', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_empty_all_placeholders.json'))
   configuration.categories.pop() // drop `uncategorized` category
 
@@ -466,7 +465,7 @@ https://gitea.com/jolheiser/sip/compare/v0.3.0...v0.5.0
   )
 })
 
-it('[Gitea] Uncategorized category', async () => {
+test('[Gitea] Uncategorized category', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_uncategorized_category.json'))
 
   const giteaRepository = new GiteaRepository(token, undefined, workingDirectory)
@@ -540,7 +539,7 @@ Ignored:
   )
 })
 
-it('[Gitea] Verify commit based changelog', async () => {
+test('[Gitea] Verify commit based changelog', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_commits.json'))
 
   const giteaRepository = new GiteaRepository(token, undefined, workingDirectory)
@@ -617,7 +616,7 @@ Ignored:
   )
 })
 
-it('[Gitea] Verify commit based changelog', async () => {
+test('[Gitea] Verify commit based changelog', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', configurationFile))
 
   const giteaRepository = new GiteaRepository(token, undefined, workingDirectory)
@@ -655,7 +654,7 @@ it('[Gitea] Verify commit based changelog', async () => {
   )
 })
 // no open prs
-it('[Gitea] Verify default inclusion of open PRs', async () => {
+test('[Gitea] Verify default inclusion of open PRs', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_including_open.json'))
 
   const giteaRepository = new GiteaRepository(token, undefined, workingDirectory)
@@ -696,7 +695,7 @@ Open
 `)
 })
 
-it('[Gitea] Verify custom categorisation of open PRs', async () => {
+test('[Gitea] Verify custom categorisation of open PRs', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_excluding_open.json'))
 
   const giteaRepository = new GiteaRepository(token, undefined, workingDirectory)
@@ -727,7 +726,7 @@ it('[Gitea] Verify custom categorisation of open PRs', async () => {
   expect(changeLog).toStrictEqual(``)
 })
 
-it('[Gitea] Fetch release information', async () => {
+test('[Gitea] Fetch release information', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_approvers.json'))
   configuration.template = '#{{FROM_TAG}}-#{{FROM_TAG_DATE}}\n#{{TO_TAG}}-#{{TO_TAG_DATE}}\n#{{DAYS_SINCE}}'
 
@@ -761,7 +760,7 @@ master-2020-09-21T19:30:21.000Z
 4`)
 })
 
-it('[Gitea] Fetch release information for non existing tag / release', async () => {
+test('[Gitea] Fetch release information for non existing tag / release', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_approvers.json'))
   configuration.template = '#{{FROM_TAG}}-#{{FROM_TAG_DATE}}\n#{{TO_TAG}}-#{{TO_TAG_DATE}}\n#{{DAYS_SINCE}}'
 

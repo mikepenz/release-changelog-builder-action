@@ -3,11 +3,10 @@ import {Configuration, DefaultConfiguration} from '../src/configuration.js'
 import {PullRequestInfo} from '../src/pr-collector/pullRequests.js'
 import {GithubRepository} from '../src/repositories/GithubRepository.js'
 import {buildChangelog, clear} from '../src/transform.js'
-import {jest} from '@jest/globals'
+import {expect, test} from 'vitest'
 import {BaseRepository} from '../src/repositories/BaseRepository.js'
 import {DefaultDiffInfo} from '../src/pr-collector/commits.js'
 
-jest.setTimeout(180000)
 clear()
 
 const repositoryUtils = new GithubRepository(process.env.GITEA_TOKEN || '', undefined, '.')
@@ -62,7 +61,7 @@ pullRequestsWithLabels.push(
   buildPullRequeset(8, 'Core Ticket', ['core'])
 )
 
-it('Match multiple labels exhaustive for category', async () => {
+test('Match multiple labels exhaustive for category', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.pr_template = '- #{{TITLE}}'
   customConfig.categories = [

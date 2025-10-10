@@ -4,9 +4,8 @@ import {Options, pullData} from '../src/pr-collector/prCollector.js'
 import {GithubRepository} from '../src/repositories/GithubRepository.js'
 import {clear} from '../src/transform.js'
 import {ReleaseNotesOptions} from '../src/releaseNotesBuilder.js'
-import {jest} from '@jest/globals'
+import {expect, test} from 'vitest'
 
-jest.setTimeout(180000)
 clear()
 
 // load octokit instance
@@ -14,7 +13,7 @@ const enablePullData = false // if false -> use cache for data
 
 const token = process.env.GITHUB_TOKEN || ''
 const githubRepository = new GithubRepository(token, undefined, '.')
-it('Should have empty changelog (tags)', async () => {
+test('Should have empty changelog (tags)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs/configuration.json'))
 
   const options = {
@@ -43,7 +42,7 @@ it('Should have empty changelog (tags)', async () => {
   expect(changeLog).toStrictEqual('- no changes')
 })
 
-it('Should match generated changelog (tags)', async () => {
+test('Should match generated changelog (tags)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs/configuration.json'))
   const options = {
     owner: 'mikepenz',
@@ -76,7 +75,7 @@ it('Should match generated changelog (tags)', async () => {
 `)
 })
 
-it('Should match generated changelog (refs)', async () => {
+test('Should match generated changelog (refs)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_all_placeholders.json'))
 
   const options = {
@@ -118,7 +117,7 @@ nhoelzl
 `)
 })
 
-it('Should match generated changelog and replace all occurrences (refs)', async () => {
+test('Should match generated changelog and replace all occurrences (refs)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_replace_all_placeholders.json'))
   const options = {
     owner: 'mikepenz',
@@ -161,7 +160,7 @@ nhoelzl
 `)
 })
 
-it('Should match ordered ASC', async () => {
+test('Should match ordered ASC', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_asc.json'))
   configuration.categories.pop() // drop `uncategorized` category
   const options = {
@@ -190,7 +189,7 @@ it('Should match ordered ASC', async () => {
   expect(changeLog).toStrictEqual(`## 🚀 Features\n\n22\n24\n25\n26\n28\n\n## 🐛 Fixes\n\n23\n\n`)
 })
 
-it('Should match ordered DESC', async () => {
+test('Should match ordered DESC', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_desc.json'))
   configuration.categories.pop() // drop `uncategorized` category
   const options = {
@@ -219,7 +218,7 @@ it('Should match ordered DESC', async () => {
   expect(changeLog).toStrictEqual(`## 🚀 Features\n\n28\n26\n25\n24\n22\n\n## 🐛 Fixes\n\n23\n\n`)
 })
 
-it('Should match ordered by title ASC', async () => {
+test('Should match ordered by title ASC', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_sort_title_asc.json'))
   const options = {
     owner: 'mikepenz',
@@ -249,7 +248,7 @@ it('Should match ordered by title ASC', async () => {
   )
 })
 
-it('Should match ordered by title DESC', async () => {
+test('Should match ordered by title DESC', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_sort_title_desc.json'))
   const options = {
     owner: 'mikepenz',
@@ -279,7 +278,7 @@ it('Should match ordered by title DESC', async () => {
   )
 })
 
-it('Should ignore PRs not merged into develop branch', async () => {
+test('Should ignore PRs not merged into develop branch', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_base_branches_develop.json'))
   const options = {
     owner: 'mikepenz',
@@ -307,7 +306,7 @@ it('Should ignore PRs not merged into develop branch', async () => {
   expect(changeLog).toStrictEqual(`150\n\n`)
 })
 
-it('Should ignore PRs not merged into main branch', async () => {
+test('Should ignore PRs not merged into main branch', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_base_branches_main.json'))
   const options = {
     owner: 'mikepenz',
@@ -335,7 +334,7 @@ it('Should ignore PRs not merged into main branch', async () => {
   expect(changeLog).toStrictEqual(`153\n\n`)
 })
 
-it('Default configuration with commit mode', async () => {
+test('Default configuration with commit mode', async () => {
   const configuration = Object.assign({}, mergeConfiguration(undefined, undefined, 'COMMIT'))
   const options = {
     owner: 'conventional-commits',
@@ -365,7 +364,7 @@ it('Default configuration with commit mode', async () => {
   )
 })
 
-it('Default configuration with commit mode and custom placeholder', async () => {
+test('Default configuration with commit mode and custom placeholder', async () => {
   const configuration = Object.assign({}, mergeConfiguration(undefined, undefined, 'COMMIT'))
   configuration.commit_template = '- #{{TITLE_ONLY}}'
   configuration.trim_values = true
@@ -409,7 +408,7 @@ it('Default configuration with commit mode and custom placeholder', async () => 
   )
 })
 
-it('Default configuration with hybrid mode and classic categories', async () => {
+test('Default configuration with hybrid mode and classic categories', async () => {
   const configuration = Object.assign({}, mergeConfiguration(undefined, undefined, 'HYBRID'))
   const options = {
     owner: 'conventional-commits',
@@ -468,7 +467,7 @@ it('Default configuration with hybrid mode and classic categories', async () => 
   expect(changeLog).toStrictEqual(expected)
 })
 
-it('Default configuration with hybrid mode and with separate feature categories', async () => {
+test('Default configuration with hybrid mode and with separate feature categories', async () => {
   const configuration = Object.assign({}, mergeConfiguration(undefined, undefined, 'HYBRID'))
   const options = {
     owner: 'conventional-commits',
@@ -529,7 +528,7 @@ it('Default configuration with hybrid mode and with separate feature categories'
 
   expect(changeLog).toStrictEqual(expected)
 })
-it('Default configuration with hybrid mode and with separate feature categories and dup checker', async () => {
+test('Default configuration with hybrid mode and with separate feature categories and dup checker', async () => {
   const configuration = Object.assign({}, mergeConfiguration(undefined, undefined, 'HYBRID'))
   const options = {
     owner: 'conventional-commits',

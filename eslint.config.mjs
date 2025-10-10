@@ -1,4 +1,3 @@
-import jest from "eslint-plugin-jest";
 import typescriptEslint from "@typescript-eslint/eslint-plugin";
 import globals from "globals";
 import tsParser from "@typescript-eslint/parser";
@@ -23,15 +22,13 @@ export default [{
   files: ["**/*.ts", "__tests__/**.ts"],
 
   plugins: {
-    jest,
     github,
     "@typescript-eslint": typescriptEslint
   },
 
   languageOptions: {
     globals: {
-      ...globals.node,
-      ...jest.environments.globals.globals
+      ...globals.node
     },
 
     parser: tsParser,

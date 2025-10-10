@@ -4,9 +4,8 @@ import {Options, pullData} from '../../src/pr-collector/prCollector.js'
 import {GiteaRepository} from '../../src/repositories/GiteaRepository.js'
 import {clear} from '../../src/transform.js'
 import {ReleaseNotesOptions} from '../../src/releaseNotesBuilder.js'
-import {jest} from '@jest/globals'
+import { expect, test } from 'vitest'
 
-jest.setTimeout(180000)
 clear()
 
 // load octokit instance
@@ -35,7 +34,7 @@ const owner = 'jolheiser'
 const repo = 'sip'
 const giteaRepository = new GiteaRepository(token, undefined, workingDirectory)
 const configurationFile = 'configs/configuration_gitea.json'
-it('[Gitea] Should have  changelog (tags)', async () => {
+test('[Gitea] Should have  changelog (tags)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', configurationFile))
 
   const options = {
@@ -74,7 +73,7 @@ it('[Gitea] Should have  changelog (tags)', async () => {
 `)
 })
 
-it('[Gitea] Should match generated changelog (tags)', async () => {
+test('[Gitea] Should match generated changelog (tags)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', configurationFile))
   const options = {
     owner: owner,
@@ -112,7 +111,7 @@ it('[Gitea] Should match generated changelog (tags)', async () => {
 `)
 })
 
-it('[Gitea] Should match generated changelog (refs)', async () => {
+test('[Gitea] Should match generated changelog (refs)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_all_placeholders.json'))
 
   const options = {
@@ -170,7 +169,7 @@ It also scans CLI flags into variables for fewer footguns.
 `)
 })
 
-it('[Gitea] Should match generated changelog and replace all occurrences (refs)', async () => {
+test('[Gitea] Should match generated changelog and replace all occurrences (refs)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_replace_all_placeholders.json'))
   const options = {
     owner: owner,
@@ -231,7 +230,7 @@ It also scans CLI flags into variables for fewer footguns.
 `)
 })
 
-it('[Gitea] Should match ordered ASC', async () => {
+test('[Gitea] Should match ordered ASC', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', configurationFile))
   configuration.categories.pop() // drop `uncategorized` category
   const options = {
@@ -288,7 +287,7 @@ it('[Gitea] Should match ordered ASC', async () => {
 `)
 })
 
-it('[Gitea] Should match ordered DESC', async () => {
+test('[Gitea] Should match ordered DESC', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs_test/configuration_gitea_desc.json'))
   configuration.categories.pop() // drop `uncategorized` category
   const options = {

@@ -15083,6 +15083,7 @@ const isSatisfiable = (comparators, options) => {
 // already replaced the hyphen ranges
 // turn into a set of JUST comparators.
 const parseComparator = (comp, options) => {
+  comp = comp.replace(re[t.BUILD], '')
   debug('comp', comp, options)
   comp = replaceCarets(comp, options)
   debug('caret', comp)
@@ -15502,11 +15503,25 @@ class SemVer {
       other = new SemVer(other, this.options)
     }
 
-    return (
-      compareIdentifiers(this.major, other.major) ||
-      compareIdentifiers(this.minor, other.minor) ||
-      compareIdentifiers(this.patch, other.patch)
-    )
+    if (this.major < other.major) {
+      return -1
+    }
+    if (this.major > other.major) {
+      return 1
+    }
+    if (this.minor < other.minor) {
+      return -1
+    }
+    if (this.minor > other.minor) {
+      return 1
+    }
+    if (this.patch < other.patch) {
+      return -1
+    }
+    if (this.patch > other.patch) {
+      return 1
+    }
+    return 0
   }
 
   comparePre (other) {
@@ -16379,6 +16394,10 @@ module.exports = debug
 
 const numeric = /^[0-9]+$/
 const compareIdentifiers = (a, b) => {
+  if (typeof a === 'number' && typeof b === 'number') {
+    return a === b ? 0 : a < b ? -1 : 1
+  }
+
   const anum = numeric.test(a)
   const bnum = numeric.test(b)
 
@@ -42419,13 +42438,13 @@ class Commits {
     constructor(repositoryUtils) {
         this.repositoryUtils = repositoryUtils;
     }
-    async getDiff(owner, repo, base, head) {
-        const diff = await this.getDiffRemote(owner, repo, base, head);
+    async getDiff(owner, repo, base, head, includeOnlyPaths) {
+        const diff = await this.getDiffRemote(owner, repo, base, head, includeOnlyPaths);
         diff.commitInfo = this.sortCommits(diff.commitInfo);
         return diff;
     }
-    async getDiffRemote(owner, repo, base, head) {
-        return this.repositoryUtils.getDiffRemote(owner, repo, base, head);
+    async getDiffRemote(owner, repo, base, head, includeOnlyPaths) {
+        return this.repositoryUtils.getDiffRemote(owner, repo, base, head, includeOnlyPaths);
     }
     sortCommits(commits) {
         const commitsResult = [];
@@ -42449,12 +42468,12 @@ class Commits {
         return commitsResult;
     }
     async getCommitHistory(options) {
-        const { owner, repo, fromTag, toTag, failOnError } = options;
+        const { owner, repo, fromTag, toTag, failOnError, includeOnlyPaths } = options;
         core.info(`ℹ️ Comparing ${owner}/${repo} - '${fromTag.name}...${toTag.name}'`);
         const commitsApi = new Commits(this.repositoryUtils);
         let diffInfo;
         try {
-            diffInfo = await commitsApi.getDiff(owner, repo, fromTag.name, toTag.name);
+            diffInfo = await commitsApi.getDiff(owner, repo, fromTag.name, toTag.name, includeOnlyPaths);
         }
         catch (error) {
             failOrError(`💥 Failed to retrieve - Invalid tag? - Because of: ${error}`, failOnError);
@@ -43640,8 +43659,12 @@ class GitCommandManager {
         const commitOutput = await this.execGit(['rev-list', '-n', '1', tagName]);
         return commitOutput.stdout.trim();
     }
-    async getDiffStats(base, head) {
-        const diffOutput = await this.execGit(['diff', '--numstat', `${base}..${head}`]);
+    async getDiffStats(base, head, includeOnlyPaths) {
+        const logArgs = ['diff', '--numstat', `${base}..${head}`];
+        if (includeOnlyPaths) {
+            logArgs.push('--', ...includeOnlyPaths);
+        }
+        const diffOutput = await this.execGit(logArgs);
         const lines = diffOutput.stdout.trim().split('\n').filter(line => line.trim() !== '');
         let additions = 0;
         let deletions = 0;
@@ -43659,12 +43682,16 @@ class GitCommandManager {
             changes: additions + deletions
         };
     }
-    async getCommitsBetween(base, head) {
-        const logOutput = await this.execGit([
+    async getCommitsBetween(base, head, includeOnlyPaths) {
+        const logArgs = [
             'log',
             '--pretty=format:%H|%an|%ae|%aI|%s|%b',
             `${base}..${head}`
-        ]);
+        ];
+        if (includeOnlyPaths) {
+            logArgs.push('--', ...includeOnlyPaths);
+        }
+        const logOutput = await this.execGit(logArgs);
         const lines = logOutput.stdout.trim().split('\n').filter(line => line.trim() !== '');
         const commits = lines.map(line => {
             const [sha, authorName, authorEmail, authorDate, subject, body] = line.split('|');
@@ -43999,7 +44026,8 @@ class PullRequestCollector {
     fetchReviews;
     mode;
     configuration;
-    constructor(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, mode = 'PR', configuration) {
+    includeOnlyPaths;
+    constructor(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, mode = 'PR', configuration, includeOnlyPaths = null) {
         this.baseUrl = baseUrl;
         this.repositoryUtils = repositoryUtils;
         this.repositoryPath = repositoryPath;
@@ -44016,6 +44044,7 @@ class PullRequestCollector {
         this.fetchReviews = fetchReviews;
         this.mode = mode;
         this.configuration = configuration;
+        this.includeOnlyPaths = includeOnlyPaths;
     }
     async build() {
         // check proxy setup for GHES environments
@@ -44059,7 +44088,8 @@ class PullRequestCollector {
             fetchReleaseInformation: this.fetchReleaseInformation,
             fetchReviews: this.fetchReviews,
             mode: this.mode,
-            configuration: this.configuration
+            configuration: this.configuration,
+            includeOnlyPaths: this.includeOnlyPaths
         });
     }
 }
@@ -44122,7 +44152,8 @@ class ReleaseNotesBuilder {
     exportOnly;
     cache;
     configuration;
-    constructor(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, mode = 'PR', exportCache = false, exportOnly = false, cache = null, configuration) {
+    includeOnlyPaths;
+    constructor(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, mode = 'PR', exportCache = false, exportOnly = false, cache = null, configuration, includeOnlyPaths = null) {
         this.baseUrl = baseUrl;
         this.repositoryUtils = repositoryUtils;
         this.repositoryPath = repositoryPath;
@@ -44142,6 +44173,7 @@ class ReleaseNotesBuilder {
         this.exportOnly = exportOnly;
         this.cache = cache;
         this.configuration = configuration;
+        this.includeOnlyPaths = includeOnlyPaths;
     }
     async build() {
         let releaseNotesData;
@@ -44168,7 +44200,7 @@ class ReleaseNotesBuilder {
                 core.debug(`Resolved 'repo' as ${this.repo}`);
             }
             core.endGroup();
-            const prData = await new PullRequestCollector(this.baseUrl, this.repositoryUtils, this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.includeOpen, this.failOnError, this.ignorePreReleases, this.fetchViaCommits, this.fetchReviewers, this.fetchReleaseInformation, this.fetchReviews, this.mode, this.configuration).build();
+            const prData = await new PullRequestCollector(this.baseUrl, this.repositoryUtils, this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.includeOpen, this.failOnError, this.ignorePreReleases, this.fetchViaCommits, this.fetchReviewers, this.fetchReleaseInformation, this.fetchReviews, this.mode, this.configuration, this.includeOnlyPaths).build();
             if (prData == null) {
                 return null;
             }
@@ -44850,7 +44882,7 @@ class RequestError extends Error {
 
 
 // pkg/dist-src/version.js
-var dist_bundle_VERSION = "10.0.3";
+var dist_bundle_VERSION = "10.0.5";
 
 // pkg/dist-src/defaults.js
 var defaults_default = {
@@ -45221,7 +45253,7 @@ var createTokenAuth = function createTokenAuth2(token) {
 
 
 ;// CONCATENATED MODULE: ./node_modules/@octokit/rest/node_modules/@octokit/core/dist-src/version.js
-const version_VERSION = "7.0.3";
+const version_VERSION = "7.0.5";
 
 
 ;// CONCATENATED MODULE: ./node_modules/@octokit/rest/node_modules/@octokit/core/dist-src/index.js
@@ -45542,9 +45574,11 @@ var paginatingEndpoints = (/* unused pure expression or super */ null && ([
   "GET /networks/{owner}/{repo}/events",
   "GET /notifications",
   "GET /organizations",
+  "GET /organizations/{org}/dependabot/repository-access",
   "GET /orgs/{org}/actions/cache/usage-by-repository",
   "GET /orgs/{org}/actions/hosted-runners",
   "GET /orgs/{org}/actions/permissions/repositories",
+  "GET /orgs/{org}/actions/permissions/self-hosted-runners/repositories",
   "GET /orgs/{org}/actions/runner-groups",
   "GET /orgs/{org}/actions/runner-groups/{runner_group_id}/hosted-runners",
   "GET /orgs/{org}/actions/runner-groups/{runner_group_id}/repositories",
@@ -45594,6 +45628,9 @@ var paginatingEndpoints = (/* unused pure expression or super */ null && ([
   "GET /orgs/{org}/personal-access-tokens/{pat_id}/repositories",
   "GET /orgs/{org}/private-registries",
   "GET /orgs/{org}/projects",
+  "GET /orgs/{org}/projectsV2",
+  "GET /orgs/{org}/projectsV2/{project_number}/fields",
+  "GET /orgs/{org}/projectsV2/{project_number}/items",
   "GET /orgs/{org}/properties/values",
   "GET /orgs/{org}/public_members",
   "GET /orgs/{org}/repos",
@@ -45614,7 +45651,6 @@ var paginatingEndpoints = (/* unused pure expression or super */ null && ([
   "GET /orgs/{org}/teams/{team_slug}/projects",
   "GET /orgs/{org}/teams/{team_slug}/repos",
   "GET /orgs/{org}/teams/{team_slug}/teams",
-  "GET /projects/columns/{column_id}/cards",
   "GET /projects/{project_id}/collaborators",
   "GET /projects/{project_id}/columns",
   "GET /repos/{owner}/{repo}/actions/artifacts",
@@ -45674,6 +45710,8 @@ var paginatingEndpoints = (/* unused pure expression or super */ null && ([
   "GET /repos/{owner}/{repo}/issues/comments/{comment_id}/reactions",
   "GET /repos/{owner}/{repo}/issues/events",
   "GET /repos/{owner}/{repo}/issues/{issue_number}/comments",
+  "GET /repos/{owner}/{repo}/issues/{issue_number}/dependencies/blocked_by",
+  "GET /repos/{owner}/{repo}/issues/{issue_number}/dependencies/blocking",
   "GET /repos/{owner}/{repo}/issues/{issue_number}/events",
   "GET /repos/{owner}/{repo}/issues/{issue_number}/labels",
   "GET /repos/{owner}/{repo}/issues/{issue_number}/reactions",
@@ -45754,6 +45792,8 @@ var paginatingEndpoints = (/* unused pure expression or super */ null && ([
   "GET /user/subscriptions",
   "GET /user/teams",
   "GET /users",
+  "GET /users/{user_id}/projectsV2/{project_number}/fields",
+  "GET /users/{user_id}/projectsV2/{project_number}/items",
   "GET /users/{username}/attestations/{subject_digest}",
   "GET /users/{username}/events",
   "GET /users/{username}/events/orgs/{org}",
@@ -45766,6 +45806,7 @@ var paginatingEndpoints = (/* unused pure expression or super */ null && ([
   "GET /users/{username}/orgs",
   "GET /users/{username}/packages",
   "GET /users/{username}/projects",
+  "GET /users/{username}/projectsV2",
   "GET /users/{username}/received_events",
   "GET /users/{username}/received_events/public",
   "GET /users/{username}/repos",
@@ -45796,7 +45837,7 @@ paginateRest.VERSION = plugin_paginate_rest_dist_bundle_VERSION;
 
 
 ;// CONCATENATED MODULE: ./node_modules/@octokit/rest/node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/version.js
-const plugin_rest_endpoint_methods_dist_src_version_VERSION = "16.0.0";
+const plugin_rest_endpoint_methods_dist_src_version_VERSION = "16.1.0";
 
 //# sourceMappingURL=version.js.map
 
@@ -46610,11 +46651,20 @@ const Endpoints = {
     removeSelectedRepoFromOrgSecret: [
       "DELETE /orgs/{org}/dependabot/secrets/{secret_name}/repositories/{repository_id}"
     ],
+    repositoryAccessForOrg: [
+      "GET /organizations/{org}/dependabot/repository-access"
+    ],
+    setRepositoryAccessDefaultLevel: [
+      "PUT /organizations/{org}/dependabot/repository-access/default-level"
+    ],
     setSelectedReposForOrgSecret: [
       "PUT /orgs/{org}/dependabot/secrets/{secret_name}/repositories"
     ],
     updateAlert: [
       "PATCH /repos/{owner}/{repo}/dependabot/alerts/{alert_number}"
+    ],
+    updateRepositoryAccessForOrg: [
+      "PATCH /organizations/{org}/dependabot/repository-access"
     ]
   },
   dependencyGraph: {
@@ -46720,6 +46770,9 @@ const Endpoints = {
     addAssignees: [
       "POST /repos/{owner}/{repo}/issues/{issue_number}/assignees"
     ],
+    addBlockedByDependency: [
+      "POST /repos/{owner}/{repo}/issues/{issue_number}/dependencies/blocked_by"
+    ],
     addLabels: ["POST /repos/{owner}/{repo}/issues/{issue_number}/labels"],
     addSubIssue: [
       "POST /repos/{owner}/{repo}/issues/{issue_number}/sub_issues"
@@ -46746,10 +46799,17 @@ const Endpoints = {
     getEvent: ["GET /repos/{owner}/{repo}/issues/events/{event_id}"],
     getLabel: ["GET /repos/{owner}/{repo}/labels/{name}"],
     getMilestone: ["GET /repos/{owner}/{repo}/milestones/{milestone_number}"],
+    getParent: ["GET /repos/{owner}/{repo}/issues/{issue_number}/parent"],
     list: ["GET /issues"],
     listAssignees: ["GET /repos/{owner}/{repo}/assignees"],
     listComments: ["GET /repos/{owner}/{repo}/issues/{issue_number}/comments"],
     listCommentsForRepo: ["GET /repos/{owner}/{repo}/issues/comments"],
+    listDependenciesBlockedBy: [
+      "GET /repos/{owner}/{repo}/issues/{issue_number}/dependencies/blocked_by"
+    ],
+    listDependenciesBlocking: [
+      "GET /repos/{owner}/{repo}/issues/{issue_number}/dependencies/blocking"
+    ],
     listEvents: ["GET /repos/{owner}/{repo}/issues/{issue_number}/events"],
     listEventsForRepo: ["GET /repos/{owner}/{repo}/issues/events"],
     listEventsForTimeline: [
@@ -46775,6 +46835,9 @@ const Endpoints = {
     ],
     removeAssignees: [
       "DELETE /repos/{owner}/{repo}/issues/{issue_number}/assignees"
+    ],
+    removeDependencyBlockedBy: [
+      "DELETE /repos/{owner}/{repo}/issues/{issue_number}/dependencies/blocked_by/{issue_id}"
     ],
     removeLabel: [
       "DELETE /repos/{owner}/{repo}/issues/{issue_number}/labels/{name}"
@@ -46878,6 +46941,9 @@ const Endpoints = {
     convertMemberToOutsideCollaborator: [
       "PUT /orgs/{org}/outside_collaborators/{username}"
     ],
+    createArtifactStorageRecord: [
+      "POST /orgs/{org}/artifacts/metadata/storage-record"
+    ],
     createInvitation: ["POST /orgs/{org}/invitations"],
     createIssueType: ["POST /orgs/{org}/issue-types"],
     createOrUpdateCustomProperties: ["PATCH /orgs/{org}/properties/schema"],
@@ -46889,15 +46955,15 @@ const Endpoints = {
     ],
     createWebhook: ["POST /orgs/{org}/hooks"],
     delete: ["DELETE /orgs/{org}"],
+    deleteAttestationsBulk: ["POST /orgs/{org}/attestations/delete-request"],
+    deleteAttestationsById: [
+      "DELETE /orgs/{org}/attestations/{attestation_id}"
+    ],
+    deleteAttestationsBySubjectDigest: [
+      "DELETE /orgs/{org}/attestations/digest/{subject_digest}"
+    ],
     deleteIssueType: ["DELETE /orgs/{org}/issue-types/{issue_type_id}"],
     deleteWebhook: ["DELETE /orgs/{org}/hooks/{hook_id}"],
-    enableOrDisableSecurityProductOnAllOrgRepos: [
-      "POST /orgs/{org}/{security_product}/{enablement}",
-      {},
-      {
-        deprecated: "octokit.rest.orgs.enableOrDisableSecurityProductOnAllOrgRepos() is deprecated, see https://docs.github.com/rest/orgs/orgs#enable-or-disable-a-security-feature-for-an-organization"
-      }
-    ],
     get: ["GET /orgs/{org}"],
     getAllCustomProperties: ["GET /orgs/{org}/properties/schema"],
     getCustomProperty: [
@@ -46917,7 +46983,13 @@ const Endpoints = {
     ],
     list: ["GET /organizations"],
     listAppInstallations: ["GET /orgs/{org}/installations"],
+    listArtifactStorageRecords: [
+      "GET /orgs/{org}/artifacts/{subject_digest}/metadata/storage-records"
+    ],
     listAttestations: ["GET /orgs/{org}/attestations/{subject_digest}"],
+    listAttestationsBulk: [
+      "POST /orgs/{org}/attestations/bulk-list{?per_page,before,after}"
+    ],
     listBlockedUsers: ["GET /orgs/{org}/blocks"],
     listCustomPropertiesValuesForRepos: ["GET /orgs/{org}/properties/values"],
     listFailedInvitations: ["GET /orgs/{org}/failed_invitations"],
@@ -47110,6 +47182,44 @@ const Endpoints = {
     listOrgPrivateRegistries: ["GET /orgs/{org}/private-registries"],
     updateOrgPrivateRegistry: [
       "PATCH /orgs/{org}/private-registries/{secret_name}"
+    ]
+  },
+  projects: {
+    addItemForOrg: ["POST /orgs/{org}/projectsV2/{project_number}/items"],
+    addItemForUser: ["POST /users/{user_id}/projectsV2/{project_number}/items"],
+    deleteItemForOrg: [
+      "DELETE /orgs/{org}/projectsV2/{project_number}/items/{item_id}"
+    ],
+    deleteItemForUser: [
+      "DELETE /users/{user_id}/projectsV2/{project_number}/items/{item_id}"
+    ],
+    getFieldForOrg: [
+      "GET /orgs/{org}/projectsV2/{project_number}/fields/{field_id}"
+    ],
+    getFieldForUser: [
+      "GET /users/{user_id}/projectsV2/{project_number}/fields/{field_id}"
+    ],
+    getForOrg: ["GET /orgs/{org}/projectsV2/{project_number}"],
+    getForUser: ["GET /users/{user_id}/projectsV2/{project_number}"],
+    getOrgItem: ["GET /orgs/{org}/projectsV2/{project_number}/items/{item_id}"],
+    getUserItem: [
+      "GET /users/{user_id}/projectsV2/{project_number}/items/{item_id}"
+    ],
+    listFieldsForOrg: ["GET /orgs/{org}/projectsV2/{project_number}/fields"],
+    listFieldsForUser: [
+      "GET /users/{user_id}/projectsV2/{project_number}/fields"
+    ],
+    listForOrg: ["GET /orgs/{org}/projectsV2"],
+    listForUser: ["GET /users/{username}/projectsV2"],
+    listItemsForOrg: ["GET /orgs/{org}/projectsV2/{project_number}/items"],
+    listItemsForUser: [
+      "GET /users/{user_id}/projectsV2/{project_number}/items"
+    ],
+    updateItemForOrg: [
+      "PATCH /orgs/{org}/projectsV2/{project_number}/items/{item_id}"
+    ],
+    updateItemForUser: [
+      "PATCH /users/{user_id}/projectsV2/{project_number}/items/{item_id}"
     ]
   },
   pulls: {
@@ -47690,8 +47800,14 @@ const Endpoints = {
     listLocationsForAlert: [
       "GET /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}/locations"
     ],
+    listOrgPatternConfigs: [
+      "GET /orgs/{org}/secret-scanning/pattern-configurations"
+    ],
     updateAlert: [
       "PATCH /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}"
+    ],
+    updateOrgPatternConfigs: [
+      "PATCH /orgs/{org}/secret-scanning/pattern-configurations"
     ]
   },
   securityAdvisories: {
@@ -47801,6 +47917,15 @@ const Endpoints = {
     ],
     createPublicSshKeyForAuthenticatedUser: ["POST /user/keys"],
     createSshSigningKeyForAuthenticatedUser: ["POST /user/ssh_signing_keys"],
+    deleteAttestationsBulk: [
+      "POST /users/{username}/attestations/delete-request"
+    ],
+    deleteAttestationsById: [
+      "DELETE /users/{username}/attestations/{attestation_id}"
+    ],
+    deleteAttestationsBySubjectDigest: [
+      "DELETE /users/{username}/attestations/digest/{subject_digest}"
+    ],
     deleteEmailForAuthenticated: [
       "DELETE /user/emails",
       {},
@@ -47845,6 +47970,9 @@ const Endpoints = {
     ],
     list: ["GET /users"],
     listAttestations: ["GET /users/{username}/attestations/{subject_digest}"],
+    listAttestationsBulk: [
+      "POST /users/{username}/attestations/bulk-list{?per_page,before,after}"
+    ],
     listBlockedByAuthenticated: [
       "GET /user/blocks",
       {},
@@ -48080,15 +48208,18 @@ var dist = __nccwpck_require__(3669);
 
 
 class GithubRepository extends BaseRepository {
-    async getDiffRemote(owner, repo, base, head) {
+    async getDiffRemote(owner, repo, base, head, includeOnlyPaths) {
         let changedFilesCount = 0;
         let additionCount = 0;
         let deletionCount = 0;
         let changeCount = 0;
-        let commitCount = 0;
+        const pathFilteringEnabled = (includeOnlyPaths && includeOnlyPaths.length > 0) == true;
+        if (pathFilteringEnabled) {
+            core.info(`ℹ️ Path filtering enabled with patterns: ${includeOnlyPaths?.join(', ')}`);
+        }
         // Fetch comparisons recursively until we don't find any commits
         // This is because the GitHub API limits the number of commits returned in a single response.
-        let commits = [];
+        let allCommits = [];
         let compareHead = head;
         while (true) {
             const compareResult = await this.octokit.repos.compareCommits({
@@ -48100,27 +48231,58 @@ class GithubRepository extends BaseRepository {
             if (compareResult.data.total_commits === 0) {
                 break;
             }
-            changedFilesCount += compareResult.data.files?.length ?? 0;
-            const files = compareResult.data.files;
-            if (files !== undefined) {
+            // When no path filtering is enabled, we can use the aggregate file stats from compare API
+            if (!pathFilteringEnabled) {
+                const files = compareResult.data.files || [];
+                changedFilesCount += files.length;
                 for (const file of files) {
                     additionCount += file.additions;
                     deletionCount += file.deletions;
                     changeCount += file.changes;
                 }
+                allCommits = compareResult.data.commits.concat(allCommits);
             }
-            commitCount += compareResult.data.commits.length;
-            commits = compareResult.data.commits.concat(commits);
-            compareHead = `${commits[0].sha}^`;
+            else {
+                // With path filtering, we will collect all commits here first; counting is done per commit after fetching their files
+                allCommits = compareResult.data.commits.concat(allCommits);
+            }
+            compareHead = `${compareResult.data.commits[0].sha}^`;
         }
-        core.info(`ℹ️ Found ${commits.length} commits from the GitHub API for ${owner}/${repo}`);
+        core.info(`ℹ️ Found ${allCommits.length} commits from the GitHub API for ${owner}/${repo}`);
+        let filteredCommits = allCommits;
+        if (pathFilteringEnabled) {
+            // Make an extra API call per commit to determine modified files and filter by includeOnlyPaths
+            const patterns = includeOnlyPaths || [];
+            const commitsAfterFilter = [];
+            for (const commit of allCommits) {
+                try {
+                    const commitResp = await this.octokit.repos.getCommit({ owner, repo, ref: commit.sha });
+                    const files = commitResp.data.files || [];
+                    const matchingFiles = files.filter(f => patterns.some(p => f.filename.startsWith(p)));
+                    if (matchingFiles.length > 0) {
+                        // count only matching files
+                        changedFilesCount += matchingFiles.length;
+                        for (const file of matchingFiles) {
+                            additionCount += file.additions || 0;
+                            deletionCount += file.deletions || 0;
+                            changeCount += file.changes || 0;
+                        }
+                        commitsAfterFilter.push(commit);
+                    }
+                }
+                catch (e) {
+                    core.warning(`⚠️ Failed to retrieve files for commit ${commit.sha}: ${e}`);
+                }
+            }
+            filteredCommits = commitsAfterFilter;
+        }
         return {
             changedFiles: changedFilesCount,
             additions: additionCount,
             deletions: deletionCount,
             changes: changeCount,
-            commits: commitCount,
-            commitInfo: commits
+            commits: filteredCommits.length,
+            commitInfo: filteredCommits
                 .filter(commit => commit.sha)
                 .map(commit => ({
                 sha: commit.sha || '',
@@ -54866,58 +55028,34 @@ class GiteaRepository extends BaseRepository {
      * WARNING: This does not actually get the diff from the remote, as Gitea does not offer a compareable API.
      * This uses the local repository to get the diff. NOTE: As such, gitea integration requires the repo available.
      */
-    async getDiffRemote(owner, repo, base, head) {
-        let changedFilesCount = 0;
-        let additionCount = 0;
-        let deletionCount = 0;
-        const changeCount = 0;
-        let commitCount = 0;
+    async getDiffRemote(owner, repo, base, head, includeOnlyPaths) {
         const gitHelper = await createCommandManager(this.repositoryPath);
-        // Get the diff stats between the two branches/commits
-        const diffStat = await gitHelper.execGit(['diff', '--stat', `${base}...${head}`]);
-        const diffStatLines = diffStat.stdout.split('\n');
-        for (const line of diffStatLines) {
-            // Extract the addition and deletion counts from each line of the git diff output
-            const match = line.match(/(\d+) insertions?\(\+\), (\d+) deletions?\(-\)/);
-            if (match) {
-                additionCount += parseInt(match[1], 10);
-                deletionCount += parseInt(match[2], 10);
-            }
+        // Add path filtering if specified
+        if (includeOnlyPaths) {
+            core.info(`ℹ️ Path filtering enabled with patterns: ${includeOnlyPaths.join(', ')}`);
         }
-        // Get the list of changed files
-        const diffNameOnly = await gitHelper.execGit(['diff', '--name-only', `${base}...${head}`]);
-        const changedFiles = diffNameOnly.stdout.split('\n');
-        changedFilesCount = changedFiles.length - 1; // Subtract one for the empty line at the end
-        // Get the commit count between the two branches/commits
-        const logCount = await gitHelper.execGit(['rev-list', '--count', `${base}...${head}`]);
-        commitCount = parseInt(logCount.stdout.trim(), 10);
-        // Now let's get the commit logs between the two branches/commits
-        const log = await gitHelper.execGit(['log', '--pretty=format:%H||||%an||||%ae||||%ad||||%cn||||%ce||||%cd||||%s', `${base}...${head}`]);
-        const commitLogs = log.stdout.trim().split('\n');
-        // Process commit logs
-        const commitInfo = commitLogs.map(commitLog => {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const [sha, authorName, authorEmail, authorDate, committerName, committerEmail, committerDate, subject] = commitLog.split('||||');
-            return {
-                sha,
-                summary: subject,
-                message: '', // This would require another git command to get the full message if needed
-                author: authorName,
-                authorName,
-                authorDate: moment(authorDate, 'ddd MMM DD HH:mm:ss YYYY ZZ', false),
-                committer: committerName,
-                committerName,
-                commitDate: moment(committerDate, 'ddd MMM DD HH:mm:ss YYYY ZZ', false),
-                prNumber: undefined // This is not available directly from git, would require additional logic to associate commits with PRs
-            };
-        });
+        // Get diff stats
+        const diffStats = await gitHelper.getDiffStats(base, head, includeOnlyPaths);
+        // Get commits
+        const commitInfo = await gitHelper.getCommitsBetween(base, head, includeOnlyPaths);
         return {
-            changedFiles: changedFilesCount,
-            additions: additionCount,
-            deletions: deletionCount,
-            changes: changeCount,
-            commits: commitCount,
-            commitInfo
+            changedFiles: diffStats.changedFiles,
+            additions: diffStats.additions,
+            deletions: diffStats.deletions,
+            changes: diffStats.changes,
+            commits: commitInfo.count,
+            commitInfo: commitInfo.commits.map(commit => ({
+                sha: commit.sha,
+                summary: commit.subject.split('\n')[0],
+                message: commit.message,
+                author: commit.author,
+                authorName: commit.authorName,
+                authorDate: moment(commit.authorDate),
+                committer: "",
+                committerName: "",
+                commitDate: moment(commit.authorDate),
+                prNumber: undefined
+            }))
         };
     }
     static pulls = {
@@ -55048,13 +55186,17 @@ class OfflineRepository extends BaseRepository {
     async fillTagInformation(repositoryPath, owner, repo, tagInfo) {
         return this.getTagByCreateTime(repositoryPath, tagInfo);
     }
-    async getDiffRemote(owner, repo, base, head) {
+    async getDiffRemote(owner, repo, base, head, includeOnlyPaths) {
         core.info(`ℹ️ Getting diff information from local repository in offline mode`);
         const gitHelper = await createCommandManager(this.repositoryPath);
+        // Add path filtering if specified
+        if (includeOnlyPaths) {
+            core.info(`ℹ️ Path filtering enabled with patterns: ${includeOnlyPaths.join(', ')}`);
+        }
         // Get diff stats
-        const diffStats = await gitHelper.getDiffStats(base, head);
+        const diffStats = await gitHelper.getDiffStats(base, head, includeOnlyPaths);
         // Get commits
-        const commitInfo = await gitHelper.getCommitsBetween(base, head);
+        const commitInfo = await gitHelper.getCommitsBetween(base, head, includeOnlyPaths);
         return {
             changedFiles: diffStats.changedFiles,
             additions: diffStats.additions,
@@ -55182,11 +55324,15 @@ async function run() {
         const exportCache = core.getInput('exportCache') === 'true';
         const exportOnly = core.getInput('exportOnly') === 'true';
         const cache = core.getInput('cache');
+        const rawIncludeOnlyPaths = core.getMultilineInput('includeOnlyPaths');
+        // filter out empty lines and trim whitespace from paths
+        const filteredIncludeOnlyPaths = rawIncludeOnlyPaths.map(pattern => pattern.trim()).filter(pattern => pattern.length > 0);
+        const includeOnlyPaths = filteredIncludeOnlyPaths.length > 0 ? filteredIncludeOnlyPaths : undefined;
         // Use OfflineRepository if offline mode is enabled, otherwise use the selected platform
         const repositoryUtils = offlineMode
             ? new OfflineRepository(repositoryPath)
             : new supportedPlatform[platform](token, baseUrl, repositoryPath);
-        const result = await new ReleaseNotesBuilder(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchViaCommits, fetchReviewers, fetchReleaseInformation, fetchReviews, mode, exportCache, exportOnly, cache, configuration).build();
+        const result = await new ReleaseNotesBuilder(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchViaCommits, fetchReviewers, fetchReleaseInformation, fetchReviews, mode, exportCache, exportOnly, cache, configuration, includeOnlyPaths).build();
         core.setOutput('changelog', result);
         // write the result in changelog to file if possible
         const outputFile = core.getInput('outputFile');
