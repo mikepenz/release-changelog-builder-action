@@ -43093,7 +43093,7 @@ function buildChangelog(diffInfo, origPrs, options) {
     const contributorsArray = Array.from(contributorsSet);
     const contributorsString = contributorsArray.join(', ');
     const externalContributorString = contributorsArray.filter(value => value !== `@${options.owner}`).join(', ');
-    core.setOutput('contributors', JSON.stringify(contributorsSet));
+    core.setOutput('contributors', contributorsArray.join(','));
     const releaseNotesTemplateContext = buildReleaseNotesTemplateContext(changelogStrings, contributorsString, externalContributorString, prStrings, diffInfo, options);
     let renderedReleaseNotesTemplate = renderTemplateAndFillPlaceholderContext(config.template, releaseNotesTemplateContext, groupedPlaceholders, customPlaceholdersTemplateContext, config);
     renderedReleaseNotesTemplate = renderTemplateWithContext(renderedReleaseNotesTemplate, customPlaceholdersTemplateContext, config);
