@@ -71,6 +71,8 @@ inputs:
 outputs:
   changelog:
     description: The built release changelog built from the merged pull requests
+  contributors:
+    description: A comma separated list of contributors (GitHub usernames) who contributed to the release
   pull_requests:
     description: A comma seperated list of PR numbers that were merged
   owner:
