@@ -204,7 +204,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
   const contributorsArray = Array.from(contributorsSet)
   const contributorsString = contributorsArray.join(', ')
   const externalContributorString = contributorsArray.filter(value => value !== `@${options.owner}`).join(', ')
-  core.setOutput('contributors', JSON.stringify(contributorsSet))
+  core.setOutput('contributors', contributorsArray.join(','))
 
   const releaseNotesTemplateContext = buildReleaseNotesTemplateContext(
     changelogStrings,
