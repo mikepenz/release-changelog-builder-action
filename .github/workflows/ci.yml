@@ -185,7 +185,7 @@ jobs:
 
       - name: "Build Changelog"
         id: github_release
-        uses: mikepenz/release-changelog-builder-action@v5
+        uses: mikepenz/release-changelog-builder-action@v6
         with:
           configuration: "configs/configuration_repo.json"
           ignorePreReleases: ${{ !contains(github.ref, '-') }}
