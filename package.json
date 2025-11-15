@@ -65,7 +65,7 @@
     "js-yaml": "^4.1.1",
     "prettier": "3.6.2",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.7"
+    "vitest": "^4.0.9"
   },
   "overrides": {
     "glob": "11.0.1"
