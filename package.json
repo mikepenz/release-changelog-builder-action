@@ -50,7 +50,7 @@
     "semver": "^7.7.3"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/eslintrc": "^3.3.3",
     "@eslint/js": "^9.37.0",
     "@types/node": "^24.10.1",
     "@types/semver": "^7.7.1",
