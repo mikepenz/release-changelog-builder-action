@@ -54,7 +54,7 @@
     "@eslint/js": "^9.37.0",
     "@types/node": "^24.10.1",
     "@types/semver": "^7.7.1",
-    "@typescript-eslint/eslint-plugin": "^8.46.4",
+    "@typescript-eslint/eslint-plugin": "^8.48.1",
     "@typescript-eslint/parser": "^8.46.4",
     "@vercel/ncc": "^0.38.4",
     "eslint": "^9.37.0",
@@ -63,7 +63,7 @@
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prettier": "^5.5.4",
     "js-yaml": "^4.1.1",
-    "prettier": "3.6.2",
+    "prettier": "3.7.4",
     "typescript": "^5.9.3",
     "vitest": "^4.0.10"
   },
