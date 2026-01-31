@@ -6,7 +6,7 @@ import {expect, test} from 'vitest'
 
 clear()
 
-const token = process.env.GITHUB_TOKEN || ''
+const token = process.env.GITHUB_TOKEN || process.env.GITHUB__TEST_TOKEN || ''
 const githubRepository = new GithubRepository(token, undefined, '.')
 test('[Github] Should match generated changelog (unspecified fromTag)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs/configuration.json'))

@@ -11,7 +11,7 @@ clear()
 // load octokit instance
 const enablePullData = false // if false -> use cache for data
 
-const token = process.env.GITHUB_TOKEN || ''
+const token = process.env.GITHUB_TOKEN || process.env.GITHUB__TEST_TOKEN || ''
 const githubRepository = new GithubRepository(token, undefined, '.')
 test('Should have empty changelog (tags)', async () => {
   const configuration = mergeConfiguration(undefined, resolveConfiguration('', 'configs/configuration.json'))

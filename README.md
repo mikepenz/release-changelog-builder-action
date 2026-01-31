@@ -89,7 +89,7 @@ jobs:
     steps:
       - name: Build Changelog
         id: github_release
-        uses: mikepenz/release-changelog-builder-action@v5
+        uses: mikepenz/release-changelog-builder-action@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -112,7 +112,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Build Changelog
-        uses: mikepenz/release-changelog-builder-action@v5
+        uses: mikepenz/release-changelog-builder-action@v6
         with:
           configurationJson: |
             {
@@ -146,7 +146,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Build Changelog
-        uses: mikepenz/release-changelog-builder-action@v5
+        uses: mikepenz/release-changelog-builder-action@v6
         with:
           mode: "COMMIT"
           configurationJson: |
@@ -318,7 +318,7 @@ The action supports flexible and extensive configuration options to fine-tune it
 
 ```yml
 - name: Build Changelog
-  uses: mikepenz/release-changelog-builder-action@v5
+  uses: mikepenz/release-changelog-builder-action@v6
   with:
     configurationJson: |
       {
@@ -725,7 +725,7 @@ The API for gitea is equal to the one from GitHub, however it requires the `plat
 
 ```yml
 - name: Build Changelog
-  uses: https://github.com/mikepenz/release-changelog-builder-action@v5
+  uses: https://github.com/mikepenz/release-changelog-builder-action@v6
   with:
     platform: "gitea" # gitea or GitHub, default is GitHub
     configuration: "configuration.json"
