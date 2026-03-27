@@ -1,0 +1,27 @@
+name: Renovate
+on:
+  schedule:
+    - cron: '0 3 * * *'  # Daily at 3am UTC
+  workflow_dispatch:
+
+concurrency:
+  group: renovate
+  cancel-in-progress: false
+
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    if: github.actor == github.repository_owner || github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+      - uses: renovatebot/github-action@abd08c7549b2a864af5df4a2e369c43f035a6a9d  # v46.1.5
+        with:
+          configurationFile: renovate.json
+        env:
+          RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
+          RENOVATE_REPOSITORIES: '["${{ github.repository }}"]'
+          RENOVATE_PLATFORM: github
+          RENOVATE_USERNAME: mikepenz
+          RENOVATE_GIT_AUTHOR: "Mike Penz <opensource-bot@mikepenz.dev>"
+          RENOVATE_ONBOARDING: "false"
+          RENOVATE_REQUIRE_CONFIG: optional

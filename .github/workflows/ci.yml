@@ -13,39 +13,79 @@ jobs:
   build:
     if: github.event_name  == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
         with:
           fetch-depth: 100
           fetch-tags: true
 
       - name: Set Node.js 24.x
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f  # v6
         with:
           node-version: 24.x
 
       - name: Install NPM
         run: |
-          npm install
+          npm ci
 
-      - name: Run NPM
+      - name: Audit NPM
         run: |
-          npm run all
+          npm audit --audit-level=high
+
+      - name: Build
+        run: npm run build && npm run format && npm run lint && npm run package
+
+      - name: Test
+        run: npm run test-github
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Test Report
-        uses: mikepenz/action-junit-report@v6
+        uses: mikepenz/action-junit-report@49b2ca06f62aa7ef83ae6769a2179271e160d8e4  # v6
         if: success() || failure() # always run even if the previous step fails
         with:
           report_paths: 'junit.xml'
           comment: true
           detailed_summary: true
 
-  test:
-    if: github.event_name  == 'pull_request'
+  commit-dist:
+    needs: build
+    if: >
+      github.event_name == 'pull_request' &&
+      github.actor == 'renovate[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          persist-credentials: false
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f  # v6
+        with:
+          node-version: 24.x
+      - run: npm ci && npm run build && npm run package
+      - name: Commit rebuilt dist
+        run: |
+          git config user.name "Mike Penz"
+          git config user.email "opensource-bot@mikepenz.dev"
+          git add dist/
+          git diff --staged --quiet || git commit -m "chore: rebuild dist for renovate"
+          git push https://x-access-token:${{ secrets.RENOVATE_TOKEN }}@github.com/${{ github.repository }}.git HEAD:${{ github.event.pull_request.head.ref }}
+
+  test:
+    if: >
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       # the below actions use the local state of the action. please replace `./` with `mikepenz/release-changelog-builder-action@{latest-release}`
       # Showcases how to use the action without a prior checkout
@@ -90,7 +130,7 @@ jobs:
         run: echo "CHANGELOG"
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
         with:
           fetch-depth: 0
 
@@ -179,23 +219,38 @@ jobs:
   release:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+
+      - name: Set Node.js 24.x
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f  # v6
+        with:
+          node-version: 24.x
+
+      - name: Build
+        run: npm ci && npm audit --audit-level=high && npm run build && npm run package
 
       - name: "Build Changelog"
         id: github_release
-        uses: mikepenz/release-changelog-builder-action@v6
+        uses: mikepenz/release-changelog-builder-action@a34a8009a9588bb86b02a873cf592440e96a5da8  # v6
         with:
           configuration: "configs/configuration_repo.json"
           ignorePreReleases: ${{ !contains(github.ref, '-') }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
-        uses: mikepenz/action-gh-release@v2
+        uses: mikepenz/action-gh-release@5c3d16ffbdc3e0fbfe2c8a69a448798f5d9b30c2  # v2
         with:
           body: ${{steps.github_release.outputs.changelog}}
           prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-b') || contains(github.ref, '-a') }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32  # v4
+        with:
+          subject-path: dist/index.js
