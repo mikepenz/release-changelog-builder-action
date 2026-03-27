@@ -70,6 +70,7 @@ async function run(): Promise<void> {
     // read in repository inputs
     const baseUrl = core.getInput('baseUrl')
     const token = core.getInput('token') || process.env.GITHUB_TOKEN || ''
+    if (token) core.setSecret(token)
     const owner = core.getInput('owner') || github.context.repo.owner
     const repo = core.getInput('repo') || github.context.repo.repo
     // read in from, to tag inputs

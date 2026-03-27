@@ -49,13 +49,12 @@
     "semver": "^7.7.4"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.4",
+    "@eslint/eslintrc": "^3.3.5",
     "@eslint/js": "^10.0.1",
-    "@types/eslint-scope": "^9.1.0",
     "@types/node": "^25.5.0",
     "@types/semver": "^7.7.1",
-    "@typescript-eslint/eslint-plugin": "^8.57.1",
-    "@typescript-eslint/parser": "^8.57.1",
+    "@typescript-eslint/eslint-plugin": "^8.57.2",
+    "@typescript-eslint/parser": "^8.57.2",
     "@vercel/ncc": "^0.38.4",
     "eslint": "^10.1.0",
     "eslint-import-resolver-typescript": "^4.4.4",
@@ -66,10 +65,11 @@
     "js-yaml": "^4.1.1",
     "prettier": "3.8.1",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.2"
   },
   "overrides": {
     "glob": "11.0.1",
-    "undici": "^6.23.0"
+    "undici": "^6.23.0",
+    "brace-expansion": "^5.0.5"
   }
 }
