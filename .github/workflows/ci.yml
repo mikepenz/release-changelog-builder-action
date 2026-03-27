@@ -37,9 +37,13 @@ jobs:
         run: |
           npm audit --audit-level=high
 
-      - name: Run NPM
-        run: |
-          npm run all
+      - name: Build
+        run: npm run build && npm run format && npm run lint && npm run package
+
+      - name: Test
+        run: npm run test-github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@49b2ca06f62aa7ef83ae6769a2179271e160d8e4  # v6
