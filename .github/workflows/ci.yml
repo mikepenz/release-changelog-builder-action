@@ -55,10 +55,11 @@ jobs:
 
   commit-dist:
     needs: build
-    if: >
+    if: |
       github.event_name == 'pull_request' &&
-      github.actor == 'renovate[bot]' &&
-      github.event.pull_request.head.repo.full_name == github.repository
+      startsWith(github.head_ref, 'renovate/') &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor == github.repository_owner
     runs-on: ubuntu-latest
     permissions:
       contents: write
