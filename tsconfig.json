@@ -11,7 +11,8 @@
     "moduleResolution": "nodenext",
     "esModuleInterop": true,                  /* Enables emit interoperability between CommonJS and ES Modules via creation of namespace objects for all imports. Implies 'allowSyntheticDefaultImports'. */
     "isolatedModules": true,
-    "lib": [ "ESNext","ES2021.String", "dom"]          /* Enable custom `ES2021.String` extension in typescript for `replaceAll` */
+    "lib": [ "ESNext","ES2021.String", "dom"],          /* Enable custom `ES2021.String` extension in typescript for `replaceAll` */
+    "types": ["node"]
   },
   "exclude": ["node_modules", "__tests__/*.ts", "**/*.test.ts", "**/**/*.test.ts"],
 }
