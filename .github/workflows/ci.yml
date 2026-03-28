@@ -93,7 +93,7 @@ jobs:
       # Since 3.2.0 the configuration can be provided within the `yml` file
       - name: "Configuration without Checkout"
         id: without_checkout
-        uses: mikepenz/release-changelog-builder-action@d7b8cec8535296381f58d01454ad69dceb76c6f2 # develop
+        uses: mikepenz/release-changelog-builder-action@a77ddc56cd841de54a1fc5bdcf1c0c5eebe9ae52 # develop
         with:
           toTag: "v3.1.1"
           configurationJson: |
