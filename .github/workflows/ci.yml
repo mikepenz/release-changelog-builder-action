@@ -46,7 +46,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Test Report
-        uses: mikepenz/action-junit-report@49b2ca06f62aa7ef83ae6769a2179271e160d8e4  # v6
+        uses: mikepenz/action-junit-report@bccf2e31636835cf0874589931c4116687171386  # v6
         if: success() || failure() # always run even if the previous step fails
         with:
           report_paths: 'junit.xml'
@@ -93,7 +93,7 @@ jobs:
       # Since 3.2.0 the configuration can be provided within the `yml` file
       - name: "Configuration without Checkout"
         id: without_checkout
-        uses: mikepenz/release-changelog-builder-action@a77ddc56cd841de54a1fc5bdcf1c0c5eebe9ae52 # develop
+        uses: mikepenz/release-changelog-builder-action@0cc28988c351cc996275143ae3ea584dcc19d31d # develop
         with:
           toTag: "v3.1.1"
           configurationJson: |
@@ -238,7 +238,7 @@ jobs:
 
       - name: "Build Changelog"
         id: github_release
-        uses: mikepenz/release-changelog-builder-action@a34a8009a9588bb86b02a873cf592440e96a5da8  # v6
+        uses: mikepenz/release-changelog-builder-action@2cb9befdbc05f65b8354cc9873cd506509bd0782  # v6
         with:
           configuration: "configs/configuration_repo.json"
           ignorePreReleases: ${{ !contains(github.ref, '-') }}
