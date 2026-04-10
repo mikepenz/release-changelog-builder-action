@@ -89,7 +89,7 @@ class GitCommandManager {
   }> {
     const logArgs = [
       'log',
-      '--pretty=format:%H|%an|%ae|%aI|%s|%b',
+      '--pretty=format:%x00%H|%an|%ae|%aI|%s|%b',
       `${base}..${head}`
     ]
     if (includeOnlyPaths) {
@@ -97,13 +97,18 @@ class GitCommandManager {
     }
 
     const logOutput = await this.execGit(logArgs)
-    const lines = logOutput.stdout.trim().split('\n').filter(line => line.trim() !== '')
-    const commits = lines.map(line => {
-      const [sha, authorName, authorEmail, authorDate, subject, body] = line.split('|')
+    // Split on null byte record separator to correctly handle multi-line commit bodies
+    const records = logOutput.stdout.split('\x00').filter(record => record.trim() !== '')
+    const commits = records.map(record => {
+      // The first line contains the pipe-delimited fields; remaining lines are part of the body
+      const [firstLine, ...remainingLines] = record.split('\n')
+      const [sha, authorName, authorEmail, authorDate, subject, ...bodyParts] = firstLine.split('|')
+      const firstBodyLine = bodyParts.join('|')
+      const bodyLines = [firstBodyLine, ...remainingLines].join('\n').trim()
       return {
         sha,
         subject,
-        message: body,
+        message: bodyLines,
         author: authorEmail,
         authorName,
         authorDate
