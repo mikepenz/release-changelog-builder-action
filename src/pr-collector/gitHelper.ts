@@ -87,9 +87,11 @@ class GitCommandManager {
       authorDate: string;
     }[];
   }> {
+    const FIELD_SEP = '\x1f' // unit separator — safe delimiter for git pretty fields
+    const RECORD_SEP = '\x00' // null byte — safe delimiter between commit records
     const logArgs = [
       'log',
-      '--pretty=format:%x00%H|%an|%ae|%aI|%s|%b',
+      `--pretty=format:${RECORD_SEP}%H${FIELD_SEP}%an${FIELD_SEP}%ae${FIELD_SEP}%aI${FIELD_SEP}%s${FIELD_SEP}%b`,
       `${base}..${head}`
     ]
     if (includeOnlyPaths) {
@@ -98,13 +100,10 @@ class GitCommandManager {
 
     const logOutput = await this.execGit(logArgs)
     // Split on null byte record separator to correctly handle multi-line commit bodies
-    const records = logOutput.stdout.split('\x00').filter(record => record.trim() !== '')
+    const records = logOutput.stdout.split(RECORD_SEP).filter(record => record.trim() !== '')
     const commits = records.map(record => {
-      // The first line contains the pipe-delimited fields; remaining lines are part of the body
-      const [firstLine, ...remainingLines] = record.split('\n')
-      const [sha, authorName, authorEmail, authorDate, subject, ...bodyParts] = firstLine.split('|')
-      const firstBodyLine = bodyParts.join('|')
-      const bodyLines = [firstBodyLine, ...remainingLines].join('\n').trim()
+      const [sha, authorName, authorEmail, authorDate, subject, ...bodyParts] = record.split(FIELD_SEP)
+      const bodyLines = bodyParts.join(FIELD_SEP).trimEnd()
       return {
         sha,
         subject,

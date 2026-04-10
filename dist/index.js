@@ -56182,22 +56182,26 @@ class GitCommandManager {
         };
     }
     async getCommitsBetween(base, head, includeOnlyPaths) {
+        const FIELD_SEP = '\x1f'; // unit separator — safe delimiter for git pretty fields
+        const RECORD_SEP = '\x00'; // null byte — safe delimiter between commit records
         const logArgs = [
             'log',
-            '--pretty=format:%H|%an|%ae|%aI|%s|%b',
+            `--pretty=format:${RECORD_SEP}%H${FIELD_SEP}%an${FIELD_SEP}%ae${FIELD_SEP}%aI${FIELD_SEP}%s${FIELD_SEP}%b`,
             `${base}..${head}`
         ];
         if (includeOnlyPaths) {
             logArgs.push('--', ...includeOnlyPaths);
         }
         const logOutput = await this.execGit(logArgs);
-        const lines = logOutput.stdout.trim().split('\n').filter(line => line.trim() !== '');
-        const commits = lines.map(line => {
-            const [sha, authorName, authorEmail, authorDate, subject, body] = line.split('|');
+        // Split on null byte record separator to correctly handle multi-line commit bodies
+        const records = logOutput.stdout.split(RECORD_SEP).filter(record => record.trim() !== '');
+        const commits = records.map(record => {
+            const [sha, authorName, authorEmail, authorDate, subject, ...bodyParts] = record.split(FIELD_SEP);
+            const bodyLines = bodyParts.join(FIELD_SEP).trimEnd();
             return {
                 sha,
                 subject,
-                message: body,
+                message: bodyLines,
                 author: authorEmail,
                 authorName,
                 authorDate

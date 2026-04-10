@@ -1,6 +1,9 @@
 import {describe, expect, test, vi} from 'vitest'
 import {createCommandManager} from '../src/pr-collector/gitHelper.js'
 
+const F = '\x1f' // unit separator (field delimiter)
+const R = '\x00' // null byte (record delimiter)
+
 /**
  * Simulates the broken parsing that existed before the fix.
  * This is the old logic: split on '\n', then split each line on '|'.
@@ -15,9 +18,9 @@ function parseLegacy(stdout: string) {
 }
 
 /**
- * Raw git log output as produced by: git log --pretty="format:%H|%an|%ae|%aI|%s|%b"
- * This is the ORIGINAL format (without %x00) that triggered the bug.
- * The merge commit for PR #57 has a multi-line body with Reviewed-on / Reviewed-by.
+ * Raw git log output as produced by the ORIGINAL format: git log --pretty="format:%H|%an|%ae|%aI|%s|%b"
+ * This triggered the bug reported in #1552. The merge commit for PR #57 has a multi-line body
+ * with Reviewed-on / Reviewed-by lines that break the newline-based parser.
  */
 const RAW_GIT_LOG_WITH_MULTILINE_BODY = [
   "4a8857bd358972a5a2396d552ee118299fee8cf9|philipp|philipp@example.com|2026-04-08T18:46:15+00:00|Merge branch 'main' into bugfix/image_rotation|",
@@ -29,15 +32,17 @@ const RAW_GIT_LOG_WITH_MULTILINE_BODY = [
 ].join('\n')
 
 /**
- * The same commits, but as produced by the fixed format: git log --pretty="format:%x00%H|%an|%ae|%aI|%s|%b"
- * Each commit record is prefixed with \x00, so multi-line bodies stay inside their record.
+ * The same commits as produced by the fixed format using %x00 (record sep) and %x1f (field sep):
+ * git log --pretty="format:%x00%H%x1f%an%x1f%ae%x1f%aI%x1f%s%x1f%b"
  */
-const FIXED_GIT_LOG_WITH_MULTILINE_BODY = [
-  "\x004a8857bd358972a5a2396d552ee118299fee8cf9|philipp|philipp@example.com|2026-04-08T18:46:15+00:00|Merge branch 'main' into bugfix/image_rotation|",
-  "\x007fc5c50cdd345ca03fc7f17e18a7a4900fc04c7c|philipp|philipp@example.com|2026-04-08T18:28:23+00:00|Merge pull request 'Major CSS / JS overhaul' (#57) from map into main|Reviewed-on: https://example.com/pulls/57\nReviewed-by: chosen <chosen@example.com>\n",
-  "\x00ffa3f0034d2028024f2175f95bb5507e672418e1|philipp|philipp@example.com|2026-04-08T20:06:18+02:00|Fix image loading|",
-  "\x000483d05995b12df27d95ddd2f753a6d52b8d96d2|philipp|philipp@example.com|2026-04-08T19:59:26+02:00|Fix passive touch events|"
-].join('\n')
+function buildFixedGitLog() {
+  return [
+    `${R}4a8857bd358972a5a2396d552ee118299fee8cf9${F}philipp${F}philipp@example.com${F}2026-04-08T18:46:15+00:00${F}Merge branch 'main' into bugfix/image_rotation${F}`,
+    `${R}7fc5c50cdd345ca03fc7f17e18a7a4900fc04c7c${F}philipp${F}philipp@example.com${F}2026-04-08T18:28:23+00:00${F}Merge pull request 'Major CSS / JS overhaul' (#57) from map into main${F}Reviewed-on: https://example.com/pulls/57\nReviewed-by: chosen <chosen@example.com>\n`,
+    `${R}ffa3f0034d2028024f2175f95bb5507e672418e1${F}philipp${F}philipp@example.com${F}2026-04-08T20:06:18+02:00${F}Fix image loading${F}`,
+    `${R}0483d05995b12df27d95ddd2f753a6d52b8d96d2${F}philipp${F}philipp@example.com${F}2026-04-08T19:59:26+02:00${F}Fix passive touch events${F}`
+  ].join('')
+}
 
 describe('getCommitsBetween', () => {
   test('legacy parsing crashes on multi-line commit bodies (reproduces #1552)', () => {
@@ -53,6 +58,7 @@ describe('getCommitsBetween', () => {
     expect(bogusCommit.subject).toBeUndefined()
 
     // This is the exact crash from the issue: commit.subject.split('\n') throws TypeError
+    // @ts-expect-error Intentionally calling .split() on undefined to reproduce the historical crash
     expect(() => bogusCommit.subject.split('\n')).toThrow(TypeError)
   })
 
@@ -61,7 +67,7 @@ describe('getCommitsBetween', () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.spyOn(gitHelper as any, 'execGit').mockResolvedValue({
-      stdout: FIXED_GIT_LOG_WITH_MULTILINE_BODY,
+      stdout: buildFixedGitLog(),
       exitCode: 0
     })
 
@@ -85,7 +91,7 @@ describe('getCommitsBetween', () => {
 
     expect(result.commits[1].sha).toBe('7fc5c50cdd345ca03fc7f17e18a7a4900fc04c7c')
     expect(result.commits[1].subject).toBe("Merge pull request 'Major CSS / JS overhaul' (#57) from map into main")
-    // Multi-line body must be fully preserved, not discarded
+    // Multi-line body must be fully preserved
     expect(result.commits[1].message).toBe(
       'Reviewed-on: https://example.com/pulls/57\nReviewed-by: chosen <chosen@example.com>'
     )
@@ -97,8 +103,9 @@ describe('getCommitsBetween', () => {
     expect(result.commits[3].subject).toBe('Fix passive touch events')
   })
 
-  test('should handle commit body containing pipe characters', async () => {
-    const gitLog = '\x00abc123|John|john@example.com|2026-04-08T18:00:00+00:00|Fix bug|body with | pipe | chars'
+  test('should handle fields containing pipe characters', async () => {
+    // Author name and subject both contain pipe characters — old '|' delimiter would break these
+    const gitLog = `${R}abc123${F}John | Doe${F}john@example.com${F}2026-04-08T18:00:00+00:00${F}Fix | handle edge case${F}body text`
 
     const gitHelper = await createCommandManager('.')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -110,8 +117,9 @@ describe('getCommitsBetween', () => {
     const result = await gitHelper.getCommitsBetween('tag1', 'tag2')
 
     expect(result.count).toBe(1)
-    expect(result.commits[0].subject).toBe('Fix bug')
-    expect(result.commits[0].message).toBe('body with | pipe | chars')
+    expect(result.commits[0].authorName).toBe('John | Doe')
+    expect(result.commits[0].subject).toBe('Fix | handle edge case')
+    expect(result.commits[0].message).toBe('body text')
   })
 
   test('should handle empty git log output', async () => {
