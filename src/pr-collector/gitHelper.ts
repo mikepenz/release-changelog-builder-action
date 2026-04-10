@@ -87,9 +87,11 @@ class GitCommandManager {
       authorDate: string;
     }[];
   }> {
+    const FIELD_SEP = '\x1f' // unit separator — used for splitting output
+    const RECORD_SEP = '\x00' // null byte — used for splitting output
     const logArgs = [
       'log',
-      '--pretty=format:%H|%an|%ae|%aI|%s|%b',
+      '--pretty=format:%x00%H%x1f%an%x1f%ae%x1f%aI%x1f%s%x1f%b',
       `${base}..${head}`
     ]
     if (includeOnlyPaths) {
@@ -97,13 +99,15 @@ class GitCommandManager {
     }
 
     const logOutput = await this.execGit(logArgs)
-    const lines = logOutput.stdout.trim().split('\n').filter(line => line.trim() !== '')
-    const commits = lines.map(line => {
-      const [sha, authorName, authorEmail, authorDate, subject, body] = line.split('|')
+    // Split on null byte record separator to correctly handle multi-line commit bodies
+    const records = logOutput.stdout.split(RECORD_SEP).filter(record => record.trim() !== '')
+    const commits = records.map(record => {
+      const [sha, authorName, authorEmail, authorDate, subject, ...bodyParts] = record.split(FIELD_SEP)
+      const bodyLines = bodyParts.join(FIELD_SEP).trimEnd()
       return {
         sha,
         subject,
-        message: body,
+        message: bodyLines,
         author: authorEmail,
         authorName,
         authorDate
