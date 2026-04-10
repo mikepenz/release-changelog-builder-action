@@ -56182,11 +56182,11 @@ class GitCommandManager {
         };
     }
     async getCommitsBetween(base, head, includeOnlyPaths) {
-        const FIELD_SEP = '\x1f'; // unit separator — safe delimiter for git pretty fields
-        const RECORD_SEP = '\x00'; // null byte — safe delimiter between commit records
+        const FIELD_SEP = '\x1f'; // unit separator — used for splitting output
+        const RECORD_SEP = '\x00'; // null byte — used for splitting output
         const logArgs = [
             'log',
-            `--pretty=format:${RECORD_SEP}%H${FIELD_SEP}%an${FIELD_SEP}%ae${FIELD_SEP}%aI${FIELD_SEP}%s${FIELD_SEP}%b`,
+            '--pretty=format:%x00%H%x1f%an%x1f%ae%x1f%aI%x1f%s%x1f%b',
             `${base}..${head}`
         ];
         if (includeOnlyPaths) {
