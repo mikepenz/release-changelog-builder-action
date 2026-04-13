@@ -10533,6 +10533,7 @@ const Pool = __nccwpck_require__(628)
 const BalancedPool = __nccwpck_require__(837)
 const RoundRobinPool = __nccwpck_require__(5520)
 const Agent = __nccwpck_require__(7405)
+const Dispatcher1Wrapper = __nccwpck_require__(3650)
 const ProxyAgent = __nccwpck_require__(6672)
 const Socks5ProxyAgent = __nccwpck_require__(7223)
 const EnvHttpProxyAgent = __nccwpck_require__(3137)
@@ -10562,6 +10563,7 @@ module.exports.Pool = Pool
 module.exports.BalancedPool = BalancedPool
 module.exports.RoundRobinPool = RoundRobinPool
 module.exports.Agent = Agent
+module.exports.Dispatcher1Wrapper = Dispatcher1Wrapper
 module.exports.ProxyAgent = ProxyAgent
 module.exports.Socks5ProxyAgent = Socks5ProxyAgent
 module.exports.EnvHttpProxyAgent = EnvHttpProxyAgent
@@ -10866,45 +10868,48 @@ class ConnectHandler extends AsyncResource {
     addSignal(this, signal)
   }
 
-  onConnect (abort, context) {
+  onRequestStart (controller, context) {
     if (this.reason) {
-      abort(this.reason)
+      controller.abort(this.reason)
       return
     }
 
     assert(this.callback)
 
-    this.abort = abort
+    this.abort = (reason) => controller.abort(reason)
     this.context = context
   }
 
-  onHeaders () {
+  onResponseStart () {
     throw new SocketError('bad connect', null)
   }
 
-  onUpgrade (statusCode, rawHeaders, socket) {
+  onRequestUpgrade (controller, statusCode, headers, socket) {
     const { callback, opaque, context } = this
 
     removeSignal(this)
 
     this.callback = null
 
-    let headers = rawHeaders
+    let responseHeaders = headers
+    const rawHeaders = controller?.rawHeaders
     // Indicates is an HTTP2Session
-    if (headers != null) {
-      headers = this.responseHeaders === 'raw' ? util.parseRawHeaders(rawHeaders) : util.parseHeaders(rawHeaders)
+    if (responseHeaders != null) {
+      responseHeaders = this.responseHeaders === 'raw'
+        ? (Array.isArray(rawHeaders) ? util.parseRawHeaders(rawHeaders) : [])
+        : headers
     }
 
     this.runInAsyncScope(callback, null, null, {
       statusCode,
-      headers,
+      headers: responseHeaders,
       socket,
       opaque,
       context
     })
   }
 
-  onError (err) {
+  onResponseError (_controller, err) {
     const { callback, opaque } = this
 
     removeSignal(this)
@@ -10930,7 +10935,6 @@ function connect (opts, callback) {
   try {
     const connectHandler = new ConnectHandler(opts, callback)
     const connectOptions = { ...opts, method: 'CONNECT' }
-
     this.dispatch(connectOptions, connectHandler)
   } catch (err) {
     if (typeof callback !== 'function') {
@@ -11097,40 +11101,46 @@ class PipelineHandler extends AsyncResource {
     addSignal(this, signal)
   }
 
-  onConnect (abort, context) {
+  onRequestStart (controller, context) {
     const { res } = this
 
     if (this.reason) {
-      abort(this.reason)
+      controller.abort(this.reason)
       return
     }
 
     assert(!res, 'pipeline cannot be retried')
 
-    this.abort = abort
+    this.abort = (reason) => controller.abort(reason)
     this.context = context
   }
 
-  onHeaders (statusCode, rawHeaders, resume) {
+  onResponseStart (controller, statusCode, headers, _statusMessage) {
     const { opaque, handler, context } = this
 
     if (statusCode < 200) {
       if (this.onInfo) {
-        const headers = this.responseHeaders === 'raw' ? util.parseRawHeaders(rawHeaders) : util.parseHeaders(rawHeaders)
-        this.onInfo({ statusCode, headers })
+        const rawHeaders = controller?.rawHeaders
+        const responseHeaders = this.responseHeaders === 'raw'
+          ? (Array.isArray(rawHeaders) ? util.parseRawHeaders(rawHeaders) : [])
+          : headers
+        this.onInfo({ statusCode, headers: responseHeaders })
       }
       return
     }
 
-    this.res = new PipelineResponse(resume)
+    this.res = new PipelineResponse(() => controller.resume())
 
     let body
     try {
       this.handler = null
-      const headers = this.responseHeaders === 'raw' ? util.parseRawHeaders(rawHeaders) : util.parseHeaders(rawHeaders)
+      const rawHeaders = controller?.rawHeaders
+      const responseHeaders = this.responseHeaders === 'raw'
+        ? (Array.isArray(rawHeaders) ? util.parseRawHeaders(rawHeaders) : [])
+        : headers
       body = this.runInAsyncScope(handler, null, {
         statusCode,
-        headers,
+        headers: responseHeaders,
         opaque,
         body: this.res,
         context
@@ -11173,17 +11183,20 @@ class PipelineHandler extends AsyncResource {
     this.body = body
   }
 
-  onData (chunk) {
+  onResponseData (controller, chunk) {
     const { res } = this
-    return res.push(chunk)
+
+    if (res.push(chunk) === false) {
+      controller.pause()
+    }
   }
 
-  onComplete (trailers) {
+  onResponseEnd (_controller, _trailers) {
     const { res } = this
     res.push(null)
   }
 
-  onError (err) {
+  onResponseError (_controller, err) {
     const { ret } = this
     this.handler = null
     util.destroy(ret, err)
@@ -11264,6 +11277,7 @@ class RequestHandler extends AsyncResource {
     this.body = body
     this.trailers = {}
     this.context = null
+    this.controller = null
     this.onInfo = onInfo || null
     this.highWaterMark = highWaterMark
     this.reason = null
@@ -11283,36 +11297,40 @@ class RequestHandler extends AsyncResource {
     }
   }
 
-  onConnect (abort, context) {
+  onRequestStart (controller, context) {
     if (this.reason) {
-      abort(this.reason)
+      controller.abort(this.reason)
       return
     }
 
     assert(this.callback)
 
-    this.abort = abort
+    this.controller = controller
+    this.abort = (reason) => controller.abort(reason)
     this.context = context
   }
 
-  onHeaders (statusCode, rawHeaders, resume, statusMessage) {
-    const { callback, opaque, abort, context, responseHeaders, highWaterMark } = this
+  onResponseStart (controller, statusCode, headers, statusText) {
+    const { callback, opaque, context, responseHeaders, highWaterMark } = this
 
-    const headers = responseHeaders === 'raw' ? util.parseRawHeaders(rawHeaders) : util.parseHeaders(rawHeaders)
+    const rawHeaders = controller?.rawHeaders
+    const responseHeaderData = responseHeaders === 'raw'
+      ? (Array.isArray(rawHeaders) ? util.parseRawHeaders(rawHeaders) : [])
+      : headers
 
     if (statusCode < 200) {
       if (this.onInfo) {
-        this.onInfo({ statusCode, headers })
+        this.onInfo({ statusCode, headers: responseHeaderData })
       }
       return
     }
 
-    const parsedHeaders = responseHeaders === 'raw' ? util.parseHeaders(rawHeaders) : headers
-    const contentType = parsedHeaders['content-type']
-    const contentLength = parsedHeaders['content-length']
+    const parsedHeaders = headers
+    const contentType = parsedHeaders?.['content-type']
+    const contentLength = parsedHeaders?.['content-length']
     const res = new Readable({
-      resume,
-      abort,
+      resume: () => controller.resume(),
+      abort: (reason) => controller.abort(reason),
       contentType,
       contentLength: this.method !== 'HEAD' && contentLength
         ? Number(contentLength)
@@ -11331,8 +11349,8 @@ class RequestHandler extends AsyncResource {
       try {
         this.runInAsyncScope(callback, null, null, {
           statusCode,
-          statusText: statusMessage,
-          headers,
+          statusText,
+          headers: responseHeaderData,
           trailers: this.trailers,
           opaque,
           body: res,
@@ -11354,16 +11372,35 @@ class RequestHandler extends AsyncResource {
     }
   }
 
-  onData (chunk) {
-    return this.res.push(chunk)
+  onResponseData (controller, chunk) {
+    if (!this.res) {
+      return
+    }
+
+    if (this.res.push(chunk) === false) {
+      controller.pause()
+    }
   }
 
-  onComplete (trailers) {
-    util.parseHeaders(trailers, this.trailers)
-    this.res.push(null)
+  onResponseEnd (_controller, trailers) {
+    if (trailers && typeof trailers === 'object') {
+      for (const key of Object.keys(trailers)) {
+        if (key === '__proto__') {
+          Object.defineProperty(this.trailers, key, {
+            value: trailers[key],
+            enumerable: true,
+            configurable: true,
+            writable: true
+          })
+        } else {
+          this.trailers[key] = trailers[key]
+        }
+      }
+    }
+    this.res?.push(null)
   }
 
-  onError (err) {
+  onResponseError (_controller, err) {
     const { res, callback, body, opaque } = this
 
     if (callback) {
@@ -11484,39 +11521,44 @@ class StreamHandler extends AsyncResource {
     this.res = null
     this.abort = null
     this.context = null
+    this.controller = null
     this.trailers = null
     this.body = body
     this.onInfo = onInfo || null
 
     if (util.isStream(body)) {
       body.on('error', (err) => {
-        this.onError(err)
+        this.onResponseError(this.controller, err)
       })
     }
 
     addSignal(this, signal)
   }
 
-  onConnect (abort, context) {
+  onRequestStart (controller, context) {
     if (this.reason) {
-      abort(this.reason)
+      controller.abort(this.reason)
       return
     }
 
     assert(this.callback)
 
-    this.abort = abort
+    this.controller = controller
+    this.abort = (reason) => controller.abort(reason)
     this.context = context
   }
 
-  onHeaders (statusCode, rawHeaders, resume, statusMessage) {
+  onResponseStart (controller, statusCode, headers, _statusMessage) {
     const { factory, opaque, context, responseHeaders } = this
 
-    const headers = responseHeaders === 'raw' ? util.parseRawHeaders(rawHeaders) : util.parseHeaders(rawHeaders)
+    const rawHeaders = controller?.rawHeaders
+    const responseHeaderData = responseHeaders === 'raw'
+      ? (Array.isArray(rawHeaders) ? util.parseRawHeaders(rawHeaders) : [])
+      : headers
 
     if (statusCode < 200) {
       if (this.onInfo) {
-        this.onInfo({ statusCode, headers })
+        this.onInfo({ statusCode, headers: responseHeaderData })
       }
       return
     }
@@ -11529,7 +11571,7 @@ class StreamHandler extends AsyncResource {
 
     const res = this.runInAsyncScope(factory, null, {
       statusCode,
-      headers,
+      headers: responseHeaderData,
       opaque,
       context
     })
@@ -11560,7 +11602,7 @@ class StreamHandler extends AsyncResource {
       }
     })
 
-    res.on('drain', resume)
+    res.on('drain', () => controller.resume())
 
     this.res = res
 
@@ -11568,16 +11610,24 @@ class StreamHandler extends AsyncResource {
       ? res.writableNeedDrain
       : res._writableState?.needDrain
 
-    return needDrain !== true
+    if (needDrain === true) {
+      controller.pause()
+    }
   }
 
-  onData (chunk) {
+  onResponseData (controller, chunk) {
     const { res } = this
 
-    return res ? res.write(chunk) : true
+    if (!res) {
+      return
+    }
+
+    if (res.write(chunk) === false) {
+      controller.pause()
+    }
   }
 
-  onComplete (trailers) {
+  onResponseEnd (_controller, trailers) {
     const { res } = this
 
     removeSignal(this)
@@ -11586,12 +11636,14 @@ class StreamHandler extends AsyncResource {
       return
     }
 
-    this.trailers = util.parseHeaders(trailers)
+    if (trailers && typeof trailers === 'object') {
+      this.trailers = trailers
+    }
 
     res.end()
   }
 
-  onError (err) {
+  onResponseError (_controller, err) {
     const { res, callback, opaque, body } = this
 
     removeSignal(this)
@@ -11681,23 +11733,23 @@ class UpgradeHandler extends AsyncResource {
     addSignal(this, signal)
   }
 
-  onConnect (abort, context) {
+  onRequestStart (controller, context) {
     if (this.reason) {
-      abort(this.reason)
+      controller.abort(this.reason)
       return
     }
 
     assert(this.callback)
 
-    this.abort = abort
-    this.context = null
+    this.abort = (reason) => controller.abort(reason)
+    this.context = context
   }
 
-  onHeaders () {
+  onResponseStart () {
     throw new SocketError('bad upgrade', null)
   }
 
-  onUpgrade (statusCode, rawHeaders, socket) {
+  onRequestUpgrade (controller, statusCode, headers, socket) {
     assert(socket[kHTTP2Stream] === true ? statusCode === 200 : statusCode === 101)
 
     const { callback, opaque, context } = this
@@ -11705,16 +11757,21 @@ class UpgradeHandler extends AsyncResource {
     removeSignal(this)
 
     this.callback = null
-    const headers = this.responseHeaders === 'raw' ? util.parseRawHeaders(rawHeaders) : util.parseHeaders(rawHeaders)
+
+    const rawHeaders = controller?.rawHeaders
+    const responseHeaders = this.responseHeaders === 'raw'
+      ? (Array.isArray(rawHeaders) ? util.parseRawHeaders(rawHeaders) : [])
+      : headers
+
     this.runInAsyncScope(callback, null, null, {
-      headers,
+      headers: responseHeaders,
       socket,
       opaque,
       context
     })
   }
 
-  onError (err) {
+  onResponseError (_controller, err) {
     const { callback, opaque } = this
 
     removeSignal(this)
@@ -11744,7 +11801,6 @@ function upgrade (opts, callback) {
       method: opts.method || 'GET',
       upgrade: opts.protocol || 'Websocket'
     }
-
     this.dispatch(upgradeOpts, upgradeHandler)
   } catch (err) {
     if (typeof callback !== 'function') {
@@ -13126,7 +13182,7 @@ function buildConnector ({ allowH2, useH2c, maxCachedSessions, socketPath, timeo
   const options = { path: socketPath, ...opts }
   const sessionCache = new SessionCache(maxCachedSessions == null ? 100 : maxCachedSessions)
   timeout = timeout == null ? 10e3 : timeout
-  allowH2 = allowH2 != null ? allowH2 : false
+  allowH2 = allowH2 != null ? allowH2 : true
   return function connect ({ hostname, host, protocol, port, servername, localAddress, httpSocket }, callback) {
     let socket
     if (protocol === 'https:') {
@@ -14103,6 +14159,7 @@ const {
   hasSafeIterator,
   isBlobLike,
   serializePathWithQuery,
+  parseHeaders,
   assertRequestHandler,
   getServerName,
   normalizedMethodRecords,
@@ -14115,6 +14172,55 @@ const { headerNameLowerCasedRecord } = __nccwpck_require__(735)
 const invalidPathRegex = /[^\u0021-\u00ff]/
 
 const kHandler = Symbol('handler')
+const kController = Symbol('controller')
+const kResume = Symbol('resume')
+
+class RequestController {
+  #paused = false
+  #reason = null
+  #aborted = false
+  #abort
+
+  [kResume] = null
+
+  rawHeaders = null
+  rawTrailers = null
+
+  constructor (abort) {
+    this.#abort = abort
+  }
+
+  pause () {
+    this.#paused = true
+  }
+
+  resume () {
+    if (this.#paused) {
+      this.#paused = false
+      this[kResume]?.()
+    }
+  }
+
+  abort (reason) {
+    if (!this.#aborted) {
+      this.#aborted = true
+      this.#reason = reason
+      this.#abort(reason)
+    }
+  }
+
+  get aborted () {
+    return this.#aborted
+  }
+
+  get reason () {
+    return this.#reason
+  }
+
+  get paused () {
+    return this.#paused
+  }
+}
 
 class Request {
   constructor (origin, {
@@ -14328,23 +14434,26 @@ class Request {
     }
   }
 
-  onConnect (abort) {
+  onRequestStart (abort, context) {
     assert(!this.aborted)
     assert(!this.completed)
 
+    this[kController] = new RequestController(abort)
+
     if (this.error) {
-      abort(this.error)
-    } else {
-      this.abort = abort
-      return this[kHandler].onConnect(abort)
+      this[kController].abort(this.error)
+      return
     }
+
+    this.abort = abort
+    return this[kHandler].onRequestStart(this[kController], context)
   }
 
   onResponseStarted () {
     return this[kHandler].onResponseStarted?.()
   }
 
-  onHeaders (statusCode, headers, resume, statusText) {
+  onResponseStart (statusCode, headers, resume, statusText) {
     assert(!this.aborted)
     assert(!this.completed)
 
@@ -14352,36 +14461,56 @@ class Request {
       channels.headers.publish({ request: this, response: { statusCode, headers, statusText } })
     }
 
-    try {
-      return this[kHandler].onHeaders(statusCode, headers, resume, statusText)
-    } catch (err) {
-      this.abort(err)
+    const controller = this[kController]
+    if (controller) {
+      controller[kResume] = resume
+      controller.rawHeaders = headers
     }
-  }
 
-  onData (chunk) {
-    assert(!this.aborted)
-    assert(!this.completed)
+    const parsedHeaders = Array.isArray(headers) ? parseHeaders(headers) : headers
 
-    if (channels.bodyChunkReceived.hasSubscribers) {
-      channels.bodyChunkReceived.publish({ request: this, chunk })
-    }
     try {
-      return this[kHandler].onData(chunk)
+      this[kHandler].onResponseStart?.(controller, statusCode, parsedHeaders, statusText)
+      return !controller?.paused
     } catch (err) {
       this.abort(err)
       return false
     }
   }
 
-  onUpgrade (statusCode, headers, socket) {
+  onResponseData (chunk) {
     assert(!this.aborted)
     assert(!this.completed)
 
-    return this[kHandler].onUpgrade(statusCode, headers, socket)
+    if (channels.bodyChunkReceived.hasSubscribers) {
+      channels.bodyChunkReceived.publish({ request: this, chunk })
+    }
+
+    const controller = this[kController]
+    try {
+      this[kHandler].onResponseData?.(controller, chunk)
+      return !controller?.paused
+    } catch (err) {
+      this.abort(err)
+      return false
+    }
   }
 
-  onComplete (trailers) {
+  onRequestUpgrade (statusCode, headers, socket) {
+    assert(!this.aborted)
+    assert(!this.completed)
+
+    const controller = this[kController]
+    if (controller) {
+      controller.rawHeaders = headers
+    }
+
+    const parsedHeaders = Array.isArray(headers) ? parseHeaders(headers) : headers
+
+    return this[kHandler].onRequestUpgrade?.(controller, statusCode, parsedHeaders, socket)
+  }
+
+  onResponseEnd (trailers) {
     this.onFinally()
 
     assert(!this.aborted)
@@ -14392,15 +14521,22 @@ class Request {
       channels.trailers.publish({ request: this, trailers })
     }
 
+    const controller = this[kController]
+    if (controller) {
+      controller.rawTrailers = trailers
+    }
+
+    const parsedTrailers = Array.isArray(trailers) ? parseHeaders(trailers) : trailers
+
     try {
-      return this[kHandler].onComplete(trailers)
+      return this[kHandler].onResponseEnd?.(controller, parsedTrailers)
     } catch (err) {
       // TODO (fix): This might be a bad idea?
-      this.onError(err)
+      this.onResponseError(err)
     }
   }
 
-  onError (error) {
+  onResponseError (error) {
     this.onFinally()
 
     if (channels.error.hasSubscribers) {
@@ -14412,7 +14548,9 @@ class Request {
     }
     this.aborted = true
 
-    return this[kHandler].onError(error)
+    const controller = this[kController]
+
+    return this[kHandler].onResponseError?.(controller, error)
   }
 
   onFinally () {
@@ -15490,23 +15628,9 @@ function isStream (obj) {
 /**
  * @param {*} object
  * @returns {object is Blob}
- * based on https://github.com/node-fetch/fetch-blob/blob/8ab587d34080de94140b54f07168451e7d0b655e/index.js#L229-L241 (MIT License)
  */
 function isBlobLike (object) {
-  if (object === null) {
-    return false
-  } else if (object instanceof Blob) {
-    return true
-  } else if (typeof object !== 'object') {
-    return false
-  } else {
-    const sTag = object[Symbol.toStringTag]
-
-    return (sTag === 'Blob' || sTag === 'File') && (
-      ('stream' in object && typeof object.stream === 'function') ||
-      ('arrayBuffer' in object && typeof object.arrayBuffer === 'function')
-    )
-  }
+  return object instanceof Blob
 }
 
 /**
@@ -15913,6 +16037,26 @@ function parseRawHeaders (headers) {
 }
 
 /**
+ * @param {Record<string, string | string[]>} headers
+ * @returns {Buffer[]}
+ */
+function toRawHeaders (headers) {
+  const rawHeaders = []
+
+  for (const [name, value] of Object.entries(headers)) {
+    if (Array.isArray(value)) {
+      for (const entry of value) {
+        rawHeaders.push(Buffer.from(name, 'latin1'), Buffer.from(`${entry}`, 'latin1'))
+      }
+    } else {
+      rawHeaders.push(Buffer.from(name, 'latin1'), Buffer.from(`${value}`, 'latin1'))
+    }
+  }
+
+  return rawHeaders
+}
+
+/**
  * @param {string[]} headers
  * @param {Buffer[]} headers
  */
@@ -15945,38 +16089,37 @@ function assertRequestHandler (handler, method, upgrade) {
     throw new InvalidArgumentError('handler must be an object')
   }
 
-  if (typeof handler.onRequestStart === 'function') {
-    // TODO (fix): More checks...
-    return
+  if (typeof handler.onRequestStart !== 'function') {
+    throw new InvalidArgumentError('invalid onRequestStart method')
   }
 
-  if (typeof handler.onConnect !== 'function') {
-    throw new InvalidArgumentError('invalid onConnect method')
-  }
-
-  if (typeof handler.onError !== 'function') {
-    throw new InvalidArgumentError('invalid onError method')
+  if (typeof handler.onResponseError !== 'function') {
+    throw new InvalidArgumentError('invalid onResponseError method')
   }
 
   if (typeof handler.onBodySent !== 'function' && handler.onBodySent !== undefined) {
     throw new InvalidArgumentError('invalid onBodySent method')
   }
 
+  if (typeof handler.onRequestSent !== 'function' && handler.onRequestSent !== undefined) {
+    throw new InvalidArgumentError('invalid onRequestSent method')
+  }
+
   if (upgrade || method === 'CONNECT') {
-    if (typeof handler.onUpgrade !== 'function') {
-      throw new InvalidArgumentError('invalid onUpgrade method')
+    if (typeof handler.onRequestUpgrade !== 'function') {
+      throw new InvalidArgumentError('invalid onRequestUpgrade method')
     }
   } else {
-    if (typeof handler.onHeaders !== 'function') {
-      throw new InvalidArgumentError('invalid onHeaders method')
+    if (typeof handler.onResponseStart !== 'function') {
+      throw new InvalidArgumentError('invalid onResponseStart method')
     }
 
-    if (typeof handler.onData !== 'function') {
-      throw new InvalidArgumentError('invalid onData method')
+    if (typeof handler.onResponseData !== 'function') {
+      throw new InvalidArgumentError('invalid onResponseData method')
     }
 
-    if (typeof handler.onComplete !== 'function') {
-      throw new InvalidArgumentError('invalid onComplete method')
+    if (typeof handler.onResponseEnd !== 'function') {
+      throw new InvalidArgumentError('invalid onResponseEnd method')
     }
   }
 }
@@ -16217,7 +16360,7 @@ function removeAllListeners (obj) {
  */
 function errorRequest (client, request, err) {
   try {
-    request.onError(err)
+    request.onResponseError(err)
     assert(request.aborted)
   } catch (err) {
     client.emit('error', err)
@@ -16366,6 +16509,7 @@ module.exports = {
   removeAllListeners,
   errorRequest,
   parseRawHeaders,
+  toRawHeaders,
   encodeRawHeaders,
   parseHeaders,
   parseKeepAliveTimeout,
@@ -16476,14 +16620,17 @@ class Agent extends DispatcherBase {
   }
 
   [kDispatch] (opts, handler) {
-    let key
+    let origin
     if (opts.origin && (typeof opts.origin === 'string' || opts.origin instanceof URL)) {
-      key = String(opts.origin)
+      origin = String(opts.origin)
     } else {
       throw new InvalidArgumentError('opts.origin must be a non-empty string or URL.')
     }
 
-    if (this[kOrigins].size >= this[kOptions].maxOrigins && !this[kOrigins].has(key)) {
+    const allowH2 = opts.allowH2 ?? this[kOptions].allowH2
+    const key = allowH2 === false ? `${origin}#http1-only` : origin
+
+    if (this[kOrigins].size >= this[kOptions].maxOrigins && !this[kOrigins].has(origin)) {
       throw new MaxOriginsReachedError()
     }
 
@@ -16500,10 +16647,23 @@ class Agent extends DispatcherBase {
               result.dispatcher.close()
             }
           }
-          this[kOrigins].delete(key)
+
+          let hasOrigin = false
+          for (const entry of this[kClients].values()) {
+            if (entry.origin === origin) {
+              hasOrigin = true
+              break
+            }
+          }
+
+          if (!hasOrigin) {
+            this[kOrigins].delete(origin)
+          }
         }
       }
-      dispatcher = this[kFactory](opts.origin, this[kOptions])
+      dispatcher = this[kFactory](opts.origin, allowH2 === false
+        ? { ...this[kOptions], allowH2: false }
+        : this[kOptions])
         .on('drain', this[kOnDrain])
         .on('connect', (origin, targets) => {
           const result = this[kClients].get(key)
@@ -16521,8 +16681,8 @@ class Agent extends DispatcherBase {
           this[kOnConnectionError](origin, targets, err)
         })
 
-      this[kClients].set(key, { count: 0, dispatcher })
-      this[kOrigins].add(key)
+      this[kClients].set(key, { count: 0, dispatcher, origin })
+      this[kOrigins].add(origin)
     }
 
     return dispatcher.dispatch(opts, handler)
@@ -17302,7 +17462,7 @@ class Parser {
     client.emit('disconnect', client[kUrl], [client], new InformationalError('upgrade'))
 
     try {
-      request.onUpgrade(statusCode, headers, socket)
+      request.onRequestUpgrade(statusCode, headers, socket)
     } catch (err) {
       util.destroy(socket, err)
     }
@@ -17400,7 +17560,7 @@ class Parser {
       socket[kReset] = true
     }
 
-    const pause = request.onHeaders(statusCode, headers, this.resume, statusText) === false
+    const pause = request.onResponseStart(statusCode, headers, this.resume, statusText) === false
 
     if (request.aborted) {
       return -1
@@ -17452,7 +17612,7 @@ class Parser {
 
     this.bytesRead += buf.length
 
-    if (request.onData(buf) === false) {
+    if (request.onResponseData(buf) === false) {
       return constants.ERROR.PAUSED
     }
 
@@ -17498,7 +17658,7 @@ class Parser {
       return -1
     }
 
-    request.onComplete(headers)
+    request.onResponseEnd(headers)
 
     client[kQueue][client[kRunningIdx]++] = null
 
@@ -17873,7 +18033,7 @@ function writeH1 (client, request) {
   }
 
   try {
-    request.onConnect(abort)
+    request.onRequestStart(abort, null)
   } catch (err) {
     util.errorRequest(client, request, err)
   }
@@ -18906,7 +19066,7 @@ function writeH2 (client, request) {
   try {
     // We are already connected, streams are pending.
     // We can call on connect, and wait for abort
-    request.onConnect(abort)
+    request.onRequestStart(abort, null)
   } catch (err) {
     util.errorRequest(client, request, err)
   }
@@ -18946,7 +19106,7 @@ function writeH2 (client, request) {
       stream.once('response', (headers, _flags) => {
         const { [HTTP2_HEADER_STATUS]: statusCode, ...realHeaders } = headers
 
-        request.onUpgrade(statusCode, parseH2Headers(realHeaders), stream)
+        request.onRequestUpgrade(statusCode, parseH2Headers(realHeaders), stream)
 
         ++session[kOpenStreams]
         client[kQueue][client[kRunningIdx]++] = null
@@ -18980,7 +19140,7 @@ function writeH2 (client, request) {
     stream.on('response', headers => {
       const { [HTTP2_HEADER_STATUS]: statusCode, ...realHeaders } = headers
 
-      request.onUpgrade(statusCode, parseH2Headers(realHeaders), stream)
+      request.onRequestUpgrade(statusCode, parseH2Headers(realHeaders), stream)
       ++session[kOpenStreams]
       client[kQueue][client[kRunningIdx]++] = null
     })
@@ -19109,7 +19269,7 @@ function writeH2 (client, request) {
       return
     }
 
-    if (request.onHeaders(Number(statusCode), parseH2Headers(realHeaders), stream.resume.bind(stream), '') === false) {
+    if (request.onResponseStart(Number(statusCode), parseH2Headers(realHeaders), stream.resume.bind(stream), '') === false) {
       stream.pause()
     }
 
@@ -19118,7 +19278,7 @@ function writeH2 (client, request) {
         return
       }
 
-      if (request.onData(chunk) === false) {
+      if (request.onResponseData(chunk) === false) {
         stream.pause()
       }
     })
@@ -19129,7 +19289,7 @@ function writeH2 (client, request) {
     // If we received a response, this is a normal completion
     if (responseReceived) {
       if (!request.aborted && !request.completed) {
-        request.onComplete({})
+        request.onResponseEnd({})
       }
 
       client[kQueue][client[kRunningIdx]++] = null
@@ -19183,8 +19343,7 @@ function writeH2 (client, request) {
       return
     }
 
-    stream.removeAllListeners('data')
-    request.onComplete(trailers)
+    request.onResponseEnd(trailers)
   })
 
   return true
@@ -19649,9 +19808,13 @@ class Client extends DispatcherBase {
         ...(typeof autoSelectFamily === 'boolean' ? { autoSelectFamily, autoSelectFamilyAttemptTimeout } : undefined),
         ...connect
       })
-    } else if (socketPath != null) {
+    } else {
       const customConnect = connect
-      connect = (opts, callback) => customConnect({ ...opts, socketPath }, callback)
+      connect = (opts, callback) => customConnect({
+        ...opts,
+        ...(socketPath != null ? { socketPath } : null),
+        ...(allowH2 != null ? { allowH2 } : null)
+      }, callback)
     }
 
     this[kUrl] = util.parseOrigin(url)
@@ -20081,7 +20244,6 @@ module.exports = Client
 
 
 const Dispatcher = __nccwpck_require__(883)
-const UnwrapHandler = __nccwpck_require__(2365)
 const {
   ClientDestroyedError,
   ClientClosedError,
@@ -20214,8 +20376,6 @@ class DispatcherBase extends Dispatcher {
       throw new InvalidArgumentError('handler must be an object')
     }
 
-    handler = UnwrapHandler.unwrap(handler)
-
     try {
       if (!opts || typeof opts !== 'object') {
         throw new InvalidArgumentError('opts must be an object.')
@@ -20231,11 +20391,11 @@ class DispatcherBase extends Dispatcher {
 
       return this[kDispatch](opts, handler)
     } catch (err) {
-      if (typeof handler.onError !== 'function') {
+      if (typeof handler.onResponseError !== 'function') {
         throw err
       }
 
-      handler.onError(err)
+      handler.onResponseError(null, err)
 
       return false
     }
@@ -20252,9 +20412,6 @@ module.exports = DispatcherBase
 
 
 const EventEmitter = __nccwpck_require__(8474)
-const WrapHandler = __nccwpck_require__(9510)
-
-const wrapInterceptor = (dispatch) => (opts, handler) => dispatch(opts, WrapHandler.wrap(handler))
 
 class Dispatcher extends EventEmitter {
   dispatch () {
@@ -20284,7 +20441,6 @@ class Dispatcher extends EventEmitter {
       }
 
       dispatch = interceptor(dispatch)
-      dispatch = wrapInterceptor(dispatch)
 
       if (dispatch == null || typeof dispatch !== 'function' || dispatch.length !== 2) {
         throw new TypeError('invalid interceptor')
@@ -20298,6 +20454,114 @@ class Dispatcher extends EventEmitter {
 }
 
 module.exports = Dispatcher
+
+
+/***/ }),
+
+/***/ 3650:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
+
+const Dispatcher = __nccwpck_require__(883)
+const { InvalidArgumentError } = __nccwpck_require__(8707)
+const { toRawHeaders } = __nccwpck_require__(3440)
+
+class LegacyHandlerWrapper {
+  #handler
+
+  constructor (handler) {
+    this.#handler = handler
+  }
+
+  onRequestStart (controller, context) {
+    this.#handler.onConnect?.((reason) => controller.abort(reason), context)
+  }
+
+  onRequestUpgrade (controller, statusCode, headers, socket) {
+    const rawHeaders = controller?.rawHeaders ?? toRawHeaders(headers ?? {})
+    this.#handler.onUpgrade?.(statusCode, rawHeaders, socket)
+  }
+
+  onResponseStart (controller, statusCode, headers, statusMessage) {
+    const rawHeaders = controller?.rawHeaders ?? toRawHeaders(headers ?? {})
+
+    if (this.#handler.onHeaders?.(statusCode, rawHeaders, () => controller.resume(), statusMessage) === false) {
+      controller.pause()
+    }
+  }
+
+  onResponseData (controller, chunk) {
+    if (this.#handler.onData?.(chunk) === false) {
+      controller.pause()
+    }
+  }
+
+  onResponseEnd (controller, trailers) {
+    const rawTrailers = controller?.rawTrailers ?? toRawHeaders(trailers ?? {})
+    this.#handler.onComplete?.(rawTrailers)
+  }
+
+  onResponseError (_controller, err) {
+    if (!this.#handler.onError) {
+      throw err
+    }
+
+    this.#handler.onError(err)
+  }
+
+  onBodySent (chunk) {
+    this.#handler.onBodySent?.(chunk)
+  }
+
+  onRequestSent () {
+    this.#handler.onRequestSent?.()
+  }
+
+  onResponseStarted () {
+    this.#handler.onResponseStarted?.()
+  }
+}
+
+class Dispatcher1Wrapper extends Dispatcher {
+  #dispatcher
+
+  constructor (dispatcher) {
+    super()
+
+    if (!dispatcher || typeof dispatcher.dispatch !== 'function') {
+      throw new InvalidArgumentError('Argument dispatcher must implement dispatch')
+    }
+
+    this.#dispatcher = dispatcher
+  }
+
+  static wrapHandler (handler) {
+    if (!handler || typeof handler !== 'object') {
+      throw new InvalidArgumentError('handler must be an object')
+    }
+
+    if (typeof handler.onRequestStart === 'function') {
+      return handler
+    }
+
+    return new LegacyHandlerWrapper(handler)
+  }
+
+  dispatch (opts, handler) {
+    return this.#dispatcher.dispatch(opts, Dispatcher1Wrapper.wrapHandler(handler))
+  }
+
+  close (...args) {
+    return this.#dispatcher.close(...args)
+  }
+
+  destroy (...args) {
+    return this.#dispatcher.destroy(...args)
+  }
+}
+
+module.exports = Dispatcher1Wrapper
 
 
 /***/ }),
@@ -20803,7 +21067,7 @@ class PoolBase extends DispatcherBase {
       if (!item) {
         break
       }
-      item.handler.onError(err)
+      item.handler.onResponseError(null, err)
     }
 
     const destroyAll = new Array(this[kClients].length)
@@ -21022,6 +21286,7 @@ const kProxyHeaders = Symbol('proxy headers')
 const kRequestTls = Symbol('request tls settings')
 const kProxyTls = Symbol('proxy tls settings')
 const kConnectEndpoint = Symbol('connect endpoint function')
+const kConnectEndpointHTTP1 = Symbol('connect endpoint function (http/1.1 only)')
 const kTunnelProxy = Symbol('tunnel proxy')
 
 function defaultProtocolPort (protocol) {
@@ -21060,15 +21325,15 @@ class Http1ProxyWrapper extends DispatcherBase {
   }
 
   [kDispatch] (opts, handler) {
-    const onHeaders = handler.onHeaders
-    handler.onHeaders = function (statusCode, data, resume) {
+    const onResponseStart = handler.onResponseStart
+    handler.onResponseStart = function (controller, statusCode, data, statusMessage) {
       if (statusCode === 407) {
-        if (typeof handler.onError === 'function') {
-          handler.onError(new InvalidArgumentError('Proxy Authentication Required (407)'))
+        if (typeof handler.onResponseError === 'function') {
+          handler.onResponseError(controller, new InvalidArgumentError('Proxy Authentication Required (407)'))
         }
         return
       }
-      if (onHeaders) onHeaders.call(this, statusCode, data, resume)
+      if (onResponseStart) onResponseStart.call(this, controller, statusCode, data, statusMessage)
     }
 
     // Rewrite request as an HTTP1 Proxy request, without tunneling.
@@ -21135,6 +21400,7 @@ class ProxyAgent extends DispatcherBase {
 
     const connect = buildConnector({ ...opts.proxyTls })
     this[kConnectEndpoint] = buildConnector({ ...opts.requestTls })
+    this[kConnectEndpointHTTP1] = buildConnector({ ...opts.requestTls, allowH2: false })
 
     const agentFactory = opts.factory || defaultAgentFactory
     const factory = (origin, options) => {
@@ -21222,7 +21488,11 @@ class ProxyAgent extends DispatcherBase {
           } else {
             servername = opts.servername
           }
-          this[kConnectEndpoint]({ ...opts, servername, httpSocket: socket }, callback)
+          const connectEndpoint = opts.allowH2 === false
+            ? this[kConnectEndpointHTTP1]
+            : this[kConnectEndpoint]
+
+          connectEndpoint({ ...opts, servername, httpSocket: socket }, callback)
         } catch (err) {
           if (err.code === 'ERR_TLS_CERT_ALTNAME_INVALID') {
             // Throw a custom error to avoid loop in client.js#connect
@@ -21815,9 +22085,11 @@ module.exports = {
 
 // We include a version number for the Dispatcher API. In case of breaking changes,
 // this version number must be increased to avoid conflicts.
-const globalDispatcher = Symbol.for('undici.globalDispatcher.1')
+const globalDispatcher = Symbol.for('undici.globalDispatcher.2')
+const legacyGlobalDispatcher = Symbol.for('undici.globalDispatcher.1')
 const { InvalidArgumentError } = __nccwpck_require__(8707)
 const Agent = __nccwpck_require__(7405)
+const Dispatcher1Wrapper = __nccwpck_require__(3650)
 
 if (getGlobalDispatcher() === undefined) {
   setGlobalDispatcher(new Agent())
@@ -21827,8 +22099,18 @@ function setGlobalDispatcher (agent) {
   if (!agent || typeof agent.dispatch !== 'function') {
     throw new InvalidArgumentError('Argument agent must implement Agent')
   }
+
   Object.defineProperty(globalThis, globalDispatcher, {
     value: agent,
+    writable: true,
+    enumerable: false,
+    configurable: false
+  })
+
+  const legacyAgent = agent instanceof Dispatcher1Wrapper ? agent : new Dispatcher1Wrapper(agent)
+
+  Object.defineProperty(globalThis, legacyGlobalDispatcher, {
+    value: legacyAgent,
     writable: true,
     enumerable: false,
     configurable: false
@@ -22043,7 +22325,8 @@ class CacheHandler {
       }
     }
 
-    const deleteAt = determineDeleteAt(baseTime, cacheControlDirectives, absoluteStaleAt)
+    const cachedAt = resAge ? now - resAge : now
+    const deleteAt = determineDeleteAt(baseTime, cachedAt, cacheControlDirectives, absoluteStaleAt)
     const strippedHeaders = stripNecessaryHeaders(resHeaders, cacheControlDirectives)
 
     /**
@@ -22055,7 +22338,7 @@ class CacheHandler {
       headers: strippedHeaders,
       vary: varyDirectives,
       cacheControlDirectives,
-      cachedAt: resAge ? now - resAge : now,
+      cachedAt,
       staleAt: absoluteStaleAt,
       deleteAt
     }
@@ -22355,11 +22638,12 @@ function determineStaleAt (cacheType, now, age, resHeaders, responseDate, cacheC
 }
 
 /**
- * @param {number} now
+ * @param {number} baseTime
+ * @param {number} cachedAt
  * @param {import('../../types/cache-interceptor.d.ts').default.CacheControlDirectives} cacheControlDirectives
  * @param {number} staleAt
  */
-function determineDeleteAt (now, cacheControlDirectives, staleAt) {
+function determineDeleteAt (baseTime, cachedAt, cacheControlDirectives, staleAt) {
   let staleWhileRevalidate = -Infinity
   let staleIfError = -Infinity
   let immutable = -Infinity
@@ -22373,15 +22657,21 @@ function determineDeleteAt (now, cacheControlDirectives, staleAt) {
   }
 
   if (cacheControlDirectives.immutable && staleWhileRevalidate === -Infinity && staleIfError === -Infinity) {
-    immutable = now + 31536000000
+    immutable = cachedAt + 31536000000
   }
 
   // When no stale directives or immutable flag, add a revalidation buffer
   // equal to the freshness lifetime so the entry survives past staleAt long
   // enough to be revalidated instead of silently disappearing.
+  //
+  // Response Date headers only have second precision, so baseTime can trail the
+  // actual cache insertion time by up to ~1s. Pad the buffer by that bounded
+  // skew so short-lived entries do not disappear exactly when they should be
+  // revalidated.
   if (staleWhileRevalidate === -Infinity && staleIfError === -Infinity && immutable === -Infinity) {
-    const freshnessLifetime = staleAt - now
-    return staleAt + freshnessLifetime
+    const freshnessLifetime = staleAt - baseTime
+    const datePrecisionPadding = Math.min(Math.max(cachedAt - baseTime, 0), 1000)
+    return staleAt + freshnessLifetime + datePrecisionPadding
   }
 
   return Math.max(staleAt, staleWhileRevalidate, staleIfError, immutable)
@@ -22587,7 +22877,6 @@ module.exports = CacheRevalidationHandler
 
 
 const assert = __nccwpck_require__(4589)
-const WrapHandler = __nccwpck_require__(9510)
 
 /**
  * @deprecated
@@ -22602,7 +22891,7 @@ module.exports = class DecoratorHandler {
     if (typeof handler !== 'object' || handler === null) {
       throw new TypeError('handler must be an object')
     }
-    this.#handler = WrapHandler.wrap(handler)
+    this.#handler = handler
   }
 
   onRequestStart (...args) {
@@ -23375,7 +23664,6 @@ const assert = __nccwpck_require__(4589)
 
 const { kRetryHandlerDefaultRetry } = __nccwpck_require__(6443)
 const { RequestRetryError } = __nccwpck_require__(8707)
-const WrapHandler = __nccwpck_require__(9510)
 const {
   isDisturbed,
   parseRangeHeader,
@@ -23407,7 +23695,7 @@ class RetryHandler {
 
     this.error = null
     this.dispatch = dispatch
-    this.handler = WrapHandler.wrap(handler)
+    this.handler = handler
     this.opts = { ...dispatchOpts, body: wrapRequestBody(opts.body) }
     this.retryOpts = {
       throwOnError: throwOnError ?? true,
@@ -23768,225 +24056,6 @@ module.exports = RetryHandler
 
 /***/ }),
 
-/***/ 2365:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-
-
-const { parseHeaders } = __nccwpck_require__(3440)
-const { InvalidArgumentError } = __nccwpck_require__(8707)
-
-const kResume = Symbol('resume')
-
-class UnwrapController {
-  #paused = false
-  #reason = null
-  #aborted = false
-  #abort
-
-  [kResume] = null
-
-  constructor (abort) {
-    this.#abort = abort
-  }
-
-  pause () {
-    this.#paused = true
-  }
-
-  resume () {
-    if (this.#paused) {
-      this.#paused = false
-      this[kResume]?.()
-    }
-  }
-
-  abort (reason) {
-    if (!this.#aborted) {
-      this.#aborted = true
-      this.#reason = reason
-      this.#abort(reason)
-    }
-  }
-
-  get aborted () {
-    return this.#aborted
-  }
-
-  get reason () {
-    return this.#reason
-  }
-
-  get paused () {
-    return this.#paused
-  }
-}
-
-module.exports = class UnwrapHandler {
-  #handler
-  #controller
-
-  constructor (handler) {
-    this.#handler = handler
-  }
-
-  static unwrap (handler) {
-    // TODO (fix): More checks...
-    return !handler.onRequestStart ? handler : new UnwrapHandler(handler)
-  }
-
-  onConnect (abort, context) {
-    this.#controller = new UnwrapController(abort)
-    this.#handler.onRequestStart?.(this.#controller, context)
-  }
-
-  onResponseStarted () {
-    return this.#handler.onResponseStarted?.()
-  }
-
-  onUpgrade (statusCode, rawHeaders, socket) {
-    this.#handler.onRequestUpgrade?.(this.#controller, statusCode, parseHeaders(rawHeaders), socket)
-  }
-
-  onHeaders (statusCode, rawHeaders, resume, statusMessage) {
-    this.#controller[kResume] = resume
-    this.#handler.onResponseStart?.(this.#controller, statusCode, parseHeaders(rawHeaders), statusMessage)
-    return !this.#controller.paused
-  }
-
-  onData (data) {
-    this.#handler.onResponseData?.(this.#controller, data)
-    return !this.#controller.paused
-  }
-
-  onComplete (rawTrailers) {
-    this.#handler.onResponseEnd?.(this.#controller, parseHeaders(rawTrailers))
-  }
-
-  onError (err) {
-    if (!this.#handler.onResponseError) {
-      throw new InvalidArgumentError('invalid onError method')
-    }
-
-    this.#handler.onResponseError?.(this.#controller, err)
-  }
-}
-
-
-/***/ }),
-
-/***/ 9510:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-
-
-const { InvalidArgumentError } = __nccwpck_require__(8707)
-
-module.exports = class WrapHandler {
-  #handler
-
-  constructor (handler) {
-    this.#handler = handler
-  }
-
-  static wrap (handler) {
-    // TODO (fix): More checks...
-    return handler.onRequestStart ? handler : new WrapHandler(handler)
-  }
-
-  // Unwrap Interface
-
-  onConnect (abort, context) {
-    return this.#handler.onConnect?.(abort, context)
-  }
-
-  onResponseStarted () {
-    return this.#handler.onResponseStarted?.()
-  }
-
-  onHeaders (statusCode, rawHeaders, resume, statusMessage) {
-    return this.#handler.onHeaders?.(statusCode, rawHeaders, resume, statusMessage)
-  }
-
-  onUpgrade (statusCode, rawHeaders, socket) {
-    return this.#handler.onUpgrade?.(statusCode, rawHeaders, socket)
-  }
-
-  onData (data) {
-    return this.#handler.onData?.(data)
-  }
-
-  onComplete (trailers) {
-    return this.#handler.onComplete?.(trailers)
-  }
-
-  onError (err) {
-    if (!this.#handler.onError) {
-      throw err
-    }
-
-    return this.#handler.onError?.(err)
-  }
-
-  // Wrap Interface
-
-  onRequestStart (controller, context) {
-    this.#handler.onConnect?.((reason) => controller.abort(reason), context)
-  }
-
-  onRequestUpgrade (controller, statusCode, headers, socket) {
-    const rawHeaders = []
-    for (const [key, val] of Object.entries(headers)) {
-      rawHeaders.push(Buffer.from(key, 'latin1'), toRawHeaderValue(val))
-    }
-
-    this.#handler.onUpgrade?.(statusCode, rawHeaders, socket)
-  }
-
-  onResponseStart (controller, statusCode, headers, statusMessage) {
-    const rawHeaders = []
-    for (const [key, val] of Object.entries(headers)) {
-      rawHeaders.push(Buffer.from(key, 'latin1'), toRawHeaderValue(val))
-    }
-
-    if (this.#handler.onHeaders?.(statusCode, rawHeaders, () => controller.resume(), statusMessage) === false) {
-      controller.pause()
-    }
-  }
-
-  onResponseData (controller, data) {
-    if (this.#handler.onData?.(data) === false) {
-      controller.pause()
-    }
-  }
-
-  onResponseEnd (controller, trailers) {
-    const rawTrailers = []
-    for (const [key, val] of Object.entries(trailers)) {
-      rawTrailers.push(Buffer.from(key, 'latin1'), toRawHeaderValue(val))
-    }
-
-    this.#handler.onComplete?.(rawTrailers)
-  }
-
-  onResponseError (controller, err) {
-    if (!this.#handler.onError) {
-      throw new InvalidArgumentError('invalid onError method')
-    }
-
-    this.#handler.onError?.(err)
-  }
-}
-
-function toRawHeaderValue (value) {
-  return Array.isArray(value)
-    ? value.map((item) => Buffer.from(item, 'latin1'))
-    : Buffer.from(value, 'latin1')
-}
-
-
-/***/ }),
-
 /***/ 5542:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -24116,30 +24185,39 @@ function handleUncachedResponse (
 ) {
   if (reqCacheControl?.['only-if-cached']) {
     let aborted = false
+
+    const controller = {
+      paused: false,
+      rawHeaders: [],
+      rawTrailers: [],
+      pause () {
+        this.paused = true
+      },
+      resume () {
+        this.paused = false
+      },
+      abort: (reason) => {
+        aborted = true
+        handler.onResponseError?.(controller, reason ?? new AbortError())
+      }
+    }
+
     try {
-      if (typeof handler.onConnect === 'function') {
-        handler.onConnect(() => {
-          aborted = true
-        })
+      handler.onRequestStart?.(controller, null)
 
-        if (aborted) {
-          return
-        }
+      if (aborted) {
+        return
       }
 
-      if (typeof handler.onHeaders === 'function') {
-        handler.onHeaders(504, [], nop, 'Gateway Timeout')
-        if (aborted) {
-          return
-        }
+      handler.onResponseStart?.(controller, 504, {}, 'Gateway Timeout')
+      if (aborted) {
+        return
       }
 
-      if (typeof handler.onComplete === 'function') {
-        handler.onComplete([])
-      }
+      handler.onResponseEnd?.(controller, {})
     } catch (err) {
-      if (typeof handler.onError === 'function') {
-        handler.onError(err)
+      if (typeof handler.onResponseError === 'function') {
+        handler.onResponseError(controller, err)
       }
     }
 
@@ -24167,6 +24245,8 @@ function sendCachedValue (handler, opts, result, age, context, isStale) {
   assert(!stream.readableDidRead, 'stream should not be readableDidRead')
 
   const controller = {
+    rawHeaders: [],
+    rawTrailers: [],
     resume () {
       stream.resume()
     },
@@ -24218,6 +24298,8 @@ function sendCachedValue (handler, opts, result, age, context, isStale) {
     //  https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Warning
     headers.warning = '110 - "response is stale"'
   }
+
+  controller.rawHeaders = util.toRawHeaders(headers)
 
   handler.onResponseStart?.(controller, result.statusCode, headers, result.statusMessage)
 
@@ -24674,6 +24756,33 @@ class DecompressHandler extends DecoratorHandler {
 
     // Remove compression headers since we're decompressing
     const { 'content-encoding': _, 'content-length': __, ...newHeaders } = headers
+
+    if (controller?.rawHeaders) {
+      const rawHeaders = controller.rawHeaders
+
+      if (Array.isArray(rawHeaders)) {
+        const filteredHeaders = []
+        for (let i = 0; i < rawHeaders.length; i += 2) {
+          const headerName = rawHeaders[i]
+          const name = Buffer.isBuffer(headerName) ? headerName.toString('latin1') : `${headerName}`
+          const lowerName = name.toLowerCase()
+
+          if (lowerName === 'content-encoding' || lowerName === 'content-length') {
+            continue
+          }
+
+          filteredHeaders.push(rawHeaders[i], rawHeaders[i + 1])
+        }
+        controller.rawHeaders = filteredHeaders
+      } else if (typeof rawHeaders === 'object') {
+        for (const name of Object.keys(rawHeaders)) {
+          const lowerName = name.toLowerCase()
+          if (lowerName === 'content-encoding' || lowerName === 'content-length') {
+            delete rawHeaders[name]
+          }
+        }
+      }
+    }
 
     if (this.#decompressors.length === 1) {
       this.#setupSingleDecompressor(controller)
@@ -27284,7 +27393,7 @@ const {
   kGetNetConnect,
   kTotalDispatchCount
 } = __nccwpck_require__(1117)
-const { serializePathWithQuery } = __nccwpck_require__(3440)
+const { serializePathWithQuery, parseHeaders } = __nccwpck_require__(3440)
 const { STATUS_CODES } = __nccwpck_require__(7067)
 const {
   types: {
@@ -27586,7 +27695,7 @@ function mockDispatch (opts, handler) {
   // If specified, trigger dispatch error
   if (error !== null) {
     deleteMockDispatch(this[kDispatches], key)
-    handler.onError(error)
+    handler.onResponseError(null, error)
     return true
   }
 
@@ -27594,24 +27703,35 @@ function mockDispatch (opts, handler) {
   let aborted = false
   let timer = null
 
-  function abort (err) {
-    if (aborted) {
-      return
-    }
-    aborted = true
+  // Create the controller early so abort can use it
+  const controller = {
+    paused: false,
+    rawHeaders: null,
+    rawTrailers: null,
+    pause () {
+      this.paused = true
+    },
+    resume () {
+      this.paused = false
+    },
+    abort: (reason) => {
+      if (aborted) {
+        return
+      }
+      aborted = true
 
-    // Clear the pending delayed response if any
-    if (timer !== null) {
-      clearTimeout(timer)
-      timer = null
-    }
+      // Clear the pending delayed response if any
+      if (timer !== null) {
+        clearTimeout(timer)
+        timer = null
+      }
 
-    // Notify the handler of the abort
-    handler.onError(err)
+      handler.onResponseError?.(controller, reason)
+    }
   }
 
-  // Call onConnect to allow the handler to register the abort callback
-  handler.onConnect?.(abort, null)
+  // Call onRequestStart to allow the handler to receive the controller
+  handler.onRequestStart?.(controller, null)
 
   // Handle the request with a delay if necessary
   if (typeof delay === 'number' && delay > 0) {
@@ -27656,13 +27776,15 @@ function mockDispatch (opts, handler) {
     const responseHeaders = generateKeyValues(headers)
     const responseTrailers = generateKeyValues(trailers)
 
-    handler.onHeaders?.(statusCode, responseHeaders, resume, getStatusText(statusCode))
-    handler.onData?.(Buffer.from(responseData))
-    handler.onComplete?.(responseTrailers)
+    // Update the controller with response data
+    controller.rawHeaders = responseHeaders
+    controller.rawTrailers = responseTrailers
+
+    handler.onResponseStart?.(controller, statusCode, parseHeaders(responseHeaders), getStatusText(statusCode))
+    handler.onResponseData?.(controller, Buffer.from(responseData))
+    handler.onResponseEnd?.(controller, parseHeaders(responseTrailers))
     deleteMockDispatch(mockDispatches, key)
   }
-
-  function resume () {}
 
   return true
 }
@@ -27821,8 +27943,8 @@ module.exports = class PendingInterceptorsFormatter {
 const Agent = __nccwpck_require__(7405)
 const MockAgent = __nccwpck_require__(7501)
 const { SnapshotRecorder } = __nccwpck_require__(3766)
-const WrapHandler = __nccwpck_require__(9510)
 const { InvalidArgumentError, UndiciError } = __nccwpck_require__(8707)
+const util = __nccwpck_require__(3440)
 const { validateSnapshotMode } = __nccwpck_require__(9683)
 
 const kSnapshotRecorder = Symbol('kSnapshotRecorder')
@@ -27897,7 +28019,6 @@ class SnapshotAgent extends MockAgent {
   }
 
   dispatch (opts, handler) {
-    handler = WrapHandler.wrap(handler)
     const mode = this[kSnapshotMode]
 
     // Check if URL should be excluded (pass through without mocking/recording)
@@ -27925,8 +28046,8 @@ class SnapshotAgent extends MockAgent {
       } else {
         // Playback mode but no snapshot found
         const error = new UndiciError(`No snapshot found for ${opts.method || 'GET'} ${opts.path}`)
-        if (handler.onError) {
-          handler.onError(error)
+        if (handler.onResponseError) {
+          handler.onResponseError(null, error)
           return
         }
         throw error
@@ -27991,6 +28112,10 @@ class SnapshotAgent extends MockAgent {
         })
           .then(() => handler.onResponseEnd(controller, trailers))
           .catch((error) => handler.onResponseError(controller, error))
+      },
+
+      onResponseError (controller, error) {
+        return handler.onResponseError(controller, error)
       }
     }
 
@@ -28010,7 +28135,12 @@ class SnapshotAgent extends MockAgent {
     try {
       const { response } = snapshot
 
+      const rawHeaders = response.headers ? util.toRawHeaders(response.headers) : []
+      const rawTrailers = response.trailers ? util.toRawHeaders(response.trailers) : []
+
       const controller = {
+        rawHeaders,
+        rawTrailers,
         pause () { },
         resume () { },
         abort (reason) {
@@ -28024,7 +28154,7 @@ class SnapshotAgent extends MockAgent {
 
       handler.onRequestStart(controller)
 
-      handler.onResponseStart(controller, response.statusCode, response.headers)
+      handler.onResponseStart(controller, response.statusCode, response.headers, response.statusMessage)
 
       // Body is always stored as base64 string
       const body = Buffer.from(response.body, 'base64')
@@ -28032,7 +28162,7 @@ class SnapshotAgent extends MockAgent {
 
       handler.onResponseEnd(controller, response.trailers)
     } catch (error) {
-      handler.onError?.(error)
+      handler.onResponseError?.(null, error)
     }
   }
 
@@ -38537,241 +38667,243 @@ async function httpNetworkFetch (
     const path = url.pathname + url.search
     const hasTrailingQuestionMark = url.search.length === 0 && url.href[url.href.length - url.hash.length - 1] === '?'
 
-    return new Promise((resolve, reject) => agent.dispatch(
-      {
-        path: hasTrailingQuestionMark ? `${path}?` : path,
-        origin: url.origin,
-        method: request.method,
-        body: agent.isMockActive ? request.body && (request.body.source || request.body.stream) : body,
-        headers: request.headersList.entries,
-        maxRedirections: 0,
-        upgrade: request.mode === 'websocket' ? 'websocket' : undefined
-      },
-      {
-        body: null,
-        abort: null,
+    return dispatchWithProtocolPreference(body)
 
-        onConnect (abort) {
-          // TODO (fix): Do we need connection here?
-          const { connection } = fetchParams.controller
-
-          // Set timingInfo’s final connection timing info to the result of calling clamp and coarsen
-          // connection timing info with connection’s timing info, timingInfo’s post-redirect start
-          // time, and fetchParams’s cross-origin isolated capability.
-          // TODO: implement connection timing
-          timingInfo.finalConnectionTimingInfo = clampAndCoarsenConnectionTimingInfo(undefined, timingInfo.postRedirectStartTime, fetchParams.crossOriginIsolatedCapability)
-
-          if (connection.destroyed) {
-            abort(new DOMException('The operation was aborted.', 'AbortError'))
-          } else {
-            fetchParams.controller.on('terminated', abort)
-            this.abort = connection.abort = abort
-          }
-
-          // Set timingInfo’s final network-request start time to the coarsened shared current time given
-          // fetchParams’s cross-origin isolated capability.
-          timingInfo.finalNetworkRequestStartTime = coarsenedSharedCurrentTime(fetchParams.crossOriginIsolatedCapability)
+    function dispatchWithProtocolPreference (body, allowH2) {
+      return new Promise((resolve, reject) => agent.dispatch(
+        {
+          path: hasTrailingQuestionMark ? `${path}?` : path,
+          origin: url.origin,
+          method: request.method,
+          body: agent.isMockActive ? request.body && (request.body.source || request.body.stream) : body,
+          headers: request.headersList.entries,
+          maxRedirections: 0,
+          upgrade: request.mode === 'websocket' ? 'websocket' : undefined,
+          ...(allowH2 === false ? { allowH2 } : null)
         },
+        {
+          body: null,
+          abort: null,
 
-        onResponseStarted () {
-          // Set timingInfo’s final network-response start time to the coarsened shared current
-          // time given fetchParams’s cross-origin isolated capability, immediately after the
-          // user agent’s HTTP parser receives the first byte of the response (e.g., frame header
-          // bytes for HTTP/2 or response status line for HTTP/1.x).
-          timingInfo.finalNetworkResponseStartTime = coarsenedSharedCurrentTime(fetchParams.crossOriginIsolatedCapability)
-        },
+          onRequestStart (controller) {
+            // TODO (fix): Do we need connection here?
+            const { connection } = fetchParams.controller
 
-        onHeaders (status, rawHeaders, resume, statusText) {
-          if (status < 200) {
-            return false
-          }
+            // Set timingInfo’s final connection timing info to the result of calling clamp and coarsen
+            // connection timing info with connection’s timing info, timingInfo’s post-redirect start
+            // time, and fetchParams’s cross-origin isolated capability.
+            // TODO: implement connection timing
+            timingInfo.finalConnectionTimingInfo = clampAndCoarsenConnectionTimingInfo(undefined, timingInfo.postRedirectStartTime, fetchParams.crossOriginIsolatedCapability)
 
-          const headersList = new HeadersList()
+            const abort = (reason) => controller.abort(reason)
 
-          for (let i = 0; i < rawHeaders.length; i += 2) {
-            headersList.append(bufferToLowerCasedHeaderName(rawHeaders[i]), rawHeaders[i + 1].toString('latin1'), true)
-          }
-          const location = headersList.get('location', true)
-
-          this.body = new Readable({ read: resume })
-
-          const willFollow = location && request.redirect === 'follow' &&
-            redirectStatusSet.has(status)
-
-          const decoders = []
-
-          // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
-          if (request.method !== 'HEAD' && request.method !== 'CONNECT' && !nullBodyStatus.includes(status) && !willFollow) {
-            // https://www.rfc-editor.org/rfc/rfc7231#section-3.1.2.1
-            const contentEncoding = headersList.get('content-encoding', true)
-            // "All content-coding values are case-insensitive..."
-            /** @type {string[]} */
-            const codings = contentEncoding ? contentEncoding.toLowerCase().split(',') : []
-
-            // Limit the number of content-encodings to prevent resource exhaustion.
-            // CVE fix similar to urllib3 (GHSA-gm62-xv2j-4w53) and curl (CVE-2022-32206).
-            const maxContentEncodings = 5
-            if (codings.length > maxContentEncodings) {
-              reject(new Error(`too many content-encodings in response: ${codings.length}, maximum allowed is ${maxContentEncodings}`))
-              return true
-            }
-
-            for (let i = codings.length - 1; i >= 0; --i) {
-              const coding = codings[i].trim()
-              // https://www.rfc-editor.org/rfc/rfc9112.html#section-7.2
-              if (coding === 'x-gzip' || coding === 'gzip') {
-                decoders.push(zlib.createGunzip({
-                  // Be less strict when decoding compressed responses, since sometimes
-                  // servers send slightly invalid responses that are still accepted
-                  // by common browsers.
-                  // Always using Z_SYNC_FLUSH is what cURL does.
-                  flush: zlib.constants.Z_SYNC_FLUSH,
-                  finishFlush: zlib.constants.Z_SYNC_FLUSH
-                }))
-              } else if (coding === 'deflate') {
-                decoders.push(createInflate({
-                  flush: zlib.constants.Z_SYNC_FLUSH,
-                  finishFlush: zlib.constants.Z_SYNC_FLUSH
-                }))
-              } else if (coding === 'br') {
-                decoders.push(zlib.createBrotliDecompress({
-                  flush: zlib.constants.BROTLI_OPERATION_FLUSH,
-                  finishFlush: zlib.constants.BROTLI_OPERATION_FLUSH
-                }))
-              } else if (coding === 'zstd' && hasZstd) {
-                decoders.push(zlib.createZstdDecompress({
-                  flush: zlib.constants.ZSTD_e_continue,
-                  finishFlush: zlib.constants.ZSTD_e_end
-                }))
-              } else {
-                decoders.length = 0
-                break
-              }
-            }
-          }
-
-          const onError = this.onError.bind(this)
-
-          resolve({
-            status,
-            statusText,
-            headersList,
-            body: decoders.length
-              ? pipeline(this.body, ...decoders, (err) => {
-                if (err) {
-                  this.onError(err)
-                }
-              }).on('error', onError)
-              : this.body.on('error', onError)
-          })
-
-          return true
-        },
-
-        onData (chunk) {
-          if (fetchParams.controller.dump) {
-            return
-          }
-
-          // 1. If one or more bytes have been transmitted from response’s
-          // message body, then:
-
-          //  1. Let bytes be the transmitted bytes.
-          const bytes = chunk
-
-          //  2. Let codings be the result of extracting header list values
-          //  given `Content-Encoding` and response’s header list.
-          //  See pullAlgorithm.
-
-          //  3. Increase timingInfo’s encoded body size by bytes’s length.
-          timingInfo.encodedBodySize += bytes.byteLength
-
-          //  4. See pullAlgorithm...
-
-          return this.body.push(bytes)
-        },
-
-        onComplete () {
-          if (this.abort) {
-            fetchParams.controller.off('terminated', this.abort)
-          }
-
-          fetchParams.controller.ended = true
-
-          this.body.push(null)
-        },
-
-        onError (error) {
-          if (this.abort) {
-            fetchParams.controller.off('terminated', this.abort)
-          }
-
-          this.body?.destroy(error)
-
-          fetchParams.controller.terminate(error)
-
-          reject(error)
-        },
-
-        onRequestUpgrade (_controller, status, headers, socket) {
-          // We need to support 200 for websocket over h2 as per RFC-8441
-          // Absence of session means H1
-          if ((socket.session != null && status !== 200) || (socket.session == null && status !== 101)) {
-            return false
-          }
-
-          const headersList = new HeadersList()
-
-          for (const [name, value] of Object.entries(headers)) {
-            if (value == null) {
-              continue
-            }
-
-            const headerName = name.toLowerCase()
-
-            if (Array.isArray(value)) {
-              for (const entry of value) {
-                headersList.append(headerName, String(entry), true)
-              }
+            if (connection.destroyed) {
+              abort(new DOMException('The operation was aborted.', 'AbortError'))
             } else {
-              headersList.append(headerName, String(value), true)
+              fetchParams.controller.on('terminated', abort)
+              this.abort = connection.abort = abort
             }
+
+            // Set timingInfo’s final network-request start time to the coarsened shared current time given
+            // fetchParams’s cross-origin isolated capability.
+            timingInfo.finalNetworkRequestStartTime = coarsenedSharedCurrentTime(fetchParams.crossOriginIsolatedCapability)
+          },
+
+          onResponseStarted () {
+            // Set timingInfo’s final network-response start time to the coarsened shared current
+            // time given fetchParams’s cross-origin isolated capability, immediately after the
+            // user agent’s HTTP parser receives the first byte of the response (e.g., frame header
+            // bytes for HTTP/2 or response status line for HTTP/1.x).
+            timingInfo.finalNetworkResponseStartTime = coarsenedSharedCurrentTime(fetchParams.crossOriginIsolatedCapability)
+          },
+
+          onResponseStart (controller, status, _headers, statusText) {
+            if (status < 200) {
+              return
+            }
+
+            const rawHeaders = controller?.rawHeaders ?? []
+            const headersList = new HeadersList()
+
+            for (let i = 0; i < rawHeaders.length; i += 2) {
+              const nameStr = bufferToLowerCasedHeaderName(rawHeaders[i])
+              const value = rawHeaders[i + 1]
+              if (Array.isArray(value) && !Buffer.isBuffer(rawHeaders[i + 1])) {
+                for (const val of value) {
+                  headersList.append(nameStr, val.toString('latin1'), true)
+                }
+              } else {
+                headersList.append(nameStr, value.toString('latin1'), true)
+              }
+            }
+            const location = headersList.get('location', true)
+
+            this.body = new Readable({ read: () => controller.resume() })
+
+            const willFollow = location && request.redirect === 'follow' &&
+              redirectStatusSet.has(status)
+
+            const decoders = []
+
+            // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
+            if (request.method !== 'HEAD' && request.method !== 'CONNECT' && !nullBodyStatus.includes(status) && !willFollow) {
+              // https://www.rfc-editor.org/rfc/rfc7231#section-3.1.2.1
+              const contentEncoding = headersList.get('content-encoding', true)
+              // "All content-coding values are case-insensitive..."
+              /** @type {string[]} */
+              const codings = contentEncoding ? contentEncoding.toLowerCase().split(',') : []
+
+              // Limit the number of content-encodings to prevent resource exhaustion.
+              // CVE fix similar to urllib3 (GHSA-gm62-xv2j-4w53) and curl (CVE-2022-32206).
+              const maxContentEncodings = 5
+              if (codings.length > maxContentEncodings) {
+                reject(new Error(`too many content-encodings in response: ${codings.length}, maximum allowed is ${maxContentEncodings}`))
+                return
+              }
+
+              for (let i = codings.length - 1; i >= 0; --i) {
+                const coding = codings[i].trim()
+                // https://www.rfc-editor.org/rfc/rfc9112.html#section-7.2
+                if (coding === 'x-gzip' || coding === 'gzip') {
+                  decoders.push(zlib.createGunzip({
+                    // Be less strict when decoding compressed responses, since sometimes
+                    // servers send slightly invalid responses that are still accepted
+                    // by common browsers.
+                    // Always using Z_SYNC_FLUSH is what cURL does.
+                    flush: zlib.constants.Z_SYNC_FLUSH,
+                    finishFlush: zlib.constants.Z_SYNC_FLUSH
+                  }))
+                } else if (coding === 'deflate') {
+                  decoders.push(createInflate({
+                    flush: zlib.constants.Z_SYNC_FLUSH,
+                    finishFlush: zlib.constants.Z_SYNC_FLUSH
+                  }))
+                } else if (coding === 'br') {
+                  decoders.push(zlib.createBrotliDecompress({
+                    flush: zlib.constants.BROTLI_OPERATION_FLUSH,
+                    finishFlush: zlib.constants.BROTLI_OPERATION_FLUSH
+                  }))
+                } else if (coding === 'zstd' && hasZstd) {
+                  decoders.push(zlib.createZstdDecompress({
+                    flush: zlib.constants.ZSTD_e_continue,
+                    finishFlush: zlib.constants.ZSTD_e_end
+                  }))
+                } else {
+                  decoders.length = 0
+                  break
+                }
+              }
+            }
+
+            const onError = (err) => this.onResponseError(controller, err)
+
+            resolve({
+              status,
+              statusText,
+              headersList,
+              body: decoders.length
+                ? pipeline(this.body, ...decoders, (err) => {
+                  if (err) {
+                    this.onResponseError(controller, err)
+                  }
+                }).on('error', onError)
+                : this.body.on('error', onError)
+            })
+          },
+
+          onResponseData (controller, chunk) {
+            if (fetchParams.controller.dump) {
+              return
+            }
+
+            // 1. If one or more bytes have been transmitted from response’s
+            // message body, then:
+
+            //  1. Let bytes be the transmitted bytes.
+            const bytes = chunk
+
+            //  2. Let codings be the result of extracting header list values
+            //  given `Content-Encoding` and response’s header list.
+            //  See pullAlgorithm.
+
+            //  3. Increase timingInfo’s encoded body size by bytes’s length.
+            timingInfo.encodedBodySize += bytes.byteLength
+
+            //  4. See pullAlgorithm...
+
+            if (this.body.push(bytes) === false) {
+              controller.pause()
+            }
+          },
+
+          onResponseEnd () {
+            if (this.abort) {
+              fetchParams.controller.off('terminated', this.abort)
+            }
+
+            fetchParams.controller.ended = true
+
+            this.body?.push(null)
+          },
+
+          onResponseError (_controller, error) {
+            if (this.abort) {
+              fetchParams.controller.off('terminated', this.abort)
+            }
+
+            if (
+              request.mode === 'websocket' &&
+              allowH2 !== false &&
+              error?.code === 'UND_ERR_INFO' &&
+              error?.message === 'HTTP/2: Extended CONNECT protocol not supported by server'
+            ) {
+              // The origin negotiated H2, but RFC 8441 websocket support is unavailable.
+              // Retry the opening handshake on a fresh HTTP/1.1-only connection instead.
+              resolve(dispatchWithProtocolPreference(body, false))
+              return
+            }
+
+            this.body?.destroy(error)
+
+            fetchParams.controller.terminate(error)
+
+            reject(error)
+          },
+
+          onRequestUpgrade (controller, status, _headers, socket) {
+            // We need to support 200 for websocket over h2 as per RFC-8441
+            // Absence of session means H1
+            if ((socket.session != null && status !== 200) || (socket.session == null && status !== 101)) {
+              return false
+            }
+
+            const rawHeaders = controller?.rawHeaders ?? []
+            const headersList = new HeadersList()
+
+            for (let i = 0; i < rawHeaders.length; i += 2) {
+              const nameStr = bufferToLowerCasedHeaderName(rawHeaders[i])
+              const value = rawHeaders[i + 1]
+              if (Array.isArray(value) && !Buffer.isBuffer(rawHeaders[i + 1])) {
+                for (const val of value) {
+                  headersList.append(nameStr, val.toString('latin1'), true)
+                }
+              } else {
+                headersList.append(nameStr, value.toString('latin1'), true)
+              }
+            }
+
+            resolve({
+              status,
+              statusText: STATUS_CODES[status],
+              headersList,
+              socket
+            })
+
+            return true
           }
-
-          resolve({
-            status,
-            statusText: STATUS_CODES[status],
-            headersList,
-            socket
-          })
-
-          return true
-        },
-
-        onUpgrade (status, rawHeaders, socket) {
-          // We need to support 200 for websocket over h2 as per RFC-8441
-          // Absence of session means H1
-          if ((socket.session != null && status !== 200) || (socket.session == null && status !== 101)) {
-            return false
-          }
-
-          const headersList = new HeadersList()
-
-          for (let i = 0; i < rawHeaders.length; i += 2) {
-            headersList.append(bufferToLowerCasedHeaderName(rawHeaders[i]), rawHeaders[i + 1].toString('latin1'), true)
-          }
-
-          resolve({
-            status,
-            statusText: STATUS_CODES[status],
-            headersList,
-            socket
-          })
-
-          return true
         }
-      }
-    ))
+      ))
+    }
   }
 }
 
@@ -45689,12 +45821,6 @@ class WebSocketStream {
     const readable = new ReadableStream({
       start: (controller) => {
         this.#readableStreamController = controller
-      },
-      pull (controller) {
-        let chunk
-        while (controller.desiredSize > 0 && (chunk = response.socket.read()) !== null) {
-          controller.enqueue(chunk)
-        }
       },
       cancel: (reason) => this.#cancel(reason)
     })
