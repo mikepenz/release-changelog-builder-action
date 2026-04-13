@@ -57148,9 +57148,9 @@ class Agent extends external_http_.Agent {
             .then(() => this.connect(req, connectOpts))
             .then((socket) => {
             this.decrementSockets(name, fakeSocket);
-            if (socket instanceof external_http_.Agent) {
+            if (typeof socket
+                .addRequest === 'function') {
                 try {
-                    // @ts-expect-error `addRequest()` isn't defined in `@types/node`
                     return socket.addRequest(req, connectOpts);
                 }
                 catch (err) {
