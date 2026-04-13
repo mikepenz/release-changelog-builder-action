@@ -59,7 +59,7 @@ jobs:
       github.event_name == 'pull_request' &&
       startsWith(github.head_ref, 'renovate/') &&
       github.event.pull_request.head.repo.full_name == github.repository &&
-      github.actor == github.repository_owner
+      (github.actor == github.repository_owner || github.actor == 'renovate-mike[bot]')
     runs-on: ubuntu-latest
     permissions:
       contents: write
