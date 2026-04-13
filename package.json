@@ -69,7 +69,7 @@
   },
   "overrides": {
     "glob": "13.0.6",
-    "undici": "7.24.6",
+    "undici": "8.0.2",
     "brace-expansion": "5.0.5",
     "vite": "8.0.5"
   }
