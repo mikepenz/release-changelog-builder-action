@@ -17,7 +17,7 @@ test('[Github] Should match generated changelog (unspecified fromTag)', async ()
     'mikepenz',
     'release-changelog-builder-action',
     null,
-    'v6.2.1',
+    'v6.1.1',
     false,
     false,
     false,
@@ -34,10 +34,10 @@ test('[Github] Should match generated changelog (unspecified fromTag)', async ()
 
   const changeLog = await releaseNotesBuilder.build()
   console.log(changeLog)
-  expect(changeLog).toStrictEqual(`## 🐛 Fixes
+  expect(changeLog).toStrictEqual(`## 🚀 Features
 
-- fix: handle multi-line commit bodies in git log parsing
-   - PR: #1553
+- Upgrade all dependencies and move to ESLint 10
+   - PR: #1521
 
 `)
 })
