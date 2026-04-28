@@ -710,3 +710,55 @@ test('Use Rules to get all open PRs in one Category and merged categorised.', as
     `## Open PRs only\n\n- Still pending open pull request\n   - PR: #6\n\n## 🚀 Features and 🐛 Issues\n\n- [ABC-1234] - this is a PR 3 title message\n   - PR: #3\n\n`
   )
 })
+
+const mkPr = (number: number, title: string, label: string): PullRequestInfo => ({
+  number,
+  title,
+  htmlURL: '',
+  baseBranch: '',
+  createdAt: moment(),
+  mergedAt: moment(),
+  mergeCommitSha: `sha${number}`,
+  author: 'octocat',
+  authorName: 'octocat',
+  repoName: 'test-repo',
+  labels: [label],
+  milestone: '',
+  body: '',
+  assignees: [],
+  requestedReviewers: [],
+  approvedReviewers: [],
+  status: 'merged'
+})
+
+const specialCharsConfig: Configuration = Object.assign({}, DefaultConfiguration, {
+  categories: [
+    {title: '## Features', labels: ['feature']},
+    {title: '## Bugs', labels: ['bug']},
+    {title: '## Tests', labels: ['test']}
+  ],
+  template: '#{{CHANGELOG}}',
+  pr_template: '* #{{TITLE}} by @#{{AUTHOR}} in ##{{NUMBER}}'
+})
+
+test('PR titles with backtick code spans render verbatim', async () => {
+  const prs = [
+    mkPr(269, 'Fix unit test for `String.Format()`', 'test'),
+    mkPr(270, 'Improvements in `String` class', 'feature'),
+    mkPr(271, 'Rewrote `Guid.CompareTo`', 'bug')
+  ]
+  const out = buildChangelogTest(specialCharsConfig, prs, repositoryUtils)
+  expect(out).toContain('* Fix unit test for `String.Format()` by @octocat in #269')
+  expect(out).toContain('* Improvements in `String` class by @octocat in #270')
+  expect(out).toContain('* Rewrote `Guid.CompareTo` by @octocat in #271')
+})
+
+test('PR titles with $-escape sequences render verbatim', async () => {
+  const prs = [
+    mkPr(101, 'weird $& and $1 and $$ chars', 'bug'),
+    mkPr(102, "edge $` and $' and $0 and $<name>", 'bug')
+  ]
+  const out = buildChangelogTest(specialCharsConfig, prs, repositoryUtils)
+  expect(out).toContain('* weird $& and $1 and $$ chars by @octocat in #101')
+  expect(out).toContain("* edge $` and $' and $0 and $<name> by @octocat in #102")
+})
