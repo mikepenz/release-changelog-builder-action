@@ -651,7 +651,7 @@ function renderTemplateAndFillPlaceholderContext(
   const trimValues = configuration.trim_values
   // replace traditional placeholders
   for (const [key, value] of templateContext) {
-    transformed = transformed.replaceAll(`#{{${key}}}`, trimValues ? value.trim() : value)
+    transformed = transformed.replaceAll(`#{{${key}}}`, () => (trimValues ? value.trim() : value))
 
     const extractedValues = extractPlaceholderValuesAndFillPlaceholderContext(
       key,
@@ -661,7 +661,7 @@ function renderTemplateAndFillPlaceholderContext(
     )
 
     for (const [placeholderName, extractedValue] of extractedValues) {
-      transformed = transformed.replaceAll(`#{{${placeholderName}}}`, trimValues ? extractedValue.trim() : extractedValue)
+      transformed = transformed.replaceAll(`#{{${placeholderName}}}`, () => (trimValues ? extractedValue.trim() : extractedValue))
     }
   }
 
@@ -777,9 +777,9 @@ function renderTemplateWithContext(
   let transformed = template
   for (const [key, values] of templateContext) {
     for (let i = 0; i < values.length; i++) {
-      transformed = transformed.replaceAll(`#{{${key}[${i}]}}`, configuration.trim_values ? values[i].trim() : values[i])
+      transformed = transformed.replaceAll(`#{{${key}[${i}]}}`, () => (configuration.trim_values ? values[i].trim() : values[i]))
     }
-    transformed = transformed.replaceAll(`#{{${key}[*]}}`, values.join(''))
+    transformed = transformed.replaceAll(`#{{${key}[*]}}`, () => values.join(''))
   }
   return transformed
 }

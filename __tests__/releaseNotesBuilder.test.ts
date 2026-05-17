@@ -17,7 +17,7 @@ test('[Github] Should match generated changelog (unspecified fromTag)', async ()
     'mikepenz',
     'release-changelog-builder-action',
     null,
-    'v0.0.3',
+    'v6.1.1',
     false,
     false,
     false,
@@ -34,10 +34,10 @@ test('[Github] Should match generated changelog (unspecified fromTag)', async ()
 
   const changeLog = await releaseNotesBuilder.build()
   console.log(changeLog)
-  expect(changeLog).toStrictEqual(`## 🧪 Tests
+  expect(changeLog).toStrictEqual(`## 🚀 Features
 
-- [CI] Specify Test Case
-   - PR: #10
+- Upgrade all dependencies and move to ESLint 10
+   - PR: #1521
 
 `)
 })
