@@ -62,15 +62,13 @@
     "eslint-plugin-import": "2.32.0",
     "eslint-plugin-prettier": "5.5.6",
     "globals": "17.7.0",
-    "js-yaml": "5.2.1",
+    "js-yaml": "5.2.2",
     "prettier": "3.9.5",
     "typescript": "6.0.3",
     "vitest": "4.1.10"
   },
   "overrides": {
-    "glob": "13.0.6",
-    "undici": "8.7.0",
-    "brace-expansion": "5.0.7",
-    "vite": "8.1.4"
+    "brace-expansion": "5.0.8",
+    "undici": "8.7.0"
   }
 }
