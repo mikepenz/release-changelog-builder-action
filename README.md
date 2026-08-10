@@ -14,8 +14,11 @@
 </div>
 
 <div align="center">
-  <a href="https://github.com/mikepenz/release-changelog-builder-action/actions">
-		<img src="https://github.com/mikepenz/release-changelog-builder-action/workflows/CI/badge.svg"/>
+  <a href="https://github.com/mikepenz/release-changelog-builder-action/actions/workflows/ci.yml">
+		<img src="https://github.com/mikepenz/release-changelog-builder-action/actions/workflows/ci.yml/badge.svg?event=push"/>
+	</a>
+	<a href="https://scorecard.dev/viewer/?uri=github.com/mikepenz/release-changelog-builder-action">
+		<img src="https://api.scorecard.dev/projects/github.com/mikepenz/release-changelog-builder-action/badge"/>
 	</a>
 </div>
 <br />

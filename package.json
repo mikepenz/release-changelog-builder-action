@@ -44,33 +44,33 @@
     "@actions/github": "9.1.1",
     "@octokit/rest": "22.0.1",
     "gitea-js": "1.23.0",
-    "https-proxy-agent": "9.0.0",
+    "https-proxy-agent": "9.1.0",
     "moment": "2.30.1",
-    "semver": "7.8.3"
+    "semver": "7.8.5"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "3.3.5",
+    "@eslint/eslintrc": "3.3.6",
     "@eslint/js": "10.0.1",
-    "@types/node": "25.9.2",
-    "@types/semver": "7.7.1",
-    "@typescript-eslint/eslint-plugin": "8.60.1",
-    "@typescript-eslint/parser": "8.60.1",
-    "@vercel/ncc": "0.38.4",
-    "eslint": "10.4.1",
+    "@types/node": "25.9.5",
+    "@types/semver": "7.8.0",
+    "@typescript-eslint/eslint-plugin": "8.65.0",
+    "@typescript-eslint/parser": "8.65.0",
+    "@vercel/ncc": "0.44.1",
+    "eslint": "10.8.0",
     "eslint-import-resolver-typescript": "4.4.5",
-    "eslint-plugin-github": "6.0.0",
+    "eslint-plugin-github": "6.1.2",
     "eslint-plugin-import": "2.32.0",
     "eslint-plugin-prettier": "5.5.6",
-    "globals": "17.6.0",
-    "js-yaml": "4.2.0",
-    "prettier": "3.8.3",
+    "globals": "17.9.0",
+    "js-yaml": "5.2.3",
+    "prettier": "3.9.6",
     "typescript": "6.0.3",
-    "vitest": "4.1.8"
+    "vitest": "4.1.10"
   },
   "overrides": {
-    "glob": "13.0.6",
-    "undici": "8.5.0",
-    "brace-expansion": "5.0.6",
-    "vite": "8.0.16"
+    "brace-expansion": "5.0.9",
+    "js-yaml": "5.2.3",
+    "nanoid": "3.3.18",
+    "undici": "8.9.0"
   }
 }
