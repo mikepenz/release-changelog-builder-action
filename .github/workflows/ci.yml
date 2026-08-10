@@ -73,12 +73,16 @@ jobs:
           node-version: 24.x
       - run: npm ci && npm run build && npm run package
       - name: Commit rebuilt dist
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          REPOSITORY: ${{ github.repository }}
+          RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
         run: |
           git config user.name "Mike Penz"
           git config user.email "opensource-bot@mikepenz.dev"
           git add dist/
           git diff --staged --quiet || git commit -m "chore: rebuild dist for renovate"
-          git push https://x-access-token:${{ secrets.RENOVATE_TOKEN }}@github.com/${{ github.repository }}.git HEAD:${{ github.event.pull_request.head.ref }}
+          git push "https://x-access-token:${RENOVATE_TOKEN}@github.com/${REPOSITORY}.git" "HEAD:refs/heads/${HEAD_REF}"
 
   test:
     if: >
