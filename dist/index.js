@@ -49923,16 +49923,17 @@ function format(obj) {
  * Parse a `Content-Type` header.
  */
 function parse(header, options) {
+    const stopChar = options?.comma === true ? COMMA : 65536; // Sentinel for "no stop char".
     const len = header.length;
-    let index = skipOWS(header, 0, len);
+    let index = skipOWS(header, options?.start ?? 0, len);
     const valueStart = index;
-    index = skipValue(header, index, len);
+    index = skipValue(header, index, len, stopChar);
     const valueEnd = trailingOWS(header, valueStart, index);
     const type = header.slice(valueStart, valueEnd).toLowerCase();
-    const parameters = options?.parameters === false
-        ? new NullObject()
-        : parseParameters(header, index, len);
-    return { type, parameters };
+    if (options?.parameters === false) {
+        return { type, index, parameters: new NullObject() };
+    }
+    return parseParameters(header, type, index, len, stopChar);
 }
 const SP = 32; // " "
 const HTAB = 9; // "\t"
@@ -49940,16 +49941,21 @@ const SEMI = 59; // ";"
 const EQ = 61; // "="
 const DQUOTE = 34; // '"'
 const BSLASH = 92; // "\\"
+const COMMA = 44; // ","
 /**
  * Parses the parameters of a `Content-Type` header starting at the given index.
  */
-function parseParameters(header, index, len) {
+function parseParameters(header, type, index, len, stopChar) {
     const parameters = new NullObject();
     parameter: while (index < len) {
+        if (header.charCodeAt(index) === stopChar)
+            break;
         index = skipOWS(header, index + 1 /* Skip over ; */, len);
         const keyStart = index;
         while (index < len) {
             const code = header.charCodeAt(index);
+            if (code === stopChar)
+                break parameter;
             if (code === SEMI)
                 continue parameter;
             if (code === EQ) {
@@ -49962,7 +49968,7 @@ function parseParameters(header, index, len) {
                     while (index < len) {
                         const code = header.charCodeAt(index++);
                         if (code === DQUOTE) {
-                            index = skipValue(header, index, len);
+                            index = skipValue(header, index, len, stopChar);
                             if (parameters[key] === undefined)
                                 parameters[key] = value;
                             break;
@@ -49976,7 +49982,7 @@ function parseParameters(header, index, len) {
                     continue parameter;
                 }
                 const valueStart = index;
-                index = skipValue(header, index, len);
+                index = skipValue(header, index, len, stopChar);
                 if (parameters[key] === undefined) {
                     const valueEnd = trailingOWS(header, valueStart, index);
                     parameters[key] = header.slice(valueStart, valueEnd);
@@ -49986,15 +49992,15 @@ function parseParameters(header, index, len) {
             index++;
         }
     }
-    return parameters;
+    return { type, index, parameters };
 }
 /**
- * Skip over characters until a semicolon.
+ * Skip over characters until a semicolon or other exit character.
  */
-function skipValue(str, index, len) {
+function skipValue(str, index, len, stopChar) {
     while (index < len) {
-        const char = str.charCodeAt(index);
-        if (char === SEMI)
+        const code = str.charCodeAt(index);
+        if (code === SEMI || code === stopChar)
             break;
         index++;
     }
