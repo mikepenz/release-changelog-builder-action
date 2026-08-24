@@ -62,7 +62,7 @@
     "eslint-plugin-import": "2.32.0",
     "eslint-plugin-prettier": "5.5.6",
     "globals": "17.9.0",
-    "js-yaml": "5.2.3",
+    "js-yaml": "5.3.0",
     "prettier": "3.9.6",
     "typescript": "6.0.3",
     "vitest": "4.1.10"
