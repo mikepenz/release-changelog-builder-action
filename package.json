@@ -64,7 +64,7 @@
     "globals": "17.9.0",
     "js-yaml": "5.2.3",
     "prettier": "3.9.6",
-    "typescript": "6.0.3",
+    "typescript": "7.0.2",
     "vitest": "4.1.10"
   },
   "overrides": {
