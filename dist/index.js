@@ -12006,7 +12006,6 @@ const kContentType = Symbol('kContentType')
 const kContentLength = Symbol('kContentLength')
 const kUsed = Symbol('kUsed')
 const kBytesRead = Symbol('kBytesRead')
-const kPreservedBuffer = Symbol('kPreservedBuffer')
 
 const noop = () => {}
 
@@ -12317,36 +12316,14 @@ class BodyReadable extends Readable {
    */
   setEncoding (encoding) {
     if (Buffer.isEncoding(encoding)) {
-      // Preserve raw Buffer chunks for the consume path (body.text(),
-      // body.json(), etc.) before super.setEncoding() replaces them
-      // with decoded strings. Without this, the consume path would
-      // lose access to the original bytes — some of which may be held
-      // by the decoder for incomplete multi-byte sequences, and the
-      // rest converted to strings that can't be safely concatenated
-      // byte-wise.
-      const state = this._readableState
-      const buffer = state.buffer
-      if (buffer && state.length > 0) {
-        const bufferIndex = state.bufferIndex ?? 0
-        const preserved = []
-        const source = typeof buffer.slice === 'function'
-          ? buffer.slice(bufferIndex)
-          : buffer
-        for (const data of source) {
-          if (Buffer.isBuffer(data)) {
-            preserved.push(data)
-          }
-        }
-        if (preserved.length > 0) {
-          this[kPreservedBuffer] = (this[kPreservedBuffer] || []).concat(preserved)
-        }
-      }
-
       // Delegate to Node.js Readable.setEncoding() which initializes a
       // StringDecoder and re-encodes already-buffered chunks. This properly
       // handles multi-byte sequences split at chunk boundaries for the
       // for-await / on('data') paths. Without this, Node.js uses
       // buf.toString(encoding) on each chunk, producing U+FFFD for split chars.
+      //
+      // The consume path (body.text(), body.json(), ...) copes with the
+      // decoded strings this leaves in state.buffer, see consumeStart().
       super.setEncoding(encoding)
     }
     return this
@@ -12455,17 +12432,7 @@ function consumeStart (consume) {
 
   const { _readableState: state } = consume.stream
 
-  // If setEncoding() was called, state.buffer may contain decoded strings
-  // (which would break Buffer.concat in chunksDecode). Use the preserved
-  // raw Buffers (saved before super.setEncoding() in setEncoding()) for
-  // byte-level accurate consumption. Otherwise read from state.buffer.
-  const preserved = consume.stream[kPreservedBuffer]
-  if (preserved && preserved.length > 0) {
-    for (const chunk of preserved) {
-      consumePush(consume, chunk)
-    }
-    consume.stream[kPreservedBuffer] = null
-  } else if (state.bufferIndex) {
+  if (state.bufferIndex) {
     const start = state.bufferIndex
     const end = state.buffer.length
     for (let n = start; n < end; n++) {
@@ -12477,13 +12444,28 @@ function consumeStart (consume) {
     }
   }
 
-  if (state.endEmitted) {
-    consumeEnd(this[kConsume], this._readableState.encoding)
-  } else {
-    consume.stream.on('end', function () {
-      consumeEnd(this[kConsume], this._readableState.encoding)
-    })
+  // If setEncoding() was called, state.buffer holds decoded strings, which
+  // consumePush() turns back into bytes. The trailing bytes of a multi-byte
+  // sequence split across a chunk boundary are not part of any of those
+  // strings, they are held inside the decoder until the rest arrives, so
+  // take them from there.
+  const decoder = state.decoder
+  if (decoder != null && decoder.lastNeed > 0) {
+    consumePush(consume, Buffer.from(decoder.lastChar.subarray(0, decoder.lastTotal - decoder.lastNeed)))
   }
+
+  if (state.endEmitted) {
+    // No `this` to read the consume off here: consumeStart is a free function, called from
+    // the queueMicrotask above. The callback below does have one, because the emitter passes
+    // the stream as its receiver. Returning matters too - consumeEnd() clears consume.stream,
+    // which the resume() below would then dereference.
+    consumeEnd(consume, state.encoding)
+    return
+  }
+
+  consume.stream.on('end', function () {
+    consumeEnd(this[kConsume], this._readableState.encoding)
+  })
 
   consume.stream.resume()
 
@@ -12574,12 +12556,20 @@ function consumeEnd (consume, encoding) {
 
 /**
  * @param {Consume} consume
- * @param {Buffer} chunk
+ * @param {Buffer|string} chunk
  * @returns {void}
  */
 function consumePush (consume, chunk) {
   if (consume.body === null) {
     return
+  }
+
+  if (typeof chunk === 'string') {
+    // Buffered before the consume started, while an encoding was set.
+    // consume.length has to stay a byte count and chunksDecode()/chunksConcat()
+    // only work on bytes, so re-encode. A string's own length is in UTF-16 code
+    // units and Uint8Array.prototype.set() ignores a string argument entirely.
+    chunk = Buffer.from(chunk, consume.stream._readableState.encoding)
   }
 
   consume.length += chunk.length
@@ -13491,13 +13481,27 @@ function buildConnector ({ allowH2, preferH2, useH2c, maxCachedSessions, socketP
 
       port = port || 80
 
-      socket = net.connect({
+      const connectOptions = {
         highWaterMark: 64 * 1024, // Same as nodejs fs streams.
         ...options,
         localAddress,
         port,
         host: hostname
-      })
+      }
+
+      const family = net.isIP(hostname)
+      if (family !== 0 && servername && servername !== hostname) {
+        connectOptions.host = servername
+        connectOptions.lookup = (_hostname, lookupOptions, cb) => {
+          if (lookupOptions.all) {
+            cb(null, [{ address: hostname, family }])
+          } else {
+            cb(null, hostname, family)
+          }
+        }
+      }
+
+      socket = net.connect(connectOptions)
       if (useH2c === true) {
         socket.alpnProtocol = 'h2'
       }
@@ -15693,6 +15697,7 @@ module.exports = {
   kCounter: Symbol('socket request counter'),
   kMaxResponseSize: Symbol('max response size'),
   kHTTP2Session: Symbol('http2Session'),
+  kHTTP2Options: Symbol('http2 options'),
   kHTTP2SessionState: Symbol('http2Session state'),
   kRetryHandlerDefaultRetry: Symbol('retry agent default retry'),
   kConstruct: Symbol('constructable'),
@@ -18395,7 +18400,7 @@ function onSocketClose () {
 
 function clearIdleSocketValidation (socket) {
   if (socket[kIdleSocketValidationTimeout]) {
-    clearImmediate(socket[kIdleSocketValidationTimeout])
+    clearTimeout(socket[kIdleSocketValidationTimeout])
     socket[kIdleSocketValidationTimeout] = null
   }
 
@@ -18404,14 +18409,14 @@ function clearIdleSocketValidation (socket) {
 
 function scheduleIdleSocketValidation (client, socket) {
   socket[kIdleSocketValidation] = 1
-  socket[kIdleSocketValidationTimeout] = setImmediate(() => {
+  socket[kIdleSocketValidationTimeout] = setTimeout(() => {
     socket[kIdleSocketValidationTimeout] = null
     socket[kIdleSocketValidation] = 2
 
     if (client[kSocket] === socket && !socket.destroyed) {
       client[kResume]()
     }
-  })
+  }, 0)
   socket[kIdleSocketValidationTimeout].unref?.()
 }
 
@@ -19169,10 +19174,7 @@ const {
   kStrictContentLength,
   kOnError,
   kMaxConcurrentStreams,
-  kPingInterval,
   kHTTP2Session,
-  kHTTP2InitialWindowSize,
-  kHTTP2ConnectionWindowSize,
   kHostAuthority,
   kResume,
   kSize,
@@ -19184,7 +19186,8 @@ const {
   kEnableConnectProtocol,
   kRemoteSettings,
   kHTTP2Stream,
-  kHTTP2SessionState
+  kHTTP2SessionState,
+  kHTTP2Options
 } = __nccwpck_require__(6443)
 const { channels } = __nccwpck_require__(2414)
 
@@ -19194,6 +19197,14 @@ const kRequestStream = Symbol('request stream')
 const kRequestStreamCleanup = Symbol('request stream cleanup')
 const kRequestStreamState = Symbol('request stream state')
 const kReceivedGoAway = Symbol('received goaway')
+const kGoAwayReplayAttempts = Symbol('goaway replay attempts')
+const kRefusedStreamRetry = Symbol('refused stream retry')
+
+// RFC 9113 section 8.7: a client SHOULD NOT automatically retry a request more
+// than once. Without a budget a peer that keeps refusing turns one request into
+// an unbounded connect/refuse/reconnect loop that never settles and starves the
+// event loop.
+const MAX_GOAWAY_REPLAY_ATTEMPTS = 1
 
 let extractBody
 
@@ -19322,10 +19333,22 @@ function completeRequest (client, request, resetPendingIdx = false) {
   }
 }
 
-function canRetryRequestAfterGoAway (request) {
+function canReplayRequest (request) {
   const { body } = request
 
   return body == null || util.isBuffer(body) || util.isBlobLike(body)
+}
+
+// Count a GOAWAY refusal against the request's replay budget. A peer that
+// refuses every connection must eventually surface an error to the caller
+// rather than being retried forever. Kept separate from canReplayRequest so
+// that the REFUSED_STREAM retry, which has its own single-attempt limit, does
+// not consume this budget just by asking whether the body can be replayed.
+function registerGoAwayRefusal (request) {
+  const attempts = (request[kGoAwayReplayAttempts] ?? 0) + 1
+  request[kGoAwayReplayAttempts] = attempts
+
+  return attempts <= MAX_GOAWAY_REPLAY_ATTEMPTS
 }
 
 function closeStream (stream, code = NGHTTP2_REFUSED_STREAM) {
@@ -19340,19 +19363,44 @@ function detachRequestStreamForClose (request) {
   const stream = request[kRequestStream]
 
   clearRequestStream(request)
+  severRequestStream(stream)
 
   return stream
+}
+
+// Unbind a stream from its request for good. releaseRequestStream() alone
+// leaves the 'close' listener attached and kRequestStreamState populated, so a
+// stream abandoned here would still run completeRequestStream() later — and
+// splice out the request that has since been requeued onto another session.
+function severRequestStream (stream) {
+  if (stream == null || stream[kRequestStreamState] == null) {
+    return
+  }
+
+  stream[kRequestStreamState] = null
+  stream.off('close', completeRequestStream)
+  // Upgrade streams use their own close cleanup, which would otherwise release
+  // the session a second time after the stream has been severed for GOAWAY.
+  stream.off('close', onUpgradeStreamClose)
+
+  if (stream[kHTTP2Session] != null) {
+    closeStreamSession(stream)
+  }
+
+  if (!stream.destroyed && !stream.closed) {
+    stream.once('error', noop)
+  }
 }
 
 function connectH2 (client, socket) {
   client[kSocket] = socket
 
-  const http2InitialWindowSize = client[kHTTP2InitialWindowSize]
-  const http2ConnectionWindowSize = client[kHTTP2ConnectionWindowSize]
+  const http2InitialWindowSize = client[kHTTP2Options].sessionOptions?.initialWindowSize
+  const http2ConnectionWindowSize = client[kHTTP2Options].connectionWindowSize
 
   const session = http2.connect(client[kUrl], {
     createConnection: () => socket,
-    peerMaxConcurrentStreams: client[kMaxConcurrentStreams],
+    peerMaxConcurrentStreams: client[kHTTP2Options].maxConcurrentStreams,
     settings: {
       // TODO(metcoder95): add support for PUSH
       enablePush: false,
@@ -19366,13 +19414,16 @@ function connectH2 (client, socket) {
   session[kSocket] = socket
   session[kHTTP2SessionState] = {
     idleTimeout: null,
+    // Armed while the peer advertises MAX_CONCURRENT_STREAMS = 0 and we have
+    // work that cannot start. See setNoStreamsTimeout.
+    noStreamsTimeout: null,
     // Sockets start out ref'd. Session ref/unref proxies to the socket, so a
     // single cached flag lets us skip redundant uv ref/unref calls, provided
     // every ref/unref of the session or its socket goes through
     // refH2Session/unrefH2Session.
     refed: true,
     ping: {
-      interval: client[kPingInterval] === 0 ? null : setInterval(onHttp2SendPing, client[kPingInterval], session).unref()
+      interval: client[kHTTP2Options].pingInterval === 0 ? null : setInterval(onHttp2SendPing, client[kHTTP2Options].pingInterval, session).unref()
     }
   }
   session[kReceivedGoAway] = false
@@ -19512,7 +19563,74 @@ function resumeH2 (client) {
     } else {
       clearHttp2IdleTimeout(session)
     }
+
+    if (client[kMaxConcurrentStreams] === 0 && client[kRunning] === 0 && client[kPending] > 0) {
+      setNoStreamsTimeout(session)
+    } else {
+      clearNoStreamsTimeout(session)
+    }
   }
+}
+
+function clearNoStreamsTimeout (session) {
+  const state = session[kHTTP2SessionState]
+
+  if (state?.noStreamsTimeout != null) {
+    clearTimeout(state.noStreamsTimeout)
+    state.noStreamsTimeout = null
+  }
+}
+
+// A peer is allowed to advertise SETTINGS_MAX_CONCURRENT_STREAMS = 0 to refuse
+// new streams (RFC 9113 §6.5.2), and is expected to raise it again later. Until
+// it does, busy() reports the client as permanently busy and queued requests
+// cannot open a stream — which means no per-stream timeout covers them, and no
+// reconnect can happen either, so the SETTINGS frame that would lift the limit
+// can never arrive. Give the peer headersTimeout to start honouring requests
+// before failing them; a request that cannot even be sent has missed the same
+// deadline as one whose headers never arrive.
+function setNoStreamsTimeout (session) {
+  const client = session[kClient]
+  const state = session[kHTTP2SessionState]
+  const timeout = client[kHeadersTimeout]
+
+  if (!timeout || state.noStreamsTimeout != null) {
+    return
+  }
+
+  state.noStreamsTimeout = setTimeout(onNoStreamsTimeout, timeout, session).unref()
+}
+
+function onNoStreamsTimeout (session) {
+  const client = session[kClient]
+  const state = session[kHTTP2SessionState]
+
+  state.noStreamsTimeout = null
+
+  if (
+    client[kHTTP2Session] !== session ||
+    client[kMaxConcurrentStreams] !== 0 ||
+    client[kRunning] !== 0 ||
+    client[kPending] === 0
+  ) {
+    return
+  }
+
+  const err = new HeadersTimeoutError(
+    `HTTP/2: server did not accept a new stream within ${client[kHeadersTimeout]}`
+  )
+
+  const requests = client[kQueue].splice(client[kPendingIdx])
+  for (let i = 0; i < requests.length; i++) {
+    if (requests[i] != null) {
+      util.errorRequest(client, requests[i], err)
+    }
+  }
+
+  // Drop the unusable session so the next request gets a fresh connection,
+  // whose SETTINGS may well allow streams again.
+  session[kError] = err
+  resetHttp2Session(session, err)
 }
 
 function clearHttp2IdleTimeout (session) {
@@ -19670,7 +19788,7 @@ function onHttp2SessionGoAway (errorCode, lastStreamID) {
     if (request != null) {
       streamsToClose.push(detachRequestStreamForClose(request))
 
-      if (canRetryRequestAfterGoAway(request)) {
+      if (canReplayRequest(request) && registerGoAwayRefusal(request)) {
         retriableRequests.push(request)
       } else {
         util.errorRequest(client, request, err)
@@ -19695,6 +19813,7 @@ function onHttp2SessionGoAway (errorCode, lastStreamID) {
   }
 
   clearHttp2IdleTimeout(this)
+  clearNoStreamsTimeout(this)
 
   if (!this.closed && !this.destroyed) {
     this.close()
@@ -19719,6 +19838,7 @@ function onHttp2SessionClose () {
   }
 
   clearHttp2IdleTimeout(this)
+  clearNoStreamsTimeout(this)
 
   if (state.ping.interval != null) {
     clearInterval(state.ping.interval)
@@ -19830,6 +19950,16 @@ function completeRequestStream () {
 
   if (state.pendingEnd && !state.request.aborted && !state.request.completed) {
     state.request.onResponseEnd(state.trailers || {})
+  } else if (!state.request.aborted && !state.request.completed) {
+    // The stream closed without a complete response and without reporting an
+    // error. finalizeRequest() below frees the queue slot either way, so
+    // without this the request would simply vanish and its caller would never
+    // hear back.
+    util.errorRequest(
+      state.client,
+      state.request,
+      new InformationalError('HTTP/2: stream closed before the response was complete')
+    )
   }
 
   finalizeRequest(state)
@@ -20429,6 +20559,38 @@ function onEnd () {
   }
 }
 
+function retryRefusedStream (stream, state) {
+  const { client, request } = state
+
+  if (
+    state.responseReceived ||
+    request.aborted ||
+    request.completed ||
+    request[kRefusedStreamRetry] ||
+    !canReplayRequest(request)
+  ) {
+    return false
+  }
+
+  // RFC 9113 section 8.7 permits retrying REFUSED_STREAM, but says clients
+  // SHOULD NOT automatically retry the same request more than once.
+  request[kRefusedStreamRetry] = true
+
+  // Detach the failed attempt before moving the request back to the pending
+  // queue. The peer only reset this stream, so the HTTP/2 session remains
+  // usable for the retry. Severing also drops the 'close' listener, so the
+  // abandoned stream cannot later complete the retried request.
+  detachRequestStreamForClose(request)
+  state.stream = null
+  state.requestFinalized = true
+
+  completeRequest(client, request)
+  client[kQueue].splice(client[kPendingIdx], 0, request)
+  client[kResume]()
+
+  return true
+}
+
 function onError (err) {
   const stream = this
   const state = stream[kRequestStreamState]
@@ -20438,6 +20600,18 @@ function onError (err) {
   }
 
   stream.off('error', onError)
+
+  if (typeof stream.rstCode === 'number' && stream.rstCode !== NGHTTP2_NO_ERROR) {
+    err.http2ErrorCode = stream.rstCode
+  }
+
+  if (
+    stream.rstCode === NGHTTP2_REFUSED_STREAM &&
+    retryRefusedStream(stream, state)
+  ) {
+    return
+  }
+
   state.abort(err)
 }
 
@@ -20775,10 +20949,8 @@ const {
   kHTTPContext,
   kMaxConcurrentStreams,
   kHostAuthority,
-  kHTTP2InitialWindowSize,
-  kHTTP2ConnectionWindowSize,
   kResume,
-  kPingInterval
+  kHTTP2Options
 } = __nccwpck_require__(6443)
 const connectH1 = __nccwpck_require__(637)
 const connectH2 = __nccwpck_require__(8788)
@@ -20796,6 +20968,16 @@ const noop = () => { }
 
 function getPipelining (client) {
   return client[kPipelining] ?? client[kHTTPContext]?.defaultPipelining ?? 1
+}
+
+let h2NamespaceOptsWarning = false
+function emitH2OptionsNamespaceWarning (optName) {
+  if (h2NamespaceOptsWarning === true) return
+
+  process.emitWarning(`Use h2Options.${optName} instead. ${optName} for H2 will be deprecated in future major.`, {
+    code: 'UNDICI-H2-OPTIONS'
+  })
+  h2NamespaceOptsWarning = true
 }
 
 // Protocol-aware dispatch ceiling. h1 RFC7230 pipelining is unrelated to h2
@@ -20850,7 +21032,8 @@ class Client extends DispatcherBase {
     initialWindowSize,
     connectionWindowSize,
     pingInterval,
-    webSocket
+    webSocket,
+    h2Options
   } = {}) {
     if (keepAlive !== undefined) {
       throw new InvalidArgumentError('unsupported keepAlive, use pipelining=0 instead')
@@ -20938,24 +21121,55 @@ class Client extends DispatcherBase {
       throw new InvalidArgumentError('allowH2 must be a valid boolean value')
     }
 
-    if (maxConcurrentStreams != null && (typeof maxConcurrentStreams !== 'number' || maxConcurrentStreams < 1)) {
-      throw new InvalidArgumentError('maxConcurrentStreams must be a positive integer, greater than 0')
-    }
+    // We validate only if allowH2 is enabled or null (enabled by default)
+    if (allowH2 !== false) {
+      // Prioritise new h2Options object, otherwise fallback to prior configuration options
+      if (h2Options != null) {
+        if (h2Options.useH2c != null && typeof h2Options.useH2c !== 'boolean') {
+          throw new InvalidArgumentError('h2Options.useH2c must be a valid boolean value')
+        }
 
-    if (useH2c != null && typeof useH2c !== 'boolean') {
-      throw new InvalidArgumentError('useH2c must be a valid boolean value')
-    }
+        if (h2Options.settings?.initialWindowSize != null && (!Number.isInteger(h2Options.settings.initialWindowSize) || h2Options.settings.initialWindowSize < 1)) {
+          throw new InvalidArgumentError('h2Options.settings.initialWindowSize must be a positive integer, greater than 0')
+        }
 
-    if (initialWindowSize != null && (!Number.isInteger(initialWindowSize) || initialWindowSize < 1)) {
-      throw new InvalidArgumentError('initialWindowSize must be a positive integer, greater than 0')
-    }
+        if (h2Options.maxConcurrentStreams != null && (!Number.isInteger(h2Options.connectionWindowSize) || h2Options.maxConcurrentStreams < 1)) {
+          throw new InvalidArgumentError('h2Options.maxConcurrentStreams must be a positive integer, greater than 0')
+        }
 
-    if (connectionWindowSize != null && (!Number.isInteger(connectionWindowSize) || connectionWindowSize < 1)) {
-      throw new InvalidArgumentError('connectionWindowSize must be a positive integer, greater than 0')
-    }
+        if (h2Options.connectionWindowSize != null && (!Number.isInteger(h2Options.connectionWindowSize) || h2Options.connectionWindowSize < 1)) {
+          throw new InvalidArgumentError('h2Options.connectionWindowSize must be a positive integer, greater than 0')
+        }
 
-    if (pingInterval != null && (typeof pingInterval !== 'number' || !Number.isInteger(pingInterval) || pingInterval < 0)) {
-      throw new InvalidArgumentError('pingInterval must be a positive integer, greater or equal to 0')
+        if (h2Options.pingInterval != null && (typeof h2Options.pingInterval !== 'number' || !Number.isInteger(h2Options.pingInterval) || h2Options.pingInterval < 0)) {
+          throw new InvalidArgumentError('h2Options.pingInterval must be a positive integer, greater or equal to 0')
+        }
+      } else {
+        if (useH2c != null && typeof useH2c !== 'boolean') {
+          emitH2OptionsNamespaceWarning('useH2c')
+          throw new InvalidArgumentError('useH2c must be a valid boolean value')
+        }
+
+        if (maxConcurrentStreams != null && (typeof maxConcurrentStreams !== 'number' || maxConcurrentStreams < 1)) {
+          emitH2OptionsNamespaceWarning('maxConcurrentStreams')
+          throw new InvalidArgumentError('maxConcurrentStreams must be a positive integer, greater than 0')
+        }
+
+        if (initialWindowSize != null && (!Number.isInteger(initialWindowSize) || initialWindowSize < 1)) {
+          emitH2OptionsNamespaceWarning('initialWindowSize')
+          throw new InvalidArgumentError('initialWindowSize must be a positive integer, greater than 0')
+        }
+
+        if (connectionWindowSize != null && (!Number.isInteger(connectionWindowSize) || connectionWindowSize < 1)) {
+          emitH2OptionsNamespaceWarning('connectionWindowSize')
+          throw new InvalidArgumentError('connectionWindowSize must be a positive integer, greater than 0')
+        }
+
+        if (pingInterval != null && (typeof pingInterval !== 'number' || !Number.isInteger(pingInterval) || pingInterval < 0)) {
+          emitH2OptionsNamespaceWarning('pingInterval')
+          throw new InvalidArgumentError('pingInterval must be a positive integer, greater or equal to 0')
+        }
+      }
     }
 
     super({ webSocket })
@@ -20965,8 +21179,8 @@ class Client extends DispatcherBase {
         ...tls,
         maxCachedSessions,
         allowH2,
-        useH2c,
         socketPath,
+        useH2c: h2Options?.useH2c ?? useH2c,
         timeout: connectTimeout,
         ...(typeof autoSelectFamily === 'boolean' ? { autoSelectFamily, autoSelectFamilyAttemptTimeout } : undefined),
         ...connect
@@ -21002,16 +21216,20 @@ class Client extends DispatcherBase {
     this[kMaxResponseSize] = maxResponseSize > -1 ? maxResponseSize : -1
     this[kHTTPContext] = null
     // h2
-    this[kMaxConcurrentStreams] = maxConcurrentStreams != null ? maxConcurrentStreams : 100 // Max peerConcurrentStreams for a Node h2 server
-    // HTTP/2 window sizes are set to higher defaults than Node.js core for better performance:
-    // - initialWindowSize: 262144 (256KB) vs Node.js default 65535 (64KB - 1)
-    //   Allows more data to be sent before requiring acknowledgment, improving throughput
-    //   especially on high-latency networks. This matches common production HTTP/2 servers.
-    // - connectionWindowSize: 524288 (512KB) vs Node.js default (none set)
-    //   Provides better flow control for the entire connection across multiple streams.
-    this[kHTTP2InitialWindowSize] = initialWindowSize != null ? initialWindowSize : 262144
-    this[kHTTP2ConnectionWindowSize] = connectionWindowSize != null ? connectionWindowSize : 524288
-    this[kPingInterval] = pingInterval != null ? pingInterval : 60e3 // Default ping interval for h2 - 1 minute
+    this[kHTTP2Options] = {
+      pingInterval: h2Options?.pingInterval ?? pingInterval ?? 60e3,
+      connectionWindowSize: h2Options?.connectionWindowSize ?? connectionWindowSize ?? 524288,
+      maxConcurrentStreams: h2Options?.maxConcurrentStreams ?? maxConcurrentStreams ?? 100, // Max peerConcurrentStreams for a Node h2 server
+      sessionOptions: {
+        // HTTP/2 window sizes are set to higher defaults than Node.js core for better performance:
+        // - initialWindowSize: 262144 (256KB) vs Node.js default 65535 (64KB - 1)
+        //   Allows more data to be sent before requiring acknowledgment, improving throughput
+        //   especially on high-latency networks. This matches common production HTTP/2 servers.
+        // - connectionWindowSize: 524288 (512KB) vs Node.js default (none set)
+        //   Provides better flow control for the entire connection across multiple streams.
+        initialWindowSize: h2Options?.initialWindowSize ?? initialWindowSize ?? 262144
+      }
+    }
 
     // kQueue is built up of 3 sections separated by
     // the kRunningIdx and kPendingIdx indices.
@@ -21394,6 +21612,7 @@ function _resume (client, sync) {
     }
 
     if (!client[kHTTPContext]) {
+      client[kServerName] = request.servername
       connect(client)
       return
     }
@@ -21846,9 +22065,10 @@ class EnvHttpProxyAgent extends DispatcherBase {
   #getProxyAgentForUrl (url) {
     let { protocol, host: hostname, port } = url
 
-    // Stripping ports in this way instead of using parsedUrl.hostname to make
-    // sure that the brackets around IPv6 addresses are kept.
-    hostname = hostname.replace(/:\d*$/, '').toLowerCase()
+    // Remove the port suffix (e.g. ":8080") and then strip surrounding
+    // brackets from IPv6 literals (e.g. "[::1]" -> "::1") so that the
+    // result matches the unbracketed form stored by #parseNoProxy.
+    hostname = hostname.replace(/:\d*$/, '').replace(/^\[(.+)\]$/, '$1').toLowerCase()
     port = Number.parseInt(port, 10) || DEFAULT_PORTS[protocol] || 0
     if (!this.#shouldProxy(hostname, port)) {
       return this[kNoProxyAgent]
@@ -21900,11 +22120,32 @@ class EnvHttpProxyAgent extends DispatcherBase {
       if (!entry) {
         continue
       }
-      const parsed = entry.match(/^(.+):(\d+)$/)
+
+      // An IPv6 entry with a port must be bracketed: [::1]:443.
+      // A bare IPv6 address like ::1 contains colons that must not be
+      // confused with a host:port separator, so we handle it separately.
+      let hostname, port
+      const ipv6WithPort = entry.match(/^\[(.+)\]:(\d+)$/)
+      if (ipv6WithPort) {
+        hostname = ipv6WithPort[1]
+        port = Number.parseInt(ipv6WithPort[2], 10)
+      } else {
+        // Bracketed IPv6 without port, or plain hostname[:port], or bare IPv6.
+        // Strip optional brackets first.
+        const unbracketed = entry.replace(/^\[(.+)\]$/, '$1')
+        // A bare IPv6 address contains multiple colons; a hostname:port entry
+        // has exactly one colon followed by digits. Only attempt host:port
+        // splitting when that is unambiguously the case.
+        const colonCount = (unbracketed.match(/:/g) || []).length
+        const parsed = colonCount === 1 && unbracketed.match(/^(.+):(\d+)$/)
+        hostname = parsed ? parsed[1] : unbracketed
+        port = parsed ? Number.parseInt(parsed[2], 10) : 0
+      }
+
       noProxyEntries.push({
         // strip leading dot or asterisk with dot
-        hostname: (parsed ? parsed[1] : entry).replace(/^\*?\./, '').toLowerCase(),
-        port: parsed ? Number.parseInt(parsed[2], 10) : 0
+        hostname: hostname.replace(/^\*?\./, '').toLowerCase(),
+        port
       })
     }
 
@@ -23122,7 +23363,7 @@ let tls // include tls conditionally since it is not always available
 const DispatcherBase = __nccwpck_require__(1841)
 const { InvalidArgumentError } = __nccwpck_require__(8707)
 const { Socks5Client, STATES } = __nccwpck_require__(8082)
-const { kDispatch, kClose, kDestroy } = __nccwpck_require__(6443)
+const { kBusy, kConnected, kDispatch, kClose, kDestroy } = __nccwpck_require__(6443)
 const Pool = __nccwpck_require__(628)
 const buildConnector = __nccwpck_require__(9136)
 const { debuglog } = __nccwpck_require__(7975)
@@ -23342,6 +23583,20 @@ class Socks5ProxyAgent extends DispatcherBase {
           }
         })
         this[kPools].set(originKey, pool)
+
+        const closePoolIfUnused = () => {
+          if (this[kPools].get(originKey) !== pool || pool[kConnected] > 0 || pool[kBusy]) {
+            return
+          }
+
+          this[kPools].delete(originKey)
+          if (!pool.destroyed) {
+            pool.close()
+          }
+        }
+
+        pool.on('disconnect', closePoolIfUnused)
+        pool.on('connectionError', closePoolIfUnused)
       }
 
       // Dispatch the request through the per-origin pool
@@ -25469,6 +25724,11 @@ class RetryHandler {
   }
 
   onResponseStart (controller, statusCode, headers, statusMessage) {
+    if (statusCode < 200) {
+      this.handler.onResponseStart?.(this.controllerProxy, statusCode, headers, statusMessage)
+      return
+    }
+
     this.error = null
     this.retryCount += 1
     this.statusCode = statusCode
@@ -25533,7 +25793,7 @@ class RetryHandler {
         // First time we receive 206
         const range = parseRangeHeader(headers['content-range'])
 
-        if (range == null) {
+        if (range == null || range.end == null) {
           this.headersSent = true
           this.handler.onResponseStart?.(
             this.controllerProxy,
@@ -25558,7 +25818,7 @@ class RetryHandler {
       }
 
       // We make our best to checkpoint the body for further range headers
-      if (this.end == null) {
+      if (this.end == null && this.opts.method !== 'HEAD') {
         const contentLength = headers['content-length']
         this.end = contentLength != null ? Number(contentLength) - 1 : null
       }
@@ -26246,13 +26506,16 @@ module.exports = (opts = {}) => {
 
   return dispatch => {
     return (opts, handler) => {
-      if (!opts.origin || arrayIncludes(safeMethodsToNotCache, opts.method)) {
-        // Not a method we want to cache or we don't have the origin, skip
+      if (arrayIncludes(safeMethodsToNotCache, opts.method)) {
+        // Not a method we want to cache, skip
         return dispatch(opts, handler)
       }
 
       // Check if origin is in whitelist
       if (origins !== undefined) {
+        if (!opts.origin) {
+          return dispatch(opts, handler)
+        }
         const requestOrigin = opts.origin.toString().toLowerCase()
         let isAllowed = false
 
@@ -26686,7 +26949,7 @@ module.exports = (opts = {}) => {
 
   return dispatch => {
     return (opts, handler) => {
-      if (!opts.origin || methods.includes(opts.method) === false) {
+      if (opts.upgrade || methods.includes(opts.method) === false) {
         return dispatch(opts, handler)
       }
 
@@ -29181,6 +29444,7 @@ const {
   }
 } = __nccwpck_require__(7975)
 const { InvalidArgumentError } = __nccwpck_require__(8707)
+const requestAborted = Symbol('request aborted')
 
 function matchValue (match, value) {
   if (typeof match === 'string') {
@@ -29317,6 +29581,11 @@ function getResponseData (data) {
     return data
   } else if (data instanceof ArrayBuffer) {
     return data
+  } else if (ArrayBuffer.isView(data)) {
+    // A DataView, or any non-Uint8Array typed array, is a byte container
+    // rather than a plain object. Buffer.from() cannot read one directly, so
+    // expose the bytes it covers instead of letting it reach JSON.stringify.
+    return new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
   } else if (typeof data === 'object') {
     return JSON.stringify(data)
   } else if (data) {
@@ -29389,9 +29658,15 @@ function deleteMockDispatch (mockDispatches, key) {
 }
 
 /**
- * @param {string} path Path to remove trailing slash from
+ * @param {string|RegExp|Function} path Path, or path matcher, to remove trailing slash from
  */
 function removeTrailingSlash (path) {
+  // Registered path matchers may be a RegExp or a function, which have no
+  // trailing slash to strip; hand those back for matchValue to apply.
+  if (typeof path !== 'string') {
+    return path
+  }
+
   while (path.endsWith('/')) {
     path = path.slice(0, -1)
   }
@@ -29466,9 +29741,13 @@ function mockDispatch (opts, handler) {
   mockDispatch.consumed = !mockDispatch.persist && timesInvoked >= times
   mockDispatch.pending = timesInvoked < times
 
+  const hasBodyHooks = typeof handler.onBodySent === 'function' ||
+    typeof handler.onRequestSent === 'function'
+
   // Here's where we resolve a callback if a callback is present for the dispatch data.
-  if (mockDispatch.data.callback) {
-    const callbackResult = mockDispatch.data.callback(opts)
+  if (mockDispatch.data.callback && (!hasBodyHooks || opts.body == null)) {
+    const { callback, ...responseDefaults } = mockDispatch.data
+    const callbackResult = callback(opts)
 
     // An asynchronous reply options callback resolves to the reply data, so
     // the dispatch can only continue once the returned promise settles.
@@ -29477,18 +29756,25 @@ function mockDispatch (opts, handler) {
     if (isPromise(callbackResult)) {
       callbackResult.then(
         (resolvedData) => {
-          mockDispatch.data = { ...mockDispatch.data, ...resolvedData }
+          if (resolvedData == null || typeof resolvedData !== 'object') {
+            handler.onResponseError(null, new InvalidArgumentError('reply options callback must return an object'))
+            return
+          }
+          mockDispatch.data = { ...responseDefaults, ...resolvedData }
           dispatchMockReply(mockDispatches, mockDispatch, key, opts, handler)
         },
         (error) => {
-          deleteMockDispatch(mockDispatches, key)
           handler.onResponseError(null, error)
         }
       )
       return true
     }
 
-    mockDispatch.data = { ...mockDispatch.data, ...callbackResult }
+    if (callbackResult == null || typeof callbackResult !== 'object') {
+      throw new InvalidArgumentError('reply options callback must return an object')
+    }
+
+    mockDispatch.data = { ...responseDefaults, ...callbackResult }
   }
 
   return dispatchMockReply(mockDispatches, mockDispatch, key, opts, handler)
@@ -29499,12 +29785,12 @@ function mockDispatch (opts, handler) {
  */
 function dispatchMockReply (mockDispatches, mockDispatch, key, opts, handler) {
   // Parse mockDispatch data
-  const { data: { statusCode, data, headers, trailers, error }, delay } = mockDispatch
+  const { data: response, delay } = mockDispatch
 
   // If specified, trigger dispatch error
-  if (error !== null) {
+  if (response.error !== null) {
     deleteMockDispatch(mockDispatches, key)
-    handler.onResponseError(null, error)
+    handler.onResponseError(null, response.error)
     return true
   }
 
@@ -29539,32 +29825,107 @@ function dispatchMockReply (mockDispatches, mockDispatch, key, opts, handler) {
     }
   }
 
+  let replyOpts = opts
+  const dispatches = mockDispatches
+
   // Call onRequestStart to allow the handler to receive the controller
   handler.onRequestStart?.(controller, null)
 
-  // Handle the request with a delay if necessary
-  if (typeof delay === 'number' && delay > 0) {
-    timer = setTimeout(() => {
-      timer = null
-      handleReply(mockDispatches)
-    }, delay)
-  } else {
-    handleReply(mockDispatches)
+  if (aborted) {
+    return true
   }
 
-  function handleReply (mockDispatches, _data = data) {
+  const requestBody = dispatchRequestBody(opts.body, handler, controller, () => aborted)
+
+  if (isPromise(requestBody)) {
+    requestBody.then((body) => {
+      if (body === requestAborted) {
+        return
+      }
+
+      if (body !== opts.body) {
+        replyOpts = { ...opts, body }
+      }
+
+      sendReply()
+    }, (error) => controller.abort(error))
+    return true
+  }
+
+  if (requestBody === requestAborted) {
+    return true
+  }
+
+  if (requestBody !== opts.body) {
+    replyOpts = { ...opts, body: requestBody }
+  }
+
+  sendReply()
+
+  function sendReply () {
+    if (response.callback) {
+      const { callback, ...responseDefaults } = response
+      let callbackResult
+      try {
+        callbackResult = callback(replyOpts)
+      } catch (err) {
+        deleteMockDispatch(mockDispatches, key)
+        handler.onResponseError(null, err)
+        return
+      }
+
+      if (isPromise(callbackResult)) {
+        callbackResult.then(
+          (resolvedData) => {
+            if (resolvedData == null || typeof resolvedData !== 'object') {
+              handler.onResponseError(null, new InvalidArgumentError('reply options callback must return an object'))
+              return
+            }
+            mockDispatch.data = { ...responseDefaults, ...resolvedData }
+            handleReply(dispatches, mockDispatch.data)
+          },
+          (err) => {
+            handler.onResponseError(null, err)
+          }
+        )
+        return
+      }
+
+      if (callbackResult == null || typeof callbackResult !== 'object') {
+        throw new InvalidArgumentError('reply options callback must return an object')
+      }
+
+      mockDispatch.data = { ...responseDefaults, ...callbackResult }
+      handleReply(dispatches, mockDispatch.data)
+      return
+    }
+
+    // Handle the request with a delay if necessary
+    if (typeof delay === 'number' && delay > 0) {
+      timer = setTimeout(() => {
+        timer = null
+        handleReply(dispatches)
+      }, delay)
+    } else {
+      handleReply(dispatches)
+    }
+  }
+
+  function handleReply (mockDispatches, _response = response) {
     // Don't send response if the request was aborted
     if (aborted) {
       return
     }
 
+    const { statusCode, data, headers, trailers } = _response
+
     // fetch's HeadersList is a 1D string array
     const optsHeaders = Array.isArray(opts.headers)
       ? buildHeadersFromArray(opts.headers)
       : opts.headers
-    const body = typeof _data === 'function'
-      ? _data({ ...opts, headers: optsHeaders })
-      : _data
+    const body = typeof data === 'function'
+      ? data({ ...replyOpts, headers: optsHeaders })
+      : data
 
     // util.types.isPromise is likely needed for jest.
     if (isPromise(body)) {
@@ -29573,7 +29934,7 @@ function dispatchMockReply (mockDispatches, mockDispatch, key, opts, handler) {
       // synchronously throw the error, which breaks some tests.
       // Rather, we wait for the callback to resolve if it is a
       // promise, and then re-run handleReply with the new body.
-      return body.then((newData) => handleReply(mockDispatches, newData))
+      return body.then((newData) => handleReply(mockDispatches, { ..._response, data: newData }))
     }
 
     // Check again if aborted after async body resolution
@@ -29582,8 +29943,8 @@ function dispatchMockReply (mockDispatches, mockDispatch, key, opts, handler) {
     }
 
     const responseData = getResponseData(body)
-    const responseHeaders = generateKeyValues(headers)
-    const responseTrailers = generateKeyValues(trailers)
+    const responseHeaders = generateKeyValues(headers ?? {})
+    const responseTrailers = generateKeyValues(trailers ?? {})
 
     // Update the controller with response data
     controller.rawHeaders = responseHeaders
@@ -29596,6 +29957,97 @@ function dispatchMockReply (mockDispatches, mockDispatch, key, opts, handler) {
   }
 
   return true
+}
+
+function dispatchRequestBody (body, handler, controller, isAborted) {
+  if (typeof handler.onBodySent !== 'function' && typeof handler.onRequestSent !== 'function') {
+    return body
+  }
+
+  if (body == null) {
+    return callOnRequestSent(handler, controller, isAborted) ? body : requestAborted
+  }
+
+  if (body && typeof body[Symbol.asyncIterator] === 'function') {
+    return dispatchAsyncIterableBody(body, handler, controller, isAborted)
+  }
+
+  if (isIterableBody(body)) {
+    const chunks = []
+
+    for (const chunk of body) {
+      if (isAborted()) {
+        return requestAborted
+      }
+      chunks.push(chunk)
+      if (!callOnBodySent(handler, controller, chunk) || isAborted()) {
+        return requestAborted
+      }
+    }
+
+    return callOnRequestSent(handler, controller, isAborted) ? chunks : requestAborted
+  }
+
+  if (isAborted()) {
+    return requestAborted
+  }
+
+  if (!callOnBodySent(handler, controller, body)) {
+    return requestAborted
+  }
+
+  return callOnRequestSent(handler, controller, isAborted) ? body : requestAborted
+}
+
+async function dispatchAsyncIterableBody (body, handler, controller, isAborted) {
+  const chunks = []
+
+  for await (const chunk of body) {
+    if (isAborted()) {
+      return requestAborted
+    }
+    chunks.push(chunk)
+    if (!callOnBodySent(handler, controller, chunk) || isAborted()) {
+      return requestAborted
+    }
+  }
+
+  if (!callOnRequestSent(handler, controller, isAborted)) {
+    return requestAborted
+  }
+
+  return {
+    async * [Symbol.asyncIterator] () {
+      yield * chunks
+    }
+  }
+}
+
+function callOnBodySent (handler, controller, chunk) {
+  try {
+    handler.onBodySent?.(chunk)
+    return true
+  } catch (error) {
+    controller.abort(error)
+    return false
+  }
+}
+
+function callOnRequestSent (handler, controller, isAborted) {
+  try {
+    handler.onRequestSent?.()
+    return !isAborted()
+  } catch (error) {
+    controller.abort(error)
+    return false
+  }
+}
+
+function isIterableBody (body) {
+  return typeof body !== 'string' &&
+    !Buffer.isBuffer(body) &&
+    !ArrayBuffer.isView(body) &&
+    typeof body[Symbol.iterator] === 'function'
 }
 
 function buildMockDispatch () {
@@ -31072,9 +31524,7 @@ function getMalformedRestrictiveDirectiveName (key) {
  * @param {import('../../types/dispatcher.d.ts').default.DispatchOptions} opts
  */
 function makeCacheKey (opts) {
-  if (!opts.origin) {
-    throw new Error('opts.origin is undefined')
-  }
+  const origin = opts.origin ? opts.origin.toString() : ''
 
   let fullPath = opts.path || '/'
 
@@ -31083,7 +31533,7 @@ function makeCacheKey (opts) {
   }
 
   return {
-    origin: opts.origin.toString(),
+    origin,
     method: opts.method,
     path: fullPath,
     headers: opts.headers
@@ -48891,6 +49341,9 @@ const { SendQueue } = __nccwpck_require__(3900)
 const { WebsocketFrameSend } = __nccwpck_require__(3264)
 const { channels } = __nccwpck_require__(2414)
 
+const kRef = Symbol.for('nodejs.ref')
+const kUnref = Symbol.for('nodejs.unref')
+
 function getSocketAddress (socket) {
   if (typeof socket?.address === 'function') {
     return socket.address()
@@ -48934,6 +49387,7 @@ class WebSocket extends EventTarget {
   #bufferedAmount = 0
   #protocol = ''
   #extensions = ''
+  #refed = true
 
   /** @type {SendQueue} */
   #sendQueue
@@ -49058,6 +49512,20 @@ class WebSocket extends EventTarget {
     // Each WebSocket object has an associated binary type, which is a
     // BinaryType. Initially it must be "blob".
     this.#binaryType = 'blob'
+  }
+
+  [kRef] () {
+    webidl.brandCheck(this, WebSocket)
+
+    this.#refed = true
+    this.#handler.socket?.ref?.()
+  }
+
+  [kUnref] () {
+    webidl.brandCheck(this, WebSocket)
+
+    this.#refed = false
+    this.#handler.socket?.unref?.()
   }
 
   /**
@@ -49333,6 +49801,10 @@ class WebSocket extends EventTarget {
     // processResponse is called when the "response's header list has been received and initialized."
     // once this happens, the connection is open
     this.#handler.socket = response.socket
+
+    if (!this.#refed) {
+      this.#handler.socket.unref?.()
+    }
 
     // Get options from dispatcher options
     const maxFragments = this.#handler.controller.dispatcher?.webSocketOptions?.maxFragments
@@ -49923,16 +50395,17 @@ function format(obj) {
  * Parse a `Content-Type` header.
  */
 function parse(header, options) {
+    const stopChar = options?.comma === true ? COMMA : 65536; // Sentinel for "no stop char".
     const len = header.length;
-    let index = skipOWS(header, 0, len);
+    let index = skipOWS(header, options?.start ?? 0, len);
     const valueStart = index;
-    index = skipValue(header, index, len);
+    index = skipValue(header, index, len, stopChar);
     const valueEnd = trailingOWS(header, valueStart, index);
     const type = header.slice(valueStart, valueEnd).toLowerCase();
-    const parameters = options?.parameters === false
-        ? new NullObject()
-        : parseParameters(header, index, len);
-    return { type, parameters };
+    if (options?.parameters === false) {
+        return { type, index, parameters: new NullObject() };
+    }
+    return parseParameters(header, type, index, len, stopChar);
 }
 const SP = 32; // " "
 const HTAB = 9; // "\t"
@@ -49940,16 +50413,21 @@ const SEMI = 59; // ";"
 const EQ = 61; // "="
 const DQUOTE = 34; // '"'
 const BSLASH = 92; // "\\"
+const COMMA = 44; // ","
 /**
  * Parses the parameters of a `Content-Type` header starting at the given index.
  */
-function parseParameters(header, index, len) {
+function parseParameters(header, type, index, len, stopChar) {
     const parameters = new NullObject();
     parameter: while (index < len) {
+        if (header.charCodeAt(index) === stopChar)
+            break;
         index = skipOWS(header, index + 1 /* Skip over ; */, len);
         const keyStart = index;
         while (index < len) {
             const code = header.charCodeAt(index);
+            if (code === stopChar)
+                break parameter;
             if (code === SEMI)
                 continue parameter;
             if (code === EQ) {
@@ -49962,7 +50440,7 @@ function parseParameters(header, index, len) {
                     while (index < len) {
                         const code = header.charCodeAt(index++);
                         if (code === DQUOTE) {
-                            index = skipValue(header, index, len);
+                            index = skipValue(header, index, len, stopChar);
                             if (parameters[key] === undefined)
                                 parameters[key] = value;
                             break;
@@ -49976,7 +50454,7 @@ function parseParameters(header, index, len) {
                     continue parameter;
                 }
                 const valueStart = index;
-                index = skipValue(header, index, len);
+                index = skipValue(header, index, len, stopChar);
                 if (parameters[key] === undefined) {
                     const valueEnd = trailingOWS(header, valueStart, index);
                     parameters[key] = header.slice(valueStart, valueEnd);
@@ -49986,15 +50464,15 @@ function parseParameters(header, index, len) {
             index++;
         }
     }
-    return parameters;
+    return { type, index, parameters };
 }
 /**
- * Skip over characters until a semicolon.
+ * Skip over characters until a semicolon or other exit character.
  */
-function skipValue(str, index, len) {
+function skipValue(str, index, len, stopChar) {
     while (index < len) {
-        const char = str.charCodeAt(index);
-        if (char === SEMI)
+        const code = str.charCodeAt(index);
+        if (code === SEMI || code === stopChar)
             break;
         index++;
     }
@@ -50081,6 +50559,9 @@ function qstring(str) {
 /******/ __nccwpck_require__.m = __webpack_modules__;
 /******/ 
 /************************************************************************/
+/******/ /* webpack/runtime/asset-relocator-loader */
+/******/ if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = decodeURIComponent(new URL('.', import.meta.url).pathname).slice(import.meta.url.match(/^file:\/\/\/\w:/) ? 1 : 0, -1) + "/";
+/******/ 
 /******/ /* webpack/runtime/create fake namespace object */
 /******/ (() => {
 /******/ 	var getProto = Object.getPrototypeOf ? (obj) => (Object.getPrototypeOf(obj)) : (obj) => (obj.__proto__);
@@ -50169,10 +50650,6 @@ function qstring(str) {
 /******/ 		return module;
 /******/ 	};
 /******/ })();
-/******/ 
-/******/ /* webpack/runtime/compat */
-/******/ 
-/******/ if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = new URL('.', import.meta.url).pathname.slice(import.meta.url.match(/^file:\/\/\/\w:/) ? 1 : 0, -1) + "/";
 /******/ 
 /******/ /* webpack/runtime/import chunk loading */
 /******/ (() => {

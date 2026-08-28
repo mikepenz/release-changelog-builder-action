@@ -1,41 +1,99 @@
-<div align="center">
-  :octocat:📄🔖📦
-</div>
-<h1 align="center">
-  release-changelog-builder-action
-</h1>
+<h1 align="center">release-changelog-builder-action</h1>
 
 <p align="center">
-    ... a GitHub action that builds your release notes / changelog fast simple and exactly the way you want.
+    ... a GitHub action that builds your release notes / changelog fast, simple and exactly the way you want.
 </p>
 
-<div align="center">
-  <img src="https://raw.githubusercontent.com/mikepenz/release-changelog-builder-action/develop/.github/images/release_changelog_builder_collapsed.png"/>
-</div>
+<p align="center">
+	<a href="https://github.com/mikepenz/release-changelog-builder-action/actions/workflows/ci.yml"><img src="https://github.com/mikepenz/release-changelog-builder-action/actions/workflows/ci.yml/badge.svg?event=push" alt="CI"></a>
+	<a href="https://github.com/marketplace/actions/release-changelog-builder"><img src="https://img.shields.io/github/v/release/mikepenz/release-changelog-builder-action?label=marketplace&color=8250DF" alt="Marketplace"></a>
+	<a href="https://scorecard.dev/viewer/?uri=github.com/mikepenz/release-changelog-builder-action"><img src="https://api.scorecard.dev/projects/github.com/mikepenz/release-changelog-builder-action/badge" alt="OpenSSF Scorecard"></a>
+	<a href="#fork-license"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="License"></a>
+</p>
 
-<div align="center">
-  <a href="https://github.com/mikepenz/release-changelog-builder-action/actions/workflows/ci.yml">
-		<img src="https://github.com/mikepenz/release-changelog-builder-action/actions/workflows/ci.yml/badge.svg?event=push"/>
-	</a>
-	<a href="https://scorecard.dev/viewer/?uri=github.com/mikepenz/release-changelog-builder-action">
-		<img src="https://api.scorecard.dev/projects/github.com/mikepenz/release-changelog-builder-action/badge"/>
-	</a>
-</div>
-<br />
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/mikepenz/release-changelog-builder-action/develop/.github/images/hero-dark.svg">
+    <img src="https://raw.githubusercontent.com/mikepenz/release-changelog-builder-action/develop/.github/images/hero-light.svg" width="100%" alt="release-changelog-builder-action: a tag range and its merged pull requests are collected, categorised by label, and written into a templated CHANGELOG.md">
+  </picture>
+</p>
+
+<p align="center">
+    <a href="#quickstart-">Quickstart 🛠️</a> &bull;
+    <a href="#configuration">Configuration</a> &bull;
+    <a href="#template-placeholders">Placeholders</a> &bull;
+    <a href="#sample-result-release-notes--changelog">Sample 🖥️</a> &bull;
+    <a href="#reference">Reference 📖</a> &bull;
+    <a href="#fork-license">License 📓</a>
+</p>
+
+| | |
+|---|---|
+| 🏷️ **Categorised by label** | `categories` maps PR labels onto sections — one PR can land in several, or in none |
+| 🧩 **Templated end to end** | `template`, `pr_template` and `commit_template` with `#{{...}}` placeholders |
+| ⚡ **Fast on large repos** | Only the PRs between the two tags are fetched — hundreds of tags stay cheap |
+| 🔀 **PR mode or COMMIT mode** | `mode: "COMMIT"` builds the same changelog for repos that don't use pull requests |
+| 🧪 **Regex where labels end** | `label_extractor` pulls Conventional Commit types straight out of titles |
+| 🌐 **Not only GitHub** | `platform: "gitea"`, parallel releases, pre-release aware tag resolution |
+
+## Quickstart 🛠️
+
+**1.** Build the changelog for the tag that triggered the workflow:
+
+```yml
+- name: Build Changelog
+  id: build_changelog
+  uses: mikepenz/release-changelog-builder-action@v6
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+**2.** Use the result as the body of the release:
+
+```yml
+- name: Create Release
+  uses: mikepenz/action-gh-release@v3
+  with:
+    body: ${{ steps.build_changelog.outputs.changelog }}
+```
+
+**3.** Shape the output by declaring your own categories — see [Configuration](#configuration):
+
+```yml
+  with:
+    configurationJson: |
+      {
+        "template": "#{{CHANGELOG}}",
+        "categories": [
+          { "title": "## 🚀 Features", "labels": ["feature"] },
+          { "title": "## 🐛 Fixes", "labels": ["fix", "bug"] }
+        ]
+      }
+```
+
+> [!IMPORTANT]
+> When upgrading from v4 to v5, please ensure to read the upgrade warning in the [release notes](https://github.com/mikepenz/release-changelog-builder-action/releases), especially if [regexes](#regex-configuration) are used.
 
 -------
 
-<p align="center">
-    <a href="#whats-included-">What's included 🚀</a> &bull;
-    <a href="#setup">Setup 🛠️</a> &bull;
-    <a href="#full-sample-%EF%B8%8F">Sample 🖥️</a> &bull;
-    <a href="#customization-%EF%B8%8F">Customization 🖍️</a> &bull;
-    <a href="#contribute-">Contribute 🧬</a> &bull;
-    <a href="#local-testing-">Local Testing 🧪</a> &bull;
-    <a href="#license">License 📓</a>
-</p>
+# Reference
 
--------
+| Topic | |
+|---|---|
+| [What's included](#whats-included-) | The short feature list |
+| [Setup](#setup) | Minimal workflow snippet |
+| [Full Sample](#full-sample-️) | Complete tag-triggered release workflow, incl. commit mode |
+| [Action inputs](#action-inputs) | Every input, plus the monorepo configuration |
+| [Action outputs](#action-outputs) | `changelog`, `categorized`, `contributors`, `commits`, … |
+| [Configuration](#configuration) | `configurationJson` vs. `configuration`, and the full default |
+| [Template placeholders](#template-placeholders) | `#{{CHANGELOG}}`, `#{{UNCATEGORIZED}}`, `#{{DAYS_SINCE}}`, … |
+| [PR / Commit placeholders](#pr-template-placeholders) | Per-entry placeholders for `pr_template` and `commit_template` |
+| [Configuration Specification](#configuration-specification) | Every configuration key and its default |
+| [Regex Configuration](#regex-configuration) | `label_extractor`, `transformers`, `tag_resolver` |
+| [Custom placeholders](#custom-placeholders) | Derive your own placeholders with regex |
+| [Gitea support](#gitea-support-) | `platform: "gitea"` |
+| [Token Permission](#token-permission) | GitHub token, fine-grained and classic PATs |
+| [Contribute](#contribute-) / [Local Testing](#local-testing-) | Build, test and debug the action locally |
 
 ### What's included 🚀
 
@@ -765,7 +823,7 @@ This GitHub action is fully developed in Typescript and can be run locally via `
 
 Doing so is a great way to test the action and/or your custom configurations locally, without the need to push and re-run GitHub actions over and over again.
 
-To run locally, or to access private repositories (GitHub Codespaces has automatic access to public repos with the default token), you will require to provide a valid `GITHUB_TOKEN` with read-only permissions to access the repositories you want to run this action towards. (See more details in [Token Permission](#Token-Permission))
+To run locally, or to access private repositories (GitHub Codespaces has automatic access to public repos with the default token), you will require to provide a valid `GITHUB_TOKEN` with read-only permissions to access the repositories you want to run this action towards. (See more details in [Token Permission](#token-permission))
 
 To test your own configuration and use-case, the project contains a [\_\_tests\_\_/demo/demo.test.ts](https://github.com/mikepenz/release-changelog-builder-action/blob/develop/__tests__/demo/demo.test.ts) file, modify this one to your needs. (e.g., change repo, change token, change settings, ...), and then run it via:
 
@@ -879,7 +937,11 @@ All patches and changes applied to the original source are licensed under the Ap
 ## Sample result release notes / changelog
 
 <div align="center">
-  <a href="https://github.com/mikepenz/release-changelog-builder-action/runs/1270879787"><img src="https://raw.githubusercontent.com/mikepenz/release-changelog-builder-action/develop/.github/images/release_changelog_builder_expanded.png"/></a>
+  <img src="https://raw.githubusercontent.com/mikepenz/release-changelog-builder-action/develop/.github/images/release_changelog_builder_collapsed.png" alt="The action's build log, collapsed"/>
+</div>
+
+<div align="center">
+  <a href="https://github.com/mikepenz/release-changelog-builder-action/runs/1270879787"><img src="https://raw.githubusercontent.com/mikepenz/release-changelog-builder-action/develop/.github/images/release_changelog_builder_expanded.png" alt="The action's build log, expanded, showing the changelog it constructed"/></a>
 </div>
 
 <div align="center">
