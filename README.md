@@ -185,7 +185,8 @@ jobs:
                 },
                 {
                     "title": "## 📦 Dependencies",
-                    "labels": ["dependencies"]
+                    "labels": ["dependencies"],
+                    "collapsed": true
                 }
               ]
             }
@@ -635,6 +636,7 @@ Table of descriptions for the `configuration.json` options to configure the resu
 | categories                           | An array of `category` specifications, offering a flexible way to group changes into categories.                                                                                                                                                                                                                                      |
 | category.key                         | Optional key used for the `categorized` json output.                                                                                                                                                                                                                                                                                  |
 | category.title                       | The display name of a category in the changelog.                                                                                                                                                                                                                                                                                      |
+| category.collapsed                   | Wrap the category and its nested categories in a closed `<details>` block. Markdown heading markers in `title` are removed from the summary. Empty categories remain omitted unless `empty_content` is set. Default: `false`.                                                                                                    |
 | category.labels                      | An array of labels, to match pull request labels against. If any PR label matches any category label, the pull request will show up under this category. (See `exhaustive` to change this)                                                                                                                                            |
 | category.exclude_labels              | Similar to `labels`, an array of labels to match PRs against, but if a match occurs the PR is excluded from this category.                                                                                                                                                                                                            |
 | category.exhaustive                  | Will require all labels defined within this category to be present on the matching PR.                                                                                                                                                                                                                                                |

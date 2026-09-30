@@ -123,3 +123,34 @@ test('Match multiple labels exhaustive for category', async () => {
     `## Core\n\n- Core Ticket\n\n### 🚀 Features\n\n- Core Feature Ticket\n- Mobile & Core Feature Ticket\n\n### 🧪 Bug\n\n- Core Bug Ticket\n- Mobile & Core Bug Ticket\n\n#### 🧪 Bug Bug\n\n- Mobile & Core Bug Bug Ticket\n\n## Mobile\n\n\n### 🚀 Features\n\n- Mobile Feature Ticket\n\n### 🧪 Bug\n\n- Mobile Bug Ticket\n\n`
   )
 })
+
+test('Collapsed categories contain their entries and nested categories', () => {
+  const customConfig = {...DefaultConfiguration, pr_template: '- #{{TITLE}}'}
+  customConfig.categories = [
+    {
+      title: '## Dependencies',
+      labels: ['dependency'],
+      collapsed: true,
+      categories: [{title: '### Runtime', labels: ['runtime']}]
+    },
+    {title: '## Features', labels: ['feature']},
+    {title: '## Skipped', labels: ['missing'], collapsed: true},
+    {title: '## Empty', labels: ['missing'], collapsed: true, empty_content: '- No changes'}
+  ]
+
+  const changelog = buildChangelogTest(
+    customConfig,
+    [
+      buildPullRequeset(1, 'Runtime dependency', ['dependency', 'runtime']),
+      buildPullRequeset(2, 'Direct dependency', ['dependency']),
+      buildPullRequeset(3, 'New feature', ['feature'])
+    ],
+    repositoryUtils
+  )
+
+  expect(changelog).toStrictEqual(
+    '<details>\n<summary>Dependencies</summary>\n\n- Direct dependency\n\n### Runtime\n\n- Runtime dependency\n\n</details>\n\n' +
+      '## Features\n\n- New feature\n\n' +
+      '<details>\n<summary>Empty</summary>\n\n- No changes\n\n</details>\n\n'
+  )
+})
