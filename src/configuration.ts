@@ -18,6 +18,7 @@ export interface Configuration extends PullConfiguration {
 export interface Category {
   key?: string // a key for this category. This is currently only used for the json output
   title: string // the title of this category
+  collapsed?: boolean // wrap this category and its children in a closed details block
   labels?: string[] // labels to associate PRs to this category
   exclude_labels?: string[] // if an exclude label is detected, the PR will be excluded from this category
   rules?: Rule[] // rules to associate PRs to this category

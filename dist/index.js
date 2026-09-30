@@ -60293,7 +60293,7 @@ function buildChangelog(diffInfo, origPrs, options) {
     const transformedCategorized = buildCategorizedOutput(flatCategories);
     setOutput('categorized', JSON.stringify(transformedCategorized));
     // construct final changelog
-    const changelogStrings = buildChangelogStrings(flatCategories, prStrings);
+    const changelogStrings = buildChangelogStrings(categories, prStrings);
     core_info(`✒️ Wrote ${changelogStrings.categorized.length} categorized pull requests down`);
     core_info(`✒️ Wrote ${changelogStrings.uncategorized.length} non categorized pull requests down`);
     core_info(`✒️ Wrote ${changelogStrings.open.length} open pull requests down`);
@@ -60387,12 +60387,11 @@ function buildPrStringsAndFillCategoryEntries(prInfoMap, ignoredLabels, categori
         ignoredList: ignoredPrs
     };
 }
-function buildChangelogStrings(flatCategories, prStrings) {
+function buildChangelogStrings(categories, prStrings) {
     const { categorizedList, uncategorizedList, openList, ignoredList } = prStrings;
     let changelogCategorized = '';
-    for (const category of flatCategories) {
-        const pullRequests = category.entries || [];
-        changelogCategorized += buildCategorizedChangelogString(category, pullRequests);
+    for (const category of categories) {
+        changelogCategorized += buildCategoryChangelogString(category);
     }
     if (isDebug()) {
         for (const pr of categorizedList) {
@@ -60536,11 +60535,20 @@ function categorizePr(category, pr) {
     }
     return matched;
 }
-function buildCategorizedChangelogString(category, pullRequests) {
+function buildCategoryChangelogString(category) {
+    const content = buildCategorizedChangelogString(category, category.entries || [], category.collapsed ? '' : category.title) +
+        (category.categories || []).map(buildCategoryChangelogString).join('');
+    if (!category.collapsed || !content) {
+        return content;
+    }
+    const title = category.title.replace(/^#{1,6}\s+/, '');
+    return `<details>\n<summary>${title}</summary>\n\n${content}</details>\n\n`;
+}
+function buildCategorizedChangelogString(category, pullRequests, title) {
     let categorizedString = '';
     if (pullRequests.length > 0 || hasChildWithEntries(category)) {
-        if (category.title) {
-            categorizedString = `${categorizedString + category.title}\n\n`;
+        if (title) {
+            categorizedString = `${categorizedString + title}\n\n`;
         }
         for (const pr of pullRequests) {
             categorizedString = `${categorizedString + pr}\n`;
@@ -60548,8 +60556,8 @@ function buildCategorizedChangelogString(category, pullRequests) {
         categorizedString = `${categorizedString}\n`; // add space between sections
     }
     else if (category.empty_content !== undefined) {
-        if (category.title) {
-            categorizedString = `${categorizedString + category.title}\n\n`;
+        if (title) {
+            categorizedString = `${categorizedString + title}\n\n`;
         }
         categorizedString = `${categorizedString + category.empty_content}\n\n`;
     }
