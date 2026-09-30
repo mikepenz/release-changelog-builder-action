@@ -187,7 +187,7 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
   core.setOutput('categorized', JSON.stringify(transformedCategorized))
 
   // construct final changelog
-  const changelogStrings = buildChangelogStrings(flatCategories, prStrings)
+  const changelogStrings = buildChangelogStrings(categories, prStrings)
 
   core.info(`✒️ Wrote ${changelogStrings.categorized.length} categorized pull requests down`)
   core.info(`✒️ Wrote ${changelogStrings.uncategorized.length} non categorized pull requests down`)
@@ -350,13 +350,12 @@ function buildPrStringsAndFillCategoryEntries(
   }
 }
 
-function buildChangelogStrings(flatCategories: Category[], prStrings: PrStrings): ChangelogStrings {
+function buildChangelogStrings(categories: Category[], prStrings: PrStrings): ChangelogStrings {
   const {categorizedList, uncategorizedList, openList, ignoredList} = prStrings
 
   let changelogCategorized = ''
-  for (const category of flatCategories) {
-    const pullRequests = category.entries || []
-    changelogCategorized += buildCategorizedChangelogString(category, pullRequests)
+  for (const category of categories) {
+    changelogCategorized += buildCategoryChangelogString(category)
   }
   if (core.isDebug()) {
     for (const pr of categorizedList) {
@@ -544,12 +543,23 @@ function categorizePr(category: Category, pr: PullRequestInfo): boolean {
   return matched
 }
 
-function buildCategorizedChangelogString(category: Category, pullRequests: string[]): string {
+function buildCategoryChangelogString(category: Category): string {
+  const content =
+    buildCategorizedChangelogString(category, category.entries || [], category.collapsed ? '' : category.title) +
+    (category.categories || []).map(buildCategoryChangelogString).join('')
+  if (!category.collapsed || !content) {
+    return content
+  }
+  const title = category.title.replace(/^#{1,6}\s+/, '')
+  return `<details>\n<summary>${title}</summary>\n\n${content}</details>\n\n`
+}
+
+function buildCategorizedChangelogString(category: Category, pullRequests: string[], title: string): string {
   let categorizedString = ''
 
   if (pullRequests.length > 0 || hasChildWithEntries(category)) {
-    if (category.title) {
-      categorizedString = `${categorizedString + category.title}\n\n`
+    if (title) {
+      categorizedString = `${categorizedString + title}\n\n`
     }
 
     for (const pr of pullRequests) {
@@ -557,8 +567,8 @@ function buildCategorizedChangelogString(category: Category, pullRequests: strin
     }
     categorizedString = `${categorizedString}\n` // add space between sections
   } else if (category.empty_content !== undefined) {
-    if (category.title) {
-      categorizedString = `${categorizedString + category.title}\n\n`
+    if (title) {
+      categorizedString = `${categorizedString + title}\n\n`
     }
     categorizedString = `${categorizedString + category.empty_content}\n\n`
   }
