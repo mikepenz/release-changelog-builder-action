@@ -66,11 +66,5 @@
     "prettier": "3.9.6",
     "typescript": "6.0.3",
     "vitest": "4.1.11"
-  },
-  "overrides": {
-    "brace-expansion": "5.0.12",
-    "js-yaml": "$js-yaml",
-    "nanoid": "6.0.1",
-    "undici": "8.11.2"
   }
 }
