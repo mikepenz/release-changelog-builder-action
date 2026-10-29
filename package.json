@@ -71,6 +71,6 @@
     "brace-expansion": "5.0.12",
     "js-yaml": "$js-yaml",
     "nanoid": "6.0.2",
-    "undici": "8.11.2"
+    "undici": "8.12.2"
   }
 }
