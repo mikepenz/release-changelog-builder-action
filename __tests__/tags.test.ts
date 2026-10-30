@@ -217,4 +217,25 @@ describe('retrieveRange with a tag transformer', () => {
     })
     expect(range.from?.name).toStrictEqual('api-v1.0.0')
   })
+
+test('Should use the only existing tag as predecessor when building a newer release', async () => {
+  const tagsHelper = new Tags({} as BaseRepository)
+  const tags: TagInfo[] = [{name: '0.191.0', commit: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'}]
+
+  // `toTag` is the commit sha of the upcoming release which has not been tagged yet
+  const predecessor = await tagsHelper.findPredecessorTag(tags, '.', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', false)
+
+  expect(predecessor).toStrictEqual(tags[0])
+})
+
+test('Should fall back to the initial commit when the only existing tag is the current release', async () => {
+  const tagsHelper = new Tags({} as BaseRepository)
+  const tags: TagInfo[] = [{name: '0.191.0', commit: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'}]
+
+  const byName = await tagsHelper.findPredecessorTag(tags, '.', '0.191.0', false)
+  expect(byName?.name).not.toStrictEqual('0.191.0')
+  expect(byName?.name).toStrictEqual(byName?.commit)
+
+  const byCommit = await tagsHelper.findPredecessorTag(tags, '.', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', false)
+  expect(byCommit).toStrictEqual(byName)
 })

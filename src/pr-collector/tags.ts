@@ -24,6 +24,11 @@ export interface SortableTagInfo extends TagInfo {
   tmp: string
 }
 
+function isSameTag(tagInfo: TagInfo, tag: string): boolean {
+  const lowerTag = tag.toLocaleLowerCase('en')
+  return tagInfo.name.toLocaleLowerCase('en') === lowerTag || (!!tagInfo.commit && tagInfo.commit.toLocaleLowerCase('en') === lowerTag)
+}
+
 export class Tags {
   constructor(private repositoryUtils: BaseRepository) {}
 
@@ -58,6 +63,11 @@ export class Tags {
             return tags[i + 1]
           }
         }
+      } else if (tags.length === 1 && !isSameTag(tags[0], tag)) {
+        // the only existing tag is not the release we are building (e.g. `toTag` is a commit sha of the upcoming release)
+        // the single tag is therefore the predecessor
+        core.info(`ℹ️ Only one tag found for the given repository, which differs from the current tag (${tag}).`)
+        return tags[0]
       } else {
         core.info(`ℹ️ Only one tag found for the given repository. Usually this is the case for the initial release.`)
         // if not specified try to retrieve tag from git

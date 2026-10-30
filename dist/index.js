@@ -65507,6 +65507,10 @@ class GitOutput {
 
 
 
+function isSameTag(tagInfo, tag) {
+    const lowerTag = tag.toLocaleLowerCase('en');
+    return tagInfo.name.toLocaleLowerCase('en') === lowerTag || (!!tagInfo.commit && tagInfo.commit.toLocaleLowerCase('en') === lowerTag);
+}
 class Tags {
     repositoryUtils;
     constructor(repositoryUtils) {
@@ -65536,6 +65540,12 @@ class Tags {
                         return tags[i + 1];
                     }
                 }
+            }
+            else if (tags.length === 1 && !isSameTag(tags[0], tag)) {
+                // the only existing tag is not the release we are building (e.g. `toTag` is a commit sha of the upcoming release)
+                // the single tag is therefore the predecessor
+                core_info(`ℹ️ Only one tag found for the given repository, which differs from the current tag (${tag}).`);
+                return tags[0];
             }
             else {
                 core_info(`ℹ️ Only one tag found for the given repository. Usually this is the case for the initial release.`);
