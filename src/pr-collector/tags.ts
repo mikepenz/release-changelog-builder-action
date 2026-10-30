@@ -125,9 +125,10 @@ export class Tags {
 
       if (transformed) {
         // restore the original name, after sorting
-        tags = filteredTags.map(function (tag) {
+        // map the sorted tags (not `filteredTags`) to keep the sort order and the computed `preRelease` flag
+        tags = tags.map(function (tag) {
           if (tag.hasOwnProperty('tmp')) {
-            return {name: (tag as SortableTagInfo).tmp, commit: tag.commit}
+            return {name: (tag as SortableTagInfo).tmp, commit: tag.commit, preRelease: tag.preRelease}
           } else {
             return tag
           }
@@ -217,7 +218,7 @@ export function transformTags(tags: TagInfo[], transformer: RegexTransformer): T
       const transformedName = transformStringToValue(tag.name, transformer)
       core.debug(`ℹ️ Transformed ${tag.name} to ${transformedName}`)
       return {
-        tmp: tag.name, // remember the original name
+        tmp: (tag as SortableTagInfo).tmp ?? tag.name, // remember the original name, also across chained transformers
         name: transformedName,
         commit: tag.commit
       }

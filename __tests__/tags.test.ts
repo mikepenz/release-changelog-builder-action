@@ -1,8 +1,9 @@
 import {TagResolver} from '../src/configuration.js'
 import {validateRegex} from '../src/pr-collector/regexUtils.js'
-import {filterTags, prepareAndSortTags, TagInfo, transformTags} from '../src/pr-collector/tags.js'
+import {filterTags, prepareAndSortTags, TagInfo, Tags, transformTags} from '../src/pr-collector/tags.js'
+import {BaseRepository} from '../src/repositories/BaseRepository.js'
 import {clear} from '../src/transform.js'
-import {expect, test} from 'vitest'
+import {describe, expect, test} from 'vitest'
 
 clear()
 
@@ -184,4 +185,36 @@ test('Should transform tags correctly using the regex', async () => {
 
     expect(transformed).toStrictEqual(`0.0.1,0.0.1-rc01,config-0.1.0,0.1.0-b01,2.0.0,10.1.0,10.1.0-2,20.0.2`)
   }
+})
+
+describe('retrieveRange with a tag transformer', () => {
+  const repo = (tags: TagInfo[]) => ({getTags: async () => tags}) as unknown as BaseRepository
+  const strip = (pattern: string) => ({pattern, target: '$1'})
+
+  test('keeps the sort order and restores the original names', async () => {
+    const tags = [{name: 'api-1.5.0'}, {name: 'api-1.0.0'}, {name: 'api-2.0.0'}]
+    const range = await new Tags(repo(tags)).retrieveRange('.', 'o', 'r', null, 'api-2.0.0', false, 1000, {
+      method: 'semver',
+      transformer: strip('api-(.+)')
+    })
+    expect(range.from?.name).toStrictEqual('api-1.5.0')
+  })
+
+  test('applies ignorePreReleases based on the transformed names', async () => {
+    const tags = [{name: 'api-2.0.0'}, {name: 'api-1.1.0-rc1'}, {name: 'api-1.0.0'}]
+    const range = await new Tags(repo(tags)).retrieveRange('.', 'o', 'r', null, 'api-2.0.0', true, 1000, {
+      method: 'semver',
+      transformer: strip('api-(.+)')
+    })
+    expect(range.from?.name).toStrictEqual('api-1.0.0')
+  })
+
+  test('restores the original names across chained transformers', async () => {
+    const tags = [{name: 'api-v1.0.0'}, {name: 'api-v2.0.0'}]
+    const range = await new Tags(repo(tags)).retrieveRange('.', 'o', 'r', null, 'api-v2.0.0', false, 1000, {
+      method: 'semver',
+      transformer: [strip('api-(.+)'), strip('v(.+)')]
+    })
+    expect(range.from?.name).toStrictEqual('api-v1.0.0')
+  })
 })
