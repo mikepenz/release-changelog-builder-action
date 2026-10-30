@@ -3,9 +3,12 @@ import {validateRegex} from '../src/pr-collector/regexUtils.js'
 import {filterTags, prepareAndSortTags, TagInfo, Tags, transformTags} from '../src/pr-collector/tags.js'
 import {BaseRepository} from '../src/repositories/BaseRepository.js'
 import {clear} from '../src/transform.js'
+import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {createCommandManager} from '../src/pr-collector/gitHelper.js'
 import {describe, expect, test, vi} from 'vitest'
+
+vi.mock('@actions/core', async importOriginal => ({...(await importOriginal<typeof import('@actions/core')>()), warning: vi.fn()}))
 
 vi.mock('../src/pr-collector/gitHelper.js', () => ({
   createCommandManager: vi.fn(async () => ({initialCommit: async () => 'c'.repeat(40), latestTag: async () => '0.191.0'}))
@@ -260,13 +263,19 @@ describe('findPredecessorTag', () => {
     expect(await tagsHelper.findPredecessorTag(tags, '.', SHA_B, true)).toStrictEqual(multi[0])
   })
 
-  test('multiple tags: oldest tag falls back to the initial commit', async () => {
-    expect(await tagsHelper.findPredecessorTag(multi, '.', '1.0.0', false)).toStrictEqual(initial)
+  test('multiple tags: oldest tag fails with a warning instead of assuming the initial commit', async () => {
+    expect(await tagsHelper.findPredecessorTag(multi, '.', '1.0.0', false)).toBeNull()
+    expect(core.warning).toHaveBeenCalledWith(expect.stringContaining("No tag found before '1.0.0'"))
   })
 
-  test('multiple tags: only pre-releases older with ignorePreReleases falls back to the initial commit', async () => {
+  test('multiple tags: matched tag with only older pre-releases keeps using the next tag', async () => {
     const tags: TagInfo[] = [multi[0], multi[1]]
-    expect(await tagsHelper.findPredecessorTag(tags, '.', '2.0.0', true)).toStrictEqual(initial)
+    expect(await tagsHelper.findPredecessorTag(tags, '.', '2.0.0', true)).toStrictEqual(multi[1])
+  })
+
+  test('multiple tags: unmatched tag with only pre-releases falls back to the initial commit', async () => {
+    const tags: TagInfo[] = [{name: '3.0.0-rc1', preRelease: true}, multi[1]]
+    expect(await tagsHelper.findPredecessorTag(tags, '.', SHA_A, true)).toStrictEqual(initial)
   })
 
   test('returns null when resolving the initial commit fails', async () => {

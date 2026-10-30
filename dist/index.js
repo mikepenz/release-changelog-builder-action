@@ -65533,9 +65533,16 @@ class Tags {
             if (ignorePreReleases) {
                 core_info(`ℹ️ Enabled 'ignorePreReleases', searching for the closest release`);
             }
-            const predecessor = tags.slice(current + 1).find(t => !ignorePreReleases || !t.preRelease);
+            const older = tags.slice(current + 1);
+            // a matched tag keeps the previous behaviour of using the next tag, even if it is a pre-release
+            const predecessor = older.find(t => !ignorePreReleases || !t.preRelease) ?? (current >= 0 ? older[0] : undefined);
             if (predecessor) {
                 return predecessor;
+            }
+            if (current >= 0 && tags.length > 1) {
+                // the matched tag is the oldest of several, it is unknown whether it is the first release or the tag list was truncated (`maxTagsToFetch`)
+                warning(`⚠️ No tag found before '${tags[current].name}'. Not assuming the initial commit, as the list of tags may be truncated (see 'max_tags_to_fetch'). Specify 'fromTag' explicitly.`);
+                return null;
             }
             core_info(`ℹ️ No earlier tag found for the given repository. Usually this is the case for the initial release.`);
             // if not specified try to retrieve tag from git
