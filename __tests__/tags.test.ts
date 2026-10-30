@@ -332,11 +332,11 @@ describe('retrieveRange tag resolution', () => {
     const tags = [{name: 'api-1.0.0'}, {name: 'api-2.0.0'}, {name: 'other-3.0.0'}]
     const range = await new Tags(repo(tags)).retrieveRange('.', 'o', 'r', null, 'api-2.0.0', false, 1000, {
       method: 'semver',
-      filter: {pattern: '^api-.+'},
+      filter: {pattern: '(api-.+)', target: '$1'},
       transformer: [{pattern: 'api-(.+)', target: '$1'}]
     })
     expect(range.to?.name).toStrictEqual('api-2.0.0')
-    expect(range.from?.name).toMatch(/-\d\.0\.0$/)
+    expect(range.from?.name).toStrictEqual('api-1.0.0')
   })
 
   test('fillTagInformation delegates to the repository', async () => {
