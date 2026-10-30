@@ -26,7 +26,12 @@ export interface SortableTagInfo extends TagInfo {
 
 function isSameTag(tagInfo: TagInfo, tag: string): boolean {
   const lowerTag = tag.toLocaleLowerCase('en')
-  return tagInfo.name.toLocaleLowerCase('en') === lowerTag || (!!tagInfo.commit && tagInfo.commit.toLocaleLowerCase('en') === lowerTag)
+  const commit = tagInfo.commit?.toLocaleLowerCase('en')
+  // abbreviated shas (7+ chars) are matched by prefix
+  return (
+    tagInfo.name.toLocaleLowerCase('en') === lowerTag ||
+    (!!commit && (commit === lowerTag || (lowerTag.length >= 7 && commit.startsWith(lowerTag))))
+  )
 }
 
 export class Tags {
@@ -48,35 +53,22 @@ export class Tags {
   ): Promise<TagInfo | null> {
     const tags = sortedTags
     try {
-      const length = tags.length
-      if (tags.length > 1) {
-        for (let i = 0; i < length; i++) {
-          if (tags[i].name.toLocaleLowerCase('en') === tag.toLocaleLowerCase('en')) {
-            if (ignorePreReleases) {
-              core.info(`ℹ️ Enabled 'ignorePreReleases', searching for the closest release`)
-              for (let ii = i + 1; ii < length; ii++) {
-                if (!tags[ii].preRelease) {
-                  return tags[ii]
-                }
-              }
-            }
-            return tags[i + 1]
-          }
-        }
-      } else if (tags.length === 1 && !isSameTag(tags[0], tag)) {
-        // the only existing tag is not the release we are building (e.g. `toTag` is a commit sha of the upcoming release)
-        // the single tag is therefore the predecessor
-        core.info(`ℹ️ Only one tag found for the given repository, which differs from the current tag (${tag}).`)
-        return tags[0]
-      } else {
-        core.info(`ℹ️ Only one tag found for the given repository. Usually this is the case for the initial release.`)
-        // if not specified try to retrieve tag from git
-        const gitHelper = await createCommandManager(repositoryPath)
-        const initialCommit = await gitHelper.initialCommit()
-        core.info(`🔖 Resolved initial commit (${initialCommit}) from 'git rev-list --max-parents=0 HEAD'`)
-        return {name: initialCommit, commit: initialCommit}
+      // a tag matching none of the existing tags (e.g. the sha of a not yet tagged release) is newer than all of them
+      const current = tags.findIndex(t => isSameTag(t, tag))
+      if (ignorePreReleases) {
+        core.info(`ℹ️ Enabled 'ignorePreReleases', searching for the closest release`)
       }
-      return tags[0]
+      const predecessor = tags.slice(current + 1).find(t => !ignorePreReleases || !t.preRelease)
+      if (predecessor) {
+        return predecessor
+      }
+
+      core.info(`ℹ️ No earlier tag found for the given repository. Usually this is the case for the initial release.`)
+      // if not specified try to retrieve tag from git
+      const gitHelper = await createCommandManager(repositoryPath)
+      const initialCommit = await gitHelper.initialCommit()
+      core.info(`🔖 Resolved initial commit (${initialCommit}) from 'git rev-list --max-parents=0 HEAD'`)
+      return {name: initialCommit, commit: initialCommit}
     } catch {
       if (tags.length <= 0) {
         core.warning(`⚠️ No tag found for the given repository`)
