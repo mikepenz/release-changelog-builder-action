@@ -65,7 +65,7 @@
     "js-yaml": "5.4.3",
     "prettier": "3.9.9",
     "typescript": "6.0.3",
-    "vitest": "4.1.11"
+    "vitest": "4.1.12"
   },
   "overrides": {
     "brace-expansion": "5.0.12",
