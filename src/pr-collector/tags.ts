@@ -24,6 +24,16 @@ export interface SortableTagInfo extends TagInfo {
   tmp: string
 }
 
+function isSameTag(tagInfo: TagInfo, tag: string): boolean {
+  const lowerTag = tag.toLocaleLowerCase('en')
+  const commit = tagInfo.commit?.toLocaleLowerCase('en')
+  // abbreviated shas (7+ chars) are matched by prefix
+  return (
+    tagInfo.name.toLocaleLowerCase('en') === lowerTag ||
+    (!!commit && (commit === lowerTag || (lowerTag.length >= 7 && commit.startsWith(lowerTag))))
+  )
+}
+
 export class Tags {
   constructor(private repositoryUtils: BaseRepository) {}
 
@@ -43,30 +53,32 @@ export class Tags {
   ): Promise<TagInfo | null> {
     const tags = sortedTags
     try {
-      const length = tags.length
-      if (tags.length > 1) {
-        for (let i = 0; i < length; i++) {
-          if (tags[i].name.toLocaleLowerCase('en') === tag.toLocaleLowerCase('en')) {
-            if (ignorePreReleases) {
-              core.info(`ℹ️ Enabled 'ignorePreReleases', searching for the closest release`)
-              for (let ii = i + 1; ii < length; ii++) {
-                if (!tags[ii].preRelease) {
-                  return tags[ii]
-                }
-              }
-            }
-            return tags[i + 1]
-          }
-        }
-      } else {
-        core.info(`ℹ️ Only one tag found for the given repository. Usually this is the case for the initial release.`)
-        // if not specified try to retrieve tag from git
-        const gitHelper = await createCommandManager(repositoryPath)
-        const initialCommit = await gitHelper.initialCommit()
-        core.info(`🔖 Resolved initial commit (${initialCommit}) from 'git rev-list --max-parents=0 HEAD'`)
-        return {name: initialCommit, commit: initialCommit}
+      // a tag matching none of the existing tags (e.g. the sha of a not yet tagged release) is newer than all of them
+      const current = tags.findIndex(t => isSameTag(t, tag))
+      if (ignorePreReleases) {
+        core.info(`ℹ️ Enabled 'ignorePreReleases', searching for the closest release`)
       }
-      return tags[0]
+      const older = tags.slice(current + 1)
+      // a matched tag keeps the previous behaviour of using the next tag, even if it is a pre-release
+      const predecessor = older.find(t => !ignorePreReleases || !t.preRelease) ?? (current >= 0 ? older[0] : undefined)
+      if (predecessor) {
+        return predecessor
+      }
+
+      if (current >= 0 && tags.length > 1) {
+        // the matched tag is the oldest of several, it is unknown whether it is the first release or the tag list was truncated (`maxTagsToFetch`)
+        core.warning(
+          `⚠️ No tag found before '${tags[current].name}'. Not assuming the initial commit, as the list of tags may be truncated (see 'max_tags_to_fetch'). Specify 'fromTag' explicitly.`
+        )
+        return null
+      }
+
+      core.info(`ℹ️ No earlier tag found for the given repository. Usually this is the case for the initial release.`)
+      // if not specified try to retrieve tag from git
+      const gitHelper = await createCommandManager(repositoryPath)
+      const initialCommit = await gitHelper.initialCommit()
+      core.info(`🔖 Resolved initial commit (${initialCommit}) from 'git rev-list --max-parents=0 HEAD'`)
+      return {name: initialCommit, commit: initialCommit}
     } catch {
       if (tags.length <= 0) {
         core.warning(`⚠️ No tag found for the given repository`)
@@ -125,9 +137,10 @@ export class Tags {
 
       if (transformed) {
         // restore the original name, after sorting
-        tags = filteredTags.map(function (tag) {
+        // map the sorted tags (not `filteredTags`) to keep the sort order and the computed `preRelease` flag
+        tags = tags.map(function (tag) {
           if (tag.hasOwnProperty('tmp')) {
-            return {name: (tag as SortableTagInfo).tmp, commit: tag.commit}
+            return {name: (tag as SortableTagInfo).tmp, commit: tag.commit, preRelease: tag.preRelease}
           } else {
             return tag
           }
@@ -217,7 +230,7 @@ export function transformTags(tags: TagInfo[], transformer: RegexTransformer): T
       const transformedName = transformStringToValue(tag.name, transformer)
       core.debug(`ℹ️ Transformed ${tag.name} to ${transformedName}`)
       return {
-        tmp: tag.name, // remember the original name
+        tmp: (tag as SortableTagInfo).tmp ?? tag.name, // remember the original name, also across chained transformers
         name: transformedName,
         commit: tag.commit
       }
