@@ -620,6 +620,7 @@ Table of supported placeholders allowed to be used in the `commit_template` conf
 |--------------------|----------------------------------------------------------------------------------------------------|
 | `#{{NUMBER}}`      | Always 0.                                                                                          |
 | `#{{TITLE}}`       | The commit summary.                                                                                |
+| `#{{URL}}`         | Url linking to the commit. Empty in `offlineMode`.                                                 |
 | `#{{STATUS}}`      | Always `merged`.                                                                                   |
 | `#{{CREATED_AT}}`  | The ISO time of the commit.                                                                        |
 | `#{{MERGE_SHA}}`   | The commit SHA.                                                                                    |

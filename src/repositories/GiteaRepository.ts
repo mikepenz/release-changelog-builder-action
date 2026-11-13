@@ -115,6 +115,7 @@ export class GiteaRepository extends BaseRepository {
       commits: commitInfo.count,
       commitInfo: commitInfo.commits.map(commit => ({
         sha: commit.sha,
+        htmlURL: `${this.homeUrl}/${owner}/${repo}/commit/${commit.sha}`,
         summary: commit.subject.split('\n')[0],
         message: commit.message,
         author: commit.author,
