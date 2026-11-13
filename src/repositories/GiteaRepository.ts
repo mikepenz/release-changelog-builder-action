@@ -20,7 +20,8 @@ export class GiteaRepository extends BaseRepository {
   }
 
   get homeUrl(): string {
-    return 'https://gitea.com'
+    // the `baseUrl` of a gitea instance is also its web url (the API lives under `/api/v1`)
+    return this.url?.replace(/\/+$/, '') || this.defaultUrl
   }
 
   constructor(token: string, url: string | undefined, repositoryPath: string) {
