@@ -64819,7 +64819,7 @@ function convertCommitsToPrs(options, diffInfo) {
         return {
             number: 0,
             title: commit.summary,
-            htmlURL: '',
+            htmlURL: commit.htmlURL || '',
             baseBranch: '',
             createdAt: commit.commitDate,
             mergedAt: commit.commitDate,
@@ -67347,6 +67347,7 @@ class GithubRepository extends BaseRepository {
                 .filter(commit => commit.sha)
                 .map(commit => ({
                 sha: commit.sha || '',
+                htmlURL: commit.html_url || '',
                 summary: commit.commit.message.split('\n')[0],
                 message: commit.commit.message,
                 author: commit.author?.login || commit.commit.author?.name || '',
@@ -74109,6 +74110,7 @@ class GiteaRepository extends BaseRepository {
             commits: commitInfo.count,
             commitInfo: commitInfo.commits.map(commit => ({
                 sha: commit.sha,
+                htmlURL: `${this.homeUrl}/${owner}/${repo}/commit/${commit.sha}`,
                 summary: commit.subject.split('\n')[0],
                 message: commit.message,
                 author: commit.author,

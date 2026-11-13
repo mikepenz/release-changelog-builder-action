@@ -25,6 +25,7 @@ export const DefaultDiffInfo: DiffInfo = {
 
 export interface CommitInfo {
   sha: string
+  htmlURL?: string // link to the commit on the platform, empty if unavailable (e.g. offline mode)
   summary: string
   message: string
   author: string
@@ -113,7 +114,7 @@ export function convertCommitsToPrs(options: Options, diffInfo: DiffInfo): [Diff
     return {
       number: 0,
       title: commit.summary,
-      htmlURL: '',
+      htmlURL: commit.htmlURL || '',
       baseBranch: '',
       createdAt: commit.commitDate,
       mergedAt: commit.commitDate,
