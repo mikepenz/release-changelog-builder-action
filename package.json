@@ -65,6 +65,7 @@
     "js-yaml": "5.5.0",
     "prettier": "3.9.10",
     "typescript": "6.0.3",
+    "vite": "8.2.1",
     "vitest": "5.1.0"
   },
   "overrides": {
