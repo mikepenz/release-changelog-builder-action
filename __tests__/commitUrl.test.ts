@@ -30,7 +30,7 @@ vi.mock('../src/pr-collector/gitHelper.js', () => ({
 
 clear()
 
-const commit = (sha: string, htmlURL?: string): CommitInfo => ({
+const commit = (sha: string, htmlURL = ''): CommitInfo => ({
   sha,
   htmlURL,
   summary: `feat: commit ${sha}`,
