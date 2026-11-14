@@ -51,14 +51,16 @@ const pullRequest = (number: number, mergeCommitSha: string, base: string, head:
   requested_reviewers: []
 })
 
-const giteaRepository = (): GiteaRepository => {
+const giteaRepository = (
+  prs: PullRequest[] = [
+    pullRequest(1, 'a'.repeat(40), 'release/1.x', 'fix/backport'),
+    pullRequest(2, 'b'.repeat(40), 'main', 'feature/new')
+  ]
+): GiteaRepository => {
   const repository = new GiteaRepository('', undefined, '.')
   const repoListPullRequests = vi.fn(async (owner: string, repo: string, query: {state: string; page: number}) => ({
     error: null,
-    data:
-      query.state === 'closed' && query.page === 1
-        ? [pullRequest(1, 'a'.repeat(40), 'release/1.x', 'fix/backport'), pullRequest(2, 'b'.repeat(40), 'main', 'feature/new')]
-        : []
+    data: query.state === 'closed' && query.page === 1 ? prs : []
   }))
   Object.assign(repository, {api: {repos: {repoListPullRequests}}})
   return repository
@@ -96,5 +98,31 @@ describe('Gitea pull request branches', () => {
     const data = await pullData(giteaRepository(), options(['release/.*']))
 
     expect(data?.mergedPullRequests.map(pr => pr.number)).toStrictEqual([1])
+  })
+
+  test('keeps the head ref as reported when the source branch was deleted', async () => {
+    const pr = pullRequest(1, 'a'.repeat(40), 'main', 'refs/pull/1/head')
+    const prs = await giteaRepository([pr]).getForCommitHash('mikepenz', 'sip', 'a'.repeat(40), 200)
+
+    expect(prs[0].branch).toStrictEqual('refs/pull/1/head')
+  })
+
+  test('maps the branch name of a pull request from a fork', async () => {
+    const pr = {...pullRequest(1, 'a'.repeat(40), 'main', 'fix/from-fork'), head: {ref: 'fix/from-fork', repo: {full_name: 'fork/sip'}}}
+    const prs = await giteaRepository([pr]).getForCommitHash('mikepenz', 'sip', 'a'.repeat(40), 200)
+
+    expect(prs[0].baseBranch).toStrictEqual('main')
+    expect(prs[0].branch).toStrictEqual('fix/from-fork')
+  })
+
+  test('falls back to empty branches when base or head are missing, and `base_branches` excludes the pull request', async () => {
+    const pr = {...pullRequest(1, 'a'.repeat(40), 'main', 'x'), base: undefined, head: undefined}
+    const prs = await giteaRepository([pr]).getForCommitHash('mikepenz', 'sip', 'a'.repeat(40), 200)
+    expect(prs[0].baseBranch).toStrictEqual('')
+    expect(prs[0].branch).toStrictEqual('')
+
+    GiteaRepository.pulls = {closed: [], open: []}
+    const data = await pullData(giteaRepository([pr]), options(['main']))
+    expect(data?.mergedPullRequests).toHaveLength(0)
   })
 })
