@@ -64819,7 +64819,7 @@ function convertCommitsToPrs(options, diffInfo) {
         return {
             number: 0,
             title: commit.summary,
-            htmlURL: commit.htmlURL || '',
+            htmlURL: commit.htmlURL,
             baseBranch: '',
             createdAt: commit.commitDate,
             mergedAt: commit.commitDate,
@@ -74110,7 +74110,7 @@ class GiteaRepository extends BaseRepository {
             commits: commitInfo.count,
             commitInfo: commitInfo.commits.map(commit => ({
                 sha: commit.sha,
-                htmlURL: `${this.homeUrl}/${owner}/${repo}/commit/${commit.sha}`,
+                htmlURL: `${this.homeUrl}/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/commit/${commit.sha}`,
                 summary: commit.subject.split('\n')[0],
                 message: commit.message,
                 author: commit.author,
@@ -74270,6 +74270,7 @@ class OfflineRepository extends BaseRepository {
             commits: commitInfo.count,
             commitInfo: commitInfo.commits.map(commit => ({
                 sha: commit.sha,
+                htmlURL: '', // no platform available offline
                 summary: commit.subject.split('\n')[0],
                 message: commit.message,
                 author: commit.author,

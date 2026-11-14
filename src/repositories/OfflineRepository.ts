@@ -70,6 +70,7 @@ export class OfflineRepository extends BaseRepository {
       commits: commitInfo.count,
       commitInfo: commitInfo.commits.map(commit => ({
         sha: commit.sha,
+        htmlURL: '', // no platform available offline
         summary: commit.subject.split('\n')[0],
         message: commit.message,
         author: commit.author,

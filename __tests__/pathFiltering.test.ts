@@ -7,6 +7,7 @@ describe('Path Filtering', () => {
     const commits: CommitInfo[] = [
       {
         sha: 'commit1',
+        htmlURL: '',
         summary: 'feat: add new feature',
         message: 'feat: add new feature\n\nDetailed description',
         author: 'user1',
@@ -18,6 +19,7 @@ describe('Path Filtering', () => {
       },
       {
         sha: 'commit2',
+        htmlURL: '',
         summary: 'Merge pull request #123 from feature-branch',
         message: 'Merge pull request #123 from feature-branch',
         author: 'user2',
@@ -29,6 +31,7 @@ describe('Path Filtering', () => {
       },
       {
         sha: 'commit3',
+        htmlURL: '',
         summary: 'fix: bug fix',
         message: 'fix: bug fix',
         author: 'user3',
