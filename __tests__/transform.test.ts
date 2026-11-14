@@ -4,6 +4,7 @@ import {Configuration, DefaultConfiguration} from '../src/configuration.js'
 import {PullRequestInfo} from '../src/pr-collector/pullRequests.js'
 import {DefaultDiffInfo} from '../src/pr-collector/commits.js'
 import {GithubRepository} from '../src/repositories/GithubRepository.js'
+import {GiteaRepository} from '../src/repositories/GiteaRepository.js'
 import {clear} from '../src/transform.js'
 import {expect, test} from 'vitest'
 import {BaseRepository} from '../src/repositories/BaseRepository.js'
@@ -521,6 +522,67 @@ test('Release Diff', async () => {
   })
 
   expect(resultChangelog).toStrictEqual(`https://github.com/mikepenz/release-changelog-builder-action/compare/v2.8.0...v2.8.1\n`)
+})
+
+test('Release Diff uses the configured gitea instance url', async () => {
+  const customConfig = Object.assign({}, DefaultConfiguration)
+  customConfig.template = '#{{RELEASE_DIFF}}'
+
+  const buildReleaseDiff = (giteaRepository: GiteaRepository): string =>
+    buildChangelog(DefaultDiffInfo, pullRequestsWithLabels, {
+      owner: 'mikepenz',
+      repo: 'release-changelog-builder-action',
+      fromTag: {name: 'v2.8.0'},
+      toTag: {name: 'v2.8.1'},
+      includeOpen: false,
+      failOnError: false,
+      fetchReviewers: false,
+      fetchReleaseInformation: false,
+      fetchReviews: false,
+      mode: 'PR',
+      configuration: customConfig,
+      repositoryUtils: giteaRepository
+    })
+
+  expect(buildReleaseDiff(new GiteaRepository('', 'https://git.example.com', '.'))).toStrictEqual(
+    `https://git.example.com/mikepenz/release-changelog-builder-action/compare/v2.8.0...v2.8.1`
+  )
+  expect(buildReleaseDiff(new GiteaRepository('', 'https://git.example.com/gitea/', '.'))).toStrictEqual(
+    `https://git.example.com/gitea/mikepenz/release-changelog-builder-action/compare/v2.8.0...v2.8.1`
+  )
+  expect(buildReleaseDiff(new GiteaRepository('', undefined, '.'))).toStrictEqual(
+    `https://gitea.com/mikepenz/release-changelog-builder-action/compare/v2.8.0...v2.8.1`
+  )
+})
+
+test.each([
+  [undefined, 'https://gitea.com'],
+  ['', 'https://gitea.com'],
+  ['https://git.example.com', 'https://git.example.com'],
+  ['https://git.example.com/', 'https://git.example.com'],
+  ['https://git.example.com///', 'https://git.example.com'],
+  ['https://git.example.com/gitea/', 'https://git.example.com/gitea'],
+  ['http://localhost:3000', 'http://localhost:3000']
+])('Gitea homeUrl for baseUrl %j is %s', (baseUrl, expected) => {
+  const repository = new GiteaRepository('', baseUrl, '.')
+  expect(repository.homeUrl).toStrictEqual(expected)
+  expect(repository.defaultUrl).toStrictEqual('https://gitea.com')
+})
+
+test('Release Diff for gitea with a custom instance and ref names', async () => {
+  const customConfig = Object.assign({}, DefaultConfiguration)
+  customConfig.template = '#{{RELEASE_DIFF}}'
+
+  const resultChangelog = buildChangelogTest(customConfig, pullRequestsWithLabels, new GiteaRepository('', 'http://localhost:3000/', '.'))
+  expect(resultChangelog).toStrictEqual(`http://localhost:3000/mikepenz/test-repo/compare/1.0.0...2.0.0`)
+})
+
+test('Release Diff for github ignores the gitea instance url', async () => {
+  const customConfig = Object.assign({}, DefaultConfiguration)
+  customConfig.template = '#{{RELEASE_DIFF}}'
+
+  const resultChangelog = buildChangelogTest(customConfig, pullRequestsWithLabels, new GithubRepository('', 'https://github.example.com', '.'))
+  expect(resultChangelog).toStrictEqual(`https://github.example.com/mikepenz/test-repo/compare/1.0.0...2.0.0`)
 })
 
 test('Use exclude labels to not include a PR within a category.', async () => {
