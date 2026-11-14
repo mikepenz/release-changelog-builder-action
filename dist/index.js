@@ -74032,11 +74032,13 @@ class GiteaRepository extends BaseRepository {
         return 'https://gitea.com';
     }
     get homeUrl() {
-        return 'https://gitea.com';
+        // set (and trailing-slash trimmed) in the constructor
+        return this.url;
     }
     constructor(token, url, repositoryPath) {
         super(token, url, repositoryPath);
-        this.url = url || this.defaultUrl;
+        // the `baseUrl` of a gitea instance is its web root (gitea-js appends `/api/v1` itself)
+        this.url = (url || this.defaultUrl).replace(/\/+$/, '');
         this.api = giteaApi(this.url, {
             token
         });
