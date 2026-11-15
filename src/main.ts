@@ -85,6 +85,7 @@ async function run(): Promise<void> {
     const fetchReviewers = core.getInput('fetchReviewers') === 'true'
     const fetchReleaseInformation = core.getInput('fetchReleaseInformation') === 'true'
     const fetchReviews = core.getInput('fetchReviews') === 'true'
+    const fetchNewContributors = core.getInput('fetchNewContributors') === 'true'
     const exportCache = core.getInput('exportCache') === 'true'
     const exportOnly = core.getInput('exportOnly') === 'true'
     const cache = core.getInput('cache')
@@ -118,7 +119,8 @@ async function run(): Promise<void> {
       exportOnly,
       cache,
       configuration,
-      includeOnlyPaths
+      includeOnlyPaths,
+      fetchNewContributors
     ).build()
 
     core.setOutput('changelog', result)

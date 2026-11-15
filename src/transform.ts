@@ -206,10 +206,15 @@ export function buildChangelog(diffInfo: DiffInfo, origPrs: PullRequestInfo[], o
   const externalContributorString = contributorsArray.filter(value => value !== `@${options.owner}`).join(', ')
   core.setOutput('contributors', contributorsArray.join(','))
 
+  // collect contributors whose first PR was merged in this release (requires `fetchNewContributors`)
+  const newContributorsArray = Array.from(new Set(prs.filter(pr => pr.newContributor).map(pr => `@${pr.author}`)))
+  core.setOutput('new_contributors', newContributorsArray.join(','))
+
   const releaseNotesTemplateContext = buildReleaseNotesTemplateContext(
     changelogStrings,
     contributorsString,
     externalContributorString,
+    newContributorsArray.join(', '),
     prStrings,
     diffInfo,
     options
@@ -407,6 +412,7 @@ function buildReleaseNotesTemplateContext(
   changelogStrings: ChangelogStrings,
   contributorsString: string,
   externalContributorString: string,
+  newContributorsString: string,
   prStrings: PrStrings,
   diffInfo: DiffInfo,
   options: ReleaseNotesOptions
@@ -429,6 +435,7 @@ function buildReleaseNotesTemplateContext(
   // fill special collected contributors
   releaseNotesTemplateContext.set('CONTRIBUTORS', contributorsString)
   releaseNotesTemplateContext.set('EXTERNAL_CONTRIBUTORS', externalContributorString)
+  releaseNotesTemplateContext.set('NEW_CONTRIBUTORS', newContributorsString)
   // fill other placeholders
   releaseNotesTemplateContext.set('CATEGORIZED_COUNT', categorizedList.length.toString())
   releaseNotesTemplateContext.set('UNCATEGORIZED_COUNT', uncategorizedList.length.toString())

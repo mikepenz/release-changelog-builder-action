@@ -196,6 +196,12 @@ export class GiteaRepository extends BaseRepository {
     pr.reviews = prReviews
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getNewContributors(owner: string, repo: string, firstMerges: Map<string, moment.Moment>): Promise<Set<string>> {
+    core.info(`⚠️ getNewContributors not supported for gitea`)
+    return new Set()
+  }
+
   private mapComment = (comment: PullReview): CommentInfo => ({
     id: comment.id || 0,
     htmlURL: comment.html_url || '',

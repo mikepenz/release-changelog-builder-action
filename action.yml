@@ -40,6 +40,9 @@ inputs:
   fetchReviews:
     description: 'Will enable fetching the reviews (comments) attached to the PR'
     default: "false"
+  fetchNewContributors:
+    description: 'Will enable identifying the authors whose first pull request was merged in this release (does 1 additional API request per 20 PR authors). Only supported for GitHub in `PR` and `HYBRID` mode.'
+    default: "false"
   mode:
     description: 'Defines the mode used to retrieve the information. Available options: [`PR`, `COMMIT`, `HYBRID`]. Defaults to `PR`.'
   commitMode:
@@ -75,6 +78,8 @@ outputs:
     description: The built release changelog built from the merged pull requests
   contributors:
     description: A comma separated list of contributors (GitHub usernames) who contributed to the release
+  new_contributors:
+    description: A comma separated list of contributors (GitHub usernames) whose first pull request was merged in this release. Requires `fetchNewContributors` to be enabled.
   pull_requests:
     description: A comma seperated list of PR numbers that were merged
   owner:

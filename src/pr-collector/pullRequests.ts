@@ -26,6 +26,7 @@ export interface PullRequestInfo {
   approvedReviewers: string[]
   reviews?: CommentInfo[]
   status: 'open' | 'merged'
+  newContributor?: boolean // `true` if the author had no PR merged into the repository before this release. Only set if `fetchNewContributors` is enabled.
 }
 
 export interface PullRequestData extends PullRequestInfo {
@@ -104,8 +105,40 @@ export class PullRequests {
     await this.repositoryUtils.getReviews(owner, repo, pr)
   }
 
+  /**
+   * Marks the merged PRs whose author had no PR merged into the repository before this release.
+   */
+  async markNewContributors(owner: string, repo: string, pullRequests: PullRequestInfo[]): Promise<void> {
+    // collect the earliest merge date in this release per author
+    const firstMerges = new Map<string, moment.Moment>()
+    for (const pr of pullRequests) {
+      if (pr.status !== 'merged' || !pr.author || !pr.mergedAt) continue
+      const firstMerge = firstMerges.get(pr.author)
+      if (firstMerge === undefined || pr.mergedAt.isBefore(firstMerge)) {
+        firstMerges.set(pr.author, pr.mergedAt)
+      }
+    }
+    if (firstMerges.size === 0) {
+      return
+    }
+
+    let newContributors: Set<string>
+    try {
+      newContributors = await this.repositoryUtils.getNewContributors(owner, repo, firstMerges)
+    } catch (error) {
+      core.warning(`⚠️ Failed to identify new contributors for ${owner}/${repo}: ${error}`)
+      return
+    }
+
+    for (const pr of pullRequests) {
+      if (firstMerges.has(pr.author)) {
+        pr.newContributor = newContributors.has(pr.author)
+      }
+    }
+  }
+
   async getMergedPullRequests(options: Options): Promise<[DiffInfo, PullRequestInfo[]]> {
-    const {owner, repo, includeOpen, fetchReviewers, fetchReviews, configuration} = options
+    const {owner, repo, includeOpen, fetchReviewers, fetchReviews, fetchNewContributors, configuration} = options
 
     const diffInfo = await this.commits.getCommitHistory(options)
     const commits = diffInfo.commitInfo
@@ -219,6 +252,14 @@ export class PullRequests {
       }
     } else {
       core.debug(`ℹ️ Fetching reviews (or reviewers) was disabled`)
+    }
+
+    // identify new contributors only if enabled (requires additional API requests)
+    if (fetchNewContributors) {
+      core.info(`ℹ️ Fetching new contributors was enabled`)
+      await this.markNewContributors(owner, repo, finalPrs)
+    } else {
+      core.debug(`ℹ️ Fetching new contributors was disabled`)
     }
 
     return [diffInfo, finalPrs]

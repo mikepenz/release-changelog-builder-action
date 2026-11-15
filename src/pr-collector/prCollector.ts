@@ -17,6 +17,7 @@ export interface Options {
   fetchReviewers: boolean // defines if the action should fetch the reviewers for PRs - approved reviewers are not included in the default PR listing
   fetchReleaseInformation: boolean // defines if the action should fetch the release information for the from and to tag - e.g. the creation date for the associated release
   fetchReviews: boolean // defines if the action should fetch the reviews for the PR.
+  fetchNewContributors: boolean // defines if the action should identify authors whose first PR was merged in this release
   mode: 'PR' | 'COMMIT' | 'HYBRID' // defines the mode used. note: the commit or hybrid modes are not fully supported
   configuration: PullConfiguration // the configuration as defined in `configuration.ts`
   includeOnlyPaths?: string[] | null // list of path patterns to include in changelog
@@ -47,7 +48,8 @@ export class PullRequestCollector {
     private fetchReviews = false,
     private mode: 'PR' | 'COMMIT' | 'HYBRID' = 'PR',
     private configuration: PullConfiguration,
-    private includeOnlyPaths: string[] | null = null
+    private includeOnlyPaths: string[] | null = null,
+    private fetchNewContributors = false
   ) {}
 
   async build(): Promise<Data | null> {
@@ -104,6 +106,7 @@ export class PullRequestCollector {
       fetchReviewers: this.fetchReviewers,
       fetchReleaseInformation: this.fetchReleaseInformation,
       fetchReviews: this.fetchReviews,
+      fetchNewContributors: this.fetchNewContributors,
       mode: this.mode,
       configuration: this.configuration,
       includeOnlyPaths: this.includeOnlyPaths
@@ -120,6 +123,9 @@ export async function pullData(repositoryUtils: BaseRepository, options: Options
   core.startGroup(`🚀 Load data`)
   if (options.mode === 'COMMIT') {
     core.info(`🚀 Load commit history (⚠️ Executing experimental commit mode)`)
+    if (options.fetchNewContributors) {
+      core.info(`⚠️ Fetching new contributors is not supported in commit mode`)
+    }
     const [info, prs] = await commitsApi.generateCommitPRs(options)
     mergedPullRequests = mergedPullRequests.concat(prs)
     diffInfo = info
