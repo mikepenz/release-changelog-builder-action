@@ -220,7 +220,14 @@ export class GithubRepository extends BaseRepository {
   }
 
   get homeUrl(): string {
-    return this.url?.replace('api.', '') || 'https://github.com'
+    const url = (this.url || this.defaultUrl).replace(/\/+$/, '')
+    // GitHub Enterprise Server serves its REST API below `/api/v3` of the web url
+    const enterpriseServerUrl = url.replace(/\/api(?:\/v3)?$/i, '')
+    if (enterpriseServerUrl !== url) {
+      return enterpriseServerUrl
+    }
+    // github.com and GitHub Enterprise Cloud with data residency (`*.ghe.com`) serve their API from an `api.` subdomain
+    return url.replace(/^(https?:\/\/)api\./i, '$1')
   }
 
   private octokit: Octokit

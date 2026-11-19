@@ -585,6 +585,35 @@ test('Release Diff for github ignores the gitea instance url', async () => {
   expect(resultChangelog).toStrictEqual(`https://github.example.com/mikepenz/test-repo/compare/1.0.0...2.0.0`)
 })
 
+test.each([
+  [undefined, 'https://github.com'],
+  ['', 'https://github.com'],
+  ['https://api.github.com', 'https://github.com'],
+  ['https://api.github.com/', 'https://github.com'],
+  ['https://api.octocorp.ghe.com', 'https://octocorp.ghe.com'],
+  ['https://github.example.com/api/v3', 'https://github.example.com'],
+  ['https://github.example.com/api/v3/', 'https://github.example.com'],
+  ['https://github.example.com/api', 'https://github.example.com'],
+  ['http://localhost:8080/api/v3', 'http://localhost:8080'],
+  ['https://github.example.com', 'https://github.example.com'],
+  ['https://myapi.example.com/api/v3', 'https://myapi.example.com']
+])('GitHub homeUrl for baseUrl %j is %s', (baseUrl, expected) => {
+  const repository = new GithubRepository('', baseUrl, '.')
+  expect(repository.homeUrl).toStrictEqual(expected)
+})
+
+test('Release Diff for GitHub Enterprise Server links to the web url instead of the api', async () => {
+  const customConfig = Object.assign({}, DefaultConfiguration)
+  customConfig.template = '#{{RELEASE_DIFF}}'
+
+  const resultChangelog = buildChangelogTest(
+    customConfig,
+    pullRequestsWithLabels,
+    new GithubRepository('', 'https://github.example.com/api/v3', '.')
+  )
+  expect(resultChangelog).toStrictEqual(`https://github.example.com/mikepenz/test-repo/compare/1.0.0...2.0.0`)
+})
+
 test('Use exclude labels to not include a PR within a category.', async () => {
   const customConfig = Object.assign({}, DefaultConfiguration)
   customConfig.categories = [
