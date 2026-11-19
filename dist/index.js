@@ -64626,6 +64626,7 @@ function mergeConfiguration(jc, fc, mode) {
         ignore_labels: jc?.ignore_labels || fc?.ignore_labels || def.ignore_labels,
         label_extractor: jc?.label_extractor || fc?.label_extractor || def.label_extractor,
         duplicate_filter: jc?.duplicate_filter || fc?.duplicate_filter || def.duplicate_filter,
+        reference: jc?.reference || fc?.reference || def.reference,
         transformers: jc?.transformers || fc?.transformers || def.transformers,
         tag_resolver: jc?.tag_resolver || fc?.tag_resolver || def.tag_resolver,
         base_branches: jc?.base_branches || fc?.base_branches || def.base_branches,

@@ -61,3 +61,20 @@ test('Configurations are merged correctly', async () => {
 }`
   )
 })
+
+test('Configurations keep the reference extractor', async () => {
+  const reference = {
+    pattern: '.*\\ \\#(.).*',
+    on_property: 'body',
+    method: 'replace',
+    target: '$1'
+  }
+  const withReference = parseConfiguration(JSON.stringify({reference}))
+  const withoutReference = parseConfiguration(`{"empty_template": "- no magic changes"}`)
+  const otherReference = parseConfiguration(JSON.stringify({reference: {...reference, on_property: 'title'}}))
+
+  expect(mergeConfiguration(withReference, undefined).reference).toStrictEqual(reference)
+  expect(mergeConfiguration(withoutReference, withReference).reference).toStrictEqual(reference)
+  expect(mergeConfiguration(withReference, otherReference).reference).toStrictEqual(reference)
+  expect(mergeConfiguration(withoutReference, undefined).reference).toBeUndefined()
+})
