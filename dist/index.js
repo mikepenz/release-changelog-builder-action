@@ -64912,8 +64912,39 @@ class PullRequests {
     async getReviews(owner, repo, pr) {
         await this.repositoryUtils.getReviews(owner, repo, pr);
     }
+    /**
+     * Marks the merged PRs whose author had no PR merged into the repository before this release.
+     */
+    async markNewContributors(owner, repo, pullRequests) {
+        // collect the earliest merge date in this release per author
+        const firstMerges = new Map();
+        for (const pr of pullRequests) {
+            if (pr.status !== 'merged' || !pr.author || !pr.mergedAt)
+                continue;
+            const firstMerge = firstMerges.get(pr.author);
+            if (firstMerge === undefined || pr.mergedAt.isBefore(firstMerge)) {
+                firstMerges.set(pr.author, pr.mergedAt);
+            }
+        }
+        if (firstMerges.size === 0) {
+            return;
+        }
+        let newContributors;
+        try {
+            newContributors = await this.repositoryUtils.getNewContributors(owner, repo, firstMerges);
+        }
+        catch (error) {
+            warning(`⚠️ Failed to identify new contributors for ${owner}/${repo}: ${error}`);
+            return;
+        }
+        for (const pr of pullRequests) {
+            if (firstMerges.has(pr.author)) {
+                pr.newContributor = newContributors.has(pr.author);
+            }
+        }
+    }
     async getMergedPullRequests(options) {
-        const { owner, repo, includeOpen, fetchReviewers, fetchReviews, configuration } = options;
+        const { owner, repo, includeOpen, fetchReviewers, fetchReviews, fetchNewContributors, configuration } = options;
         const diffInfo = await this.commits.getCommitHistory(options);
         const commits = diffInfo.commitInfo;
         if (commits.length === 0) {
@@ -65012,6 +65043,14 @@ class PullRequests {
         }
         else {
             core_debug(`ℹ️ Fetching reviews (or reviewers) was disabled`);
+        }
+        // identify new contributors only if enabled (requires additional API requests)
+        if (fetchNewContributors) {
+            core_info(`ℹ️ Fetching new contributors was enabled`);
+            await this.markNewContributors(owner, repo, finalPrs);
+        }
+        else {
+            core_debug(`ℹ️ Fetching new contributors was disabled`);
         }
         return [diffInfo, finalPrs];
     }
@@ -65412,7 +65451,10 @@ function buildChangelog(diffInfo, origPrs, options) {
     const contributorsString = contributorsArray.join(', ');
     const externalContributorString = contributorsArray.filter(value => value !== `@${options.owner}`).join(', ');
     setOutput('contributors', contributorsArray.join(','));
-    const releaseNotesTemplateContext = buildReleaseNotesTemplateContext(changelogStrings, contributorsString, externalContributorString, prStrings, diffInfo, options);
+    // collect contributors whose first PR was merged in this release (requires `fetchNewContributors`)
+    const newContributorsArray = Array.from(new Set(prs.filter(pr => pr.newContributor).map(pr => `@${pr.author}`)));
+    setOutput('new_contributors', newContributorsArray.join(','));
+    const releaseNotesTemplateContext = buildReleaseNotesTemplateContext(changelogStrings, contributorsString, externalContributorString, newContributorsArray.join(', '), prStrings, diffInfo, options);
     let renderedReleaseNotesTemplate = renderTemplateAndFillPlaceholderContext(config.template, releaseNotesTemplateContext, groupedPlaceholders, customPlaceholdersTemplateContext, config);
     renderedReleaseNotesTemplate = renderTemplateWithContext(renderedReleaseNotesTemplate, customPlaceholdersTemplateContext, config);
     renderedReleaseNotesTemplate = cleanupPrPlaceholders(renderedReleaseNotesTemplate, groupedPlaceholders);
@@ -65538,7 +65580,7 @@ function buildChangelogStrings(categories, prStrings) {
         ignored: changelogIgnored
     };
 }
-function buildReleaseNotesTemplateContext(changelogStrings, contributorsString, externalContributorString, prStrings, diffInfo, options) {
+function buildReleaseNotesTemplateContext(changelogStrings, contributorsString, externalContributorString, newContributorsString, prStrings, diffInfo, options) {
     const { categorized: changelogCategorized, uncategorized: changelogUncategorized, open: changelogOpen, ignored: changelogIgnored } = changelogStrings;
     const { categorizedList, uncategorizedList, openList, ignoredList } = prStrings;
     let releaseNotesTemplateContext = new TemplateContext();
@@ -65549,6 +65591,7 @@ function buildReleaseNotesTemplateContext(changelogStrings, contributorsString, 
     // fill special collected contributors
     releaseNotesTemplateContext.set('CONTRIBUTORS', contributorsString);
     releaseNotesTemplateContext.set('EXTERNAL_CONTRIBUTORS', externalContributorString);
+    releaseNotesTemplateContext.set('NEW_CONTRIBUTORS', newContributorsString);
     // fill other placeholders
     releaseNotesTemplateContext.set('CATEGORIZED_COUNT', categorizedList.length.toString());
     releaseNotesTemplateContext.set('UNCATEGORIZED_COUNT', uncategorizedList.length.toString());
@@ -66358,7 +66401,8 @@ class PullRequestCollector {
     mode;
     configuration;
     includeOnlyPaths;
-    constructor(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, mode = 'PR', configuration, includeOnlyPaths = null) {
+    fetchNewContributors;
+    constructor(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, mode = 'PR', configuration, includeOnlyPaths = null, fetchNewContributors = false) {
         this.baseUrl = baseUrl;
         this.repositoryUtils = repositoryUtils;
         this.repositoryPath = repositoryPath;
@@ -66376,6 +66420,7 @@ class PullRequestCollector {
         this.mode = mode;
         this.configuration = configuration;
         this.includeOnlyPaths = includeOnlyPaths;
+        this.fetchNewContributors = fetchNewContributors;
     }
     async build() {
         // check proxy setup for GHES environments
@@ -66418,6 +66463,7 @@ class PullRequestCollector {
             fetchReviewers: this.fetchReviewers,
             fetchReleaseInformation: this.fetchReleaseInformation,
             fetchReviews: this.fetchReviews,
+            fetchNewContributors: this.fetchNewContributors,
             mode: this.mode,
             configuration: this.configuration,
             includeOnlyPaths: this.includeOnlyPaths
@@ -66431,6 +66477,9 @@ async function pullData(repositoryUtils, options) {
     startGroup(`🚀 Load data`);
     if (options.mode === 'COMMIT') {
         core_info(`🚀 Load commit history (⚠️ Executing experimental commit mode)`);
+        if (options.fetchNewContributors) {
+            core_info(`⚠️ Fetching new contributors is not supported in commit mode`);
+        }
         const [info, prs] = await commitsApi.generateCommitPRs(options);
         mergedPullRequests = mergedPullRequests.concat(prs);
         diffInfo = info;
@@ -66484,7 +66533,8 @@ class ReleaseNotesBuilder {
     cache;
     configuration;
     includeOnlyPaths;
-    constructor(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, mode = 'PR', exportCache = false, exportOnly = false, cache = null, configuration, includeOnlyPaths = null) {
+    fetchNewContributors;
+    constructor(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen = false, failOnError, ignorePreReleases, fetchViaCommits = false, fetchReviewers = false, fetchReleaseInformation = false, fetchReviews = false, mode = 'PR', exportCache = false, exportOnly = false, cache = null, configuration, includeOnlyPaths = null, fetchNewContributors = false) {
         this.baseUrl = baseUrl;
         this.repositoryUtils = repositoryUtils;
         this.repositoryPath = repositoryPath;
@@ -66505,6 +66555,7 @@ class ReleaseNotesBuilder {
         this.cache = cache;
         this.configuration = configuration;
         this.includeOnlyPaths = includeOnlyPaths;
+        this.fetchNewContributors = fetchNewContributors;
     }
     async build() {
         let releaseNotesData;
@@ -66534,7 +66585,7 @@ class ReleaseNotesBuilder {
                 core_debug(`Resolved 'repo' as ${this.repo}`);
             }
             endGroup();
-            const prData = await new PullRequestCollector(this.baseUrl, this.repositoryUtils, this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.includeOpen, this.failOnError, this.ignorePreReleases, this.fetchViaCommits, this.fetchReviewers, this.fetchReleaseInformation, this.fetchReviews, this.mode, this.configuration, this.includeOnlyPaths).build();
+            const prData = await new PullRequestCollector(this.baseUrl, this.repositoryUtils, this.repositoryPath, this.owner, this.repo, this.fromTag, this.toTag, this.includeOpen, this.failOnError, this.ignorePreReleases, this.fetchViaCommits, this.fetchReviewers, this.fetchReleaseInformation, this.fetchReviews, this.mode, this.configuration, this.includeOnlyPaths, this.fetchNewContributors).build();
             if (prData == null) {
                 return null;
             }
@@ -66548,6 +66599,7 @@ class ReleaseNotesBuilder {
                 fetchReviewers: this.fetchReviewers,
                 fetchReleaseInformation: this.fetchReleaseInformation,
                 fetchReviews: this.fetchReviews,
+                fetchNewContributors: this.fetchNewContributors,
                 mode: this.mode,
                 configuration: this.configuration,
                 repositoryUtils: this.repositoryUtils
@@ -66596,6 +66648,7 @@ class ReleaseNotesBuilder {
                 fetchReviewers: this.fetchReviewers || orgOptions.fetchReviewers,
                 fetchReleaseInformation: this.fetchReleaseInformation || orgOptions.fetchReleaseInformation,
                 fetchReviews: this.fetchReviews || orgOptions.fetchReviews,
+                fetchNewContributors: this.fetchNewContributors || orgOptions.fetchNewContributors,
                 mode: this.mode || orgOptions.mode,
                 configuration: this.configuration || orgOptions.configuration,
                 repositoryUtils: this.repositoryUtils || orgOptions.repositoryUtils
@@ -67456,6 +67509,30 @@ class GithubRepository extends BaseRepository {
             }
         }
         pr.reviews = prReviews;
+    }
+    async getNewContributors(owner, repo, firstMerges) {
+        const newContributors = new Set();
+        const authors = Array.from(firstMerges.keys());
+        // batch multiple searches into a single GraphQL request, the search only needs the count of matching PRs
+        const batchSize = 20;
+        for (let i = 0; i < authors.length; i += batchSize) {
+            const batch = authors.slice(i, i + batchSize);
+            const variables = {};
+            const searches = batch.map((author, index) => {
+                const mergedBefore = firstMerges.get(author)?.toISOString();
+                variables[`q${index}`] = `repo:${owner}/${repo} is:pr is:merged author:${author} merged:<${mergedBefore}`;
+                return `a${index}: search(type: ISSUE, query: $q${index}, first: 0) { issueCount }`;
+            });
+            const declarations = batch.map((_, index) => `$q${index}: String!`).join(', ');
+            const result = await this.octokit.graphql(`query(${declarations}) { ${searches.join(' ')} }`, variables);
+            batch.forEach((author, index) => {
+                if (result[`a${index}`]?.issueCount === 0) {
+                    newContributors.add(author);
+                }
+            });
+        }
+        core_info(`ℹ️ Identified ${newContributors.size} new contributor(s) out of ${authors.length} author(s) for ${owner}/${repo}`);
+        return newContributors;
     }
     get defaultUrl() {
         return 'https://api.github.com';
@@ -74201,6 +74278,11 @@ class GiteaRepository extends BaseRepository {
         }
         pr.reviews = prReviews;
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async getNewContributors(owner, repo, firstMerges) {
+        core_info(`⚠️ getNewContributors not supported for gitea`);
+        return new Set();
+    }
     mapComment = (comment) => ({
         id: comment.id || 0,
         htmlURL: comment.html_url || '',
@@ -74328,6 +74410,11 @@ class OfflineRepository extends BaseRepository {
     async getReviews(owner, repo, pr) {
         core_info(`⚠️ getReviews not supported in offline mode`);
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async getNewContributors(owner, repo, firstMerges) {
+        core_info(`⚠️ getNewContributors not supported in offline mode`);
+        return new Set();
+    }
 }
 
 ;// CONCATENATED MODULE: ./lib/main.js
@@ -74407,6 +74494,7 @@ async function run() {
         const fetchReviewers = getInput('fetchReviewers') === 'true';
         const fetchReleaseInformation = getInput('fetchReleaseInformation') === 'true';
         const fetchReviews = getInput('fetchReviews') === 'true';
+        const fetchNewContributors = getInput('fetchNewContributors') === 'true';
         const exportCache = getInput('exportCache') === 'true';
         const exportOnly = getInput('exportOnly') === 'true';
         const cache = getInput('cache');
@@ -74418,7 +74506,7 @@ async function run() {
         const repositoryUtils = offlineMode
             ? new OfflineRepository(repositoryPath)
             : new supportedPlatform[platform](token, baseUrl, repositoryPath, homeUrl);
-        const result = await new ReleaseNotesBuilder(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchViaCommits, fetchReviewers, fetchReleaseInformation, fetchReviews, mode, exportCache, exportOnly, cache, configuration, includeOnlyPaths).build();
+        const result = await new ReleaseNotesBuilder(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchViaCommits, fetchReviewers, fetchReleaseInformation, fetchReviews, mode, exportCache, exportOnly, cache, configuration, includeOnlyPaths, fetchNewContributors).build();
         setOutput('changelog', result);
         // write the result in changelog to file if possible
         const outputFile = getInput('outputFile');
