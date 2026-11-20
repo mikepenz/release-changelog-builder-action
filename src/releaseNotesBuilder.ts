@@ -19,6 +19,7 @@ export interface ReleaseNotesOptions {
   fetchReviewers: boolean // defines if the action should fetch the reviewers for PRs - approved reviewers are not included in the default PR listing
   fetchReleaseInformation: boolean // defines if the action should fetch the release information for the from and to tag - e.g. the creation date for the associated release
   fetchReviews: boolean // defines if the action should fetch the reviews for the PR.
+  fetchNewContributors: boolean // defines if the action should identify authors whose first PR was merged in this release
   mode: 'PR' | 'COMMIT' | 'HYBRID' // defines the mode used. note: the commit or hybrid modes are not fully supported
   configuration: Configuration // the configuration as defined in `configuration.ts`
   repositoryUtils: BaseRepository // the repository implementation used to generate the changelog
@@ -51,7 +52,8 @@ export class ReleaseNotesBuilder {
     private exportOnly = false,
     private cache: string | null = null,
     private configuration: Configuration,
-    private includeOnlyPaths: string[] | null = null
+    private includeOnlyPaths: string[] | null = null,
+    private fetchNewContributors = false
   ) {}
 
   async build(): Promise<string | null> {
@@ -61,6 +63,9 @@ export class ReleaseNotesBuilder {
     } catch (error) {
       failOrError(`${error}`, this.failOnError)
       return null
+    }
+    if (releaseNotesData != null && this.fetchNewContributors) {
+      core.warning(`⚠️ Using imported cache data, 'fetchNewContributors' is not evaluated. Enable it when exporting the cache.`)
     }
     if (releaseNotesData == null) {
       if (!this.owner) {
@@ -95,7 +100,8 @@ export class ReleaseNotesBuilder {
         this.fetchReviews,
         this.mode,
         this.configuration,
-        this.includeOnlyPaths
+        this.includeOnlyPaths,
+        this.fetchNewContributors
       ).build()
 
       if (prData == null) {
@@ -112,6 +118,7 @@ export class ReleaseNotesBuilder {
         fetchReviewers: this.fetchReviewers,
         fetchReleaseInformation: this.fetchReleaseInformation,
         fetchReviews: this.fetchReviews,
+        fetchNewContributors: this.fetchNewContributors,
         mode: this.mode,
         configuration: this.configuration,
         repositoryUtils: this.repositoryUtils
@@ -166,6 +173,7 @@ export class ReleaseNotesBuilder {
         fetchReviewers: this.fetchReviewers || orgOptions.fetchReviewers,
         fetchReleaseInformation: this.fetchReleaseInformation || orgOptions.fetchReleaseInformation,
         fetchReviews: this.fetchReviews || orgOptions.fetchReviews,
+        fetchNewContributors: this.fetchNewContributors || orgOptions.fetchNewContributors,
         mode: this.mode || orgOptions.mode,
         configuration: this.configuration || orgOptions.configuration,
         repositoryUtils: this.repositoryUtils || orgOptions.repositoryUtils

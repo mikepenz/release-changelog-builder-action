@@ -116,4 +116,10 @@ export class OfflineRepository extends BaseRepository {
   async getReviews(owner: string, repo: string, pr: PullRequestInfo): Promise<void> {
     core.info(`⚠️ getReviews not supported in offline mode`);
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getNewContributors(owner: string, repo: string, firstMerges: Map<string, moment.Moment>): Promise<Set<string>> {
+    core.info(`⚠️ getNewContributors not supported in offline mode`);
+    return new Set();
+  }
 }

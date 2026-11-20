@@ -53,6 +53,14 @@ export abstract class BaseRepository {
 
   abstract getReviews(owner: string, repo: string, pr: PullRequestInfo): Promise<void>
 
+  /**
+   * Identifies the authors who did not have a pull request merged into the repository before the given date.
+   *
+   * @param firstMerges maps each author to the merge date of their earliest pull request in this release
+   * @returns the authors without any pull request merged before that date
+   */
+  abstract getNewContributors(owner: string, repo: string, firstMerges: Map<string, moment.Moment>): Promise<Set<string>>
+
   protected async getTagByCreateTime(repositoryPath: string, tagInfo: TagInfo): Promise<TagInfo> {
     core.info(`⚠️ No release information found for ${tagInfo.name}, trying to retrieve tag creation time as fallback.`)
     const gitHelper = await createCommandManager(repositoryPath)
