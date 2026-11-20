@@ -286,7 +286,7 @@ function buildPrStringsAndFillCategoryEntries(
   const uncategorizedPrs: string[] = []
 
   // bring elements in order
-  prLoop: for (const [pr, body] of prInfoMap) {
+  for (const [pr, body] of prInfoMap) {
     if (
       haveCommonElementsArr(
         ignoredLabels.map(lbl => lbl.toLocaleLowerCase('en')),
@@ -305,10 +305,10 @@ function buildPrStringsAndFillCategoryEntries(
     const filteredCategories = filterCategoriesByPrType(categories, pr)
     for (const category of filteredCategories) {
       const [matched, consumed] = recursiveCategorizePr(category, pr, body)
-      if (consumed) {
-        continue prLoop
-      }
       matchedOnce = matchedOnce || matched
+      if (consumed) {
+        break // consumed PRs won't show up in any category after
+      }
     }
 
     if (!matchedOnce) {
@@ -473,10 +473,13 @@ function recursiveCategorizePr(category: Category, pr: PullRequestInfo, body: st
 
   // only do children if parent also matches
   if (category.categories && matchesParent) {
-    for (const childCategory of category.categories) {
+    for (const childCategory of filterCategoriesByPrType(category.categories, pr)) {
       const [childMatched, childConsumed] = recursiveCategorizePr(childCategory, pr, body)
       matched = matched || childMatched // at least one time it matched
-      consumed = childConsumed
+      if (childConsumed) {
+        consumed = true // a consuming child keeps the PR out of all following categories
+        break
+      }
     }
   }
 
