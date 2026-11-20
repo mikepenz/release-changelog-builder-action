@@ -64,6 +64,9 @@ export class ReleaseNotesBuilder {
       failOrError(`${error}`, this.failOnError)
       return null
     }
+    if (releaseNotesData != null && this.fetchNewContributors) {
+      core.warning(`⚠️ Using imported cache data, 'fetchNewContributors' is not evaluated. Enable it when exporting the cache.`)
+    }
     if (releaseNotesData == null) {
       if (!this.owner) {
         failOrError(`💥 Missing or couldn't resolve 'owner'`, this.failOnError)
