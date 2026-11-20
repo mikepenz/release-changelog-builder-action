@@ -220,6 +220,9 @@ export class GithubRepository extends BaseRepository {
   }
 
   get homeUrl(): string {
+    if (this.homeUrlOverride) {
+      return this.homeUrlOverride
+    }
     const url = (this.url || this.defaultUrl).replace(/\/+$/, '')
     // GitHub Enterprise Server serves its REST API below `/api/v3` of the web url
     const enterpriseServerUrl = url.replace(/\/api(?:\/v3)?$/i, '')
@@ -232,8 +235,8 @@ export class GithubRepository extends BaseRepository {
 
   private octokit: Octokit
 
-  constructor(token: string, url: string | undefined, repositoryPath: string) {
-    super(token, url, repositoryPath)
+  constructor(token: string, url: string | undefined, repositoryPath: string, homeUrl?: string) {
+    super(token, url, repositoryPath, homeUrl)
     this.url = url || this.defaultUrl
 
     // load octokit instance

@@ -21,11 +21,11 @@ export class GiteaRepository extends BaseRepository {
 
   get homeUrl(): string {
     // set (and trailing-slash trimmed) in the constructor
-    return this.url as string
+    return this.homeUrlOverride || (this.url as string)
   }
 
-  constructor(token: string, url: string | undefined, repositoryPath: string) {
-    super(token, url, repositoryPath)
+  constructor(token: string, url: string | undefined, repositoryPath: string, homeUrl?: string) {
+    super(token, url, repositoryPath, homeUrl)
     // the `baseUrl` of a gitea instance is its web root (gitea-js appends `/api/v1` itself)
     this.url = (url || this.defaultUrl).replace(/\/+$/, '')
     this.api = giteaApi(this.url, {

@@ -15,11 +15,16 @@ export abstract class BaseRepository {
   // Define the abstract getter for the home URL (also used for some replace patterns)
   abstract get homeUrl(): string
 
+  // Optional explicit web url of the instance, takes precedence over the url derived from `url`
+  protected homeUrlOverride?: string
+
   protected constructor(
     protected token: string,
     protected url: string | undefined,
-    protected repositoryPath: string
+    protected repositoryPath: string,
+    homeUrl?: string
   ) {
+    this.homeUrlOverride = homeUrl?.trim().replace(/\/+$/, '') || undefined
     this.proxy = process.env.https_proxy || process.env.HTTPS_PROXY
     const noProxy = process.env.no_proxy || process.env.NO_PROXY
     this.noProxyArray = []
