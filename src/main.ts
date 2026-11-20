@@ -69,6 +69,7 @@ async function run(): Promise<void> {
 
     // read in repository inputs
     const baseUrl = core.getInput('baseUrl')
+    const homeUrl = core.getInput('homeUrl')
     const token = core.getInput('token') || process.env.GITHUB_TOKEN || ''
     if (token) core.setSecret(token)
     const owner = core.getInput('owner') || github.context.repo.owner
@@ -96,7 +97,7 @@ async function run(): Promise<void> {
     // Use OfflineRepository if offline mode is enabled, otherwise use the selected platform
     const repositoryUtils = offlineMode
       ? new OfflineRepository(repositoryPath)
-      : new supportedPlatform[platform](token, baseUrl, repositoryPath)
+      : new supportedPlatform[platform](token, baseUrl, repositoryPath, homeUrl)
     const result = await new ReleaseNotesBuilder(
       baseUrl,
       repositoryUtils,

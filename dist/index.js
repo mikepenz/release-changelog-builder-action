@@ -66630,10 +66630,13 @@ class BaseRepository {
     repositoryPath;
     proxy;
     noProxyArray;
-    constructor(token, url, repositoryPath) {
+    // Optional explicit web url of the instance, takes precedence over the url derived from `url`
+    homeUrlOverride;
+    constructor(token, url, repositoryPath, homeUrl) {
         this.token = token;
         this.url = url;
         this.repositoryPath = repositoryPath;
+        this.homeUrlOverride = homeUrl?.trim().replace(/\/+$/, '') || undefined;
         this.proxy = process.env.https_proxy || process.env.HTTPS_PROXY;
         const noProxy = process.env.no_proxy || process.env.NO_PROXY;
         this.noProxyArray = [];
@@ -67455,11 +67458,21 @@ class GithubRepository extends BaseRepository {
         return 'https://api.github.com';
     }
     get homeUrl() {
-        return this.url?.replace('api.', '') || 'https://github.com';
+        if (this.homeUrlOverride) {
+            return this.homeUrlOverride;
+        }
+        const url = (this.url || this.defaultUrl).replace(/\/+$/, '');
+        // GitHub Enterprise Server serves its REST API below `/api/v3` of the web url
+        const enterpriseServerUrl = url.replace(/\/api(?:\/v3)?$/i, '');
+        if (enterpriseServerUrl !== url) {
+            return enterpriseServerUrl;
+        }
+        // github.com and GitHub Enterprise Cloud with data residency (`*.ghe.com`) serve their API from an `api.` subdomain
+        return url.replace(/^(https?:\/\/)api\./i, '$1');
     }
     octokit;
-    constructor(token, url, repositoryPath) {
-        super(token, url, repositoryPath);
+    constructor(token, url, repositoryPath, homeUrl) {
+        super(token, url, repositoryPath, homeUrl);
         this.url = url || this.defaultUrl;
         // load octokit instance
         this.octokit = new dist_src_Octokit({
@@ -74035,10 +74048,10 @@ class GiteaRepository extends BaseRepository {
     }
     get homeUrl() {
         // set (and trailing-slash trimmed) in the constructor
-        return this.url;
+        return this.homeUrlOverride || this.url;
     }
-    constructor(token, url, repositoryPath) {
-        super(token, url, repositoryPath);
+    constructor(token, url, repositoryPath, homeUrl) {
+        super(token, url, repositoryPath, homeUrl);
         // the `baseUrl` of a gitea instance is its web root (gitea-js appends `/api/v1` itself)
         this.url = (url || this.defaultUrl).replace(/\/+$/, '');
         this.api = giteaApi(this.url, {
@@ -74374,6 +74387,7 @@ async function run() {
         const configuration = mergeConfiguration(configJson, configFile, mode);
         // read in repository inputs
         const baseUrl = getInput('baseUrl');
+        const homeUrl = getInput('homeUrl');
         const token = getInput('token') || process.env.GITHUB_TOKEN || '';
         if (token)
             core_setSecret(token);
@@ -74400,7 +74414,7 @@ async function run() {
         // Use OfflineRepository if offline mode is enabled, otherwise use the selected platform
         const repositoryUtils = offlineMode
             ? new OfflineRepository(repositoryPath)
-            : new supportedPlatform[platform](token, baseUrl, repositoryPath);
+            : new supportedPlatform[platform](token, baseUrl, repositoryPath, homeUrl);
         const result = await new ReleaseNotesBuilder(baseUrl, repositoryUtils, repositoryPath, owner, repo, fromTag, toTag, includeOpen, failOnError, ignorePreReleases, fetchViaCommits, fetchReviewers, fetchReleaseInformation, fetchReviews, mode, exportCache, exportOnly, cache, configuration, includeOnlyPaths).build();
         setOutput('changelog', result);
         // write the result in changelog to file if possible
